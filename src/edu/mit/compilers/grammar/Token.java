@@ -1,14 +1,7 @@
-// YOU CAN MODIFY ANYTHING IN THIS FILE, THIS IS JUST A SUGGESTED CLASS
-
 package edu.mit.compilers.grammar;
 
-public class Token {
-
-    public boolean isEOF() {
-        return false;
-    }
-
-    public String getText() {
-        return "";
+public record Token(TokenPosition tokenPosition, TokenType tokenType, String lexeme) {
+    public boolean isNotEOF() {
+        return tokenType != TokenType.EOF;
     }
 }
