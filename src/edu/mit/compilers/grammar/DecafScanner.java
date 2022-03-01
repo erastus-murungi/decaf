@@ -73,7 +73,7 @@ public class DecafScanner {
 
     public static final String IDENTIFIER = "identifier";
 
-    public static final String EOF = "EOF";
+    public static final String EOF = "END_OF_FILE_MARKER";
 
     public static final String RESERVED_FOR = "for";
     public static final String RESERVED_IF = "if";
@@ -93,12 +93,12 @@ public class DecafScanner {
 
     private final String inputString;
     private final Logger logger = Logger.getLogger(DecafScanner.class.getName());
+    private final List<String> syntaxLines = new ArrayList<>();
     private int column;
     private int line;
     private int stringIndex;
     private Token prevToken = null;
     private boolean shouldTrace = false;
-    private final List<String> syntaxLines = new ArrayList<>();
 
     public DecafScanner(InputStream inputStream) {
         String str;
@@ -140,9 +140,7 @@ public class DecafScanner {
     private void consumeNewlineCharacter(String sc) {
         final char c = sc.charAt(0);
         if (c != '\r' && c != '\n') {
-            throw new IllegalArgumentException(
-                    "supported new line characters are: " + "[" + "\r" + ", " + "\n" + "]" +
-                            "not " + c);
+            throw new IllegalArgumentException("supported new line characters are: " + "[" + "\r" + ", " + "\n" + "]" + "not " + c);
         }
         column = 0;
         ++line;
@@ -157,10 +155,7 @@ public class DecafScanner {
 
     private void consumeCompoundCharacter(String compoundOp) {
         if (!inputString.startsWith(compoundOp, stringIndex)) {
-            throw new IllegalArgumentException("expected " +
-                    compoundOp +
-                    "received " +
-                    inputString.substring(stringIndex, stringIndex + 2));
+            throw new IllegalArgumentException("expected " + compoundOp + "received " + inputString.substring(stringIndex, stringIndex + 2));
         }
         column += 2;
         stringIndex += 2;
@@ -173,12 +168,12 @@ public class DecafScanner {
     }
 
     private boolean isSkipAble(Token token) {
-        return token.tokenType() == TokenType.WHITESPACE
-                || token.tokenType() == TokenType.LINE_COMMENT
-                || token.tokenType() == TokenType.BLOCK_COMMENT;
+        return token.tokenType() == TokenType.WHITESPACE || token.tokenType() == TokenType.LINE_COMMENT || token.tokenType() == TokenType.BLOCK_COMMENT;
     }
 
-    /** might find this useful **/
+    /**
+     * might find this useful
+     **/
     public Token nextToken() throws DecafException {
         Token token;
         do {
@@ -190,6 +185,8 @@ public class DecafScanner {
                 System.out.println(token);
             }
         } while (isSkipAble(token));
+        if (shouldTrace)
+            syntaxHighlight(System.out);
         return token;
     }
 
@@ -210,12 +207,9 @@ public class DecafScanner {
             case LEFT_CURLY -> handleSingleOperator(tokenPosition, TokenType.LEFT_CURLY, LEFT_CURLY);
             case RIGHT_CURLY -> handleSingleOperator(tokenPosition, TokenType.RIGHT_CURLY, RIGHT_CURLY);
             case LEFT_PARENTHESIS -> handleSingleOperator(tokenPosition, TokenType.LEFT_PARENTHESIS, LEFT_PARENTHESIS);
-            case RIGHT_PARENTHESIS -> handleSingleOperator(tokenPosition, TokenType.RIGHT_PARENTHESIS,
-                    RIGHT_PARENTHESIS);
-            case LEFT_SQUARE_BRACKET -> handleSingleOperator(tokenPosition, TokenType.LEFT_SQUARE_BRACKET,
-                    LEFT_SQUARE_BRACKET);
-            case RIGHT_SQUARE_BRACKET -> handleSingleOperator(tokenPosition, TokenType.RIGHT_SQUARE_BRACKET,
-                    RIGHT_SQUARE_BRACKET);
+            case RIGHT_PARENTHESIS -> handleSingleOperator(tokenPosition, TokenType.RIGHT_PARENTHESIS, RIGHT_PARENTHESIS);
+            case LEFT_SQUARE_BRACKET -> handleSingleOperator(tokenPosition, TokenType.LEFT_SQUARE_BRACKET, LEFT_SQUARE_BRACKET);
+            case RIGHT_SQUARE_BRACKET -> handleSingleOperator(tokenPosition, TokenType.RIGHT_SQUARE_BRACKET, RIGHT_SQUARE_BRACKET);
             case SEMICOLON -> handleSingleOperator(tokenPosition, TokenType.SEMICOLON, SEMICOLON);
             case COMMA -> handleSingleOperator(tokenPosition, TokenType.COMMA, COMMA);
             case MOD -> handleSingleOperator(tokenPosition, TokenType.MOD, MOD);
@@ -265,10 +259,8 @@ public class DecafScanner {
                         case ASSIGN -> handleSingleOperator(tokenPosition, TokenType.ASSIGN, ASSIGN);
                         case LT -> handleSingleOperator(tokenPosition, TokenType.LT, LT);
                         case GT -> handleSingleOperator(tokenPosition, TokenType.GT, GT);
-                        case TERNARY_QUESTION_MARK -> handleSingleOperator(tokenPosition,
-                                TokenType.TERNARY_QUESTION_MARK, TERNARY_QUESTION_MARK);
-                        case TERNARY_COLON -> handleSingleOperator(tokenPosition, TokenType.TERNARY_COLON,
-                                TERNARY_COLON);
+                        case TERNARY_QUESTION_MARK -> handleSingleOperator(tokenPosition, TokenType.TERNARY_QUESTION_MARK, TERNARY_QUESTION_MARK);
+                        case TERNARY_COLON -> handleSingleOperator(tokenPosition, TokenType.TERNARY_COLON, TERNARY_COLON);
                         default -> throw getContextualException(tokenPosition, "unrecognized character " + c);
                     };
                 }
@@ -282,13 +274,10 @@ public class DecafScanner {
         final int posEndComment = inputString.indexOf(NEW_LINE, stringIndex);
         assert posEndComment != -1;
 
-        consumeMultipleCharactersNoCheck(posEndComment - tokenPosition.stringIndex() - 2);
+        consumeMultipleCharactersNoCheck(posEndComment - tokenPosition.offset() - 2);
         consumeNewlineCharacter(NEW_LINE);
 
-        return makeToken(
-                tokenPosition,
-                TokenType.LINE_COMMENT,
-                inputString.substring(tokenPosition.stringIndex(), stringIndex - 1));
+        return makeToken(tokenPosition, TokenType.LINE_COMMENT, inputString.substring(tokenPosition.offset(), stringIndex - 1));
     }
 
     private Token handleBlockComment(TokenPosition tokenPosition) throws DecafException {
@@ -322,13 +311,9 @@ public class DecafScanner {
             ++i;
         }
         if (state != completed) {
-            throw getContextualException(tokenPosition,
-                    "could not finish parsing the comment" +
-                            inputString.substring(tokenPosition.stringIndex(),
-                                    Math.min(inputString.length(), tokenPosition.stringIndex() + 10))
-                            + "...");
+            throw getContextualException(tokenPosition, "could not finish parsing the comment" + inputString.substring(tokenPosition.offset(), Math.min(inputString.length(), tokenPosition.offset() + 10)) + "...");
         }
-        return makeToken(tokenPosition, TokenType.BLOCK_COMMENT, inputString.substring(tokenPosition.stringIndex(), i));
+        return makeToken(tokenPosition, TokenType.BLOCK_COMMENT, inputString.substring(tokenPosition.offset(), i));
     }
 
     private char getCurrentChar() {
@@ -350,8 +335,7 @@ public class DecafScanner {
         char c = inputString.charAt(stringIndex);
         switch (c) {
             case 'n', '"', 't', 'r', '\'', '\\' -> consumeCharacterNoCheck();
-            default -> throw getContextualException(tokenPosition,
-                    "Invalid back-slashed character \"" + "\\" + c + "\"");
+            default -> throw getContextualException(tokenPosition, "Invalid back-slashed character \"" + "\\" + c + "\"");
         }
     }
 
@@ -376,12 +360,8 @@ public class DecafScanner {
         else
             throw getContextualException(tokenPosition, "invalid char literal");
 
-        consumeCharacter(tokenPosition, SINGLE_QUOTES,
-                getContextualErrorMessage(tokenPosition, "missing closing single quotes " +
-                        "current char literal is " +
-                        inputString.substring(tokenPosition.stringIndex(), stringIndex + 1)));
-        return makeToken(tokenPosition, TokenType.CHAR_LITERAL,
-                inputString.substring(tokenPosition.stringIndex(), stringIndex));
+        consumeCharacter(tokenPosition, SINGLE_QUOTES, getContextualErrorMessage(tokenPosition, "missing closing single quotes " + "current char literal is " + inputString.substring(tokenPosition.offset(), stringIndex + 1)));
+        return makeToken(tokenPosition, TokenType.CHAR_LITERAL, inputString.substring(tokenPosition.offset(), stringIndex));
     }
 
     public String getContextualErrorMessage(TokenPosition tokenPosition, String errMessage) {
@@ -392,18 +372,9 @@ public class DecafScanner {
         final int after = Math.min(lineToPrint.length() - tokenPosition.column(), MAX_NUM_CHARS);
 
         final String inputSub = lineToPrint.substring(tokenPosition.column() - before, tokenPosition.column() + after);
-        final String spaces = Utils.SPACE.repeat(
-                String.valueOf(tokenPosition.line()).length() + String.valueOf(tokenPosition.column()).length() + 3);
+        final String spaces = Utils.SPACE.repeat(String.valueOf(tokenPosition.line()).length() + String.valueOf(tokenPosition.column()).length() + 3);
 
-        return NEW_LINE + errMessage + NEW_LINE +
-                spaces + inputSub + NEW_LINE + tokenPosition.line() + TERNARY_COLON + tokenPosition.column()
-                + TERNARY_COLON + Utils.SPACE +
-                Utils.coloredPrint(TILDE.repeat(before),
-                        Utils.ANSIColorConstants.ANSI_GREEN)
-                +
-                Utils.coloredPrint("^", Utils.ANSIColorConstants.ANSI_CYAN) +
-                Utils.coloredPrint(TILDE.repeat(after),
-                        Utils.ANSIColorConstants.ANSI_GREEN);
+        return NEW_LINE + errMessage + NEW_LINE + spaces + inputSub + NEW_LINE + tokenPosition.line() + TERNARY_COLON + tokenPosition.column() + TERNARY_COLON + Utils.SPACE + Utils.coloredPrint(TILDE.repeat(before), Utils.ANSIColorConstants.ANSI_GREEN) + Utils.coloredPrint("^", Utils.ANSIColorConstants.ANSI_CYAN) + Utils.coloredPrint(TILDE.repeat(after), Utils.ANSIColorConstants.ANSI_GREEN);
     }
 
     private Token handleStringLiteral(TokenPosition tokenPosition) throws DecafException {
@@ -419,10 +390,8 @@ public class DecafScanner {
             else
                 break;
         }
-        consumeCharacter(tokenPosition, DOUBLE_QUOTES, getContextualErrorMessage(tokenPosition,
-                "expected " + DOUBLE_QUOTES + " received " + inputString.charAt(stringIndex)));
-        return makeToken(tokenPosition, TokenType.STRING_LITERAL,
-                inputString.substring(tokenPosition.stringIndex(), stringIndex));
+        consumeCharacter(tokenPosition, DOUBLE_QUOTES, getContextualErrorMessage(tokenPosition, "expected " + DOUBLE_QUOTES + " received " + inputString.charAt(stringIndex)));
+        return makeToken(tokenPosition, TokenType.STRING_LITERAL, inputString.substring(tokenPosition.offset(), stringIndex));
     }
 
     private Token handleId(TokenPosition tokenPosition) {
@@ -470,13 +439,11 @@ public class DecafScanner {
             ++i;
         }
         consumeMultipleCharactersNoCheck(i - stringIndex);
-        return makeToken(tokenPosition, TokenType.DECIMAL_LITERAL,
-                inputString.substring(tokenPosition.stringIndex(), stringIndex));
+        return makeToken(tokenPosition, TokenType.DECIMAL_LITERAL, inputString.substring(tokenPosition.offset(), stringIndex));
     }
 
     private boolean isValidHexDigit(char hexDigit) {
-        return Character.isDigit(hexDigit) || ((hexDigit <= 'f') && (hexDigit >= 'a'))
-                || ((hexDigit <= 'F') && (hexDigit >= 'A'));
+        return Character.isDigit(hexDigit) || ((hexDigit <= 'f') && (hexDigit >= 'a')) || ((hexDigit <= 'F') && (hexDigit >= 'A'));
     }
 
     private Token handleHexLiteral(TokenPosition tokenPosition) {
@@ -493,7 +460,7 @@ public class DecafScanner {
         if (i == stringIndex)
             throw new IllegalStateException("<hex_literal> != <hex_digit> <hex_digit>*");
         consumeMultipleCharactersNoCheck(i - stringIndex);
-        return makeToken(tokenPosition, TokenType.HEX_LITERAL, inputString.substring(tokenPosition.stringIndex(), i));
+        return makeToken(tokenPosition, TokenType.HEX_LITERAL, inputString.substring(tokenPosition.offset(), i));
     }
 
     private Token handleSingleOperator(TokenPosition tokenPosition, TokenType tokenType, String lexeme) {
@@ -521,7 +488,9 @@ public class DecafScanner {
         return makeToken(tokenPosition, TokenType.WHITESPACE, String.valueOf(c));
     }
 
-    /** Whether to display debug information. */
+    /**
+     * Whether to display debug information.
+     */
     public void setTrace(boolean shouldTrace) {
         this.shouldTrace = shouldTrace;
     }
@@ -532,7 +501,8 @@ public class DecafScanner {
 
     private void updateHighlighter(Token token) {
         switch (token.tokenType()) {
-            case EOF -> {}
+            case EOF -> {
+            }
             case ID -> syntaxLines.add(Utils.coloredPrint(token.lexeme(), Utils.ANSIColorConstants.ANSI_BLUE));
             case CHAR_LITERAL, STRING_LITERAL, RESERVED_FALSE, RESERVED_TRUE, HEX_LITERAL, DECIMAL_LITERAL -> syntaxLines.add(Utils.coloredPrint(token.lexeme(), Utils.ANSIColorConstants.ANSI_GREEN));
             default -> {
@@ -546,88 +516,58 @@ public class DecafScanner {
     }
 
     public void syntaxHighlight(PrintStream out) {
-        for (String string: syntaxLines) {
+        for (String string : syntaxLines) {
             out.print(string);
         }
     }
 
     @Retention(SOURCE)
-    @StringDef({
-            PLUS,
-            MINUS,
-            MULTIPLY,
-            DIVIDE,
-            MOD
-    })
-    public @interface ArithmeticOperator{}
+    @StringDef({PLUS, MINUS, MULTIPLY, DIVIDE, MOD})
+    public @interface ArithmeticOperator {
+    }
 
     @Retention(SOURCE)
-    @StringDef({
-            PLUS,
-            MINUS,
-            MULTIPLY,
-            DIVIDE,
-            MOD,
-            LT,
-            GT,
-            GEQ,
-            LEQ,
-            EQ,
-            NEQ,
-    })
-    public @interface BinaryOperator{}
+    @StringDef({PLUS, MINUS, MULTIPLY, DIVIDE, MOD, LT, GT, GEQ, LEQ, EQ, NEQ,})
+    public @interface BinaryOperator {
+    }
 
     @Retention(SOURCE)
-    @StringDef({
-            LT,
-            GT,
-            GEQ,
-            LEQ
-    })
-    public @interface RelationalOperator {}
+    @StringDef({LT, GT, GEQ, LEQ})
+    public @interface RelationalOperator {
+    }
 
     @Retention(SOURCE)
-    @StringDef({
-            EQ,
-            NEQ,
-    })
-    public @interface EqualityOperator {}
+    @StringDef({EQ, NEQ,})
+    public @interface EqualityOperator {
+    }
 
     @Retention(SOURCE)
-    @StringDef({
-            CONDITIONAL_AND,
-            CONDITIONAL_OR,
-    })
-    public @interface ConditionalOperator {}
+    @StringDef({CONDITIONAL_AND, CONDITIONAL_OR,})
+    public @interface ConditionalOperator {
+    }
 
     @Retention(SOURCE)
     @StringDef({MINUS, NOT})
-    public @interface UnaryOperator {}
+    public @interface UnaryOperator {
+    }
 
     @Retention(SOURCE)
     @StringDef({RESERVED_FALSE, RESERVED_TRUE})
-    public @interface BooleanLiteral {}
+    public @interface BooleanLiteral {
+    }
 
     @Retention(SOURCE)
-    @StringDef({
-            ASSIGN,
-            ADD_ASSIGN,
-            MINUS_ASSIGN,
-            MULTIPLY_ASSIGN})
-    public @interface AssignOperator {}
+    @StringDef({ASSIGN, ADD_ASSIGN, MINUS_ASSIGN, MULTIPLY_ASSIGN})
+    public @interface AssignOperator {
+    }
 
     @Retention(SOURCE)
-    @StringDef({
-            ADD_ASSIGN,
-            MINUS_ASSIGN,
-            MULTIPLY_ASSIGN})
-    public @interface CompoundAssignOperator {}
+    @StringDef({ADD_ASSIGN, MINUS_ASSIGN, MULTIPLY_ASSIGN})
+    public @interface CompoundAssignOperator {
+    }
 
     @Retention(SOURCE)
-    @StringDef({
-            RESERVED_INT,
-            RESERVED_BOOL,
-            RESERVED_VOID
-    })
-    public @interface BuiltinTypes {}
+    @StringDef({RESERVED_INT, RESERVED_BOOL, RESERVED_VOID})
+    public @interface BuiltinTypes {
+    }
 }
