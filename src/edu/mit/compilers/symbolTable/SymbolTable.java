@@ -2,33 +2,32 @@ package edu.mit.compilers.symbolTable;
 
 import java.util.HashMap;
 
-public class SymbolTable {
-    private SymbolTable parent;
-    private HashMap<String, Object> entries;
+public class SymbolTable<String, Descriptor> extends HashMap<String, Descriptor> {
+    private final SymbolTable<String, Descriptor> parent;
 
-    public SymbolTable(SymbolTable parent) {
+    public SymbolTable(SymbolTable<String, Descriptor> parent) {
+        super();
         this.parent = parent;
-        entries = new HashMap<>();
     }
 
     // value can be the actual value of a variable or another SymbolTable
-    public void addEntry(String key, Object value) {
-        entries.put(key, value);
+    public void addEntry(String key, Descriptor value) {
+        put(key, value);
     }
 
     public boolean containsEntry(String key) {
-        return entries.containsKey(key);
+        return containsKey(key);
     }
 
-    public void updateEntry(String key, Object newValue) {
-        entries.put(key, newValue);
+    public void updateEntry(String key, Descriptor newValue) {
+        put(key, newValue);
     }
 
     public Object getEntryValue(String key) {
-        return entries.get(key);
+        return get(key);
     }
 
-    public SymbolTable getParent() {
+    public SymbolTable<String, Descriptor> getParent() {
         return this.parent;
     }
 }

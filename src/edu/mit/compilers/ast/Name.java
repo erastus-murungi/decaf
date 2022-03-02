@@ -8,7 +8,7 @@ import java.util.List;
 
 /* A variable name. id holds the name as a string, and ctx is one of the following types. (Load, Store) */
 public class Name extends AST {
-    final String id;
+    public final String id;
     public final TokenPosition tokenPosition;
     final ExprContext context;
 
