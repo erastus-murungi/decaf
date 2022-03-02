@@ -6,10 +6,11 @@ import edu.mit.compilers.utils.Pair;
 import java.util.List;
 
 public class AssignOpExpr extends AssignExpr {
-    final AssignOperator assignOp;
-    final Expression expression;
+    final public AssignOperator assignOp;
+    public Expression expression;
 
-    public AssignOpExpr(AssignOperator assignOp, Expression expression) {
+    public AssignOpExpr(TokenPosition tokenPosition, AssignOperator assignOp, Expression expression) {
+        super(tokenPosition, expression);
         this.assignOp = assignOp;
         this.expression = expression;
     }

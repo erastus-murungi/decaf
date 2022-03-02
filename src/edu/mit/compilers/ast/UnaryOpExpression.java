@@ -1,14 +1,16 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
 
 public class UnaryOpExpression extends Expression {
-    final UnaryOperator op;
-    final Expression operand;
+    final public UnaryOperator op;
+    public Expression operand;
 
     public UnaryOpExpression(UnaryOperator op, Expression operand) {
+        super(op.tokenPosition);
         this.op = op;
         this.operand = operand;
     }

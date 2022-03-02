@@ -7,11 +7,10 @@ import java.util.Collections;
 import java.util.List;
 
 public abstract class Literal extends Expression {
-    final TokenPosition tokenPosition;
-    final String literal;
+    public String literal;
 
     public Literal(TokenPosition tokenPosition, String literal) {
-        this.tokenPosition = tokenPosition;
+        super(tokenPosition);
         this.literal = literal;
     }
 

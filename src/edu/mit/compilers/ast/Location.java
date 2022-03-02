@@ -1,5 +1,6 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.utils.Pair;
 
 import java.util.Collections;
@@ -9,12 +10,8 @@ public class Location extends Expression {
     public final Name name;
 
     public Location(Name name) {
+        super(name.tokenPosition);
         this.name = name;
-    }
-
-    @Override
-    public String toString() {
-        return name.toString();
     }
 
     @Override
@@ -25,5 +22,10 @@ public class Location extends Expression {
     @Override
     public boolean isTerminal() {
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Location{" + "id=" + name.id + '}';
     }
 }

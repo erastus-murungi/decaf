@@ -1,14 +1,16 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.grammar.TokenPosition;
+import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
 
 public class CompoundAssignOpExpr extends AssignExpr {
     final CompoundAssignOperator compoundAssignOp;
-    final Expression expression;
 
-    public CompoundAssignOpExpr(CompoundAssignOperator compoundAssignOp, Expression expression) {
+    public CompoundAssignOpExpr(TokenPosition tokenPosition, CompoundAssignOperator compoundAssignOp, Expression expression) {
+        super(tokenPosition, expression);
         this.compoundAssignOp = compoundAssignOp;
         this.expression = expression;
     }

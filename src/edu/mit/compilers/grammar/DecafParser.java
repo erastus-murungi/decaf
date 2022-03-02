@@ -14,13 +14,17 @@ import java.util.function.Function;
 import static edu.mit.compilers.grammar.TokenType.*;
 
 public class DecafParser {
-    private final DecafScanner scanner;
+    public final DecafScanner scanner;
 
     private boolean error = false;
     private boolean showTrace = false;
     private ArrayList<Token> tokens;
     private int currentTokenIndex;
     private Program root;
+
+    public Program getRoot() {
+        return root;
+    }
 
     public DecafParser(DecafScanner scanner) {
         this.scanner = scanner;
@@ -45,7 +49,7 @@ public class DecafParser {
         }
         root = program;
         if (showTrace)
-            printParseTree();
+            printParseTree(root);
     }
 
     private Token getCurrentToken() {
@@ -157,7 +161,7 @@ public class DecafParser {
         }
     }
 
-    private void parseFieldDeclarationGroup(Program program, Name nameId, BuiltinType builtinType) throws DecafParserException {
+    private void parseFieldDeclarationGroup(Program program, Name nameId, BuiltinType builtinType, TokenPosition tokenPosition) throws DecafParserException {
         // dealing with fieldDeclarations
         List<Name> variables = new ArrayList<>();
         List<Array> arrays = new ArrayList<>();
@@ -168,27 +172,28 @@ public class DecafParser {
             parseFieldDeclarationGroup(variables, arrays, nameId);
         }
         consumeToken(SEMICOLON, DecafScanner.SEMICOLON);
-        program.fieldDeclarationList.add(new FieldDeclaration(builtinType, variables, arrays));
+        program.fieldDeclarationList.add(new FieldDeclaration(tokenPosition, builtinType, variables, arrays));
         processFieldOrMethod(program);
     }
 
     private void parseMethodDeclaration(List<MethodDefinition> methodDefinitionList, Name id, BuiltinType builtinType) throws DecafParserException {
         List<MethodDefinitionParameter> methodDefinitionParameterList = parseMethodArguments();
         final Block block = parseBlock();
-        methodDefinitionList.add(new MethodDefinition(builtinType, methodDefinitionParameterList, id, block));
+        methodDefinitionList.add(new MethodDefinition(id.tokenPosition, builtinType, methodDefinitionParameterList, id, block));
         parseMethodDeclarations(methodDefinitionList);
     }
 
     private void processFieldOrMethod(Program program) throws DecafParserException {
         if (getCurrentTokenType() == RESERVED_INT || getCurrentTokenType() == RESERVED_BOOL) {
             // could be an int or bool
+            final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
             final BuiltinType builtinType = parseBuiltinFieldType();
             final Name id = parseName(DecafScanner.IDENTIFIER, ExprContext.DECLARE);
             if (getCurrentTokenType() == LEFT_PARENTHESIS) {
                 // dealing with methodDeclarations
                 parseMethodDeclaration(program.methodDefinitionList, id, builtinType);
             } else {
-                parseFieldDeclarationGroup(program, id, builtinType);
+                parseFieldDeclarationGroup(program, id, builtinType, tokenPosition);
             }
         } else if (getCurrentTokenType() == RESERVED_VOID) {
             parseMethodDeclarations(program.methodDefinitionList);
@@ -217,15 +222,18 @@ public class DecafParser {
     private BuiltinType parseMethodReturnType() throws DecafParserException {
         final Token token = consumeTokenNoCheck();
         return switch (token.tokenType()) {
-            case RESERVED_BOOL, RESERVED_INT, RESERVED_VOID -> new BuiltinType(token.tokenPosition(), token.lexeme());
+            case RESERVED_BOOL -> BuiltinType.Bool;
+            case RESERVED_INT -> BuiltinType.Int;
+            case RESERVED_VOID -> BuiltinType.Void;
             default -> throw new DecafParserException(getCurrentToken(), "expected method return type");
         };
     }
 
     private MethodDefinitionParameter parseMethodArgument() throws DecafParserException {
+        final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
         final BuiltinType builtinType = parseBuiltinFieldType();
         final Name nameId = parseName(DecafScanner.IDENTIFIER, ExprContext.DECLARE);
-        return new MethodDefinitionParameter(nameId, builtinType);
+        return new MethodDefinitionParameter(tokenPosition, nameId, builtinType);
     }
 
     private void parseMethodArguments(List<MethodDefinitionParameter> methodDefinitionParameterList) throws DecafParserException {
@@ -259,6 +267,7 @@ public class DecafParser {
     }
 
     private MethodDefinition parseMethodDeclaration() throws DecafParserException {
+        final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
         final BuiltinType methodReturnType = parseMethodReturnType();
         final Name nameId = parseName("expected method to have an identifier", ExprContext.DECLARE);
 
@@ -266,7 +275,7 @@ public class DecafParser {
 
         Block block = parseBlock();
 
-        return new MethodDefinition(methodReturnType, methodDefinitionParameterList, nameId, block);
+        return new MethodDefinition(tokenPosition, methodReturnType, methodDefinitionParameterList, nameId, block);
     }
 
     private void parseMethodCallArguments(List<MethodCallParameter> methodCallParameterList) throws DecafParserException {
@@ -342,15 +351,17 @@ public class DecafParser {
     }
 
     private AssignOpExpr parseAssignOpExpr(TokenType tokenType) throws DecafParserException {
+        final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
         AssignOperator assignOp = parseAssignOp(tokenType);
         Expression expression = parseExpr();
-        return new AssignOpExpr(assignOp, expression);
+        return new AssignOpExpr(tokenPosition, assignOp, expression);
     }
 
     private CompoundAssignOpExpr parseCompoundAssignOpExpr(TokenType tokenType) throws DecafParserException {
+        final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
         CompoundAssignOperator assignOp = parseCompoundAssignOp(tokenType);
         Expression expression = parseExpr();
-        return new CompoundAssignOpExpr(assignOp, expression);
+        return new CompoundAssignOpExpr(tokenPosition, assignOp, expression);
     }
 
     private AssignExpr parseIncrement() throws DecafParserException {
@@ -465,10 +476,11 @@ public class DecafParser {
     }
 
     private Expression parseParenthesizedExpression() throws DecafParserException {
+        final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
         consumeToken(LEFT_PARENTHESIS, DecafScanner.LEFT_PARENTHESIS);
         final Expression expression = parseExpr();
         consumeToken(RIGHT_PARENTHESIS, DecafScanner.RIGHT_PARENTHESIS);
-        return new ParenthesizedExpression(expression);
+        return new ParenthesizedExpression(tokenPosition, expression);
     }
 
     private Len parseLen() throws DecafParserException {
@@ -618,6 +630,7 @@ public class DecafParser {
     }
 
     private FieldDeclaration parseFieldDeclaration() throws DecafParserException {
+        final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
         BuiltinType builtinType = parseBuiltinFieldType();
         List<Name> variables = new ArrayList<>();
         List<Array> arrays = new ArrayList<>();
@@ -629,7 +642,7 @@ public class DecafParser {
             nameId = parseName(DecafScanner.IDENTIFIER, ExprContext.DECLARE);
             parseFieldDeclarationGroup(variables, arrays, nameId);
         }
-        return new FieldDeclaration(builtinType, variables, arrays);
+        return new FieldDeclaration(tokenPosition, builtinType, variables, arrays);
     }
 
     private Name parseName(String expected, ExprContext context) throws DecafParserException {
@@ -643,32 +656,27 @@ public class DecafParser {
     }
 
     private BuiltinType parseBuiltinFieldType() throws DecafParserException {
-        final Token typeToken = switch (getCurrentToken().tokenType()) {
-            case RESERVED_INT -> consumeToken(RESERVED_INT, DecafScanner.RESERVED_INT);
-            case RESERVED_BOOL -> consumeToken(RESERVED_BOOL, DecafScanner.RESERVED_BOOL);
+        final Token token = consumeTokenNoCheck();
+        return switch (token.tokenType()) {
+            case RESERVED_INT -> BuiltinType.Int;
+            case RESERVED_BOOL -> BuiltinType.Bool;
             default -> throw getContextualException("expected " + "\"" + DecafScanner.RESERVED_INT + "\"" + " or " + "\"" + DecafScanner.RESERVED_BOOL + "\"");
         };
-        return new BuiltinType(typeToken.tokenPosition(), typeToken.lexeme());
     }
 
-    private void addTerminal(Pair<String, AST> labelAndNode, String prefix, String connector, List<String> tree) {
+    private static void addTerminal(Pair<String, AST> labelAndNode, String prefix, String connector, List<String> tree) {
         if (!labelAndNode.second().isTerminal())
             throw new IllegalArgumentException();
         tree.add(prefix + connector + " " + Utils.coloredPrint(labelAndNode.first(), Utils.ANSIColorConstants.ANSI_BLUE) + " = " + labelAndNode.second());
     }
 
-    private void addNonTerminal(Pair<String, AST> labelAndNode, int index, int numChildren, String prefix, String connector, List<String> tree) {
+    private static void addNonTerminal(Pair<String, AST> labelAndNode, int index, int numChildren, String prefix, String connector, List<String> tree) {
         tree.add(prefix + connector + " " + Utils.coloredPrint(labelAndNode.first() + " = " + labelAndNode.second(), Utils.ANSIColorConstants.ANSI_PURPLE));
         prefix += (index != numChildren - 1) ? PrintConstants.PIPE_PREFIX : PrintConstants.SPACE_PREFIX;
         treeBody(labelAndNode, tree, prefix);
     }
 
-    private void treeHead(List<String> tree) {
-        tree.add(Utils.coloredPrint("Root", Utils.ANSIColorConstants.ANSI_GREEN));
-        tree.add(PrintConstants.PIPE);
-    }
-
-    private void treeBody(Pair<String, AST> parentNode, List<String> tree, String prefix) {
+    private static void treeBody(Pair<String, AST> parentNode, List<String> tree, String prefix) {
         List<Pair<String, AST>> nodeList = parentNode.second().getChildren();
         for (int i = 0; i < nodeList.size(); i++) {
             final String connector = (i == nodeList.size() - 1) ? PrintConstants.ELBOW : PrintConstants.TEE;
@@ -680,11 +688,10 @@ public class DecafParser {
         }
     }
 
-    public void printParseTree() {
+    public static void printParseTree(AST root) {
         List<String> tree = new ArrayList<>();
-        treeHead(tree);
-        treeBody(new Pair<>("program", root), tree, "");
-        while (tree.get(tree.size() - 1).equals(""))
+        treeBody(new Pair<>(".", root), tree, "");
+        while (tree.size() > 0 && tree.get(tree.size() - 1).equals(""))
             tree.remove(tree.size() - 1);
         for (String s : tree)
             System.out.println(s);

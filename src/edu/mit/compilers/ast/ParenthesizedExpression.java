@@ -1,13 +1,16 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.grammar.TokenPosition;
+import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
 
 public class ParenthesizedExpression extends Expression {
-    final Expression expression;
+    public Expression expression;
 
-    public ParenthesizedExpression(Expression expression) {
+    public ParenthesizedExpression(TokenPosition tokenPosition, Expression expression) {
+        super(tokenPosition);
         this.expression = expression;
     }
 
