@@ -1,18 +1,18 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.utils.Pair;
-import java.lang.reflect.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class MethodDefinitionParameter extends AST {
-    final Name id;
-    final BuiltinType builtinType;
+    final TokenPosition tokenPosition;
+    final public Name id;
+    final public BuiltinType builtinType;
 
     @Override
     public List<Pair<String, AST>> getChildren() {
-        return List.of(new Pair<>("id", id), new Pair<>("type", builtinType));
+        return List.of(new Pair<>("id", id), new Pair<>("type", new Name(builtinType.toString(), tokenPosition, ExprContext.DECLARE)));
     }
 
     @Override
@@ -25,7 +25,8 @@ public class MethodDefinitionParameter extends AST {
         return false;
     }
 
-    public MethodDefinitionParameter(Name id, BuiltinType builtinType) {
+    public MethodDefinitionParameter(TokenPosition tokenPosition, Name id, BuiltinType builtinType) {
+        this.tokenPosition = tokenPosition;
         this.id = id;
         this.builtinType = builtinType;
     }

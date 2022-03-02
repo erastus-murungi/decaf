@@ -1,3 +1,13 @@
 package edu.mit.compilers.ast;
 
-public abstract class AssignExpr extends AST { }
+import edu.mit.compilers.grammar.TokenPosition;
+
+public abstract class AssignExpr extends AST {
+    public TokenPosition tokenPosition;
+    public Expression expression;
+
+    public AssignExpr(TokenPosition tokenPosition, Expression expression) {
+        this.tokenPosition = tokenPosition;
+        this.expression = expression;
+    }
+}

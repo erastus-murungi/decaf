@@ -1,15 +1,17 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class MethodCall extends Expression {
-    final Name nameId;
-    final List<MethodCallParameter> methodCallParameterList;
+    final public Name nameId;
+    final public List<MethodCallParameter> methodCallParameterList;
 
     public MethodCall(Name nameId, List<MethodCallParameter> methodCallParameterList) {
+        super(nameId.tokenPosition);
         this.nameId = nameId;
         this.methodCallParameterList = methodCallParameterList;
     }
