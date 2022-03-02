@@ -4,11 +4,11 @@ import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
 
-public class BinOpExpression extends Expression {
+public class BinaryOpExpression extends Expression {
   final BinOperator op;
   final Pair<Expression, Expression> operands;
 
-  public BinOpExpression(Expression left, BinOperator binaryOp, Expression right) {
+  public BinaryOpExpression(Expression left, BinOperator binaryOp, Expression right) {
     this.operands = new Pair<>(left, right);
     this.op = binaryOp;
   }
