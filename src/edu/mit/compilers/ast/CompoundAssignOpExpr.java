@@ -1,7 +1,8 @@
 package edu.mit.compilers.ast;
 
-import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
+import edu.mit.compilers.symbolTable.SymbolTable;
+import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
@@ -29,5 +30,10 @@ public class CompoundAssignOpExpr extends AssignExpr {
     @Override
     public String toString() {
         return "CompoundAssignOpExpr{" + "compoundAssignOp=" + compoundAssignOp + ", expression=" + expression + '}';
+    }
+
+    @Override
+    public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
+        return visitor.visit(this, curSymbolTable);
     }
 }
