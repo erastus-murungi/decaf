@@ -8,6 +8,7 @@
 !.idea
 .idea/*
 !.idea/runConfigurations
+src/.idea/
 
 out/
 *.iml
