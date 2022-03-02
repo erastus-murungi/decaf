@@ -3,7 +3,8 @@ package edu.mit.compilers.ast;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
-import edu.mit.compilers.symbolTable.SymbolTable;
+import edu.mit.compilers.symbolTable.SymbolTable; 
+import edu.mit.compilers.descriptors.Descriptor;
 
 public class UnaryOperator extends Operator {
     public UnaryOperator(TokenPosition tokenPosition, @DecafScanner.UnaryOperator String op) {
@@ -20,7 +21,7 @@ public class UnaryOperator extends Operator {
     }
 
     @Override
-    public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
+    public <T> T accept(Visitor<T> visitor, SymbolTable<String, Descriptor> curSymbolTable) {
         return null;
     }
 }

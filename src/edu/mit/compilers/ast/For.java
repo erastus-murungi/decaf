@@ -2,7 +2,8 @@ package edu.mit.compilers.ast;
 
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
-import edu.mit.compilers.symbolTable.SymbolTable;
+import edu.mit.compilers.symbolTable.SymbolTable; 
+import edu.mit.compilers.descriptors.Descriptor;
 import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
@@ -43,7 +44,7 @@ public class For extends Statement {
     }
 
     @Override
-    public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
+    public <T> T accept(Visitor<T> visitor, SymbolTable<String, Descriptor> curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
     }
 
