@@ -7,10 +7,11 @@ import edu.mit.compilers.utils.Pair;
 import java.util.List;
 
 public class UnaryOpExpression extends Expression {
-    final UnaryOperator op;
-    final Expression operand;
+    final public UnaryOperator op;
+    public Expression operand;
 
     public UnaryOpExpression(UnaryOperator op, Expression operand) {
+        super(op.tokenPosition);
         this.op = op;
         this.operand = operand;
     }
@@ -32,6 +33,6 @@ public class UnaryOpExpression extends Expression {
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
-        return visitor.visit(this);
+        return visitor.visit(this, curSymbolTable);
     }
 }

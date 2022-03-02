@@ -13,7 +13,7 @@ import javax.sql.rowset.spi.SyncFactory;
 /* A variable name. id holds the name as a string, and ctx is one of the following types. (Load, Store) */
 public class Name extends AST {
     final String id;
-    final TokenPosition tokenPosition;
+    public final TokenPosition tokenPosition;
     final ExprContext context;
 
     public Name(String id, TokenPosition tokenPosition, ExprContext context) {
@@ -39,6 +39,6 @@ public class Name extends AST {
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
-        return visitor.visit(this);
+        return visitor.visit(this, curSymbolTable);
     }
 }

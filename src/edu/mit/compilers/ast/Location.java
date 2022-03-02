@@ -11,12 +11,8 @@ public class Location extends Expression {
     public final Name name;
 
     public Location(Name name) {
+        super(name.tokenPosition);
         this.name = name;
-    }
-
-    @Override
-    public String toString() {
-        return name.toString();
     }
 
     @Override
@@ -31,6 +27,11 @@ public class Location extends Expression {
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
-        return visitor.visit(this);
+        return visitor.visit(this, curSymbolTable);
+
+    }
+
+    public String toString() {
+        return "Location{" + "id=" + name.id + '}';
     }
 }

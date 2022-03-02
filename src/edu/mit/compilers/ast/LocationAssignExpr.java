@@ -33,7 +33,7 @@ public class LocationAssignExpr extends Statement {
     }
 
     @Override
-    public <T> T accept(Visitor<T> visitor, SymbolTable symbolTable) {
-        return visitor.visit(this);
+    public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
+        return visitor.visit(this, curSymbolTable);
     }
 }

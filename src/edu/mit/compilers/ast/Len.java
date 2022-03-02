@@ -8,10 +8,10 @@ import edu.mit.compilers.utils.Pair;
 import java.util.List;
 
 public class Len extends Expression {
-    final Name nameId;
-    final TokenPosition tokenPosition;
+    final public Name nameId;
 
     public Len(TokenPosition tokenPosition, Name nameId) {
+        super(tokenPosition);
         this.tokenPosition = tokenPosition;
         this.nameId = nameId;
     }
@@ -33,6 +33,6 @@ public class Len extends Expression {
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
-        return visitor.visit(this);
+        return visitor.visit(this, curSymbolTable);
     }
 }

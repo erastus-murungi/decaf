@@ -8,10 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MethodCall extends Expression {
-    final Name nameId;
-    final List<MethodCallParameter> methodCallParameterList;
+    final public Name nameId;
+    final public List<MethodCallParameter> methodCallParameterList;
 
     public MethodCall(Name nameId, List<MethodCallParameter> methodCallParameterList) {
+        super(nameId.tokenPosition);
         this.nameId = nameId;
         this.methodCallParameterList = methodCallParameterList;
     }
@@ -37,6 +38,6 @@ public class MethodCall extends Expression {
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
-        return visitor.visit(this);
+        return visitor.visit(this, curSymbolTable);
     }
 }

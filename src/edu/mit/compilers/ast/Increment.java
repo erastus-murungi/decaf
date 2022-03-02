@@ -10,10 +10,8 @@ import java.util.Collections;
 import java.util.List;
 
 public class Increment extends AssignExpr {
-    final TokenPosition tokenPosition;
-
     public Increment(TokenPosition tokenPosition) {
-        this.tokenPosition = tokenPosition;
+        super(tokenPosition, null);
     }
 
     @Override
@@ -33,6 +31,6 @@ public class Increment extends AssignExpr {
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
-        return visitor.visit(this);
+        return visitor.visit(this, curSymbolTable);
     }
 }

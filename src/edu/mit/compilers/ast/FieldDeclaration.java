@@ -2,35 +2,35 @@ package edu.mit.compilers.ast;
 
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
+import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class FieldDeclaration extends AST {
-  final BuiltinType typeNode;
-  final List<Name> names;
-  final List<Array> arrays;
+    final public TokenPosition tokenPosition;
+    final public BuiltinType builtinType;
+    final public List<Name> names;
+    final public List<Array> arrays;
 
-  public FieldDeclaration(
-      BuiltinType typeNode,
-      List<Name> names,
-      List<Array> arrays) {
-    this.typeNode = typeNode;
-    this.names = names;
-    this.arrays = arrays;
-  }
+    public FieldDeclaration(TokenPosition tokenPosition, BuiltinType builtinType, List<Name> names, List<Array> arrays) {
+        this.tokenPosition = tokenPosition;
+        this.builtinType = builtinType;
+        this.names = names;
+        this.arrays = arrays;
+    }
 
-  @Override
-  public List<Pair<String, AST>> getChildren() {
-    ArrayList<Pair<String, AST>> pairArrayList = new ArrayList<>();
-    pairArrayList.add(new Pair<>("type", typeNode));
-    for (Name name: names)
-        pairArrayList.add(new Pair<>("var", name));
-    for (Array array: arrays)
-        pairArrayList.add(new Pair<>("array", array));
-    return pairArrayList;
-  }
+    @Override
+    public List<Pair<String, AST>> getChildren() {
+        ArrayList<Pair<String, AST>> pairArrayList = new ArrayList<>();
+        pairArrayList.add(new Pair<>("type", new Name(builtinType.toString(), tokenPosition, ExprContext.DECLARE)));
+        for (Name name : names)
+            pairArrayList.add(new Pair<>("var", name));
+        for (Array array : arrays)
+            pairArrayList.add(new Pair<>("array", array));
+        return pairArrayList;
+    }
 
     @Override
     public boolean isTerminal() {
@@ -39,11 +39,11 @@ public class FieldDeclaration extends AST {
 
     @Override
     public String toString() {
-        return "FieldDeclaration{" + "type=" + typeNode + ", names=" + names + ", arrays=" + arrays + '}';
+        return "FieldDeclaration{" + "type=" + builtinType + ", names=" + names + ", arrays=" + arrays + '}';
     }
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
-      return visitor.visit(this);
+      return visitor.visit(this, curSymbolTable);
     }
 }
