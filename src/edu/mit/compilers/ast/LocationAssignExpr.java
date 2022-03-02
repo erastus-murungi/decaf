@@ -1,6 +1,8 @@
 package edu.mit.compilers.ast;
 
 import edu.mit.compilers.grammar.TokenPosition;
+import edu.mit.compilers.ir.Visitor;
+import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
@@ -28,5 +30,10 @@ public class LocationAssignExpr extends Statement {
     @Override
     public String toString() {
         return "LocationAssignExpr{" + "location=" + location + ", assignExpr=" + assignExpr + '}';
+    }
+
+    @Override
+    public <T> T accept(Visitor<T> visitor, SymbolTable symbolTable) {
+        return visitor.visit(this);
     }
 }

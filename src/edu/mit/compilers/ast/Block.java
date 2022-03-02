@@ -1,5 +1,7 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.ir.Visitor;
+import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 
 import java.util.ArrayList;
@@ -32,5 +34,10 @@ public class Block extends AST {
     @Override
     public String toString() {
         return "Block{" + "fieldDeclarationList=" + fieldDeclarationList + ", statementList=" + statementList + '}';
+    }
+
+    @Override
+    public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
+        return visitor.visit(this);
     }
 }

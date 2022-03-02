@@ -3,6 +3,8 @@ package edu.mit.compilers.ast;
 
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
+import edu.mit.compilers.ir.Visitor;
+import edu.mit.compilers.symbolTable.SymbolTable;
 
 public class AssignOperator extends Operator {
     public AssignOperator(TokenPosition tokenPosition, @DecafScanner.AssignOperator String op) {
@@ -18,5 +20,10 @@ public class AssignOperator extends Operator {
             case DecafScanner.MULTIPLY_ASSIGN -> "AugmentedMul";
             default -> throw new IllegalArgumentException("please register assign operator: " + op);
         };
+    }
+
+    @Override
+    public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
+        return null;
     }
 }

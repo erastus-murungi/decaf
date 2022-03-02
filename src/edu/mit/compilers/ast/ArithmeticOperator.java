@@ -2,6 +2,8 @@ package edu.mit.compilers.ast;
 
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
+import edu.mit.compilers.ir.Visitor;
+import edu.mit.compilers.symbolTable.SymbolTable;
 
 public class ArithmeticOperator extends BinOperator {
     public ArithmeticOperator(TokenPosition tokenPosition, @DecafScanner.ArithmeticOperator String op) {
@@ -18,5 +20,10 @@ public class ArithmeticOperator extends BinOperator {
             case DecafScanner.MOD -> "Mod";
             default -> throw new IllegalArgumentException("please register a display string for: " + op);
         };
+    }
+
+    @Override
+    public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
+        return null;
     }
 }

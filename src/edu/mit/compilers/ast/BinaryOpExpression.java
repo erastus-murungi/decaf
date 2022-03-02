@@ -1,5 +1,7 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.ir.Visitor;
+import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
@@ -29,5 +31,10 @@ public class BinaryOpExpression extends Expression {
   @Override
   public String toString() {
     return "BinOpExpression{" + "op=" + op + ", operands=" + operands + '}';
+  }
+
+  @Override
+  public <T> T accept(Visitor<T> visitor, SymbolTable symbolTable) {
+    return visitor.visit(this);
   }
 }
