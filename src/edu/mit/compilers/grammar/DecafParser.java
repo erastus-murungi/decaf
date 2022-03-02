@@ -447,10 +447,10 @@ public class DecafParser {
 
     }
 
-    private BinOpExpression parseBinaryOpExpr(Expression left) throws DecafParserException {
+    private BinaryOpExpression parseBinaryOpExpr(Expression left) throws DecafParserException {
         BinOperator binaryOp = parseBinOp();
         Expression right = parseExpr();
-        return new BinOpExpression(left, binaryOp, right);
+        return new BinaryOpExpression(left, binaryOp, right);
     }
 
     private Expression parseExprHelper() throws DecafParserException {
