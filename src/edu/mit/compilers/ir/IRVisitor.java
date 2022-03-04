@@ -6,7 +6,6 @@ import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.descriptors.ArrayDescriptor;
 import edu.mit.compilers.descriptors.Descriptor;
-import edu.mit.compilers.descriptors.ImportDescriptor;
 import edu.mit.compilers.descriptors.MethodDescriptor;
 import edu.mit.compilers.descriptors.VariableDescriptor;
 import edu.mit.compilers.descriptors.ParameterDescriptor;
@@ -22,10 +21,6 @@ public class IRVisitor implements Visitor {
     SymbolTable<String, Descriptor> methods = new SymbolTable<String, Descriptor>(null);
     public TreeSet<String> imports = new TreeSet<>();
     
-    public void visit(IntLiteral intLiteral, SymbolTable<String, Descriptor> symbolTable) {
-        // nothing to add, handled in assignment expression
-        // int literal to check if
-    }
     public void visit(BooleanLiteral booleanLiteral, SymbolTable<String, Descriptor> symbolTable) {
         // nothing to add, handled in assignment expression
     }
@@ -94,7 +89,7 @@ public class IRVisitor implements Visitor {
             symbolTable.updateEntry(initializedVariableName, new VariableDescriptor(initializedVariableName, initExpression, initVariableDescriptor.type));
 
             // visit the block
-            this.visit(forStatement.block, symbolTable);
+            forStatement.block.accept(this, symbolTable);
         } else {
             // the variable referred to was not declared. Add an exception.
             exceptions.add(new DecafSemanticException(forStatement.tokenPosition, "Variable "+initializedVariableName+" was not declared"));

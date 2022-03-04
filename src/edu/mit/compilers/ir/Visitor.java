@@ -10,7 +10,6 @@ import java.util.List;
 
 public interface Visitor {
     List<DecafSemanticException> exceptions = new ArrayList<>();
-    void visit(IntLiteral intLiteral, SymbolTable<String, Descriptor> symbolTable);
     void visit(BooleanLiteral booleanLiteral, SymbolTable<String, Descriptor> symbolTable);
     void visit(DecimalLiteral decimalLiteral, SymbolTable<String, Descriptor> symbolTable);
     void visit(HexLiteral hexLiteral, SymbolTable<String, Descriptor> symbolTable);
