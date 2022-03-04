@@ -8,7 +8,7 @@ import edu.mit.compilers.utils.Pair;
 import java.util.List;
 
 public class ImportDeclaration extends AST {
-    final Name nameId;
+    public final Name nameId;
 
     public ImportDeclaration(Name nameId) {
         this.nameId = nameId;

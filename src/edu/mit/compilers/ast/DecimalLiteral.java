@@ -14,4 +14,9 @@ public class DecimalLiteral extends IntLiteral {
     public <T> T accept(Visitor<T> visitor, SymbolTable<String, Descriptor> curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
     }
+
+    @Override
+    public Long convertToLong() {
+        return Long.parseLong(literal);
+    }
 }

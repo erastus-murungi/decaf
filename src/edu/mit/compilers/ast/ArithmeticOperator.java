@@ -5,7 +5,6 @@ import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable; 
-import edu.mit.compilers.descriptors.Descriptor;
 
 public class ArithmeticOperator extends BinOperator {
     public ArithmeticOperator(TokenPosition tokenPosition, @DecafScanner.ArithmeticOperator String op) {

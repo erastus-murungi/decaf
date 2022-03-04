@@ -7,4 +7,6 @@ public abstract class IntLiteral extends Literal {
     public IntLiteral(TokenPosition tokenPosition, String literalToken) {
         super(tokenPosition, literalToken);
     }
+
+    abstract public Long convertToLong();
 }
