@@ -4,11 +4,12 @@ import edu.mit.compilers.ast.*;
 import edu.mit.compilers.exceptions.DecafSemanticException;
 import edu.mit.compilers.symbolTable.SymbolTable; 
 import edu.mit.compilers.descriptors.Descriptor;
+import edu.mit.compilers.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class IRVisitor {
+public class IRVisitor implements Visitor {
     List<DecafSemanticException> exceptions = new ArrayList<>();
     public void visit(IntLiteral intLiteral, SymbolTable<String, Descriptor> symbolTable) {}
     public void visit(BooleanLiteral booleanLiteral, SymbolTable<String, Descriptor> symbolTable) {}
@@ -40,9 +41,9 @@ public class IRVisitor {
     public void visit(Name name, SymbolTable<String, Descriptor> symbolTable) {}
     public void visit(Location location, SymbolTable<String, Descriptor> symbolTable) {}
     public void visit(Len len, SymbolTable<String, Descriptor> symbolTable) {}
-    public void visit(Increment increment, SymbolTable<String, Descriptor> symbolTable) {}
-    public void visit(Decrement decrement, SymbolTable<String, Descriptor> symbolTable) {}
-    public void visit(CharLiteral charLiteral, SymbolTable<String, Descriptor> symbolTable) {}
-    public void visit(MethodCallParameter methodCallParameter, SymbolTable<String, Descriptor> symbolTable) {}
-    public void visit(StringLiteral stringLiteral, SymbolTable<String, Descriptor> symbolTable) {}
+    public void visit(Increment increment, SymbolTable<String, Descriptor> symbolTable) { return; }
+    public void visit(Decrement decrement, SymbolTable<String, Descriptor> symbolTable) { return; }
+    public void visit(CharLiteral charLiteral, SymbolTable<String, Descriptor> symbolTable) { return; }
+//    public void visit(MethodCallParameter methodCallParameter, SymbolTable<String, Descriptor> symbolTable) {}
+    public void visit(StringLiteral stringLiteral, SymbolTable<String, Descriptor> symbolTable) { return; }
 }
