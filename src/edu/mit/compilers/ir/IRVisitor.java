@@ -2,7 +2,7 @@ package edu.mit.compilers.ir;
 
 import edu.mit.compilers.ast.*;
 import edu.mit.compilers.exceptions.DecafSemanticException;
-import edu.mit.compilers.symbolTable.SymbolTable; 
+import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.descriptors.Descriptor;
 import edu.mit.compilers.utils.Pair;
 
@@ -38,9 +38,18 @@ public class IRVisitor implements Visitor {
     public void visit(LocationAssignExpr locationAssignExpr, SymbolTable<String, Descriptor> symbolTable) {}
     public void visit(AssignOpExpr assignOpExpr, SymbolTable<String, Descriptor> symbolTable) {}
     public void visit(MethodDefinitionParameter methodDefinitionParameter, SymbolTable<String, Descriptor> symbolTable) {}
-    public void visit(Name name, SymbolTable<String, Descriptor> symbolTable) {}
-    public void visit(Location location, SymbolTable<String, Descriptor> symbolTable) {}
-    public void visit(Len len, SymbolTable<String, Descriptor> symbolTable) {}
+    public void visit(Name name, SymbolTable<String, Descriptor> symbolTable) { return; }
+    public void visit(Location location, SymbolTable<String, Descriptor> symbolTable) {
+        if (!symbolTable.containsEntry(location.name.id)) {
+            exceptions.add(new DecafSemanticException(location.name.tokenPosition, "Locations must be defined"));
+        }
+    }
+    public void visit(Len len, SymbolTable<String, Descriptor> symbolTable) {
+        String arrayName = len.nameId.id;
+        if (!symbolTable.containsEntry(arrayName) && (symbolTable.get(arrayName).type == BuiltinType.IntArray || symbolTable.get(arrayName).type == BuiltinType.BoolArray)) {
+            exceptions.add(new DecafSemanticException(len.nameId.tokenPosition, "the argument of the len operator must be an array"));
+        }
+    }
     public void visit(Increment increment, SymbolTable<String, Descriptor> symbolTable) { return; }
     public void visit(Decrement decrement, SymbolTable<String, Descriptor> symbolTable) { return; }
     public void visit(CharLiteral charLiteral, SymbolTable<String, Descriptor> symbolTable) { return; }
