@@ -4,90 +4,80 @@ import edu.mit.compilers.ast.*;
 import edu.mit.compilers.exceptions.DecafSemanticException;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.symbolTable.SymbolTable;
-import edu.mit.compilers.descriptors.ArrayDescriptor;
-import edu.mit.compilers.descriptors.Descriptor;
-import edu.mit.compilers.descriptors.MethodDescriptor;
-import edu.mit.compilers.descriptors.VariableDescriptor;
-import edu.mit.compilers.descriptors.ParameterDescriptor;
+import edu.mit.compilers.descriptors.*;
+import edu.mit.compilers.symbolTable.SymbolTableType;
 import edu.mit.compilers.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 
-public class IRVisitor implements Visitor {
+public class IRVisitor implements Visitor<Void> {
     List<DecafSemanticException> exceptions = new ArrayList<>();
-    SymbolTable<String, Descriptor> fields = new SymbolTable<String, Descriptor>(null);
-    SymbolTable<String, Descriptor> methods = new SymbolTable<String, Descriptor>(null);
+    SymbolTable fields = new SymbolTable(null, SymbolTableType.Field);
+    SymbolTable methods = new SymbolTable(null, SymbolTableType.Method);
     public TreeSet<String> imports = new TreeSet<>();
-    
-    public void visit(BooleanLiteral booleanLiteral, SymbolTable<String, Descriptor> symbolTable) {
-        // nothing to add, handled in assignment expression
-    }
-    public void visit(DecimalLiteral decimalLiteral, SymbolTable<String, Descriptor> symbolTable) {
-        // nothing to add, handled in assignment expression
-    }
-    public void visit(HexLiteral hexLiteral, SymbolTable<String, Descriptor> symbolTable) {
-        // nothing to add, handled in assignment expression
-    }
-    
-    public void visit(FieldDeclaration fieldDeclaration, SymbolTable<String, Descriptor> symbolTable) {
+
+    public Void visit(IntLiteral intLiteral, SymbolTable symbolTable) {return null;}
+    public Void visit(BooleanLiteral booleanLiteral, SymbolTable symbolTable) {return null;}
+    public Void visit(DecimalLiteral decimalLiteral, SymbolTable symbolTable) {return null;}
+    public Void visit(HexLiteral hexLiteral, SymbolTable symbolTable) {return null;}
+    public Void visit(FieldDeclaration fieldDeclaration, SymbolTable symbolTable) {
         BuiltinType type = fieldDeclaration.builtinType;
         for (Name name : fieldDeclaration.names){
-            // TODO: Check parameter symbol table if current type is local symbol table
-            if (symbolTable.containsKey(name.id)){
+            if (fields.containsEntry(name.id)){
                 exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field "+ name.id+" already declared"));
             } else {
                 // fields just declared do not have a value.
-                symbolTable.addEntry(name.id, new VariableDescriptor(name.id, null, type));
+                fields.entries.put(name.id, new VariableDescriptor(name.id, null, type));
             }
         }
         for (Array array : fieldDeclaration.arrays){
-            if (symbolTable.containsKey(array.id.id)){
+            if (fields.containsEntry(array.id.id)){
                 exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field "+ array.id.id+" already declared"));
             } else {
-                symbolTable.addEntry(array.id.id, new ArrayDescriptor(array.id.id, array.size.convertToLong(), type));
+                // TODO: Check hex parse long
+                fields.entries.put(array.id.id, new ArrayDescriptor(array.id.id, array.size.convertToLong(), type));
             }
         }
+        return null;
     }
-
-    public void visit(MethodDefinition methodDefinition, SymbolTable<String, Descriptor> symbolTable){
-        if (methods.containsKey(methodDefinition.methodName.id)){
+    public Void visit(MethodDefinition methodDefinition, SymbolTable symbolTable){
+        if (methods.containsEntry(methodDefinition.methodName.id)){
             // method already defined. add an exception
             exceptions.add(new DecafSemanticException(methodDefinition.tokenPosition, "Method name "+ methodDefinition.methodName.id+" already defined"));
         } else {
-            SymbolTable<String, Descriptor> parameterSymbolTable = new SymbolTable<>(fields);
-            SymbolTable<String, Descriptor> localSymbolTable = new SymbolTable<>(parameterSymbolTable);
+            SymbolTable parameterSymbolTable = new SymbolTable(fields, SymbolTableType.Parameter);
+            SymbolTable localSymbolTable = new SymbolTable(parameterSymbolTable, SymbolTableType.Field);
             for (MethodDefinitionParameter parameter : methodDefinition.methodDefinitionParameterList){
-                parameterSymbolTable.addEntry(parameter.id.id, new ParameterDescriptor(parameter.id.id, parameter.builtinType));
+                parameterSymbolTable.entries.put(parameter.id.id, new ParameterDescriptor(parameter.id.id, parameter.builtinType));
             }
             // visit the method definition and populate the local symbol table
             // TODO: encounter bug
             methodDefinition.block.accept(this, localSymbolTable);
-            methods.addEntry(methodDefinition.methodName.id, new MethodDescriptor(methodDefinition, parameterSymbolTable, localSymbolTable));
-        }   
+            methods.entries.put(methodDefinition.methodName.id, new MethodDescriptor(methodDefinition, parameterSymbolTable, localSymbolTable));
+        }
+        return null;
     }
-
-    public void visit(ImportDeclaration importDeclaration, SymbolTable<String, Descriptor> symbolTable) {
+    public Void visit(ImportDeclaration importDeclaration, SymbolTable symbolTable) {
         if (imports.contains(importDeclaration.nameId.id)){
             exceptions.add(new DecafSemanticException(new TokenPosition(0, 0, 0), "Import identifier "+ importDeclaration.nameId.id+" already declared"));
         } else {
             imports.add(importDeclaration.nameId.id);
         }
+        return null;
     }
-
-
-    public void visit(For forStatement, SymbolTable<String, Descriptor> symbolTable) {
+    public Void visit(For forStatement, SymbolTable symbolTable) {
         // this is the name of our loop variable that we initialize in the creation of the for loop
         // for ( index = 0 ...) <-- index is the example here
         String initializedVariableName = forStatement.initId.id;
 
         // check if the variable exists
         if (symbolTable.containsEntry(initializedVariableName)){
-            Descriptor initVariableDescriptor = symbolTable.getEntryValue(initializedVariableName);
+            Descriptor initVariableDescriptor = symbolTable.entries.get(initializedVariableName);
             Expression initExpression = forStatement.initExpression;
             // update the symbol table to have the full expression
-            symbolTable.updateEntry(initializedVariableName, new VariableDescriptor(initializedVariableName, initExpression, initVariableDescriptor.type));
+            symbolTable.entries.put(initializedVariableName, new VariableDescriptor(initializedVariableName, initExpression, initVariableDescriptor.type));
 
             // visit the block
             forStatement.block.accept(this, symbolTable);
@@ -95,41 +85,28 @@ public class IRVisitor implements Visitor {
             // the variable referred to was not declared. Add an exception.
             exceptions.add(new DecafSemanticException(forStatement.tokenPosition, "Variable "+initializedVariableName+" was not declared"));
         }
+        return null;
     }
-
-    public void visit(Break breakStatement, SymbolTable<String, Descriptor> symbolTable) {
-        // nothing to add, break does not affect symbol table
-    }
-
-    public void visit(Continue continueStatement, SymbolTable<String, Descriptor> symbolTable) {
-        // nothing to add, continue does not affect symbol table
-    }
-
-    public void visit(While whileStatement, SymbolTable<String, Descriptor> symbolTable) {}
-    public void visit(Program program, SymbolTable<String, Descriptor> symbolTable) {
-       
-
-    }
-    public void visit(UnaryOpExpression unaryOpExpression, SymbolTable<String, Descriptor> symbolTable) {}
-    public void visit(BinaryOpExpression binaryOpExpression, SymbolTable<String, Descriptor> symbolTable) {}
-    public void visit(Block block, SymbolTable<String, Descriptor> symbolTable) {}
-    public void visit(ParenthesizedExpression parenthesizedExpression, SymbolTable<String, Descriptor> symbolTable) {}
-    public void visit(LocationArray locationArray, SymbolTable<String, Descriptor> symbolTable) {}
-    public void visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable<String, Descriptor> symbolTable) {}
-    public void visit(ExpressionParameter expressionParameter, SymbolTable<String, Descriptor> symbolTable) {}
-    public void visit(If ifStatement, SymbolTable<String, Descriptor> symbolTable) {
+    public Void visit(Break breakStatement, SymbolTable symbolTable) {return null;}
+    public Void visit(Continue continueStatement, SymbolTable symbolTable) {return null;}
+    public Void visit(While whileStatement, SymbolTable symbolTable) {return null;}
+    public Void visit(Program program, SymbolTable symbolTable) {return null;}
+    public Void visit(UnaryOpExpression unaryOpExpression, SymbolTable symbolTable) {return null;}
+    public Void visit(BinaryOpExpression binaryOpExpression, SymbolTable symbolTable) {return null;}
+    public Void visit(Block block, SymbolTable symbolTable) {return null;}
+    public Void visit(ParenthesizedExpression parenthesizedExpression, SymbolTable symbolTable) {return null;}
+    public Void visit(LocationArray locationArray, SymbolTable symbolTable) {return null;}
+    public Void visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable symbolTable) {return null;}
+    public Void visit(ExpressionParameter expressionParameter, SymbolTable symbolTable) {return null;}
+    public Void visit(If ifStatement, SymbolTable symbolTable) {
         // variable lookup happens in ifCondition or if/else body
         for (Pair<String, AST> child: ifStatement.getChildren())
             child.second().accept(this, symbolTable);
+        return null;
     }
-    public void visit(Return returnStatement, SymbolTable<String, Descriptor> symbolTable) {
-        return;
-    }
-    public void visit(Array array, SymbolTable<String, Descriptor> symbolTable) {
-        // add field variables during field declaration bc don't know type
-        return;
-    }
-    public void visit(MethodCall methodCall, SymbolTable<String, Descriptor> symbolTable) {
+    public Void visit(Return returnStatement, SymbolTable symbolTable) {return null;}
+    public Void visit(Array array, SymbolTable symbolTable) {return null;}
+    public Void visit(MethodCall methodCall, SymbolTable symbolTable) {
         List<Pair<String, AST>> children = methodCall.getChildren();
         Name methodName = methodCall.nameId;
 
@@ -138,55 +115,60 @@ public class IRVisitor implements Visitor {
 
         for (MethodCallParameter parameter: methodCall.methodCallParameterList)
             parameter.accept(this, symbolTable);
+        return null;
     }
-    public void visit(MethodCallStatement methodCallStatement, SymbolTable<String, Descriptor> symbolTable) {
+    public Void visit(MethodCallStatement methodCallStatement, SymbolTable symbolTable) {
         methodCallStatement.methodCall.accept(this, symbolTable);
+        return null;
     }
-    public void visit(LocationAssignExpr locationAssignExpr, SymbolTable<String, Descriptor> symbolTable) {
+    public Void visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable) {
         Name location = locationAssignExpr.location.name;
         // checking location has been initialized
         if (!symbolTable.containsEntry(location.id))
             exceptions.add(new DecafSemanticException(location.tokenPosition, location.id + "hasn't been defined yet"));
-        // type-checking expr
+            // type-checking expr
         else {
-            BuiltinType locationType = symbolTable.get(location.id).type;
+            BuiltinType locationType = symbolTable.entries.get(location.id).type;
 
             // Can only increment an int
             if (locationAssignExpr.assignExpr instanceof Increment && locationType != BuiltinType.Int)
                 exceptions.add(new DecafSemanticException(location.tokenPosition, location.id + "needs to have type int in order to be incremented"));
-            // location type has to match expression type
+                // location type has to match expression type
             else if (locationType != locationAssignExpr.assignExpr.expression.builtinType)
                 exceptions.add(new DecafSemanticException(location.tokenPosition, location.id + "needs to have same type of expression"));
         }
 
         // update location variable in symbolTable, but how? Need evaluation of expr???
         // can we just store expr node in symbol table
-
+        return null;
     }
-    public void visit(AssignOpExpr assignOpExpr, SymbolTable<String, Descriptor> symbolTable) {
+    public Void visit(AssignOpExpr assignOpExpr, SymbolTable symbolTable) {
         // no node for AssignOperator?
         assignOpExpr.expression.accept(this, symbolTable);
+        return null;
     }
-    public void visit(MethodDefinitionParameter methodDefinitionParameter, SymbolTable<String, Descriptor> symbolTable) {
+    public Void visit(MethodDefinitionParameter methodDefinitionParameter, SymbolTable symbolTable) {
         String paramName = methodDefinitionParameter.id.id;
         BuiltinType paramType = methodDefinitionParameter.builtinType;
-        symbolTable.addEntry(paramName, new ParameterDescriptor(paramName, paramType));
+        symbolTable.entries.put(paramName, new ParameterDescriptor(paramName, paramType));
+        return null;
     }
-    public void visit(Name name, SymbolTable<String, Descriptor> symbolTable) { return; }
-    public void visit(Location location, SymbolTable<String, Descriptor> symbolTable) {
+    public Void visit(Name name, SymbolTable symbolTable) {return null;}
+    public Void visit(Location location, SymbolTable symbolTable) {
         if (!symbolTable.containsEntry(location.name.id)) {
             exceptions.add(new DecafSemanticException(location.name.tokenPosition, "Locations must be defined"));
         }
+        return null;
     }
-    public void visit(Len len, SymbolTable<String, Descriptor> symbolTable) {
+    public Void visit(Len len, SymbolTable symbolTable) {
         String arrayName = len.nameId.id;
-        if (!symbolTable.containsEntry(arrayName) && (symbolTable.get(arrayName).type == BuiltinType.IntArray || symbolTable.get(arrayName).type == BuiltinType.BoolArray)) {
+        if (!symbolTable.containsEntry(arrayName) && (symbolTable.entries.get(arrayName).type == BuiltinType.IntArray || symbolTable.entries.get(arrayName).type == BuiltinType.BoolArray)) {
             exceptions.add(new DecafSemanticException(len.nameId.tokenPosition, "the argument of the len operator must be an array"));
         }
-    }
-    public void visit(Increment increment, SymbolTable<String, Descriptor> symbolTable) { return; }
-    public void visit(Decrement decrement, SymbolTable<String, Descriptor> symbolTable) { return; }
-    public void visit(CharLiteral charLiteral, SymbolTable<String, Descriptor> symbolTable) { return; }
-//    public void visit(MethodCallParameter methodCallParameter, SymbolTable<String, Descriptor> symbolTable) {}
-    public void visit(StringLiteral stringLiteral, SymbolTable<String, Descriptor> symbolTable) { return; }
+        return null;}
+    public Void visit(Increment increment, SymbolTable symbolTable) {return null;}
+    public Void visit(Decrement decrement, SymbolTable symbolTable) {return null;}
+    public Void visit(CharLiteral charLiteral, SymbolTable symbolTable) {return null;}
+    public Void visit(MethodCallParameter methodCallParameter, SymbolTable symbolTable) {return null;}
+    public Void visit(StringLiteral stringLiteral, SymbolTable symbolTable) {return null;}
 }

@@ -1,6 +1,6 @@
 package edu.mit.compilers.ast;
 
-import edu.mit.compilers.descriptors.Descriptor;
+
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
@@ -24,7 +24,7 @@ public class ArithmeticOperator extends BinOperator {
     }
 
     @Override
-    public void accept(Visitor visitor, SymbolTable<String, Descriptor> curSymbolTable) {
-       // do nothing
+    public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
+        return null;
     }
 }

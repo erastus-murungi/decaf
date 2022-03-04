@@ -49,7 +49,7 @@ public class Program extends AST {
   }
 
   @Override
-  public void accept(Visitor visitor, SymbolTable<String, Descriptor> curSymbolTable) {
-    visitor.visit(this, curSymbolTable);
+  public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
+    return visitor.visit(this, curSymbolTable);
   }
 }

@@ -43,7 +43,7 @@ public class If extends Statement {
   }
 
   @Override
-  public void accept(Visitor visitor, SymbolTable<String, Descriptor> curSymbolTable) {
-    visitor.visit(this, curSymbolTable);
+  public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
+    return visitor.visit(this, curSymbolTable);
   }
 }

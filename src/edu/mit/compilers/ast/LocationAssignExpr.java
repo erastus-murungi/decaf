@@ -9,8 +9,8 @@ import edu.mit.compilers.utils.Pair;
 import java.util.List;
 
 public class LocationAssignExpr extends Statement {
-    final public Location location;
-    final public AssignExpr assignExpr;
+    public final Location location;
+    public final AssignExpr assignExpr;
 
     public LocationAssignExpr(TokenPosition tokenPosition, Location location, AssignExpr assignExpr) {
         super(tokenPosition);
@@ -34,7 +34,7 @@ public class LocationAssignExpr extends Statement {
     }
 
     @Override
-    public void accept(Visitor visitor, SymbolTable<String, Descriptor> curSymbolTable) {
-        visitor.visit(this, curSymbolTable);
+    public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
+        return visitor.visit(this, curSymbolTable);
     }
 }

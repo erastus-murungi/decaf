@@ -16,10 +16,10 @@ import edu.mit.compilers.symbolTable.SymbolTable;
  */
 public class MethodDescriptor extends Descriptor {
     public MethodDefinition methodDefinition;
-    public SymbolTable<String, Descriptor> parameterSymbolTable;
-    public SymbolTable<String, Descriptor> localSymbolTable;
+    public SymbolTable parameterSymbolTable;
+    public SymbolTable localSymbolTable;
 
-    public MethodDescriptor(MethodDefinition methodDefinition, SymbolTable<String, Descriptor> parameterSymbolTable, SymbolTable<String, Descriptor> localSymbolTable) {
+    public MethodDescriptor(MethodDefinition methodDefinition, SymbolTable parameterSymbolTable, SymbolTable localSymbolTable) {
         super(methodDefinition.returnType, methodDefinition.methodName.id);
         this.methodDefinition = methodDefinition;
         this.parameterSymbolTable = parameterSymbolTable;

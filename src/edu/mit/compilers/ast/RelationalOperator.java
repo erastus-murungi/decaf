@@ -23,7 +23,7 @@ public class RelationalOperator extends BinOperator {
     }
 
     @Override
-    public void accept(Visitor visitor, SymbolTable<String, Descriptor> curSymbolTable) {
-        // do nothing
+    public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
+        return null;
     }
 }

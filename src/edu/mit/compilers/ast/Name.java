@@ -9,6 +9,7 @@ import edu.mit.compilers.utils.Pair;
 import java.util.Collections;
 import java.util.List;
 
+import javax.sql.rowset.spi.SyncFactory;
 
 /* A variable name. id holds the name as a string, and ctx is one of the following types. (Load, Store) */
 public class Name extends AST {
@@ -38,7 +39,7 @@ public class Name extends AST {
     }
 
     @Override
-    public void accept(Visitor visitor, SymbolTable<String, Descriptor> curSymbolTable) {
-        visitor.visit(this, curSymbolTable);
+    public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
+        return visitor.visit(this, curSymbolTable);
     }
 }

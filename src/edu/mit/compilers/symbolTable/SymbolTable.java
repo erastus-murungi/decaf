@@ -1,41 +1,59 @@
 package edu.mit.compilers.symbolTable;
 
 import java.util.HashMap;
+import java.util.Optional;
 
-public class SymbolTable<String, Descriptor> extends HashMap<String, Descriptor> {
-    private final SymbolTable<String, Descriptor> parent;
+import edu.mit.compilers.descriptors.Descriptor;
 
-    public SymbolTable(SymbolTable<String, Descriptor> parent) {
+
+public class SymbolTable {
+    public final SymbolTable parent;
+    public final SymbolTableType symbolTableType;
+    public final HashMap<String, Descriptor> entries = new HashMap<>();
+
+    public SymbolTable(SymbolTable parent, SymbolTableType symbolTableType) {
         super();
         this.parent = parent;
+        this.symbolTableType = symbolTableType;
     }
 
-    // value can be the actual value of a variable or another SymbolTable
-    public void addEntry(String key, Descriptor value) {
-        put(key, value);
+    /**
+     * Look up a variable only within the current scope
+     *
+     * @param stringId the id to lookup in the symbol table hierarchy
+     * @return Optional.empty if the descriptor is not found else Optional[Descriptor]
+     */
+
+    public Optional<Descriptor> getDescriptorFromCurrentScope(String stringId) {
+        Descriptor currentDescriptor = entries.get(stringId);
+        if (currentDescriptor == null) {
+            if (parent != null)
+                return parent.getDescriptorFromValidScopes(stringId);
+        }
+        return Optional.ofNullable(currentDescriptor);
     }
+
+    /**
+     * @param key the id to lookup in the symbol table hierarchy
+     * @return true if the descriptor for key is found else false
+     */
 
     public boolean containsEntry(String key) {
-        if (this.parent != null){
-            return containsKey(key) || this.parent.containsKey(key);
+        return entries.containsKey(key);
+    }
+
+    /**
+     * Look up a variable recursively up the scope hierarchy
+     *
+     * @param stringId the id to lookup in the symbol table hierarchy
+     * @return Optional.empty if the descriptor is not found else Optional[Descriptor]
+     */
+    public Optional<Descriptor> getDescriptorFromValidScopes(String stringId) {
+        Descriptor currentDescriptor = entries.get(stringId);
+        if (currentDescriptor == null) {
+            if (parent != null)
+                return parent.getDescriptorFromValidScopes(stringId);
         }
-        return containsKey(key);
-    }
-
-    public void updateEntry(String key, Descriptor newValue) {
-        put(key, newValue);
-    }
-
-    public Descriptor getEntryValue(String key) {
-        if (containsKey(key)){
-            return get(key);
-        } else if (this.parent != null){
-            return this.parent.get(key);
-        } 
-        return null;   
-    }
-
-    public SymbolTable<String, Descriptor> getParent() {
-        return this.parent;
+        return Optional.ofNullable(currentDescriptor);
     }
 }
