@@ -16,6 +16,9 @@ public class SymbolTable<String, Descriptor> extends HashMap<String, Descriptor>
     }
 
     public boolean containsEntry(String key) {
+        if (this.parent != null){
+            return containsKey(key) || this.parent.containsKey(key);
+        }
         return containsKey(key);
     }
 
@@ -23,8 +26,13 @@ public class SymbolTable<String, Descriptor> extends HashMap<String, Descriptor>
         put(key, newValue);
     }
 
-    public Object getEntryValue(String key) {
-        return get(key);
+    public Descriptor getEntryValue(String key) {
+        if (containsKey(key)){
+            return get(key);
+        } else if (this.parent != null){
+            return this.parent.get(key);
+        } 
+        return null;   
     }
 
     public SymbolTable<String, Descriptor> getParent() {
