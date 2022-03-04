@@ -9,8 +9,8 @@ import edu.mit.compilers.utils.Pair;
 import java.util.List;
 
 public class While extends Statement {
-    final Expression test;
-    final Block body;
+    public final Expression test;
+    public final Block body;
 
     public While(TokenPosition tokenPosition, Expression test, Block body) {
         super(tokenPosition);
