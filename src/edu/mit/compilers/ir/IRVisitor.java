@@ -8,41 +8,41 @@ import edu.mit.compilers.descriptors.Descriptor;
 import java.util.ArrayList;
 import java.util.List;
 
-public class IRVisitor {
+public class IRVisitor implements Visitor<Void> {
     List<DecafSemanticException> exceptions = new ArrayList<>();
-    public void visit(IntLiteral intLiteral, SymbolTable symbolTable) {}
-    public void visit(BooleanLiteral booleanLiteral, SymbolTable symbolTable) {}
-    public void visit(DecimalLiteral decimalLiteral, SymbolTable symbolTable) {}
-    public void visit(HexLiteral hexLiteral, SymbolTable symbolTable) {}
-    public void visit(FieldDeclaration fieldDeclaration, SymbolTable symbolTable) {}
-    public void visit(MethodDefinition methodDefinition, SymbolTable symbolTable){}
-    public void visit(ImportDeclaration importDeclaration, SymbolTable symbolTable) {}
-    public void visit(For forStatement, SymbolTable symbolTable) {}
-    public void visit(Break breakStatement, SymbolTable symbolTable) {}
-    public void visit(Continue continueStatement, SymbolTable symbolTable) {}
-    public void visit(While whileStatement, SymbolTable symbolTable) {}
-    public void visit(Program program, SymbolTable symbolTable) {}
-    public void visit(UnaryOpExpression unaryOpExpression, SymbolTable symbolTable) {}
-    public void visit(BinaryOpExpression binaryOpExpression, SymbolTable symbolTable) {}
-    public void visit(Block block, SymbolTable symbolTable) {}
-    public void visit(ParenthesizedExpression parenthesizedExpression, SymbolTable symbolTable) {}
-    public void visit(LocationArray locationArray, SymbolTable symbolTable) {}
-    public void visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable symbolTable) {}
-    public void visit(ExpressionParameter expressionParameter, SymbolTable symbolTable) {}
-    public void visit(If ifStatement, SymbolTable symbolTable) {}
-    public void visit(Return returnStatement, SymbolTable symbolTable) {}
-    public void visit(Array array, SymbolTable symbolTable) {}
-    public void visit(MethodCall methodCall, SymbolTable symbolTable) {}
-    public void visit(MethodCallStatement methodCallStatement, SymbolTable symbolTable) {}
-    public void visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable) {}
-    public void visit(AssignOpExpr assignOpExpr, SymbolTable symbolTable) {}
-    public void visit(MethodDefinitionParameter methodDefinitionParameter, SymbolTable symbolTable) {}
-    public void visit(Name name, SymbolTable symbolTable) {}
-    public void visit(Location location, SymbolTable symbolTable) {}
-    public void visit(Len len, SymbolTable symbolTable) {}
-    public void visit(Increment increment, SymbolTable symbolTable) {}
-    public void visit(Decrement decrement, SymbolTable symbolTable) {}
-    public void visit(CharLiteral charLiteral, SymbolTable symbolTable) {}
-    public void visit(MethodCallParameter methodCallParameter, SymbolTable symbolTable) {}
-    public void visit(StringLiteral stringLiteral, SymbolTable symbolTable) {}
+    public Void visit(IntLiteral intLiteral, SymbolTable symbolTable) {return null;}
+    public Void visit(BooleanLiteral booleanLiteral, SymbolTable symbolTable) {return null;}
+    public Void visit(DecimalLiteral decimalLiteral, SymbolTable symbolTable) {return null;}
+    public Void visit(HexLiteral hexLiteral, SymbolTable symbolTable) {return null;}
+    public Void visit(FieldDeclaration fieldDeclaration, SymbolTable symbolTable) {return null;}
+    public Void visit(MethodDefinition methodDefinition, SymbolTable symbolTable){return null;}
+    public Void visit(ImportDeclaration importDeclaration, SymbolTable symbolTable) {return null;}
+    public Void visit(For forStatement, SymbolTable symbolTable) {return null;}
+    public Void visit(Break breakStatement, SymbolTable symbolTable) {return null;}
+    public Void visit(Continue continueStatement, SymbolTable symbolTable) {return null;}
+    public Void visit(While whileStatement, SymbolTable symbolTable) {return null;}
+    public Void visit(Program program, SymbolTable symbolTable) {return null;}
+    public Void visit(UnaryOpExpression unaryOpExpression, SymbolTable symbolTable) {return null;}
+    public Void visit(BinaryOpExpression binaryOpExpression, SymbolTable symbolTable) {return null;}
+    public Void visit(Block block, SymbolTable symbolTable) {return null;}
+    public Void visit(ParenthesizedExpression parenthesizedExpression, SymbolTable symbolTable) {return null;}
+    public Void visit(LocationArray locationArray, SymbolTable symbolTable) {return null;}
+    public Void visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable symbolTable) {return null;}
+    public Void visit(ExpressionParameter expressionParameter, SymbolTable symbolTable) {return null;}
+    public Void visit(If ifStatement, SymbolTable symbolTable) {return null;}
+    public Void visit(Return returnStatement, SymbolTable symbolTable) {return null;}
+    public Void visit(Array array, SymbolTable symbolTable) {return null;}
+    public Void visit(MethodCall methodCall, SymbolTable symbolTable) {return null;}
+    public Void visit(MethodCallStatement methodCallStatement, SymbolTable symbolTable) {return null;}
+    public Void visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable) {return null;}
+    public Void visit(AssignOpExpr assignOpExpr, SymbolTable symbolTable) {return null;}
+    public Void visit(MethodDefinitionParameter methodDefinitionParameter, SymbolTable symbolTable) {return null;}
+    public Void visit(Name name, SymbolTable symbolTable) {return null;}
+    public Void visit(Location location, SymbolTable symbolTable) {return null;}
+    public Void visit(Len len, SymbolTable symbolTable) {return null;}
+    public Void visit(Increment increment, SymbolTable symbolTable) {return null;}
+    public Void visit(Decrement decrement, SymbolTable symbolTable) {return null;}
+    public Void visit(CharLiteral charLiteral, SymbolTable symbolTable) {return null;}
+    public Void visit(MethodCallParameter methodCallParameter, SymbolTable symbolTable) {return null;}
+    public Void visit(StringLiteral stringLiteral, SymbolTable symbolTable) {return null;}
 }
