@@ -13,7 +13,7 @@ public abstract class AST {
 
     public abstract boolean isTerminal();
 
-    public abstract <T> T accept(Visitor<T> visitor, SymbolTable<String, Descriptor> currentSymbolTable);
+    public abstract void accept(Visitor visitor, SymbolTable<String, Descriptor> currentSymbolTable);
 
     @Override
     public String toString() {

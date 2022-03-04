@@ -9,7 +9,7 @@ import edu.mit.compilers.utils.Pair;
 import java.util.List;
 
 public class MethodCallStatement extends Statement {
-    final MethodCall methodCall;
+    public final MethodCall methodCall;
 
     public MethodCallStatement(TokenPosition tokenPosition, MethodCall methodCall) {
         super(tokenPosition);
@@ -32,7 +32,7 @@ public class MethodCallStatement extends Statement {
     }
 
     @Override
-    public <T> T accept(Visitor<T> visitor, SymbolTable<String, Descriptor> curSymbolTable) {
-        return visitor.visit(this, curSymbolTable);
+    public void accept(Visitor visitor, SymbolTable<String, Descriptor> curSymbolTable) {
+        visitor.visit(this, curSymbolTable);
     }
 }

@@ -44,7 +44,7 @@ public class FieldDeclaration extends AST {
     }
 
     @Override
-    public <T> T accept(Visitor<T> visitor, SymbolTable<String, Descriptor> curSymbolTable) {
-      return visitor.visit(this, curSymbolTable);
+    public void accept(Visitor visitor, SymbolTable<String, Descriptor> curSymbolTable) {
+        visitor.visit(this, curSymbolTable);
     }
 }
