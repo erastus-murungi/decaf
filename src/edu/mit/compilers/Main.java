@@ -1,8 +1,10 @@
 package edu.mit.compilers;
 
+import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.Token;
+import edu.mit.compilers.ir.DecafSemanticChecker;
 import edu.mit.compilers.tools.CLI;
 import java.io.*;
 
@@ -54,6 +56,18 @@ class Main {
           parser.setTrace(CLI.debug);
           parser.program();
           if (parser.hasError()) {
+              System.exit(1);
+          }
+      } else if (CLI.target == CLI.Action.INTER) {
+          DecafScanner scanner = new DecafScanner(new DataInputStream(inputStream));
+          DecafParser parser = new DecafParser(scanner);
+          parser.setTrace(CLI.debug);
+          parser.program();
+          AST programNode = parser.getRoot();
+
+          DecafSemanticChecker semChecker = new DecafSemanticChecker(programNode);
+
+          if (semChecker.hasError()) {
               System.exit(1);
           }
       }
