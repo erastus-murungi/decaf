@@ -13,14 +13,14 @@ public class ArithmeticOperator extends BinOperator {
 
     @Override
     public String opRep() {
-        return switch (op) {
-            case DecafScanner.PLUS -> "Add";
-            case DecafScanner.MINUS -> "Sub";
-            case DecafScanner.MULTIPLY -> "Multiply";
-            case DecafScanner.DIVIDE -> "Divide";
-            case DecafScanner.MOD -> "Mod";
-            default -> throw new IllegalArgumentException("please register a display string for: " + op);
-        };
+        switch (op) {
+            case DecafScanner.PLUS : return "Add";
+            case DecafScanner.MINUS : return "Sub";
+            case DecafScanner.MULTIPLY : return "Multiply";
+            case DecafScanner.DIVIDE : return "Divide";
+            case DecafScanner.MOD : return "Mod";
+            default : throw new IllegalArgumentException("please register a display string for: " + op);
+        }
     }
 
     @Override

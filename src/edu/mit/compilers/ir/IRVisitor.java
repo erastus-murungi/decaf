@@ -30,22 +30,23 @@ public class IRVisitor implements Visitor {
     public void visit(HexLiteral hexLiteral, SymbolTable<String, Descriptor> symbolTable) {
         // nothing to add, handled in assignment expression
     }
+    
     public void visit(FieldDeclaration fieldDeclaration, SymbolTable<String, Descriptor> symbolTable) {
         BuiltinType type = fieldDeclaration.builtinType;
         for (Name name : fieldDeclaration.names){
-            if (fields.containsKey(name.id)){
+            // TODO: Check parameter symbol table if current type is local symbol table
+            if (symbolTable.containsKey(name.id)){
                 exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field "+ name.id+" already declared"));
             } else {
                 // fields just declared do not have a value.
-                fields.addEntry(name.id, new VariableDescriptor(name.id, null, type));
+                symbolTable.addEntry(name.id, new VariableDescriptor(name.id, null, type));
             }
         }
         for (Array array : fieldDeclaration.arrays){
-            if (fields.containsKey(array.id.id)){
+            if (symbolTable.containsKey(array.id.id)){
                 exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field "+ array.id.id+" already declared"));
             } else {
-                // TODO: Check hex parse long
-                fields.addEntry(array.id.id, new ArrayDescriptor(array.id.id, array.size.convertToLong(), type));
+                symbolTable.addEntry(array.id.id, new ArrayDescriptor(array.id.id, array.size.convertToLong(), type));
             }
         }
     }

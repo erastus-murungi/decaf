@@ -14,12 +14,12 @@ public class CompoundAssignOperator extends Operator {
 
     @Override
     public String opRep() {
-        return switch (op) {
-            case DecafScanner.ADD_ASSIGN -> "AugmentedAdd";
-            case DecafScanner.MINUS_ASSIGN -> "AugmentedSub";
-            case DecafScanner.MULTIPLY_ASSIGN -> "AugmentedMul";
-            default -> throw new IllegalArgumentException("please register compound assign operator: " + op);
-        };
+        switch (op) {
+            case DecafScanner.ADD_ASSIGN : return "AugmentedAdd";
+            case DecafScanner.MINUS_ASSIGN : return "AugmentedSub";
+            case DecafScanner.MULTIPLY_ASSIGN : return "AugmentedMul";
+            default : throw new IllegalArgumentException("please register compound assign operator: " + op);
+        }
     }
 
     @Override

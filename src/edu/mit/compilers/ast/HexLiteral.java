@@ -18,6 +18,6 @@ public class HexLiteral extends IntLiteral {
 
     @Override
     public Long convertToLong() {
-        return Long.parseLong(literal, 16);
+        return Long.parseLong(literal.substring(2), 16);
     }
 }
