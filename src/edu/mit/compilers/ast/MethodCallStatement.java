@@ -9,7 +9,7 @@ import edu.mit.compilers.utils.Pair;
 import java.util.List;
 
 public class MethodCallStatement extends Statement {
-    final MethodCall methodCall;
+    public final MethodCall methodCall;
 
     public MethodCallStatement(TokenPosition tokenPosition, MethodCall methodCall) {
         super(tokenPosition);

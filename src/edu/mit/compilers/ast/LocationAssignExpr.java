@@ -9,8 +9,8 @@ import edu.mit.compilers.utils.Pair;
 import java.util.List;
 
 public class LocationAssignExpr extends Statement {
-    final Location location;
-    final AssignExpr assignExpr;
+    public final Location location;
+    public final AssignExpr assignExpr;
 
     public LocationAssignExpr(TokenPosition tokenPosition, Location location, AssignExpr assignExpr) {
         super(tokenPosition);

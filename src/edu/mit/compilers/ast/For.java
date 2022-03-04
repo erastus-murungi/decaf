@@ -9,14 +9,14 @@ import edu.mit.compilers.utils.Pair;
 import java.util.List;
 
 public class For extends Statement {
-    final Name initId;
-    final Expression initExpression;
+    public final Name initId;
+    public final Expression initExpression;
 
     final Expression terminatingCondition;
 
     final Location updatingLocation;
     final AssignExpr updateAssignExpr;
-    final Block block;
+    public final Block block;
 
     public For(TokenPosition tokenPosition, Name initId, Expression initExpression, Expression terminatingCondition, Location updatingLocation, AssignExpr updateAssignExpr, Block block) {
         super(tokenPosition);

@@ -9,8 +9,8 @@ import java.util.Collections;
 import java.util.List;
 
 public class Array extends AST {
-    final IntLiteral size;
-    final Name id;
+    public final IntLiteral size;
+    public final Name id;
 
     @Override
     public List<Pair<String, AST>> getChildren() {
