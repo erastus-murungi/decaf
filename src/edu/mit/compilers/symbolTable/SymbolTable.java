@@ -7,9 +7,9 @@ import edu.mit.compilers.descriptors.Descriptor;
 
 
 public class SymbolTable {
-    private final edu.mit.compilers.symbolTable.SymbolTable parent;
-    private final SymbolTableType symbolTableType;
-    private final HashMap<String, Descriptor> entries = new HashMap<>();
+    public final SymbolTable parent;
+    public final SymbolTableType symbolTableType;
+    public final HashMap<String, Descriptor> entries = new HashMap<>();
 
     public SymbolTable(SymbolTable parent, SymbolTableType symbolTableType) {
         super();
@@ -18,7 +18,23 @@ public class SymbolTable {
     }
 
     /**
-     * @param key Look up a variable only within the current scope
+     * Look up a variable only within the current scope
+     *
+     * @param stringId the id to lookup in the symbol table hierarchy
+     * @return Optional.empty if the descriptor is not found else Optional[Descriptor]
+     */
+
+    public Optional<Descriptor> getDescriptorFromCurrentScope(String stringId) {
+        Descriptor currentDescriptor = entries.get(stringId);
+        if (currentDescriptor == null) {
+            if (parent != null)
+                return parent.getDescriptorFromValidScopes(stringId);
+        }
+        return Optional.ofNullable(currentDescriptor);
+    }
+
+    /**
+     * @param key the id to lookup in the symbol table hierarchy
      * @return true if the descriptor for key is found else false
      */
 
