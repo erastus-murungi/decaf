@@ -33,7 +33,7 @@ public class Return extends Statement {
   }
 
   @Override
-  public <T> T accept(Visitor<T> visitor, SymbolTable<String, Descriptor> curSymbolTable) {
+  public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
     return visitor.visit(this, curSymbolTable);
   }
 }

@@ -24,7 +24,7 @@ public class AssignOperator extends Operator {
     }
 
     @Override
-    public <T> T accept(Visitor<T> visitor, SymbolTable<String, Descriptor> curSymbolTable) {
+    public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return null;
     }
 }

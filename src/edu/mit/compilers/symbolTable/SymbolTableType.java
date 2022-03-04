@@ -1,2 +1,7 @@
-package edu.mit.compilers.symbolTable;public enum SymbolTableType {
+package edu.mit.compilers.symbolTable;
+
+public enum SymbolTableType {
+    Parameter,
+    Method,
+    Field
 }
