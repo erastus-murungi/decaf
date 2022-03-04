@@ -30,14 +30,32 @@ class Main {
           try {
             for (token = scanner.nextToken(); token.isNotEOF();
                  token = scanner.nextToken()) {
-              String text = token.lexeme();
-              text = switch (token.tokenType()) {
-                  case ID -> "IDENTIFIER" + " " + token.lexeme();
-                  case STRING_LITERAL -> "STRINGLITERAL" + " " + token.lexeme();
-                  case CHAR_LITERAL -> "CHARLITERAL" + " " + token.lexeme();
-                  case HEX_LITERAL, DECIMAL_LITERAL -> "INTLITERAL" + " " + token.lexeme();
-                  case RESERVED_FALSE, RESERVED_TRUE -> "BOOLEANLITERAL" + " " + token.lexeme();
-                  default -> text;
+               String text;
+               switch (token.tokenType()) {
+                  case ID : {
+                    text = "IDENTIFIER" + " " + token.lexeme();
+                    break;
+                }
+                  case STRING_LITERAL : {
+                    text = "STRINGLITERAL" + " " + token.lexeme();
+                    break;
+                  }
+                  case CHAR_LITERAL : {
+                    text = "CHARLITERAL" + " " + token.lexeme();
+                    break;
+                  }
+                  case HEX_LITERAL, DECIMAL_LITERAL : {
+                    text = "INTLITERAL" + " " + token.lexeme();
+                    break;
+                  }
+                  case RESERVED_FALSE, RESERVED_TRUE : {
+                    text = "BOOLEANLITERAL" + " " + token.lexeme();
+                    break;
+                  }
+                  default: {
+                    text = token.lexeme();
+                    break;
+                  }
               };
               outputStream.println(token.tokenPosition().line() + 1 + " " + text);
             }

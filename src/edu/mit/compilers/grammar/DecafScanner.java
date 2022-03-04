@@ -203,69 +203,69 @@ public class DecafScanner {
         }
         final char c = inputString.charAt(stringIndex);
         final TokenPosition tokenPosition = new TokenPosition(line, column, stringIndex);
-        return switch (String.valueOf(c)) {
-            case LEFT_CURLY -> handleSingleOperator(tokenPosition, TokenType.LEFT_CURLY, LEFT_CURLY);
-            case RIGHT_CURLY -> handleSingleOperator(tokenPosition, TokenType.RIGHT_CURLY, RIGHT_CURLY);
-            case LEFT_PARENTHESIS -> handleSingleOperator(tokenPosition, TokenType.LEFT_PARENTHESIS, LEFT_PARENTHESIS);
-            case RIGHT_PARENTHESIS -> handleSingleOperator(tokenPosition, TokenType.RIGHT_PARENTHESIS, RIGHT_PARENTHESIS);
-            case LEFT_SQUARE_BRACKET -> handleSingleOperator(tokenPosition, TokenType.LEFT_SQUARE_BRACKET, LEFT_SQUARE_BRACKET);
-            case RIGHT_SQUARE_BRACKET -> handleSingleOperator(tokenPosition, TokenType.RIGHT_SQUARE_BRACKET, RIGHT_SQUARE_BRACKET);
-            case SEMICOLON -> handleSingleOperator(tokenPosition, TokenType.SEMICOLON, SEMICOLON);
-            case COMMA -> handleSingleOperator(tokenPosition, TokenType.COMMA, COMMA);
-            case MOD -> handleSingleOperator(tokenPosition, TokenType.MOD, MOD);
-            case DOUBLE_QUOTES -> handleStringLiteral(tokenPosition);
-            case SINGLE_QUOTES -> handleCharLiteral(tokenPosition);
-            case " ", "\t", "\n", "\r" -> handleWhiteSpace(tokenPosition);
-            default -> {
+        switch (String.valueOf(c)) {
+            case LEFT_CURLY : return handleSingleOperator(tokenPosition, TokenType.LEFT_CURLY, LEFT_CURLY);
+            case RIGHT_CURLY : return handleSingleOperator(tokenPosition, TokenType.RIGHT_CURLY, RIGHT_CURLY);
+            case LEFT_PARENTHESIS : return handleSingleOperator(tokenPosition, TokenType.LEFT_PARENTHESIS, LEFT_PARENTHESIS);
+            case RIGHT_PARENTHESIS : return handleSingleOperator(tokenPosition, TokenType.RIGHT_PARENTHESIS, RIGHT_PARENTHESIS);
+            case LEFT_SQUARE_BRACKET : return handleSingleOperator(tokenPosition, TokenType.LEFT_SQUARE_BRACKET, LEFT_SQUARE_BRACKET);
+            case RIGHT_SQUARE_BRACKET : return handleSingleOperator(tokenPosition, TokenType.RIGHT_SQUARE_BRACKET, RIGHT_SQUARE_BRACKET);
+            case SEMICOLON : return handleSingleOperator(tokenPosition, TokenType.SEMICOLON, SEMICOLON);
+            case COMMA : return handleSingleOperator(tokenPosition, TokenType.COMMA, COMMA);
+            case MOD : return handleSingleOperator(tokenPosition, TokenType.MOD, MOD);
+            case DOUBLE_QUOTES : return handleStringLiteral(tokenPosition);
+            case SINGLE_QUOTES : return handleCharLiteral(tokenPosition);
+            case " ", "\t", "\n", "\r" : return handleWhiteSpace(tokenPosition);
+            default : {
                 if (currentSubstringMatches(LINE_COMMENT_START))
-                    yield handleSingleLineComment(tokenPosition);
+                    return handleSingleLineComment(tokenPosition);
                 else if (currentSubstringMatches(BLOCK_COMMENT_START))
-                    yield handleBlockComment(tokenPosition);
+                    return handleBlockComment(tokenPosition);
                 else if (isValidIdFirstCodePoint(c))
-                    yield handleId(tokenPosition);
+                    return handleId(tokenPosition);
                 else if (currentSubstringMatches(HEX_PREFIX_LOWERCASE))
-                    yield handleHexLiteral(tokenPosition);
+                    return handleHexLiteral(tokenPosition);
                 else if (Character.isDigit(c))
-                    yield handleDecimalLiteral(tokenPosition);
+                    return handleDecimalLiteral(tokenPosition);
                 else if (currentSubstringMatches(ADD_ASSIGN))
-                    yield handleCompoundOperator(tokenPosition, TokenType.ADD_ASSIGN, ADD_ASSIGN);
+                    return handleCompoundOperator(tokenPosition, TokenType.ADD_ASSIGN, ADD_ASSIGN);
                 else if (currentSubstringMatches(MINUS_ASSIGN))
-                    yield handleCompoundOperator(tokenPosition, TokenType.MINUS_ASSIGN, MINUS_ASSIGN);
+                    return handleCompoundOperator(tokenPosition, TokenType.MINUS_ASSIGN, MINUS_ASSIGN);
                 else if (currentSubstringMatches(MULTIPLY_ASSIGN))
-                    yield handleCompoundOperator(tokenPosition, TokenType.MULTIPLY_ASSIGN, MULTIPLY_ASSIGN);
+                    return handleCompoundOperator(tokenPosition, TokenType.MULTIPLY_ASSIGN, MULTIPLY_ASSIGN);
                 else if (currentSubstringMatches(NEQ))
-                    yield handleCompoundOperator(tokenPosition, TokenType.NEQ, NEQ);
+                    return handleCompoundOperator(tokenPosition, TokenType.NEQ, NEQ);
                 else if (currentSubstringMatches(GEQ))
-                    yield handleCompoundOperator(tokenPosition, TokenType.GEQ, GEQ);
+                    return handleCompoundOperator(tokenPosition, TokenType.GEQ, GEQ);
                 else if (currentSubstringMatches(LEQ))
-                    yield handleCompoundOperator(tokenPosition, TokenType.LEQ, LEQ);
+                    return handleCompoundOperator(tokenPosition, TokenType.LEQ, LEQ);
                 else if (currentSubstringMatches(EQ))
-                    yield handleCompoundOperator(tokenPosition, TokenType.EQ, EQ);
+                    return handleCompoundOperator(tokenPosition, TokenType.EQ, EQ);
                 else if (currentSubstringMatches(INCREMENT))
-                    yield handleCompoundOperator(tokenPosition, TokenType.INCREMENT, INCREMENT);
+                    return handleCompoundOperator(tokenPosition, TokenType.INCREMENT, INCREMENT);
                 else if (currentSubstringMatches(DECREMENT))
-                    yield handleCompoundOperator(tokenPosition, TokenType.DECREMENT, DECREMENT);
+                    return handleCompoundOperator(tokenPosition, TokenType.DECREMENT, DECREMENT);
                 else if (currentSubstringMatches(CONDITIONAL_OR))
-                    yield handleCompoundOperator(tokenPosition, TokenType.CONDITIONAL_OR, CONDITIONAL_OR);
+                    return handleCompoundOperator(tokenPosition, TokenType.CONDITIONAL_OR, CONDITIONAL_OR);
                 else if (currentSubstringMatches(CONDITIONAL_AND))
-                    yield handleCompoundOperator(tokenPosition, TokenType.CONDITIONAL_AND, CONDITIONAL_AND);
+                    return handleCompoundOperator(tokenPosition, TokenType.CONDITIONAL_AND, CONDITIONAL_AND);
                 else {
-                    yield switch (String.valueOf(c)) {
-                        case NOT -> handleSingleOperator(tokenPosition, TokenType.NOT, NOT);
-                        case PLUS -> handleSingleOperator(tokenPosition, TokenType.PLUS, PLUS);
-                        case MINUS -> handleSingleOperator(tokenPosition, TokenType.MINUS, MINUS);
-                        case MULTIPLY -> handleSingleOperator(tokenPosition, TokenType.MULTIPLY, MULTIPLY);
-                        case DIVIDE -> handleSingleOperator(tokenPosition, TokenType.DIVIDE, DIVIDE);
-                        case ASSIGN -> handleSingleOperator(tokenPosition, TokenType.ASSIGN, ASSIGN);
-                        case LT -> handleSingleOperator(tokenPosition, TokenType.LT, LT);
-                        case GT -> handleSingleOperator(tokenPosition, TokenType.GT, GT);
-                        case TERNARY_QUESTION_MARK -> handleSingleOperator(tokenPosition, TokenType.TERNARY_QUESTION_MARK, TERNARY_QUESTION_MARK);
-                        case TERNARY_COLON -> handleSingleOperator(tokenPosition, TokenType.TERNARY_COLON, TERNARY_COLON);
-                        default -> throw getContextualException(tokenPosition, "unrecognized character " + c);
-                    };
+                    switch (String.valueOf(c)) {
+                        case NOT : return handleSingleOperator(tokenPosition, TokenType.NOT, NOT);
+                        case PLUS : return handleSingleOperator(tokenPosition, TokenType.PLUS, PLUS);
+                        case MINUS : return handleSingleOperator(tokenPosition, TokenType.MINUS, MINUS);
+                        case MULTIPLY : return handleSingleOperator(tokenPosition, TokenType.MULTIPLY, MULTIPLY);
+                        case DIVIDE : return handleSingleOperator(tokenPosition, TokenType.DIVIDE, DIVIDE);
+                        case ASSIGN : return handleSingleOperator(tokenPosition, TokenType.ASSIGN, ASSIGN);
+                        case LT : return handleSingleOperator(tokenPosition, TokenType.LT, LT);
+                        case GT : return handleSingleOperator(tokenPosition, TokenType.GT, GT);
+                        case TERNARY_QUESTION_MARK : return handleSingleOperator(tokenPosition, TokenType.TERNARY_QUESTION_MARK, TERNARY_QUESTION_MARK);
+                        case TERNARY_COLON : return handleSingleOperator(tokenPosition, TokenType.TERNARY_COLON, TERNARY_COLON);
+                        default : throw getContextualException(tokenPosition, "unrecognized character " + c);
+                    }
                 }
             }
-        };
+        }
     }
 
     private Token handleSingleLineComment(TokenPosition tokenPosition) {
@@ -301,10 +301,20 @@ public class DecafScanner {
                     line += 1;
                 }
             } else {
-                state = switch (c) {
-                    case '/' -> completed;
-                    case '*' -> waitingForForwardSlash;
-                    default -> waitingForStar;
+                switch (c) {
+                    case '/' : {
+                        state = completed;
+                        break;
+                    }
+
+                    case '*' : {
+                        state = waitingForForwardSlash;
+                        break;
+                    }
+                    default : {
+                        state = waitingForStar;
+                        break;
+                    }
                 };
             }
             consumeCharacterNoCheck();
@@ -322,10 +332,18 @@ public class DecafScanner {
 
     private DecafScannerException getContextualException(TokenPosition tokenPosition, String errMessage) {
         final char c = getCurrentChar();
-        errMessage = switch (prevToken.tokenType()) {
-            case STRING_LITERAL -> "illegal string literal: " + prevToken.lexeme() + c;
-            case ID -> "illegal id: " + prevToken.lexeme() + c;
-            default -> errMessage;
+        switch (prevToken.tokenType()) {
+            case STRING_LITERAL : {
+                errMessage =  "illegal string literal: " + prevToken.lexeme() + c;
+                break;
+            }
+            case ID : {
+                errMessage =  "illegal id: " + prevToken.lexeme() + c;
+                break;
+            }
+            default:{
+                break;
+            }
         };
         return new DecafScannerException(tokenPosition, getContextualErrorMessage(tokenPosition, errMessage));
     }
@@ -334,8 +352,11 @@ public class DecafScanner {
         consumeCharacterNoCheck();
         char c = inputString.charAt(stringIndex);
         switch (c) {
-            case 'n', '"', 't', 'r', '\'', '\\' -> consumeCharacterNoCheck();
-            default -> throw getContextualException(tokenPosition, "Invalid back-slashed character \"" + "\\" + c + "\"");
+            case 'n', '"', 't', 'r', '\'', '\\' : {
+                consumeCharacterNoCheck();
+                break;
+            }
+            default : throw getContextualException(tokenPosition, "Invalid back-slashed character \"" + "\\" + c + "\"");
         }
     }
 
@@ -403,22 +424,68 @@ public class DecafScanner {
             ++i;
         }
         String idLexeme = inputString.substring(stringIndex, i);
-        TokenType tokenType = switch (idLexeme) {
-            case RESERVED_FOR -> TokenType.RESERVED_FOR;
-            case RESERVED_IF -> TokenType.RESERVED_IF;
-            case RESERVED_IMPORT -> TokenType.RESERVED_IMPORT;
-            case RESERVED_INT -> TokenType.RESERVED_INT;
-            case RESERVED_LEN -> TokenType.RESERVED_LEN;
-            case RESERVED_RETURN -> TokenType.RESERVED_RETURN;
-            case RESERVED_ELSE -> TokenType.RESERVED_ELSE;
-            case RESERVED_CONTINUE -> TokenType.RESERVED_CONTINUE;
-            case RESERVED_BREAK -> TokenType.RESERVED_BREAK;
-            case RESERVED_WHILE -> TokenType.RESERVED_WHILE;
-            case RESERVED_VOID -> TokenType.RESERVED_VOID;
-            case RESERVED_BOOL -> TokenType.RESERVED_BOOL;
-            case RESERVED_TRUE -> TokenType.RESERVED_TRUE;
-            case RESERVED_FALSE -> TokenType.RESERVED_FALSE;
-            default -> TokenType.ID;
+        TokenType tokenType;
+        switch (idLexeme) {
+            case RESERVED_FOR :  {
+                tokenType = TokenType.RESERVED_FOR;
+                break;
+            }
+            case RESERVED_IF :  {
+                tokenType = TokenType.RESERVED_IF;
+                break;
+            }
+            case RESERVED_IMPORT :  {
+                tokenType = TokenType.RESERVED_IMPORT;
+                break;
+            }
+            case RESERVED_INT : {
+                tokenType = TokenType.RESERVED_INT;
+                break;
+            }
+            case RESERVED_LEN : {
+                tokenType = TokenType.RESERVED_LEN;
+                break;
+            }
+            case RESERVED_RETURN : {
+                tokenType = TokenType.RESERVED_RETURN;
+                break;
+            }
+            case RESERVED_ELSE :  {
+                tokenType = TokenType.RESERVED_ELSE;
+                break;
+            }
+            case RESERVED_CONTINUE :  {
+                tokenType = TokenType.RESERVED_CONTINUE;
+                break;
+            }
+            case RESERVED_BREAK :  {
+                tokenType = TokenType.RESERVED_BREAK;
+                break;
+            }
+            case RESERVED_WHILE :  {
+                tokenType = TokenType.RESERVED_WHILE;
+                break;
+            }
+            case RESERVED_VOID :  {
+                tokenType = TokenType.RESERVED_VOID;
+                break;
+            }
+            case RESERVED_BOOL :  {
+                tokenType = TokenType.RESERVED_BOOL;
+                break;
+            }
+            case RESERVED_TRUE :  {
+                tokenType = TokenType.RESERVED_TRUE;
+                break;
+            }
+            case RESERVED_FALSE :  {
+                tokenType = TokenType.RESERVED_FALSE;
+                break;
+            }
+            default : {
+                tokenType = TokenType.ID;
+                break;
+            } 
         };
 
         consumeMultipleCharactersNoCheck(i - stringIndex);
@@ -481,9 +548,17 @@ public class DecafScanner {
         final char c = inputString.charAt(stringIndex);
 
         switch (c) {
-            case '\r', '\n' -> consumeNewlineCharacter(String.valueOf(c));
-            case ' ', '\t' -> consumeCharacterNoCheck();
-            default -> throw getContextualException(tokenPosition, "unexpected whitespace char " + c);
+            case '\r', '\n' : {
+                consumeNewlineCharacter(String.valueOf(c));
+                break;
+            }
+            case ' ', '\t' : {
+                consumeCharacterNoCheck();
+                break;
+            } 
+            default : {
+                throw getContextualException(tokenPosition, "unexpected whitespace char " + c);
+            }
         }
         return makeToken(tokenPosition, TokenType.WHITESPACE, String.valueOf(c));
     }
@@ -501,16 +576,24 @@ public class DecafScanner {
 
     private void updateHighlighter(Token token) {
         switch (token.tokenType()) {
-            case EOF -> {
+            case EOF : {
+                break;
             }
-            case ID -> syntaxLines.add(Utils.coloredPrint(token.lexeme(), Utils.ANSIColorConstants.ANSI_BLUE));
-            case CHAR_LITERAL, STRING_LITERAL, RESERVED_FALSE, RESERVED_TRUE, HEX_LITERAL, DECIMAL_LITERAL -> syntaxLines.add(Utils.coloredPrint(token.lexeme(), Utils.ANSIColorConstants.ANSI_GREEN));
-            default -> {
+            case ID : {
+                syntaxLines.add(Utils.coloredPrint(token.lexeme(), Utils.ANSIColorConstants.ANSI_BLUE));
+                break;
+            }
+            case CHAR_LITERAL, STRING_LITERAL, RESERVED_FALSE, RESERVED_TRUE, HEX_LITERAL, DECIMAL_LITERAL : {
+                syntaxLines.add(Utils.coloredPrint(token.lexeme(), Utils.ANSIColorConstants.ANSI_GREEN));
+                break;
+            }
+            default : {
                 if (token.tokenType().toString().startsWith("RESERVED")) {
                     syntaxLines.add(Utils.coloredPrint(token.lexeme(), Utils.ANSIColorConstants.ANSI_PURPLE));
                 } else {
                     syntaxLines.add(token.lexeme());
                 }
+                break;
             }
         }
     }

@@ -8,6 +8,5 @@ public enum BuiltinType {
     BoolArray,
     Char,
     String,
-    Import,
     Undefined
 }
