@@ -44,11 +44,11 @@ class Main {
                     text = "CHARLITERAL" + " " + token.lexeme();
                     break;
                   }
-                  case HEX_LITERAL, DECIMAL_LITERAL : {
+                  case HEX_LITERAL: case DECIMAL_LITERAL : {
                     text = "INTLITERAL" + " " + token.lexeme();
                     break;
                   }
-                  case RESERVED_FALSE, RESERVED_TRUE : {
+                  case RESERVED_FALSE: case RESERVED_TRUE : {
                     text = "BOOLEANLITERAL" + " " + token.lexeme();
                     break;
                   }
