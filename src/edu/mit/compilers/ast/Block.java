@@ -2,15 +2,15 @@ package edu.mit.compilers.ast;
 
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable; 
-import edu.mit.compilers.descriptors.Descriptor;
 import edu.mit.compilers.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Block extends AST {
-    final List<FieldDeclaration> fieldDeclarationList;
-    final List<Statement> statementList;
+    final public List<FieldDeclaration> fieldDeclarationList;
+    final public List<Statement> statementList;
+    public SymbolTable blockSymbolTable;
 
     public Block(List<FieldDeclaration> fieldDeclarationList, List<Statement> statementList) {
         this.fieldDeclarationList = fieldDeclarationList;

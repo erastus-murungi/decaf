@@ -10,6 +10,7 @@ import edu.mit.compilers.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.TreeSet;
 
 public class IRVisitor implements Visitor<Void> {
@@ -89,14 +90,45 @@ public class IRVisitor implements Visitor<Void> {
     }
     public Void visit(Break breakStatement, SymbolTable symbolTable) {return null;}
     public Void visit(Continue continueStatement, SymbolTable symbolTable) {return null;}
-    public Void visit(While whileStatement, SymbolTable symbolTable) {return null;}
-    public Void visit(Program program, SymbolTable symbolTable) {return null;}
+    public Void visit(While whileStatement, SymbolTable symbolTable) {
+        whileStatement.test.accept(this, symbolTable);
+        whileStatement.body.accept(this, symbolTable);
+        return null;
+    }
+    public Void visit(Program program, SymbolTable symbolTable) {
+        for (ImportDeclaration importDeclaration: program.importDeclarationList)
+            imports.add(importDeclaration.nameId.id);
+        for (FieldDeclaration fieldDeclaration: program.fieldDeclarationList)
+            fieldDeclaration.accept(this, fields);
+        for (MethodDefinition methodDefinition: program.methodDefinitionList)
+            methodDefinition.accept(this, methods);
+        return null;
+    }
     public Void visit(UnaryOpExpression unaryOpExpression, SymbolTable symbolTable) {return null;}
     public Void visit(BinaryOpExpression binaryOpExpression, SymbolTable symbolTable) {return null;}
-    public Void visit(Block block, SymbolTable symbolTable) {return null;}
+    public Void visit(Block block, SymbolTable symbolTable) {
+        block.blockSymbolTable = new SymbolTable(symbolTable, SymbolTableType.Field);
+        for (FieldDeclaration fieldDeclaration: block.fieldDeclarationList)
+            fieldDeclaration.accept(this, block.blockSymbolTable);
+        for (Statement statement: block.statementList)
+            statement.accept(this, block.blockSymbolTable);
+        return null;
+    }
     public Void visit(ParenthesizedExpression parenthesizedExpression, SymbolTable symbolTable) {return null;}
-    public Void visit(LocationArray locationArray, SymbolTable symbolTable) {return null;}
-    public Void visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable symbolTable) {return null;}
+    public Void visit(LocationArray locationArray, SymbolTable symbolTable) {
+        final Optional<Descriptor> optionalDescriptor = symbolTable.getDescriptorFromValidScopes(locationArray.name.id);
+        if (optionalDescriptor.isEmpty())
+            exceptions.add(new DecafSemanticException(locationArray.tokenPosition, "Array " + locationArray.name.id + " not declared"));
+        else if (!(optionalDescriptor.get() instanceof ArrayDescriptor))
+            exceptions.add(new DecafSemanticException(locationArray.tokenPosition, locationArray.name.id + " is not an array"));
+        locationArray.expression.accept(this, symbolTable);
+        return null;
+    }
+    public Void visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable symbolTable) {
+        compoundAssignOpExpr.expression.accept(this, symbolTable);
+        return null;
+    }
+
     public Void visit(ExpressionParameter expressionParameter, SymbolTable symbolTable) {return null;}
     public Void visit(If ifStatement, SymbolTable symbolTable) {
         // variable lookup happens in ifCondition or if/else body

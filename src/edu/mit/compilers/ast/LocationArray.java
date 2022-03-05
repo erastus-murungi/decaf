@@ -5,7 +5,7 @@ import edu.mit.compilers.utils.Pair;
 import java.util.List;
 
 public class LocationArray extends Location {
-    final Expression expression;
+    public final Expression expression;
     public LocationArray(Name name, Expression expression) {
         super(name);
         this.expression = expression;
