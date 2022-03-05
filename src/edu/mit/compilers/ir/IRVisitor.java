@@ -26,16 +26,20 @@ public class IRVisitor implements Visitor<Void> {
     public Void visit(FieldDeclaration fieldDeclaration, SymbolTable symbolTable) {
         BuiltinType type = fieldDeclaration.builtinType;
         for (Name name : fieldDeclaration.names){
-            // TODO: only throw error if shadows parameter
-            if (!symbolTable.getDescriptorFromValidScopes(name.id).isEmpty()){
-                //exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field "+ name.id+" already declared"));
+            if (symbolTable.isShadowingParameter(name.id)) {
+                exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field "+ name.id+" shadows a parameter"));
+            } else if (symbolTable.containsEntry(name.id)){
+                // field already declared in scope
+                exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field "+ name.id+" already declared"));
             } else {
                 // fields just declared do not have a value.
                 symbolTable.entries.put(name.id, new VariableDescriptor(name.id, null, type));
             }
         }
         for (Array array : fieldDeclaration.arrays){
-            if (!symbolTable.getDescriptorFromValidScopes(array.id.id).isEmpty()){
+            if (symbolTable.isShadowingParameter(array.id.id)) {
+                exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field "+ array.id.id+" shadows a parameter"));
+            } else if (!symbolTable.getDescriptorFromValidScopes(array.id.id).isEmpty()){
                 exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field "+ array.id.id+" already declared"));
             } else {
                 // TODO: Check hex parse long
@@ -55,14 +59,15 @@ public class IRVisitor implements Visitor<Void> {
                 parameterSymbolTable.entries.put(parameter.id.id, new ParameterDescriptor(parameter.id.id, parameter.builtinType));
             }
             // visit the method definition and populate the local symbol table
-            // TODO: encounter bug
             methods.entries.put(methodDefinition.methodName.id, new MethodDescriptor(methodDefinition, parameterSymbolTable, localSymbolTable));
             methodDefinition.block.accept(this, localSymbolTable);
         }
         return null;
     }
     public Void visit(ImportDeclaration importDeclaration, SymbolTable symbolTable) {
-        if (imports.contains(importDeclaration.nameId.id)){
+        if (symbolTable.isShadowingParameter(importDeclaration.nameId.id)) {
+            exceptions.add(new DecafSemanticException(importDeclaration.nameId.tokenPosition, "Import identifier "+ importDeclaration.nameId.id+" shadows a parameter"));
+        } else if (imports.contains(importDeclaration.nameId.id)){
             exceptions.add(new DecafSemanticException(new TokenPosition(0, 0, 0), "Import identifier "+ importDeclaration.nameId.id+" already declared"));
         } else {
             imports.add(importDeclaration.nameId.id);
@@ -157,8 +162,9 @@ public class IRVisitor implements Visitor<Void> {
     public Void visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable) {
         Name location = locationAssignExpr.location.name;
         // checking location has been initialized
-        // TODO: make sure no parameter shadowing, check first
-        if (symbolTable.getDescriptorFromValidScopes(location.id).isEmpty())
+        if (symbolTable.isShadowingParameter(location.id))
+            exceptions.add(new DecafSemanticException(location.tokenPosition, "Location " + location.id + " is shadowing a parameter"));
+        else if (symbolTable.getDescriptorFromValidScopes(location.id).isEmpty())
             exceptions.add(new DecafSemanticException(location.tokenPosition, "Location " + location.id + " hasn't been defined yet"));
 
         // update location variable in symbolTable, but how? Need evaluation of expr???

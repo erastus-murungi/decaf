@@ -9,6 +9,7 @@ import java.util.List;
 
 public class Len extends Expression {
     final public Name nameId;
+    final public BuiltinType builtinType = BuiltinType.Int;
 
     public Len(TokenPosition tokenPosition, Name nameId) {
         super(tokenPosition);
