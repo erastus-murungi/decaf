@@ -26,25 +26,26 @@ public class IRVisitor implements Visitor<Void> {
     public Void visit(FieldDeclaration fieldDeclaration, SymbolTable symbolTable) {
         BuiltinType type = fieldDeclaration.builtinType;
         for (Name name : fieldDeclaration.names){
-            if (fields.containsEntry(name.id)){
-                exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field "+ name.id+" already declared"));
+            // TODO: only throw error if shadows parameter
+            if (!symbolTable.getDescriptorFromValidScopes(name.id).isEmpty()){
+                //exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field "+ name.id+" already declared"));
             } else {
                 // fields just declared do not have a value.
-                fields.entries.put(name.id, new VariableDescriptor(name.id, null, type));
+                symbolTable.entries.put(name.id, new VariableDescriptor(name.id, null, type));
             }
         }
         for (Array array : fieldDeclaration.arrays){
-            if (fields.containsEntry(array.id.id)){
+            if (!symbolTable.getDescriptorFromValidScopes(array.id.id).isEmpty()){
                 exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field "+ array.id.id+" already declared"));
             } else {
                 // TODO: Check hex parse long
-                fields.entries.put(array.id.id, new ArrayDescriptor(array.id.id, array.size.convertToLong(), type));
+                symbolTable.entries.put(array.id.id, new ArrayDescriptor(array.id.id, array.size.convertToLong(), type));
             }
         }
         return null;
     }
     public Void visit(MethodDefinition methodDefinition, SymbolTable symbolTable){
-        if (methods.containsEntry(methodDefinition.methodName.id)){
+        if (!methods.getDescriptorFromValidScopes(methodDefinition.methodName.id).isEmpty()){
             // method already defined. add an exception
             exceptions.add(new DecafSemanticException(methodDefinition.tokenPosition, "Method name "+ methodDefinition.methodName.id+" already defined"));
         } else {
@@ -55,8 +56,8 @@ public class IRVisitor implements Visitor<Void> {
             }
             // visit the method definition and populate the local symbol table
             // TODO: encounter bug
-            methodDefinition.block.accept(this, localSymbolTable);
             methods.entries.put(methodDefinition.methodName.id, new MethodDescriptor(methodDefinition, parameterSymbolTable, localSymbolTable));
+            methodDefinition.block.accept(this, localSymbolTable);
         }
         return null;
     }
@@ -74,7 +75,7 @@ public class IRVisitor implements Visitor<Void> {
         String initializedVariableName = forStatement.initId.id;
 
         // check if the variable exists
-        if (symbolTable.containsEntry(initializedVariableName)){
+        if (!symbolTable.getDescriptorFromValidScopes(initializedVariableName).isEmpty()){
             Descriptor initVariableDescriptor = symbolTable.entries.get(initializedVariableName);
             Expression initExpression = forStatement.initExpression;
             // update the symbol table to have the full expression
@@ -142,8 +143,8 @@ public class IRVisitor implements Visitor<Void> {
         List<Pair<String, AST>> children = methodCall.getChildren();
         Name methodName = methodCall.nameId;
 
-        if (!methods.containsEntry(methodName.id))
-            exceptions.add(new DecafSemanticException(methodName.tokenPosition, methodName.id + "hasn't been defined yet"));
+        if (methods.getDescriptorFromValidScopes(methodName.id).isEmpty() && !imports.contains(methodName.id))
+            exceptions.add(new DecafSemanticException(methodName.tokenPosition, "Method name " + methodName.id + " hasn't been defined yet"));
 
         for (MethodCallParameter parameter: methodCall.methodCallParameterList)
             parameter.accept(this, symbolTable);
@@ -156,19 +157,9 @@ public class IRVisitor implements Visitor<Void> {
     public Void visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable) {
         Name location = locationAssignExpr.location.name;
         // checking location has been initialized
-        if (!symbolTable.containsEntry(location.id))
-            exceptions.add(new DecafSemanticException(location.tokenPosition, location.id + "hasn't been defined yet"));
-            // type-checking expr
-        else {
-            BuiltinType locationType = symbolTable.entries.get(location.id).type;
-
-            // Can only increment an int
-            if (locationAssignExpr.assignExpr instanceof Increment && locationType != BuiltinType.Int)
-                exceptions.add(new DecafSemanticException(location.tokenPosition, location.id + "needs to have type int in order to be incremented"));
-                // location type has to match expression type
-            else if (locationType != locationAssignExpr.assignExpr.expression.builtinType)
-                exceptions.add(new DecafSemanticException(location.tokenPosition, location.id + "needs to have same type of expression"));
-        }
+        // TODO: make sure no parameter shadowing, check first
+        if (symbolTable.getDescriptorFromValidScopes(location.id).isEmpty())
+            exceptions.add(new DecafSemanticException(location.tokenPosition, "Location " + location.id + " hasn't been defined yet"));
 
         // update location variable in symbolTable, but how? Need evaluation of expr???
         // can we just store expr node in symbol table
@@ -187,14 +178,15 @@ public class IRVisitor implements Visitor<Void> {
     }
     public Void visit(Name name, SymbolTable symbolTable) {return null;}
     public Void visit(Location location, SymbolTable symbolTable) {
-        if (!symbolTable.containsEntry(location.name.id)) {
-            exceptions.add(new DecafSemanticException(location.name.tokenPosition, "Locations must be defined"));
+        if (symbolTable.getDescriptorFromValidScopes(location.name.id).isEmpty()) {
+            exceptions.add(new DecafSemanticException(location.name.tokenPosition, "Location " + location.name.id + " must be defined"));
         }
         return null;
     }
     public Void visit(Len len, SymbolTable symbolTable) {
         String arrayName = len.nameId.id;
-        if (!symbolTable.containsEntry(arrayName) && (symbolTable.entries.get(arrayName).type == BuiltinType.IntArray || symbolTable.entries.get(arrayName).type == BuiltinType.BoolArray)) {
+        // TODO: assign len to have type int
+        if (!symbolTable.getDescriptorFromValidScopes(arrayName).isEmpty()) {
             exceptions.add(new DecafSemanticException(len.nameId.tokenPosition, "the argument of the len operator must be an array"));
         }
         return null;}
