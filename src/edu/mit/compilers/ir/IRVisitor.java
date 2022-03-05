@@ -15,7 +15,6 @@ import java.util.Optional;
 import java.util.TreeSet;
 
 public class IRVisitor implements Visitor<Void> {
-    List<DecafSemanticException> exceptions = new ArrayList<>();
     SymbolTable fields = new SymbolTable(null, SymbolTableType.Field);
     SymbolTable methods = new SymbolTable(null, SymbolTableType.Method);
     public TreeSet<String> imports = new TreeSet<>();
@@ -231,6 +230,9 @@ public class IRVisitor implements Visitor<Void> {
     }
 
     public Void visit(Return returnStatement, SymbolTable symbolTable) {
+        if (!returnStatement.isTerminal())
+            returnStatement.retExpression.accept(this, symbolTable);
+
         return null;
     }
 
