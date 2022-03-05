@@ -1,11 +1,26 @@
 package edu.mit.compilers.utils;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Utils {
   public static final String SPACE = " ";
   public static final String EMPTY = "";
+
+    public static String getStringFromInputStream(InputStream inputStream) {
+        String str;
+        try {
+            str = new String(inputStream.readAllBytes(), UTF_8);
+        } catch (IOException e) {
+            e.printStackTrace();
+            str = "";
+        }
+        return str;
+    }
 
   // Adapted from
   // https://github.com/apache/commons-lang/blob/3adea508fbf48deb760eb71c7239dbd0ba351830/src/main/java/org/apache/commons/lang3/StringUtils.java#L5570

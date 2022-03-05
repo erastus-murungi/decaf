@@ -3,6 +3,7 @@ package edu.mit.compilers.grammar;
 import edu.mit.compilers.ast.*;
 import edu.mit.compilers.exceptions.DecafException;
 import edu.mit.compilers.exceptions.DecafParserException;
+import edu.mit.compilers.utils.DecafExceptionProcessor;
 import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.Utils;
 
@@ -21,6 +22,7 @@ public class DecafParser {
     private ArrayList<Token> tokens;
     private int currentTokenIndex;
     private Program root;
+    private final DecafExceptionProcessor decafExceptionProcessor;
 
     public Program getRoot() {
         return root;
@@ -28,6 +30,7 @@ public class DecafParser {
 
     public DecafParser(DecafScanner scanner) {
         this.scanner = scanner;
+        decafExceptionProcessor = scanner.decafExceptionProcessor;
         try {
             this.tokens = getAllTokens();
         } catch (DecafException e) {
@@ -321,7 +324,7 @@ public class DecafParser {
     }
 
     private DecafParserException getContextualException(String errMessage) {
-        return new DecafParserException(getCurrentToken(), scanner.getContextualErrorMessage(getCurrentToken().tokenPosition(), errMessage));
+        return decafExceptionProcessor.getContextualDecafParserException(getCurrentToken(), errMessage);
     }
 
     private void parseMethodDeclarations(List<MethodDefinition> methodDefinitionList) throws DecafParserException {

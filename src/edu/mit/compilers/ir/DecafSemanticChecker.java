@@ -6,6 +6,7 @@ import edu.mit.compilers.descriptors.Descriptor;
 import edu.mit.compilers.exceptions.DecafSemanticException;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
+import edu.mit.compilers.utils.DecafExceptionProcessor;
 
 
 public class DecafSemanticChecker {
@@ -16,7 +17,7 @@ public class DecafSemanticChecker {
 
     private AST rootNode;
 
-    public DecafSemanticChecker(Program rootNode) {
+    public DecafSemanticChecker(Program rootNode, DecafExceptionProcessor decafExceptionProcessor) {
         this.rootNode = rootNode;
     }
 
@@ -24,24 +25,20 @@ public class DecafSemanticChecker {
         this.rootNode = rootNode;
     }
 
-    public void runChecks(DecafScanner decafScanner) {
+    public void runChecks(DecafExceptionProcessor decafExceptionProcessor) {
         IRVisitor irVisitor = new IRVisitor();
         rootNode.accept(irVisitor, null);
         TypeCheckVisitor typeCheckVisitor = new TypeCheckVisitor((Program) rootNode, irVisitor.methods, irVisitor.fields, irVisitor.imports);
         rootNode.accept(typeCheckVisitor, irVisitor.fields);
         hasError = Visitor.exceptions.size() > 0;
         if (trace) {
-            printAllExceptions(decafScanner);
+            printAllExceptions(decafExceptionProcessor);
         }
     }
 
-    public void printAllExceptions(DecafScanner decafScanner) {
+    public void printAllExceptions(DecafExceptionProcessor decafExceptionProcessor) {
         for (DecafSemanticException decafSemanticException : Visitor.exceptions) {
-            TokenPosition tokenPosition = new TokenPosition(decafSemanticException.line, decafSemanticException.column, -1);
-            DecafSemanticException decafSemanticException1 = new DecafSemanticException(tokenPosition, decafScanner.getContextualErrorMessage(tokenPosition, decafSemanticException.getMessage()));
-            decafSemanticException1.setStackTrace(decafSemanticException.getStackTrace());
-            decafSemanticException1.printStackTrace();
-            //            System.err.println(decafSemanticException.getMessage());
+            decafExceptionProcessor.processDecafSemanticException(decafSemanticException).printStackTrace();
         }
     }
 

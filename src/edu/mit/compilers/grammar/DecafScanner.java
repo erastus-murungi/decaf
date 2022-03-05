@@ -4,6 +4,7 @@ package edu.mit.compilers.grammar;
 
 import edu.mit.compilers.exceptions.DecafException;
 import edu.mit.compilers.exceptions.DecafScannerException;
+import edu.mit.compilers.utils.DecafExceptionProcessor;
 import edu.mit.compilers.utils.StringDef;
 import edu.mit.compilers.utils.Utils;
 
@@ -93,6 +94,7 @@ public class DecafScanner {
 
     private final String inputString;
     private final Logger logger = Logger.getLogger(DecafScanner.class.getName());
+    DecafExceptionProcessor decafExceptionProcessor;
     private final List<String> syntaxLines = new ArrayList<>();
     private int column;
     private int line;
@@ -100,24 +102,11 @@ public class DecafScanner {
     private Token prevToken = null;
     private boolean shouldTrace = false;
 
-    public DecafScanner(InputStream inputStream) {
-        String str;
-        try {
-            str = new String(inputStream.readAllBytes(), UTF_8);
-        } catch (IOException e) {
-            e.printStackTrace();
-            str = "";
-        }
-        inputString = maybeAppendNewLineCharacter(str);
-        stringIndex = 0;
-        logger.setLevel(Level.INFO);
-    }
-
-
-    public DecafScanner(String in) {
+    public DecafScanner(String in, DecafExceptionProcessor decafExceptionProcessor) {
         inputString = maybeAppendNewLineCharacter(in);
         stringIndex = 0;
         logger.setLevel(Level.INFO);
+        this.decafExceptionProcessor = decafExceptionProcessor;
     }
 
     private static boolean isValidIdFirstCodePoint(char c) {
@@ -180,11 +169,12 @@ public class DecafScanner {
             token = nextTokenHelper();
             if (!isSkipAble(token))
                 prevToken = token;
+            updateHighlighter(token);
             if (shouldTrace) {
-                updateHighlighter(token);
                 System.out.println(token);
             }
         } while (isSkipAble(token));
+        decafExceptionProcessor.syntaxHighlightedSourceCode = String.join("", syntaxLines);
         if (shouldTrace)
             syntaxHighlight(System.out);
         return token;
@@ -331,21 +321,7 @@ public class DecafScanner {
     }
 
     private DecafScannerException getContextualException(TokenPosition tokenPosition, String errMessage) {
-        final char c = getCurrentChar();
-        switch (prevToken.tokenType()) {
-            case STRING_LITERAL : {
-                errMessage =  "illegal string literal: " + prevToken.lexeme() + c;
-                break;
-            }
-            case ID : {
-                errMessage =  "illegal id: " + prevToken.lexeme() + c;
-                break;
-            }
-            default:{
-                break;
-            }
-        };
-        return new DecafScannerException(tokenPosition, getContextualErrorMessage(tokenPosition, errMessage));
+        return decafExceptionProcessor.getContextualDecafScannerException(prevToken, getCurrentChar(), tokenPosition, errMessage);
     }
 
     private void handleEscape(TokenPosition tokenPosition) throws DecafScannerException {
@@ -381,21 +357,8 @@ public class DecafScanner {
         else
             throw getContextualException(tokenPosition, "invalid char literal");
 
-        consumeCharacter(tokenPosition, SINGLE_QUOTES, getContextualErrorMessage(tokenPosition, "missing closing single quotes " + "current char literal is " + inputString.substring(tokenPosition.offset(), stringIndex + 1)));
+        consumeCharacter(tokenPosition, SINGLE_QUOTES, decafExceptionProcessor.getContextualErrorMessage(tokenPosition, "missing closing single quotes " + "current char literal is " + inputString.substring(tokenPosition.offset(), stringIndex + 1)));
         return makeToken(tokenPosition, TokenType.CHAR_LITERAL, inputString.substring(tokenPosition.offset(), stringIndex));
-    }
-
-    public String getContextualErrorMessage(TokenPosition tokenPosition, String errMessage) {
-        final int MAX_NUM_CHARS = 30;
-        final String TILDE = "~";
-        final String lineToPrint = inputString.split(NEW_LINE)[tokenPosition.line()];
-        final int before = Math.min(tokenPosition.column(), MAX_NUM_CHARS);
-        final int after = Math.min(lineToPrint.length() - tokenPosition.column(), MAX_NUM_CHARS);
-
-        final String inputSub = lineToPrint.substring(tokenPosition.column() - before, tokenPosition.column() + after);
-        final String spaces = Utils.SPACE.repeat(String.valueOf(tokenPosition.line()).length() + String.valueOf(tokenPosition.column()).length() + 3);
-
-        return NEW_LINE + errMessage + NEW_LINE + spaces + inputSub + NEW_LINE + tokenPosition.line() + TERNARY_COLON + tokenPosition.column() + TERNARY_COLON + Utils.SPACE + Utils.coloredPrint(TILDE.repeat(before), Utils.ANSIColorConstants.ANSI_GREEN) + Utils.coloredPrint("^", Utils.ANSIColorConstants.ANSI_CYAN) + Utils.coloredPrint(TILDE.repeat(after), Utils.ANSIColorConstants.ANSI_GREEN);
     }
 
     private Token handleStringLiteral(TokenPosition tokenPosition) throws DecafException {
@@ -411,7 +374,7 @@ public class DecafScanner {
             else
                 break;
         }
-        consumeCharacter(tokenPosition, DOUBLE_QUOTES, getContextualErrorMessage(tokenPosition, "expected " + DOUBLE_QUOTES + " received " + inputString.charAt(stringIndex)));
+        consumeCharacter(tokenPosition, DOUBLE_QUOTES, decafExceptionProcessor.getContextualErrorMessage(tokenPosition, "expected " + DOUBLE_QUOTES + " received " + inputString.charAt(stringIndex)));
         return makeToken(tokenPosition, TokenType.STRING_LITERAL, inputString.substring(tokenPosition.offset(), stringIndex));
     }
 
