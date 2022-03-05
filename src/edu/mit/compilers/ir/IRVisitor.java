@@ -264,16 +264,8 @@ public class IRVisitor implements Visitor<Void> {
     }
 
     public Void visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable) {
-        Name location = locationAssignExpr.location.name;
-        // checking location has been initialized
-        if (symbolTable.isShadowingParameter(location.id))
-            exceptions.add(new DecafSemanticException(location.tokenPosition, "Location " + location.id + " is shadowing a parameter"));
-        else if (symbolTable.getDescriptorFromValidScopes(location.id).isEmpty())
-            exceptions.add(new DecafSemanticException(location.tokenPosition, "Location " + location.id + " hasn't been defined yet"));
-
-        locationAssignExpr.assignExpr.expression.accept(this, symbolTable);
-        symbolTable.entries.put(location.id, new VariableDescriptor(location.id, locationAssignExpr.assignExpr.expression, null));
-        return null;
+        locationAssignExpr.location.accept(this, symbolTable);
+        return locationAssignExpr.assignExpr.accept(this, symbolTable);
     }
 
     public Void visit(AssignOpExpr assignOpExpr, SymbolTable symbolTable) {
@@ -296,9 +288,9 @@ public class IRVisitor implements Visitor<Void> {
         return null;
     }
 
-    public Void visit(Location location, SymbolTable symbolTable) {
-        if (symbolTable.getDescriptorFromValidScopes(location.name.id).isEmpty()) {
-            exceptions.add(new DecafSemanticException(location.name.tokenPosition, "Location " + location.name.id + " must be defined"));
+    public Void visit(LocationVariable locationVariable , SymbolTable symbolTable) {
+        if (symbolTable.getDescriptorFromValidScopes(locationVariable.name.id).isEmpty()) {
+            exceptions.add(new DecafSemanticException(locationVariable.name.tokenPosition, "Location " + locationVariable.name.id + " must be defined"));
         }
         return null;
     }

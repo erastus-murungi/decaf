@@ -1,5 +1,7 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.ir.Visitor;
+import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
@@ -19,6 +21,11 @@ public class LocationArray extends Location {
     @Override
     public boolean isTerminal() {
         return false;
+    }
+
+    @Override
+    public <T> T accept(Visitor<T> visitor, SymbolTable currentSymbolTable) {
+        return visitor.visit(this, currentSymbolTable);
     }
 
     @Override

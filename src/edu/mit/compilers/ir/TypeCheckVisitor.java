@@ -30,6 +30,7 @@ import edu.mit.compilers.ast.Len;
 import edu.mit.compilers.ast.Location;
 import edu.mit.compilers.ast.LocationArray;
 import edu.mit.compilers.ast.LocationAssignExpr;
+import edu.mit.compilers.ast.LocationVariable;
 import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.ast.MethodCallParameter;
 import edu.mit.compilers.ast.MethodCallStatement;
@@ -252,7 +253,6 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
 
     @Override
     public BuiltinType visit(LocationArray locationArray, SymbolTable symbolTable) {
-
         if (locationArray.expression.accept(this, symbolTable) != BuiltinType.Int) {
             exceptions.add(new DecafSemanticException(locationArray.tokenPosition, "array index must evaluate to int"));
         }
@@ -427,13 +427,13 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
     }
 
     @Override
-    public BuiltinType visit(Location location, SymbolTable symbolTable) {
-        Optional<Descriptor> descriptorOptional = symbolTable.getDescriptorFromValidScopes(location.name.id);
+    public BuiltinType visit(LocationVariable locationVariable, SymbolTable symbolTable) {
+        Optional<Descriptor> descriptorOptional = symbolTable.getDescriptorFromValidScopes(locationVariable.name.id);
         if (descriptorOptional.isPresent()) {
-            location.builtinType = descriptorOptional.get().type;
+            locationVariable.builtinType = descriptorOptional.get().type;
             return descriptorOptional.get().type;
         } else {
-            exceptions.add(new DecafSemanticException(location.tokenPosition, "No identifier can be used before it is declared: " + location.name.id + " not in scope"));
+            exceptions.add(new DecafSemanticException(locationVariable.tokenPosition, "No identifier can be used before it is declared: " + locationVariable.name.id + " not in scope"));
             return BuiltinType.Undefined;
         }
     }
