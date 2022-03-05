@@ -11,10 +11,10 @@ public class For extends Statement {
     public final Name initId;
     public final Expression initExpression;
 
-    final Expression terminatingCondition;
+    final public Expression terminatingCondition;
 
-    final Location updatingLocation;
-    final AssignExpr updateAssignExpr;
+    final public Location updatingLocation;
+    final public AssignExpr updateAssignExpr;
     public final Block block;
 
     public For(TokenPosition tokenPosition, Name initId, Expression initExpression, Expression terminatingCondition, Location updatingLocation, AssignExpr updateAssignExpr, Block block) {

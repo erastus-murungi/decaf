@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class Return extends Statement {
-  final Expression retExpression;
+  public final Expression retExpression;
 
   public Return(TokenPosition tokenPosition, Expression expression) {
     super(tokenPosition);

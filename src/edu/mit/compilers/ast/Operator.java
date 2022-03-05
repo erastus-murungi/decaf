@@ -10,7 +10,7 @@ import java.util.List;
 
 public abstract class Operator extends AST {
     final TokenPosition tokenPosition;
-    final String op;
+    public final String op;
 
     public Operator(TokenPosition tokenPosition, String op) {
         this.tokenPosition = tokenPosition;
