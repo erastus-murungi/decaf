@@ -503,16 +503,25 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
         if (intLiteral != null) {
             try {
                 if (negInt) {
-                    System.out.println(intLiteral.literal);
-                    Long.parseLong("-" + intLiteral.literal);
+                    if (intLiteral instanceof HexLiteral)
+                        Long.parseLong("-" + intLiteral.literal.substring(2), 16);
+                    else
+                        Long.parseLong("-" + intLiteral.literal);
+                }
+                else {
+                    if (intLiteral instanceof HexLiteral)
+                        Long.parseLong(intLiteral.literal.substring(2), 16);
+                    else
+                        Long.parseLong(intLiteral.literal);
                 }
 
-                else
-                    Long.parseLong(intLiteral.literal);
             }
             catch(Exception e) {
                 exceptions.add(new DecafSemanticException(intLiteral.tokenPosition, "Encountered int literal that's out of bounds"));
             }
         }
+
+        intLiteral = null;
+        negInt = false;
     }
 }
