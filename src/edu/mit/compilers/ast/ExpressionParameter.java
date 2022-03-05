@@ -9,7 +9,8 @@ import java.util.Collections;
 import java.util.List;
 
 public class ExpressionParameter extends MethodCallParameter {
-    final Expression expression;
+    public final Expression expression;
+
     @Override
     public List<Pair<String, AST>> getChildren() {
         return Collections.singletonList(new Pair<>("expression", expression));
