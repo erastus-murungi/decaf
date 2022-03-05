@@ -215,7 +215,7 @@ public class DecafScanner {
             case MOD : return handleSingleOperator(tokenPosition, TokenType.MOD, MOD);
             case DOUBLE_QUOTES : return handleStringLiteral(tokenPosition);
             case SINGLE_QUOTES : return handleCharLiteral(tokenPosition);
-            case " ", "\t", "\n", "\r" : return handleWhiteSpace(tokenPosition);
+            case " ": case "\t": case "\n": case "\r" : return handleWhiteSpace(tokenPosition);
             default : {
                 if (currentSubstringMatches(LINE_COMMENT_START))
                     return handleSingleLineComment(tokenPosition);
@@ -352,7 +352,7 @@ public class DecafScanner {
         consumeCharacterNoCheck();
         char c = inputString.charAt(stringIndex);
         switch (c) {
-            case 'n', '"', 't', 'r', '\'', '\\' : {
+            case 'n': case '"': case 't': case 'r': case '\'': case '\\' : {
                 consumeCharacterNoCheck();
                 break;
             }
@@ -548,11 +548,11 @@ public class DecafScanner {
         final char c = inputString.charAt(stringIndex);
 
         switch (c) {
-            case '\r', '\n' : {
+            case '\r': case '\n' : {
                 consumeNewlineCharacter(String.valueOf(c));
                 break;
             }
-            case ' ', '\t' : {
+            case ' ': case '\t' : {
                 consumeCharacterNoCheck();
                 break;
             } 
@@ -583,7 +583,7 @@ public class DecafScanner {
                 syntaxLines.add(Utils.coloredPrint(token.lexeme(), Utils.ANSIColorConstants.ANSI_BLUE));
                 break;
             }
-            case CHAR_LITERAL, STRING_LITERAL, RESERVED_FALSE, RESERVED_TRUE, HEX_LITERAL, DECIMAL_LITERAL : {
+            case CHAR_LITERAL: case STRING_LITERAL: case RESERVED_FALSE: case RESERVED_TRUE: case HEX_LITERAL: case DECIMAL_LITERAL : {
                 syntaxLines.add(Utils.coloredPrint(token.lexeme(), Utils.ANSIColorConstants.ANSI_GREEN));
                 break;
             }

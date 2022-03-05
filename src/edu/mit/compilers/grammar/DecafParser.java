@@ -337,7 +337,7 @@ public class DecafParser {
     private AssignOperator parseAssignOp(TokenType tokenType) throws DecafParserException {
         Token token = consumeToken(tokenType, tokenType.toString());
         switch (tokenType) {
-            case ASSIGN, ADD_ASSIGN, MINUS_ASSIGN, MULTIPLY_ASSIGN : return new AssignOperator(token.tokenPosition(), token.lexeme());
+            case ASSIGN: case ADD_ASSIGN: case MINUS_ASSIGN: case MULTIPLY_ASSIGN : return new AssignOperator(token.tokenPosition(), token.lexeme());
             default : throw getContextualException("expected compound assignOp");
         }
     }
@@ -345,7 +345,7 @@ public class DecafParser {
     private CompoundAssignOperator parseCompoundAssignOp(TokenType tokenType) throws DecafParserException {
         Token token = consumeToken(tokenType, tokenType.toString());
         switch (tokenType) {
-            case ADD_ASSIGN, MINUS_ASSIGN, MULTIPLY_ASSIGN : return new CompoundAssignOperator(token.tokenPosition(), token.lexeme());
+            case ADD_ASSIGN: case MINUS_ASSIGN: case MULTIPLY_ASSIGN : return new CompoundAssignOperator(token.tokenPosition(), token.lexeme());
             default : throw getContextualException("expected compound assignOp");
         }
     }
@@ -378,8 +378,8 @@ public class DecafParser {
 
     private AssignExpr parseAssignExpr() throws DecafParserException {
         switch (getCurrentToken().tokenType()) {
-            case DECREMENT, INCREMENT : return parseIncrement();
-            case ASSIGN, ADD_ASSIGN, MINUS_ASSIGN, MULTIPLY_ASSIGN : return parseAssignOpExpr(getCurrentToken().tokenType());
+            case DECREMENT: case INCREMENT : return parseIncrement();
+            case ASSIGN: case ADD_ASSIGN: case MINUS_ASSIGN: case MULTIPLY_ASSIGN : return parseAssignOpExpr(getCurrentToken().tokenType());
             default : {
                 if (tokens.get(currentTokenIndex - 1).tokenType() == ID) {
                     throw getContextualException("invalid type " + "\"" + tokens.get(currentTokenIndex - 1).lexeme() + "\"");
@@ -391,8 +391,8 @@ public class DecafParser {
 
     private AssignExpr parseCompoundAssignExpr() throws DecafParserException {
         switch (getCurrentToken().tokenType()) {
-            case DECREMENT, INCREMENT : return parseIncrement();
-            case ADD_ASSIGN, MINUS_ASSIGN, MULTIPLY_ASSIGN : return parseCompoundAssignOpExpr(getCurrentToken().tokenType());
+            case DECREMENT: case INCREMENT : return parseIncrement();
+            case ADD_ASSIGN: case MINUS_ASSIGN: case MULTIPLY_ASSIGN : return parseCompoundAssignOpExpr(getCurrentToken().tokenType());
             default : throw new DecafParserException(getCurrentToken(), "expected compound_assign_expr");
         }
     }
@@ -422,11 +422,11 @@ public class DecafParser {
         try {
             expression = parseExprHelper();
             switch (getCurrentTokenType()) {
-                case DIVIDE, MULTIPLY, MOD, CONDITIONAL_AND, CONDITIONAL_OR, PLUS, MINUS, LEQ, NEQ, EQ, GEQ, LT, GT : {
+                case DIVIDE: case MULTIPLY: case MOD: case CONDITIONAL_AND: case CONDITIONAL_OR: case PLUS: case MINUS: case LEQ: case NEQ: case EQ: case GEQ: case LT: case GT : {
                     expression = parseBinaryOpExpr(expression);
                     break;
                 }
-                case SEMICOLON, RIGHT_SQUARE_BRACKET, RIGHT_PARENTHESIS, COMMA : {
+                case SEMICOLON: case RIGHT_SQUARE_BRACKET: case RIGHT_PARENTHESIS: case COMMA : {
                     break;
                 }
                 default : throw getContextualException("invalid expression");
@@ -469,8 +469,8 @@ public class DecafParser {
 
     private Expression parseExprHelper() throws DecafParserException {
         switch (getCurrentTokenType()) {
-            case MINUS, NOT : return parseUnaryOpExpr();
-            case CHAR_LITERAL, RESERVED_FALSE, RESERVED_TRUE, HEX_LITERAL, DECIMAL_LITERAL: return parseLiteral(getCurrentTokenType());
+            case MINUS: case NOT : return parseUnaryOpExpr();
+            case CHAR_LITERAL: case RESERVED_FALSE: case RESERVED_TRUE: case HEX_LITERAL: case DECIMAL_LITERAL: return parseLiteral(getCurrentTokenType());
             case RESERVED_LEN : return parseLen();
             case LEFT_PARENTHESIS : return parseParenthesizedExpression();
             case ID : return parseLocationOrMethodCall();

@@ -4,7 +4,6 @@ import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable; 
-import edu.mit.compilers.descriptors.Descriptor;
 
 public class UnaryOperator extends Operator {
     public UnaryOperator(TokenPosition tokenPosition, @DecafScanner.UnaryOperator String op) {
