@@ -58,7 +58,7 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
     TreeSet<String> imports;
     BuiltinType returnTypeSeen;
 
-    IntLiteral intLiteral;
+    IntLiteral intLiteral = null;
     boolean negInt = false;
 
     public TypeCheckVisitor(Program root, SymbolTable methods, SymbolTable globalFields, TreeSet<String> imports) {
@@ -81,11 +81,13 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
 
     @Override
     public BuiltinType visit(DecimalLiteral decimalLiteral, SymbolTable symbolTable) {
+        intLiteral = decimalLiteral;
         return BuiltinType.Int;
     }
 
     @Override
     public BuiltinType visit(HexLiteral hexLiteral, SymbolTable symbolTable) {
+        intLiteral = hexLiteral;
         return BuiltinType.Int;
     }
 
@@ -493,14 +495,19 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
     }
 
     private void checkIntBounds() {
-        try {
-            if (negInt)
-                Long.parseLong("-" + intLiteral.literal);
-            else
-                Long.parseLong(intLiteral.literal);
-        }
-        catch(Exception e) {
-            exceptions.add(new DecafSemanticException(intLiteral.tokenPosition, "Encountered int literal that's out of bounds"));
+        if (intLiteral != null) {
+            try {
+                if (negInt) {
+                    System.out.println(intLiteral.literal);
+                    Long.parseLong("-" + intLiteral.literal);
+                }
+
+                else
+                    Long.parseLong(intLiteral.literal);
+            }
+            catch(Exception e) {
+                exceptions.add(new DecafSemanticException(intLiteral.tokenPosition, "Encountered int literal that's out of bounds"));
+            }
         }
     }
 }
