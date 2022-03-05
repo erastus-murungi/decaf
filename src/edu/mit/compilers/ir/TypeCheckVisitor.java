@@ -30,6 +30,7 @@ import edu.mit.compilers.ast.Len;
 import edu.mit.compilers.ast.Location;
 import edu.mit.compilers.ast.LocationArray;
 import edu.mit.compilers.ast.LocationAssignExpr;
+import edu.mit.compilers.ast.LocationVariable;
 import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.ast.MethodCallParameter;
 import edu.mit.compilers.ast.MethodCallStatement;
@@ -270,7 +271,6 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
 
     @Override
     public BuiltinType visit(LocationArray locationArray, SymbolTable symbolTable) {
-
         if (locationArray.expression.accept(this, symbolTable) != BuiltinType.Int) {
             exceptions.add(new DecafSemanticException(locationArray.tokenPosition, "array index must evaluate to int"));
         }
@@ -385,13 +385,12 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
 
     @Override
     public BuiltinType visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable) {
-        Optional<Descriptor> optionalDescriptor = symbolTable.getDescriptorFromCurrentScope(locationAssignExpr.location.name.id);
-
-        if (optionalDescriptor.isEmpty() || (!(locationAssignExpr.location instanceof LocationArray) && optionalDescriptor.get() instanceof ArrayDescriptor))
+        Optional<Descriptor> optionalDescriptor = symbolTable.getDescriptorFromValidScopes(locationAssignExpr.location.name.id);
+        if (optionalDescriptor.isEmpty() || (locationAssignExpr.location instanceof LocationVariable && optionalDescriptor.get() instanceof ArrayDescriptor))
             exceptions.add(new DecafSemanticException(locationAssignExpr.tokenPosition, "id `" + locationAssignExpr.location.name.id + "` being assigned to must be a declared local/global variable or formal parameter."));
         else {
             if (locationAssignExpr.location instanceof LocationArray) {
-                LocationArray locationArray = ((LocationArray) locationAssignExpr.location);
+                final LocationArray locationArray = (LocationArray) locationAssignExpr.location;
                 locationArray.expression.builtinType = locationArray.expression.accept(this, symbolTable);
                 if (locationArray.expression.builtinType != BuiltinType.Int) {
                     exceptions.add(new DecafSemanticException(locationAssignExpr.tokenPosition, "array index must evaluate to an int"));
@@ -399,8 +398,9 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
             }
             final BuiltinType expressionType = locationAssignExpr.assignExpr.accept(this, symbolTable);
             final Descriptor locationDescriptor = optionalDescriptor.get();
+
             if (locationAssignExpr.assignExpr instanceof AssignOpExpr) {
-                AssignOpExpr assignOpExpr = (AssignOpExpr) locationAssignExpr.assignExpr;
+                final AssignOpExpr assignOpExpr = (AssignOpExpr) locationAssignExpr.assignExpr;
                 if (assignOpExpr.assignOp.op.equals(DecafScanner.ASSIGN)) {
                     if ((locationDescriptor.type == BuiltinType.Int || locationDescriptor.type == BuiltinType.IntArray) && expressionType != BuiltinType.Int) {
                         exceptions.add(new DecafSemanticException(locationAssignExpr.tokenPosition, "lhs is type " + locationDescriptor.type + " rhs must be type Int, not " + expressionType));
@@ -409,7 +409,8 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
                         exceptions.add(new DecafSemanticException(locationAssignExpr.tokenPosition, "lhs is type " + locationDescriptor.type + " rhs must be type Bool, not " + expressionType));
                     }
                 }
-            } else if (assignOperatorEquals(locationAssignExpr, DecafScanner.ADD_ASSIGN)
+            }
+             if (assignOperatorEquals(locationAssignExpr, DecafScanner.ADD_ASSIGN)
                                || assignOperatorEquals(locationAssignExpr, DecafScanner.MINUS_ASSIGN)
                                || assignOperatorEquals(locationAssignExpr, DecafScanner.MULTIPLY_ASSIGN)
                                || locationAssignExpr.assignExpr instanceof Decrement
@@ -449,13 +450,13 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
     }
 
     @Override
-    public BuiltinType visit(Location location, SymbolTable symbolTable) {
-        Optional<Descriptor> descriptorOptional = symbolTable.getDescriptorFromValidScopes(location.name.id);
+    public BuiltinType visit(LocationVariable locationVariable, SymbolTable symbolTable) {
+        Optional<Descriptor> descriptorOptional = symbolTable.getDescriptorFromValidScopes(locationVariable.name.id);
         if (descriptorOptional.isPresent()) {
-            location.builtinType = descriptorOptional.get().type;
+            locationVariable.builtinType = descriptorOptional.get().type;
             return descriptorOptional.get().type;
         } else {
-            exceptions.add(new DecafSemanticException(location.tokenPosition, "No identifier can be used before it is declared: " + location.name.id + " not in scope"));
+            exceptions.add(new DecafSemanticException(locationVariable.tokenPosition, "No identifier can be used before it is declared: " + locationVariable.name.id + " not in scope"));
             return BuiltinType.Undefined;
         }
     }

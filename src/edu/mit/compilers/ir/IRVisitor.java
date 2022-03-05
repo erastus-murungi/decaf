@@ -60,7 +60,7 @@ public class IRVisitor implements Visitor<Void> {
                 exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field " + array.id.id + " already declared"));
             } else {
                 // TODO: Check hex parse long
-                symbolTable.entries.put(array.id.id, new ArrayDescriptor(array.id.id, array.size.convertToLong(), type));
+                symbolTable.entries.put(array.id.id, new ArrayDescriptor(array.id.id, array.size.convertToLong(), type == BuiltinType.Int ? BuiltinType.IntArray : (type == BuiltinType.Bool) ? BuiltinType.BoolArray : BuiltinType.Undefined));
             }
         }
         return null;
@@ -98,12 +98,13 @@ public class IRVisitor implements Visitor<Void> {
     }
 
     public Void visit(MethodDefinition methodDefinition, SymbolTable symbolTable) {
+        SymbolTable parameterSymbolTable = new SymbolTable(fields, SymbolTableType.Parameter);
+        SymbolTable localSymbolTable = new SymbolTable(parameterSymbolTable, SymbolTableType.Field);
         if (methods.containsEntry(methodDefinition.methodName.id) || imports.contains(methodDefinition.methodName.id) || fields.containsEntry(methodDefinition.methodName.id)) {
             // method already defined. add an exception
             exceptions.add(new DecafSemanticException(methodDefinition.tokenPosition, "Method name " + methodDefinition.methodName.id + " already defined"));
+            methodDefinition.block.blockSymbolTable = localSymbolTable;
         } else {
-            SymbolTable parameterSymbolTable = new SymbolTable(fields, SymbolTableType.Parameter);
-            SymbolTable localSymbolTable = new SymbolTable(parameterSymbolTable, SymbolTableType.Field);
             for (MethodDefinitionParameter parameter : methodDefinition.methodDefinitionParameterList) {
                 parameter.accept(this, parameterSymbolTable);
             }
@@ -264,16 +265,8 @@ public class IRVisitor implements Visitor<Void> {
     }
 
     public Void visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable) {
-        Name location = locationAssignExpr.location.name;
-        // checking location has been initialized
-        if (symbolTable.isShadowingParameter(location.id))
-            exceptions.add(new DecafSemanticException(location.tokenPosition, "Location " + location.id + " is shadowing a parameter"));
-        else if (symbolTable.getDescriptorFromValidScopes(location.id).isEmpty())
-            exceptions.add(new DecafSemanticException(location.tokenPosition, "Location " + location.id + " hasn't been defined yet"));
-
-        locationAssignExpr.assignExpr.expression.accept(this, symbolTable);
-        symbolTable.entries.put(location.id, new VariableDescriptor(location.id, locationAssignExpr.assignExpr.expression, null));
-        return null;
+        locationAssignExpr.location.accept(this, symbolTable);
+        return locationAssignExpr.assignExpr.accept(this, symbolTable);
     }
 
     public Void visit(AssignOpExpr assignOpExpr, SymbolTable symbolTable) {
@@ -296,9 +289,9 @@ public class IRVisitor implements Visitor<Void> {
         return null;
     }
 
-    public Void visit(Location location, SymbolTable symbolTable) {
-        if (symbolTable.getDescriptorFromValidScopes(location.name.id).isEmpty()) {
-            exceptions.add(new DecafSemanticException(location.name.tokenPosition, "Location " + location.name.id + " must be defined"));
+    public Void visit(LocationVariable locationVariable , SymbolTable symbolTable) {
+        if (symbolTable.getDescriptorFromValidScopes(locationVariable.name.id).isEmpty()) {
+            exceptions.add(new DecafSemanticException(locationVariable.name.tokenPosition, "Location " + locationVariable.name.id + " must be defined"));
         }
         return null;
     }

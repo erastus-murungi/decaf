@@ -213,7 +213,7 @@ public class DecafParser {
         } else if (getCurrentTokenType() == LEFT_PARENTHESIS) {
             return parseMethodCall(token);
         } else {
-            return new Location(nameId);
+            return new LocationVariable(nameId);
         }
     }
 
@@ -431,7 +431,7 @@ public class DecafParser {
 
     private LocationAssignExpr parseLocationAndAssignExpr(Token token) throws DecafParserException {
         final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
-        Location locationNode = parseLocation(token, ExprContext.STORE);
+        Location locationNode = parseLocation(token);
         AssignExpr assignExprNode = parseAssignExpr();
         return new LocationAssignExpr(tokenPosition, locationNode, assignExprNode);
     }
@@ -506,12 +506,12 @@ public class DecafParser {
         return locationArray;
     }
 
-    private Location parseLocation(Token token, ExprContext exprContext) throws DecafParserException {
+    private Location parseLocation(Token token) throws DecafParserException {
         if (getCurrentToken().tokenType() == LEFT_SQUARE_BRACKET) {
             consumeToken(LEFT_SQUARE_BRACKET);
             return parseLocationArray(token);
         }
-        return new Location(new Name(token.lexeme(), token.tokenPosition(), exprContext));
+        return new LocationVariable(new Name(token.lexeme(), token.tokenPosition(), ExprContext.STORE));
     }
 
 
@@ -561,7 +561,10 @@ public class DecafParser {
 
     private Return parseReturnStatement() throws DecafParserException {
         final TokenPosition tokenPosition = consumeToken(RESERVED_RETURN, DecafScanner.RESERVED_RETURN).tokenPosition();
-        final Expression expression = parseOrExpr();
+        Expression expression = null;
+        if (getCurrentTokenType() != SEMICOLON) {
+            expression = parseOrExpr();
+        }
         consumeToken(SEMICOLON, DecafScanner.SEMICOLON);
         return new Return(tokenPosition, expression);
     }
@@ -612,7 +615,7 @@ public class DecafParser {
 
         consumeToken(SEMICOLON, DecafScanner.SEMICOLON);
 
-        final Location updatingLocation = parseLocation(consumeToken(ID, DecafScanner.IDENTIFIER), ExprContext.STORE);
+        final Location updatingLocation = parseLocation(consumeToken(ID, DecafScanner.IDENTIFIER));
         final AssignExpr updatingAssignExpr = parseCompoundAssignExpr();
 
         consumeToken(RIGHT_PARENTHESIS, DecafScanner.RIGHT_PARENTHESIS);
