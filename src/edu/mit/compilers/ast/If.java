@@ -9,9 +9,9 @@ import edu.mit.compilers.utils.Pair;
 import java.util.List;
 
 public class If extends Statement {
-  final Expression test;
-  final Block ifBlock;
-  final Block elseBlock; // maybe null
+  public final Expression test;
+  public final Block ifBlock;
+  public final Block elseBlock; // maybe null
 
   public If(TokenPosition tokenPosition, Expression test, Block ifBlock, Block elseBlock) {
     super(tokenPosition);

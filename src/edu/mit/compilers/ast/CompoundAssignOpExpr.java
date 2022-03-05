@@ -9,7 +9,7 @@ import edu.mit.compilers.utils.Pair;
 import java.util.List;
 
 public class CompoundAssignOpExpr extends AssignExpr {
-    final CompoundAssignOperator compoundAssignOp;
+    public final CompoundAssignOperator compoundAssignOp;
 
     public CompoundAssignOpExpr(TokenPosition tokenPosition, CompoundAssignOperator compoundAssignOp, Expression expression) {
         super(tokenPosition, expression);
