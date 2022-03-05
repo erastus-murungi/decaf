@@ -40,6 +40,9 @@ public class IRVisitor implements Visitor<Void> {
         for (Name name : fieldDeclaration.names) {
             if (symbolTable.isShadowingParameter(name.id)) {
                 exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field " + name.id + " shadows a parameter"));
+            } else if (symbolTable.parent == null && (methods.containsEntry(name.id) || imports.contains(name.id) || fields.containsEntry(name.id))){
+                // global field already declared in global scope
+                exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "(global) Field " + name.id + " already declared"));
             } else if (symbolTable.containsEntry(name.id)) {
                 // field already declared in scope
                 exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field " + name.id + " already declared"));
@@ -62,14 +65,14 @@ public class IRVisitor implements Visitor<Void> {
     }
 
     public Void visit(MethodDefinition methodDefinition, SymbolTable symbolTable) {
-        if (methods.getDescriptorFromValidScopes(methodDefinition.methodName.id).isPresent()) {
+        if (methods.containsEntry(methodDefinition.methodName.id) || imports.contains(methodDefinition.methodName.id) || fields.containsEntry(methodDefinition.methodName.id)) {
             // method already defined. add an exception
             exceptions.add(new DecafSemanticException(methodDefinition.tokenPosition, "Method name " + methodDefinition.methodName.id + " already defined"));
         } else {
             SymbolTable parameterSymbolTable = new SymbolTable(fields, SymbolTableType.Parameter);
             SymbolTable localSymbolTable = new SymbolTable(parameterSymbolTable, SymbolTableType.Field);
             for (MethodDefinitionParameter parameter : methodDefinition.methodDefinitionParameterList) {
-                parameterSymbolTable.entries.put(parameter.id.id, new ParameterDescriptor(parameter.id.id, parameter.builtinType));
+                parameter.accept(this, parameterSymbolTable);
             }
             // visit the method definition and populate the local symbol table
             methods.entries.put(methodDefinition.methodName.id, new MethodDescriptor(methodDefinition, parameterSymbolTable, localSymbolTable));
@@ -148,6 +151,7 @@ public class IRVisitor implements Visitor<Void> {
             fieldDeclaration.accept(this, block.blockSymbolTable);
         for (Statement statement : block.statementList)
             statement.accept(this, block.blockSymbolTable);
+
         return null;
     }
 
@@ -220,8 +224,8 @@ public class IRVisitor implements Visitor<Void> {
         else if (symbolTable.getDescriptorFromValidScopes(location.id).isEmpty())
             exceptions.add(new DecafSemanticException(location.tokenPosition, "Location " + location.id + " hasn't been defined yet"));
 
-        // update location variable in symbolTable, but how? Need evaluation of expr???
-        // can we just store expr node in symbol table
+        locationAssignExpr.assignExpr.expression.accept(this, symbolTable);
+        symbolTable.entries.put(location.id, new VariableDescriptor(location.id, locationAssignExpr.assignExpr.expression, null));
         return null;
     }
 
@@ -234,7 +238,10 @@ public class IRVisitor implements Visitor<Void> {
     public Void visit(MethodDefinitionParameter methodDefinitionParameter, SymbolTable symbolTable) {
         String paramName = methodDefinitionParameter.id.id;
         BuiltinType paramType = methodDefinitionParameter.builtinType;
-        symbolTable.entries.put(paramName, new ParameterDescriptor(paramName, paramType));
+        if (symbolTable.isShadowingParameter(paramName))
+            exceptions.add(new DecafSemanticException(methodDefinitionParameter.id.tokenPosition, "MethodDefinitionParameter " + paramName + " is shadowing a parameter"));
+        else
+            symbolTable.entries.put(paramName, new ParameterDescriptor(paramName, paramType));
         return null;
     }
 
