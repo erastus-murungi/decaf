@@ -98,12 +98,13 @@ public class IRVisitor implements Visitor<Void> {
     }
 
     public Void visit(MethodDefinition methodDefinition, SymbolTable symbolTable) {
+        SymbolTable parameterSymbolTable = new SymbolTable(fields, SymbolTableType.Parameter);
+        SymbolTable localSymbolTable = new SymbolTable(parameterSymbolTable, SymbolTableType.Field);
         if (methods.containsEntry(methodDefinition.methodName.id) || imports.contains(methodDefinition.methodName.id) || fields.containsEntry(methodDefinition.methodName.id)) {
             // method already defined. add an exception
             exceptions.add(new DecafSemanticException(methodDefinition.tokenPosition, "Method name " + methodDefinition.methodName.id + " already defined"));
+            methodDefinition.block.blockSymbolTable = localSymbolTable;
         } else {
-            SymbolTable parameterSymbolTable = new SymbolTable(fields, SymbolTableType.Parameter);
-            SymbolTable localSymbolTable = new SymbolTable(parameterSymbolTable, SymbolTableType.Field);
             for (MethodDefinitionParameter parameter : methodDefinition.methodDefinitionParameterList) {
                 parameter.accept(this, parameterSymbolTable);
             }
