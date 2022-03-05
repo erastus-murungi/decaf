@@ -60,7 +60,7 @@ public class IRVisitor implements Visitor<Void> {
                 exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field " + array.id.id + " already declared"));
             } else {
                 // TODO: Check hex parse long
-                symbolTable.entries.put(array.id.id, new ArrayDescriptor(array.id.id, array.size.convertToLong(), type));
+                symbolTable.entries.put(array.id.id, new ArrayDescriptor(array.id.id, array.size.convertToLong(), type == BuiltinType.Int ? BuiltinType.IntArray : (type == BuiltinType.Bool) ? BuiltinType.BoolArray : BuiltinType.Undefined));
             }
         }
         return null;
