@@ -76,7 +76,6 @@ public interface Visitor<T> {
      T visit(Increment increment, SymbolTable symbolTable);
      T visit(Decrement decrement, SymbolTable symbolTable);
      T visit(CharLiteral charLiteral, SymbolTable symbolTable);
-     T visit(MethodCallParameter methodCallParameter, SymbolTable symbolTable);
      T visit(StringLiteral stringLiteral, SymbolTable symbolTable);
      T visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable curSymbolTable);
 }

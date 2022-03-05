@@ -19,28 +19,40 @@ public class IRVisitor implements Visitor<Void> {
     SymbolTable methods = new SymbolTable(null, SymbolTableType.Method);
     public TreeSet<String> imports = new TreeSet<>();
 
-    public Void visit(IntLiteral intLiteral, SymbolTable symbolTable) {return null;}
-    public Void visit(BooleanLiteral booleanLiteral, SymbolTable symbolTable) {return null;}
-    public Void visit(DecimalLiteral decimalLiteral, SymbolTable symbolTable) {return null;}
-    public Void visit(HexLiteral hexLiteral, SymbolTable symbolTable) {return null;}
+    public Void visit(IntLiteral intLiteral, SymbolTable symbolTable) {
+        return null;
+    }
+
+    public Void visit(BooleanLiteral booleanLiteral, SymbolTable symbolTable) {
+        return null;
+    }
+
+    public Void visit(DecimalLiteral decimalLiteral, SymbolTable symbolTable) {
+        return null;
+    }
+
+    public Void visit(HexLiteral hexLiteral, SymbolTable symbolTable) {
+        return null;
+    }
+
     public Void visit(FieldDeclaration fieldDeclaration, SymbolTable symbolTable) {
         BuiltinType type = fieldDeclaration.builtinType;
-        for (Name name : fieldDeclaration.names){
+        for (Name name : fieldDeclaration.names) {
             if (symbolTable.isShadowingParameter(name.id)) {
-                exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field "+ name.id+" shadows a parameter"));
-            } else if (symbolTable.containsEntry(name.id)){
+                exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field " + name.id + " shadows a parameter"));
+            } else if (symbolTable.containsEntry(name.id)) {
                 // field already declared in scope
-                exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field "+ name.id+" already declared"));
+                exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field " + name.id + " already declared"));
             } else {
                 // fields just declared do not have a value.
                 symbolTable.entries.put(name.id, new VariableDescriptor(name.id, null, type));
             }
         }
-        for (Array array : fieldDeclaration.arrays){
+        for (Array array : fieldDeclaration.arrays) {
             if (symbolTable.isShadowingParameter(array.id.id)) {
-                exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field "+ array.id.id+" shadows a parameter"));
-            } else if (!symbolTable.getDescriptorFromValidScopes(array.id.id).isEmpty()){
-                exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field "+ array.id.id+" already declared"));
+                exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field " + array.id.id + " shadows a parameter"));
+            } else if (symbolTable.getDescriptorFromValidScopes(array.id.id).isPresent()) {
+                exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field " + array.id.id + " already declared"));
             } else {
                 // TODO: Check hex parse long
                 symbolTable.entries.put(array.id.id, new ArrayDescriptor(array.id.id, array.size.convertToLong(), type));
@@ -48,14 +60,15 @@ public class IRVisitor implements Visitor<Void> {
         }
         return null;
     }
-    public Void visit(MethodDefinition methodDefinition, SymbolTable symbolTable){
-        if (!methods.getDescriptorFromValidScopes(methodDefinition.methodName.id).isEmpty()){
+
+    public Void visit(MethodDefinition methodDefinition, SymbolTable symbolTable) {
+        if (methods.getDescriptorFromValidScopes(methodDefinition.methodName.id).isPresent()) {
             // method already defined. add an exception
-            exceptions.add(new DecafSemanticException(methodDefinition.tokenPosition, "Method name "+ methodDefinition.methodName.id+" already defined"));
+            exceptions.add(new DecafSemanticException(methodDefinition.tokenPosition, "Method name " + methodDefinition.methodName.id + " already defined"));
         } else {
             SymbolTable parameterSymbolTable = new SymbolTable(fields, SymbolTableType.Parameter);
             SymbolTable localSymbolTable = new SymbolTable(parameterSymbolTable, SymbolTableType.Field);
-            for (MethodDefinitionParameter parameter : methodDefinition.methodDefinitionParameterList){
+            for (MethodDefinitionParameter parameter : methodDefinition.methodDefinitionParameterList) {
                 parameterSymbolTable.entries.put(parameter.id.id, new ParameterDescriptor(parameter.id.id, parameter.builtinType));
             }
             // visit the method definition and populate the local symbol table
@@ -64,23 +77,25 @@ public class IRVisitor implements Visitor<Void> {
         }
         return null;
     }
+
     public Void visit(ImportDeclaration importDeclaration, SymbolTable symbolTable) {
         if (symbolTable.isShadowingParameter(importDeclaration.nameId.id)) {
-            exceptions.add(new DecafSemanticException(importDeclaration.nameId.tokenPosition, "Import identifier "+ importDeclaration.nameId.id+" shadows a parameter"));
-        } else if (imports.contains(importDeclaration.nameId.id)){
-            exceptions.add(new DecafSemanticException(new TokenPosition(0, 0, 0), "Import identifier "+ importDeclaration.nameId.id+" already declared"));
+            exceptions.add(new DecafSemanticException(importDeclaration.nameId.tokenPosition, "Import identifier " + importDeclaration.nameId.id + " shadows a parameter"));
+        } else if (imports.contains(importDeclaration.nameId.id)) {
+            exceptions.add(new DecafSemanticException(new TokenPosition(0, 0, 0), "Import identifier " + importDeclaration.nameId.id + " already declared"));
         } else {
             imports.add(importDeclaration.nameId.id);
         }
         return null;
     }
+
     public Void visit(For forStatement, SymbolTable symbolTable) {
         // this is the name of our loop variable that we initialize in the creation of the for loop
         // for ( index = 0 ...) <-- index is the example here
         String initializedVariableName = forStatement.initId.id;
 
         // check if the variable exists
-        if (!symbolTable.getDescriptorFromValidScopes(initializedVariableName).isEmpty()){
+        if (symbolTable.getDescriptorFromValidScopes(initializedVariableName).isPresent()) {
             Descriptor initVariableDescriptor = symbolTable.entries.get(initializedVariableName);
             Expression initExpression = forStatement.initExpression;
             // update the symbol table to have the full expression
@@ -90,37 +105,56 @@ public class IRVisitor implements Visitor<Void> {
             forStatement.block.accept(this, symbolTable);
         } else {
             // the variable referred to was not declared. Add an exception.
-            exceptions.add(new DecafSemanticException(forStatement.tokenPosition, "Variable "+initializedVariableName+" was not declared"));
+            exceptions.add(new DecafSemanticException(forStatement.tokenPosition, "Variable " + initializedVariableName + " was not declared"));
         }
         return null;
     }
-    public Void visit(Break breakStatement, SymbolTable symbolTable) {return null;}
-    public Void visit(Continue continueStatement, SymbolTable symbolTable) {return null;}
+
+    public Void visit(Break breakStatement, SymbolTable symbolTable) {
+        return null;
+    }
+
+    public Void visit(Continue continueStatement, SymbolTable symbolTable) {
+        return null;
+    }
+
     public Void visit(While whileStatement, SymbolTable symbolTable) {
         whileStatement.test.accept(this, symbolTable);
         whileStatement.body.accept(this, symbolTable);
         return null;
     }
+
     public Void visit(Program program, SymbolTable symbolTable) {
-        for (ImportDeclaration importDeclaration: program.importDeclarationList)
+        for (ImportDeclaration importDeclaration : program.importDeclarationList)
             imports.add(importDeclaration.nameId.id);
-        for (FieldDeclaration fieldDeclaration: program.fieldDeclarationList)
+        for (FieldDeclaration fieldDeclaration : program.fieldDeclarationList)
             fieldDeclaration.accept(this, fields);
-        for (MethodDefinition methodDefinition: program.methodDefinitionList)
+        for (MethodDefinition methodDefinition : program.methodDefinitionList)
             methodDefinition.accept(this, methods);
         return null;
     }
-    public Void visit(UnaryOpExpression unaryOpExpression, SymbolTable symbolTable) {return null;}
-    public Void visit(BinaryOpExpression binaryOpExpression, SymbolTable symbolTable) {return null;}
+
+    public Void visit(UnaryOpExpression unaryOpExpression, SymbolTable symbolTable) {
+        return null;
+    }
+
+    public Void visit(BinaryOpExpression binaryOpExpression, SymbolTable symbolTable) {
+        return null;
+    }
+
     public Void visit(Block block, SymbolTable symbolTable) {
         block.blockSymbolTable = new SymbolTable(symbolTable, SymbolTableType.Field);
-        for (FieldDeclaration fieldDeclaration: block.fieldDeclarationList)
+        for (FieldDeclaration fieldDeclaration : block.fieldDeclarationList)
             fieldDeclaration.accept(this, block.blockSymbolTable);
-        for (Statement statement: block.statementList)
+        for (Statement statement : block.statementList)
             statement.accept(this, block.blockSymbolTable);
         return null;
     }
-    public Void visit(ParenthesizedExpression parenthesizedExpression, SymbolTable symbolTable) {return null;}
+
+    public Void visit(ParenthesizedExpression parenthesizedExpression, SymbolTable symbolTable) {
+        return null;
+    }
+
     public Void visit(LocationArray locationArray, SymbolTable symbolTable) {
         final Optional<Descriptor> optionalDescriptor = symbolTable.getDescriptorFromValidScopes(locationArray.name.id);
         if (optionalDescriptor.isEmpty())
@@ -130,35 +164,54 @@ public class IRVisitor implements Visitor<Void> {
         locationArray.expression.accept(this, symbolTable);
         return null;
     }
+
     public Void visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable symbolTable) {
         compoundAssignOpExpr.expression.accept(this, symbolTable);
         return null;
     }
 
-    public Void visit(ExpressionParameter expressionParameter, SymbolTable symbolTable) {return null;}
+    public Void visit(ExpressionParameter expressionParameter, SymbolTable symbolTable) {
+        return null;
+    }
+
     public Void visit(If ifStatement, SymbolTable symbolTable) {
         // variable lookup happens in ifCondition or if/else body
-        for (Pair<String, AST> child: ifStatement.getChildren())
+        for (Pair<String, AST> child : ifStatement.getChildren())
             child.second().accept(this, symbolTable);
         return null;
     }
-    public Void visit(Return returnStatement, SymbolTable symbolTable) {return null;}
-    public Void visit(Array array, SymbolTable symbolTable) {return null;}
+
+    public Void visit(Return returnStatement, SymbolTable symbolTable) {
+        return null;
+    }
+
+    public Void visit(Array array, SymbolTable symbolTable) {
+        if (Integer.parseInt(array.size.literal) <= 0) {
+            exceptions.add(new DecafSemanticException(array.size.tokenPosition, "array declaration " + array.id + "[" + array.size.literal + "]" + " must be greater than 0"));
+        }
+        return null;
+    }
+
     public Void visit(MethodCall methodCall, SymbolTable symbolTable) {
-        List<Pair<String, AST>> children = methodCall.getChildren();
         Name methodName = methodCall.nameId;
 
         if (methods.getDescriptorFromValidScopes(methodName.id).isEmpty() && !imports.contains(methodName.id))
             exceptions.add(new DecafSemanticException(methodName.tokenPosition, "Method name " + methodName.id + " hasn't been defined yet"));
 
-        for (MethodCallParameter parameter: methodCall.methodCallParameterList)
+        for (MethodCallParameter parameter : methodCall.methodCallParameterList) {
+            // TODO: partial rule 7 - array checking will be done in second pass
+            if (!imports.contains(methodName.id) && parameter instanceof StringLiteral)
+                exceptions.add(new DecafSemanticException(methodName.tokenPosition, "String " + parameter + " cannot be arguments to non-import methods"));
             parameter.accept(this, symbolTable);
+        }
         return null;
     }
+
     public Void visit(MethodCallStatement methodCallStatement, SymbolTable symbolTable) {
         methodCallStatement.methodCall.accept(this, symbolTable);
         return null;
     }
+
     public Void visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable) {
         Name location = locationAssignExpr.location.name;
         // checking location has been initialized
@@ -171,34 +224,52 @@ public class IRVisitor implements Visitor<Void> {
         // can we just store expr node in symbol table
         return null;
     }
+
     public Void visit(AssignOpExpr assignOpExpr, SymbolTable symbolTable) {
         // no node for AssignOperator?
         assignOpExpr.expression.accept(this, symbolTable);
         return null;
     }
+
     public Void visit(MethodDefinitionParameter methodDefinitionParameter, SymbolTable symbolTable) {
         String paramName = methodDefinitionParameter.id.id;
         BuiltinType paramType = methodDefinitionParameter.builtinType;
         symbolTable.entries.put(paramName, new ParameterDescriptor(paramName, paramType));
         return null;
     }
-    public Void visit(Name name, SymbolTable symbolTable) {return null;}
+
+    public Void visit(Name name, SymbolTable symbolTable) {
+        return null;
+    }
+
     public Void visit(Location location, SymbolTable symbolTable) {
         if (symbolTable.getDescriptorFromValidScopes(location.name.id).isEmpty()) {
             exceptions.add(new DecafSemanticException(location.name.tokenPosition, "Location " + location.name.id + " must be defined"));
         }
         return null;
     }
+
     public Void visit(Len len, SymbolTable symbolTable) {
         String arrayName = len.nameId.id;
-        // TODO: assign len to have type int
-        if (!symbolTable.getDescriptorFromValidScopes(arrayName).isEmpty()) {
+        if (symbolTable.getDescriptorFromValidScopes(arrayName).isPresent()) {
             exceptions.add(new DecafSemanticException(len.nameId.tokenPosition, "the argument of the len operator must be an array"));
         }
-        return null;}
-    public Void visit(Increment increment, SymbolTable symbolTable) {return null;}
-    public Void visit(Decrement decrement, SymbolTable symbolTable) {return null;}
-    public Void visit(CharLiteral charLiteral, SymbolTable symbolTable) {return null;}
-    public Void visit(MethodCallParameter methodCallParameter, SymbolTable symbolTable) {return null;}
-    public Void visit(StringLiteral stringLiteral, SymbolTable symbolTable) {return null;}
+        return null;
+    }
+
+    public Void visit(Increment increment, SymbolTable symbolTable) {
+        return null;
+    }
+
+    public Void visit(Decrement decrement, SymbolTable symbolTable) {
+        return null;
+    }
+
+    public Void visit(CharLiteral charLiteral, SymbolTable symbolTable) {
+        return null;
+    }
+
+    public Void visit(StringLiteral stringLiteral, SymbolTable symbolTable) {
+        return null;
+    }
 }
