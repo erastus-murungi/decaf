@@ -56,7 +56,7 @@ class Main {
                     text = token.lexeme();
                     break;
                   }
-              };
+              }
               outputStream.println(token.tokenPosition().line() + 1 + " " + text);
             }
             done = true;
@@ -79,12 +79,13 @@ class Main {
       } else if (CLI.target == CLI.Action.INTER) {
           DecafScanner scanner = new DecafScanner(new DataInputStream(inputStream));
           DecafParser parser = new DecafParser(scanner);
-          parser.setTrace(CLI.debug);
+//          parser.setTrace(CLI.debug);
           parser.program();
           AST programNode = parser.getRoot();
 
           DecafSemanticChecker semChecker = new DecafSemanticChecker(programNode);
-
+          semChecker.setTrace(CLI.debug);
+          semChecker.runChecks(scanner);
           if (semChecker.hasError()) {
               System.exit(1);
           }

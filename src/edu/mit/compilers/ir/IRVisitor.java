@@ -7,6 +7,7 @@ import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.descriptors.*;
 import edu.mit.compilers.symbolTable.SymbolTableType;
 import edu.mit.compilers.utils.Pair;
+import edu.mit.compilers.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +19,8 @@ public class IRVisitor implements Visitor<Void> {
     SymbolTable fields = new SymbolTable(null, SymbolTableType.Field);
     SymbolTable methods = new SymbolTable(null, SymbolTableType.Method);
     public TreeSet<String> imports = new TreeSet<>();
+
+    int depth = 0; // the number of nested while/for loops we are in
 
     public Void visit(IntLiteral intLiteral, SymbolTable symbolTable) {
         return null;
@@ -61,6 +64,37 @@ public class IRVisitor implements Visitor<Void> {
         return null;
     }
 
+    private String simplify(List<MethodDefinitionParameter> methodDefinitionParameterList) {
+        if (methodDefinitionParameterList.size() == 0) {
+            return "";
+        }
+        StringBuilder stringBuilder = new StringBuilder();
+        for (MethodDefinitionParameter methodDefinitionParameter : methodDefinitionParameterList) {
+            stringBuilder.append(Utils.coloredPrint(methodDefinitionParameter.builtinType.toString(), Utils.ANSIColorConstants.ANSI_PURPLE));
+            stringBuilder.append(" ");
+            stringBuilder.append(Utils.coloredPrint(methodDefinitionParameter.id.id, Utils.ANSIColorConstants.ANSI_WHITE));
+            stringBuilder.append(", ");
+        }
+        stringBuilder.delete(stringBuilder.length() - 2, stringBuilder.length());
+        return stringBuilder.toString();
+    }
+
+    private void checkMainMethodExists(List<MethodDefinition> methodDefinitionList) {
+        for (MethodDefinition methodDefinition : methodDefinitionList) {
+            if (methodDefinition.methodName.id.equals("main")) {
+                if (methodDefinition.returnType == BuiltinType.Void) {
+                    if (!(methodDefinition.methodDefinitionParameterList.size() == 0)) {
+                        exceptions.add(new DecafSemanticException(methodDefinition.tokenPosition, "main method must have no parameters, yours has: " + simplify(methodDefinition.methodDefinitionParameterList)));
+                    }
+                } else {
+                    exceptions.add(new DecafSemanticException(methodDefinition.tokenPosition, "main method return type must be void, not `" + methodDefinition.returnType + "`"));
+                }
+                return;
+            }
+        }
+        exceptions.add(new DecafSemanticException(new TokenPosition(0, 0, 0), "main method not found"));
+    }
+
     public Void visit(MethodDefinition methodDefinition, SymbolTable symbolTable) {
         if (methods.getDescriptorFromValidScopes(methodDefinition.methodName.id).isPresent()) {
             // method already defined. add an exception
@@ -102,7 +136,9 @@ public class IRVisitor implements Visitor<Void> {
             symbolTable.entries.put(initializedVariableName, new VariableDescriptor(initializedVariableName, initExpression, initVariableDescriptor.type));
 
             // visit the block
+            ++depth;
             forStatement.block.accept(this, symbolTable);
+            --depth;
         } else {
             // the variable referred to was not declared. Add an exception.
             exceptions.add(new DecafSemanticException(forStatement.tokenPosition, "Variable " + initializedVariableName + " was not declared"));
@@ -111,20 +147,29 @@ public class IRVisitor implements Visitor<Void> {
     }
 
     public Void visit(Break breakStatement, SymbolTable symbolTable) {
+        if (depth < 1) {
+            exceptions.add(new DecafSemanticException(breakStatement.tokenPosition, "break statement not enclosed"));
+        }
         return null;
     }
 
     public Void visit(Continue continueStatement, SymbolTable symbolTable) {
+        if (depth < 1) {
+            exceptions.add(new DecafSemanticException(continueStatement.tokenPosition, "continue statement not enclosed"));
+        }
         return null;
     }
 
     public Void visit(While whileStatement, SymbolTable symbolTable) {
         whileStatement.test.accept(this, symbolTable);
+        ++depth;
         whileStatement.body.accept(this, symbolTable);
+        --depth;
         return null;
     }
 
     public Void visit(Program program, SymbolTable symbolTable) {
+        checkMainMethodExists(program.methodDefinitionList);
         for (ImportDeclaration importDeclaration : program.importDeclarationList)
             imports.add(importDeclaration.nameId.id);
         for (FieldDeclaration fieldDeclaration : program.fieldDeclarationList)

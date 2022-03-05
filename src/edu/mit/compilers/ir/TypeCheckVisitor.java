@@ -459,11 +459,6 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
     }
 
     @Override
-    public BuiltinType visit(MethodCallParameter methodCallParameter, SymbolTable symbolTable) {
-        return BuiltinType.Undefined;
-    }
-
-    @Override
     public BuiltinType visit(StringLiteral stringLiteral, SymbolTable symbolTable) {
         return BuiltinType.String;
     }

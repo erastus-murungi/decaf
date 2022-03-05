@@ -2,8 +2,8 @@ package edu.mit.compilers.exceptions;
 
 
 public class DecafException extends Exception {
-    final int line;
-    final int column;
+    final public int line;
+    final public int column;
 
     public DecafException(int line, int column, String errMessage) {
         super(errMessage);
