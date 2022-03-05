@@ -561,7 +561,10 @@ public class DecafParser {
 
     private Return parseReturnStatement() throws DecafParserException {
         final TokenPosition tokenPosition = consumeToken(RESERVED_RETURN, DecafScanner.RESERVED_RETURN).tokenPosition();
-        final Expression expression = parseOrExpr();
+        Expression expression = null;
+        if (getCurrentTokenType() != SEMICOLON) {
+            expression = parseOrExpr();
+        }
         consumeToken(SEMICOLON, DecafScanner.SEMICOLON);
         return new Return(tokenPosition, expression);
     }
