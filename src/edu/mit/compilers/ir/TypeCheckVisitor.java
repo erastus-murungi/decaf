@@ -57,6 +57,9 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
     TreeSet<String> imports;
     BuiltinType returnTypeSeen;
 
+    IntLiteral intLiteral;
+    boolean negInt = false;
+
     public TypeCheckVisitor(Program root, SymbolTable methods, SymbolTable globalFields, TreeSet<String> imports) {
         this.methods = methods;
         this.globalFields = globalFields;
@@ -66,6 +69,7 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
 
     @Override
     public BuiltinType visit(IntLiteral intLiteral, SymbolTable symbolTable) {
+        this.intLiteral = intLiteral;
         return BuiltinType.Int;
     }
 
@@ -190,6 +194,16 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
         if (operandType != BuiltinType.Bool && operandType != BuiltinType.Int) {
             exceptions.add(new DecafSemanticException(unaryOpExpression.tokenPosition, "could not infer"));
         }
+        if (operandType != BuiltinType.Bool && unaryOpExpression.op.op.equals("!")) {
+            exceptions.add(new DecafSemanticException(unaryOpExpression.tokenPosition, "Can only use a not operator on Bools"));
+        }
+        if (operandType != BuiltinType.Int && unaryOpExpression.op.op.equals("-")) {
+            exceptions.add(new DecafSemanticException(unaryOpExpression.tokenPosition, "Can only use an unary minus operator on Integers"));
+        }
+        if (operandType == BuiltinType.Int && unaryOpExpression.op.op.equals("-"))
+            negInt = !negInt;
+
+
         unaryOpExpression.builtinType = operandType;
         return operandType;
     }
@@ -197,7 +211,9 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
     @Override
     public BuiltinType visit(BinaryOpExpression binaryOpExpression, SymbolTable symbolTable) {
         BuiltinType leftType = binaryOpExpression.lhs.accept(this, symbolTable);
+        checkIntBounds();
         BuiltinType rightType = binaryOpExpression.rhs.accept(this, symbolTable);
+        checkIntBounds();
 
         BuiltinType type = BuiltinType.Undefined;
         if (leftType != BuiltinType.Undefined && rightType != BuiltinType.Undefined) {
@@ -247,7 +263,9 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
 
     @Override
     public BuiltinType visit(ParenthesizedExpression parenthesizedExpression, SymbolTable symbolTable) {
-        return parenthesizedExpression.expression.accept(this, symbolTable);
+        BuiltinType builtinType = parenthesizedExpression.expression.accept(this, symbolTable);
+        checkIntBounds();
+        return builtinType;
     }
 
     @Override
@@ -280,6 +298,7 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
     public BuiltinType visit(ExpressionParameter expressionParameter, SymbolTable symbolTable) {
         BuiltinType builtinType = expressionParameter.expression.accept(this, symbolTable);
         expressionParameter.builtinType = builtinType;
+        checkIntBounds();
         return builtinType;
     }
 
@@ -301,6 +320,7 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
         BuiltinType builtinType = BuiltinType.Void;
         if (returnStatement.retExpression != null) {
             builtinType = returnStatement.retExpression.accept(this, symbolTable);
+            checkIntBounds();
         }
         returnTypeSeen = builtinType;
         return BuiltinType.Void;
@@ -413,7 +433,9 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
 
     @Override
     public BuiltinType visit(AssignOpExpr assignOpExpr, SymbolTable symbolTable) {
-        return assignOpExpr.expression.accept(this, symbolTable);
+        BuiltinType builtinType = assignOpExpr.expression.accept(this, symbolTable);
+        checkIntBounds();
+        return builtinType;
     }
 
     @Override
@@ -467,5 +489,17 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
     public BuiltinType visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable curSymbolTable) {
         compoundAssignOpExpr.expression.builtinType = compoundAssignOpExpr.expression.accept(this, curSymbolTable);
         return BuiltinType.Undefined;
+    }
+
+    private void checkIntBounds() {
+        try {
+            if (negInt)
+                Long.parseLong("-" + intLiteral.literal);
+            else
+                Long.parseLong(intLiteral.literal);
+        }
+        catch(Exception e) {
+            exceptions.add(new DecafSemanticException(intLiteral.tokenPosition, "Encountered int literal that's out of bounds"));
+        }
     }
 }
