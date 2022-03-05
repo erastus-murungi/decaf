@@ -56,4 +56,22 @@ public class SymbolTable {
         }
         return Optional.ofNullable(currentDescriptor);
     }
+
+    /**
+     * Look up a variable recursively up the scope hierarchy to see is there is incorrect shadowing parameter
+     *
+     * @param stringId the id to lookup in the symbol table hierarchy
+     * @return true if there is incorrect shadowing of parameter and false otherwise
+     */
+    public boolean isShadowingParameter(String stringId) {
+        Descriptor currentDescriptor = entries.get(stringId);
+        if (parent == null) {
+            return currentDescriptor != null && symbolTableType == SymbolTableType.Parameter;
+        } else {
+            if (currentDescriptor != null && symbolTableType == SymbolTableType.Parameter)
+                return true;
+            else
+                return parent.isShadowingParameter(stringId);
+        }
+    }
 }
