@@ -355,6 +355,11 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
     public BuiltinType visit(MethodCall methodCall, SymbolTable symbolTable) {
         final Optional<Descriptor> optionalMethodDescriptor = methods.getDescriptorFromCurrentScope(methodCall.nameId.id);
         final Descriptor descriptor;
+        if (symbolTable.containsEntry(methodCall.nameId.id)){
+            exceptions.add(new DecafSemanticException(methodCall.tokenPosition, methodCall.nameId.id + " refers to locally defined variable"));
+            return BuiltinType.Undefined;
+        }
+
         if (imports.contains(methodCall.nameId.id)) {
             // All external functions are treated as if they return int
             return BuiltinType.Int;
