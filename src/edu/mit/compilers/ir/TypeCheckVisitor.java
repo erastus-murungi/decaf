@@ -95,17 +95,21 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
     public BuiltinType visit(MethodDefinition methodDefinition, SymbolTable symbolTable) {
         returnTypeSeen = BuiltinType.Undefined;
         methodDefinition.block.accept(this, methodDefinition.block.blockSymbolTable);
-        SymbolTable parameterSymbolTable = ((MethodDescriptor) (methods.getDescriptorFromCurrentScope(methodDefinition.methodName.id).get())).parameterSymbolTable;
-        for (MethodDefinitionParameter methodDefinitionParameter : methodDefinition.methodDefinitionParameterList)
-            methodDefinitionParameter.accept(this, parameterSymbolTable);
-        if (returnTypeSeen == BuiltinType.Undefined) {
-            if (methodDefinition.returnType != BuiltinType.Void) {
-                exceptions.add(new DecafSemanticException(methodDefinition.tokenPosition, "missing return statement"));
+        if (methods.getDescriptorFromCurrentScope(methodDefinition.methodName.id).isPresent()) {
+            SymbolTable parameterSymbolTable = ((MethodDescriptor) methods.getDescriptorFromCurrentScope(methodDefinition.methodName.id).get()).parameterSymbolTable;
+            for (MethodDefinitionParameter methodDefinitionParameter : methodDefinition.methodDefinitionParameterList)
+                methodDefinitionParameter.accept(this, parameterSymbolTable);
+            if (returnTypeSeen == BuiltinType.Undefined) {
+                if (methodDefinition.returnType != BuiltinType.Void) {
+                    exceptions.add(new DecafSemanticException(methodDefinition.tokenPosition, "missing return statement"));
+                }
+            } else if (methodDefinition.returnType != returnTypeSeen) {
+                exceptions.add(new DecafSemanticException(methodDefinition.tokenPosition, methodDefinition.methodName.id + " does not have a declared type " + methodDefinition.returnType + " instead it returns type " + returnTypeSeen));
             }
-        } else if (methodDefinition.returnType != returnTypeSeen) {
-            exceptions.add(new DecafSemanticException(methodDefinition.tokenPosition, methodDefinition.methodName.id + " does not have a declared type " + methodDefinition.returnType + " instead it returns type " + returnTypeSeen));
+            returnTypeSeen = BuiltinType.Undefined;
+        } else {
+            exceptions.add(new DecafSemanticException(methodDefinition.tokenPosition, "method definition not found"));
         }
-        returnTypeSeen = BuiltinType.Undefined;
         return methodDefinition.returnType;
     }
 
@@ -311,14 +315,14 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
     }
 
     // The number and types of arguments in a method call
-    private void checkNumberOfArgumentsAndTypesMatch(MethodDescriptor methodDescriptor, MethodCall methodCall) {
-        if (methodCall.methodCallParameterList.size() != methodDescriptor.methodDefinition.methodDefinitionParameterList.size()) {
+    private void checkNumberOfArgumentsAndTypesMatch(MethodDefinition methodDefinition, MethodCall methodCall) {
+        if (methodCall.methodCallParameterList.size() != methodDefinition.methodDefinitionParameterList.size()) {
             exceptions.add(new DecafSemanticException(methodCall.tokenPosition, "unequal number of args"));
             return;
         }
         for (int i = 0; i < methodCall.methodCallParameterList.size(); i++) {
-            MethodDefinitionParameter methodDefinitionParameter = methodDescriptor.methodDefinition.methodDefinitionParameterList.get(i);
-            MethodCallParameter methodCallParameter = methodCall.methodCallParameterList.get(i);
+            final MethodDefinitionParameter methodDefinitionParameter = methodDefinition.methodDefinitionParameterList.get(i);
+            final MethodCallParameter methodCallParameter = methodCall.methodCallParameterList.get(i);
             if (methodCallParameter.builtinType != methodDefinitionParameter.builtinType) {
                 exceptions.add(new DecafSemanticException(methodCall.tokenPosition, "method param " + methodDefinitionParameter.id.id + " is defined with type " + methodDefinitionParameter.builtinType + " but " + methodCallParameter.builtinType + " is passed in"));
             }
@@ -327,8 +331,8 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
 
     @Override
     public BuiltinType visit(MethodCall methodCall, SymbolTable symbolTable) {
-        Optional<Descriptor> optionalMethodDescriptor = methods.getDescriptorFromCurrentScope(methodCall.nameId.id);
-        Descriptor descriptor;
+        final Optional<Descriptor> optionalMethodDescriptor = methods.getDescriptorFromCurrentScope(methodCall.nameId.id);
+        final Descriptor descriptor;
         if (imports.contains(methodCall.nameId.id)) {
             // All external functions are treated as if they return int
             return BuiltinType.Int;
@@ -342,11 +346,10 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
         for (MethodCallParameter methodCallParameter : methodCall.methodCallParameterList) {
             if (methodCallParameter instanceof ExpressionParameter)
                 visit(((ExpressionParameter) methodCallParameter), symbolTable);
-            else {
+            else
                 visit((StringLiteral) methodCallParameter, symbolTable);
-            }
         }
-        checkNumberOfArgumentsAndTypesMatch((MethodDescriptor) descriptor, methodCall);
+        checkNumberOfArgumentsAndTypesMatch(((MethodDescriptor) descriptor).methodDefinition, methodCall);
 
         return descriptor.type;
     }
@@ -453,11 +456,6 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
     @Override
     public BuiltinType visit(CharLiteral charLiteral, SymbolTable symbolTable) {
         return BuiltinType.Int;
-    }
-
-    @Override
-    public BuiltinType visit(MethodCallParameter methodCallParameter, SymbolTable symbolTable) {
-        return BuiltinType.Undefined;
     }
 
     @Override
