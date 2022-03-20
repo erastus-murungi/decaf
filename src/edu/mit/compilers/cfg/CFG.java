@@ -1,12 +1,13 @@
 package edu.mit.compilers.cfg;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 
 public class CFG {
 
-    public ArrayList<CFGBlock> cfgList;
+    public CFGBlock initialGlobalBlock;
+    public HashMap<String, CFGBlock> methodCFGBlocks = new HashMap<>();
 
     public CFG() {
-        cfgList = new ArrayList<>();
+
     }
 }
