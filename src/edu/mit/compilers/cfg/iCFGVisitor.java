@@ -2,41 +2,7 @@ package edu.mit.compilers.cfg;
 
 import java.util.HashMap;
 
-import edu.mit.compilers.ast.Array;
-import edu.mit.compilers.ast.AssignOpExpr;
-import edu.mit.compilers.ast.Assignment;
-import edu.mit.compilers.ast.BinaryOpExpression;
-import edu.mit.compilers.ast.Block;
-import edu.mit.compilers.ast.BooleanLiteral;
-import edu.mit.compilers.ast.Break;
-import edu.mit.compilers.ast.CharLiteral;
-import edu.mit.compilers.ast.CompoundAssignOpExpr;
-import edu.mit.compilers.ast.Continue;
-import edu.mit.compilers.ast.DecimalLiteral;
-import edu.mit.compilers.ast.Decrement;
-import edu.mit.compilers.ast.ExpressionParameter;
-import edu.mit.compilers.ast.FieldDeclaration;
-import edu.mit.compilers.ast.For;
-import edu.mit.compilers.ast.HexLiteral;
-import edu.mit.compilers.ast.If;
-import edu.mit.compilers.ast.ImportDeclaration;
-import edu.mit.compilers.ast.Increment;
-import edu.mit.compilers.ast.IntLiteral;
-import edu.mit.compilers.ast.Len;
-import edu.mit.compilers.ast.LocationArray;
-import edu.mit.compilers.ast.LocationAssignExpr;
-import edu.mit.compilers.ast.LocationVariable;
-import edu.mit.compilers.ast.MethodCall;
-import edu.mit.compilers.ast.MethodCallStatement;
-import edu.mit.compilers.ast.MethodDefinition;
-import edu.mit.compilers.ast.MethodDefinitionParameter;
-import edu.mit.compilers.ast.Name;
-import edu.mit.compilers.ast.ParenthesizedExpression;
-import edu.mit.compilers.ast.Program;
-import edu.mit.compilers.ast.Return;
-import edu.mit.compilers.ast.StringLiteral;
-import edu.mit.compilers.ast.UnaryOpExpression;
-import edu.mit.compilers.ast.While;
+import edu.mit.compilers.ast.*;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
@@ -46,214 +12,276 @@ public class iCFGVisitor implements Visitor<CFGPair> {
 
     @Override
     public CFGPair visit(IntLiteral intLiteral, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
         return null;
     }
     @Override
     public CFGPair visit(BooleanLiteral booleanLiteral, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
         return null;
     }
     @Override
     public CFGPair visit(DecimalLiteral decimalLiteral, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
         return null;
     }
     @Override
     public CFGPair visit(HexLiteral hexLiteral, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
         return null;
     }
     @Override
     public CFGPair visit(FieldDeclaration fieldDeclaration, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
-        return null;
+        // multiple fields can be declared in same line, handle/flatten later
+        CFGBlock fieldDecl = new CFGBlock();
+        fieldDecl.lines.add(new CFGDeclaration(fieldDeclaration));
+        return new CFGPair(fieldDecl, fieldDecl);
     }
     @Override
     public CFGPair visit(MethodDefinition methodDefinition, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
-        return null;
+        CFGBlock initial = new NOP();
+        CFGPair curPair = new CFGPair(initial, new NOP());
+        for (MethodDefinitionParameter param : methodDefinition.methodDefinitionParameterList){
+            CFGPair placeholder = param.accept(this, symbolTable);
+            curPair.endBlock.autoChild = placeholder.startBlock;
+            curPair = placeholder;
+        }
+        CFGPair methodBody = methodDefinition.block.accept(this, symbolTable);
+        curPair.endBlock = methodBody.startBlock;
+
+        return new CFGPair(initial, methodBody.endBlock);
     }
     @Override
     public CFGPair visit(ImportDeclaration importDeclaration, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
-        return null;
+        CFGBlock import_ = new CFGBlock();
+        import_.lines.add(new CFGDeclaration(importDeclaration));
+        return new CFGPair(import_, import_);
     }
     @Override
     public CFGPair visit(For forStatement, SymbolTable symbolTable) {
-        /**
-         * // Initialize the condition variable
+        // If false, end with NOP, also end of for_statement
+        CFGBlock falseBlock = new NOP();
 
+        // For the block, the child of that CFGBlock should be a block with the increment line
+        CFGBlock incrementBlock = new CFGBlock();
+        incrementBlock.lines.add(new CFGAssignment(new Assignment(forStatement.updatingLocation, forStatement.updateAssignExpr)));
+
+        // If true, run the block.
+        CFGPair trueBlock = forStatement.block.accept(this, symbolTable);
+
+        // Evaluate the condition
+        CFGBlock evaluateBlock = new CFGBlock();
+        evaluateBlock.lines.add(new CFGExpression(forStatement.terminatingCondition));
+        evaluateBlock.trueChild = trueBlock.startBlock;
+        evaluateBlock.falseChild = falseBlock;
+
+        // Initialize the condition variable
         CFGBlock initializeBlock = new CFGBlock();
         initializeBlock.lines.add(new CFGAssignment(forStatement.initExpression));
 
-        // Evaluate the condition
-
-        CFGBlock evaluateBlock = new CFGBlock();
-        evaluateBlock.lines.add(new CFGExpression(forStatement.terminatingCondition));
-
-        // If true, run the block. 
-            CFGBlock trueBlock = forStatement.block.accept(this, symbolTable);
-
-            // For the block, the child of that CFGBlock should be a block with the increment line
-            CFGBlock incrementBlock = new CFGBlock();
-            incrementBlock.lines.add(new CFGAssignment(new Assignment(forStatement.updatingLocation, forStatement.updateAssignExpr)));
-
-            // Child of that increment block should be the evaluation
+        // child of initialization block is evaluation
+        initializeBlock.autoChild = evaluateBlock;
 
 
-        // If false, end with NOP
-        CFGBlock falseBlock = new NOP();
+        // Child of that increment block should be the evaluation
+        incrementBlock.autoChild = evaluateBlock;
 
-        return null;
-         * 
-         */
-        return null;
+        return new CFGPair(initializeBlock, falseBlock);
     }
     @Override
     public CFGPair visit(Break breakStatement, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // handle in block, go to NOP of block
         return null;
     }
     @Override
     public CFGPair visit(Continue continueStatement, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // handle in block
         return null;
     }
     @Override
     public CFGPair visit(While whileStatement, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
-        return null;
+        // If false, end with NOP, also end of while
+        CFGBlock falseBlock = new NOP();
+
+        // If true, run the block.
+        CFGPair trueBlock = whileStatement.body.accept(this, symbolTable);
+
+        // Evaluate the condition
+        CFGBlock conditionExpr = new CFGBlock();
+        conditionExpr.lines.add(new CFGExpression(whileStatement.test));
+        conditionExpr.trueChild = trueBlock.startBlock;
+        conditionExpr.falseChild = falseBlock;
+
+        return new CFGPair(conditionExpr, falseBlock);
     }
     @Override
     public CFGPair visit(Program program, SymbolTable symbolTable) {
-        /**
-         * CFGBlock curBlock = initialGlobalBlock;
+        CFGPair curPair = new CFGPair(initialGlobalBlock, new NOP());
         for (ImportDeclaration import_ : program.importDeclarationList){
-            CFGBlock placeholder = import_.accept(this, symbolTable);
-            curBlock.autoChild = placeholder;
-            curBlock = placeholder;  
+            CFGPair placeholder = import_.accept(this, symbolTable);
+            curPair.endBlock.autoChild = placeholder.startBlock;
+            curPair = placeholder;
         }
         for (FieldDeclaration field : program.fieldDeclarationList){
-            CFGBlock placeholder = field.accept(this, symbolTable);
-            curBlock.autoChild = placeholder;
-            curBlock = placeholder;  
+            CFGPair placeholder = field.accept(this, symbolTable);
+            curPair.endBlock.autoChild = placeholder.startBlock;
+            curPair = placeholder;
         }
         for (MethodDefinition method : program.methodDefinitionList){
-            methodCFGBlocks.put(method.methodName.id, method.accept(this, symbolTable));
+            methodCFGBlocks.put(method.methodName.id, method.accept(this, symbolTable).startBlock);
         }
 
-         */
-        return null;
+        // don't need to return pair bc only need start block
+         return null;
     }
     @Override
     public CFGPair visit(UnaryOpExpression unaryOpExpression, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // unreachable
         return null;
     }
     @Override
     public CFGPair visit(BinaryOpExpression binaryOpExpression, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // unreachable
         return null;
     }
     @Override
     public CFGPair visit(Block block, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        CFGBlock exit = new NOP();
+        CFGBlock initial = new NOP();
+        CFGPair curPair = new CFGPair(initial, new NOP());
+
+        for (FieldDeclaration field : block.fieldDeclarationList){
+            CFGPair placeholder = field.accept(this, symbolTable);
+            curPair.endBlock.autoChild = placeholder.startBlock;
+            curPair = placeholder;
+        }
+        for (Statement statement : block.statementList){
+//            if (statement instanceof Continue) {
+//
+//            }
+//            // recurse normally if it's a for, if, or while
+//            else {
+//                CFGPair placeholder = statement.accept(this, symbolTable);
+//                curPair.endBlock.autoChild = placeholder.startBlock;
+//                curPair = placeholder;
+//            }
+
+        }
         return null;
     }
     @Override
     public CFGPair visit(ParenthesizedExpression parenthesizedExpression, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // unreachable (expr)
         return null;
     }
     @Override
     public CFGPair visit(LocationArray locationArray, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // unreachable
         return null;
     }
     @Override
     public CFGPair visit(ExpressionParameter expressionParameter, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // unreachable
         return null;
     }
     @Override
     public CFGPair visit(If ifStatement, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
-        return null;
+        // always end with nop
+        CFGBlock exit = new NOP();
+
+        // If true, run the block.
+        CFGPair truePair = ifStatement.ifBlock.accept(this, symbolTable);
+        truePair.endBlock.autoChild = exit;
+
+        // Evaluate the condition
+        CFGBlock conditionExpr = new CFGBlock();
+        conditionExpr.lines.add(new CFGExpression(ifStatement.test));
+        conditionExpr.trueChild = truePair.startBlock;
+
+        // Connect else block if it exists
+        if (ifStatement.elseBlock != null) {
+            CFGPair falsePair = ifStatement.elseBlock.accept(this, symbolTable);
+            falsePair.endBlock.autoChild = exit;
+            conditionExpr.falseChild = falsePair.startBlock;
+        }
+        else {
+            conditionExpr.falseChild = exit;
+        }
+
+        return new CFGPair(conditionExpr, exit);
     }
     @Override
     public CFGPair visit(Return returnStatement, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // handle in block
         return null;
     }
     @Override
     public CFGPair visit(Array array, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // unreachable
         return null;
     }
     @Override
     public CFGPair visit(MethodCall methodCall, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // unreachable - handle later in assembly gen
         return null;
     }
     @Override
     public CFGPair visit(MethodCallStatement methodCallStatement, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
-        return null;
+        CFGBlock methodCallExpr = new CFGBlock();
+        methodCallExpr.lines.add(new CFGExpression(methodCallStatement));
+        return new CFGPair(methodCallExpr, methodCallExpr);
     }
     @Override
     public CFGPair visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
-        return null;
+        CFGBlock assignment = new CFGBlock();
+        assignment.lines.add(new CFGAssignment(new Assignment(locationAssignExpr.location, locationAssignExpr.assignExpr)));
+        return new CFGPair(assignment, assignment);
     }
     @Override
     public CFGPair visit(AssignOpExpr assignOpExpr, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // unreachable - should've been combined into an Assignment elsewhere
         return null;
     }
     @Override
     public CFGPair visit(MethodDefinitionParameter methodDefinitionParameter, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
-        return null;
+        CFGBlock methodParam = new CFGBlock();
+        methodParam.lines.add(new CFGDeclaration(methodDefinitionParameter));
+        return new CFGPair(methodParam, methodParam);
     }
     @Override
     public CFGPair visit(Name name, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // unreachable
         return null;
     }
     @Override
     public CFGPair visit(LocationVariable locationVariable, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // unreachable
         return null;
     }
     @Override
     public CFGPair visit(Len len, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // unreachable (expr)
         return null;
     }
     @Override
     public CFGPair visit(Increment increment, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // unreachable
         return null;
     }
     @Override
     public CFGPair visit(Decrement decrement, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // unreachable
         return null;
     }
     @Override
     public CFGPair visit(CharLiteral charLiteral, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // unreachable
         return null;
     }
     @Override
     public CFGPair visit(StringLiteral stringLiteral, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        // unreachable
         return null;
     }
     @Override
     public CFGPair visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable curSymbolTable) {
-        // TODO Auto-generated method stub
+        // unreachable
         return null;
     }
     // all one liners should just return blocks with itself as one line, and no pointers to children or parents
