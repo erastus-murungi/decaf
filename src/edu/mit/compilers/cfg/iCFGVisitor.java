@@ -81,7 +81,33 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     }
     @Override
     public CFGPair visit(For forStatement, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        /**
+         * // Initialize the condition variable
+
+        CFGBlock initializeBlock = new CFGBlock();
+        initializeBlock.lines.add(new CFGAssignment(forStatement.initExpression));
+
+        // Evaluate the condition
+
+        CFGBlock evaluateBlock = new CFGBlock();
+        evaluateBlock.lines.add(new CFGExpression(forStatement.terminatingCondition));
+
+        // If true, run the block. 
+            CFGBlock trueBlock = forStatement.block.accept(this, symbolTable);
+
+            // For the block, the child of that CFGBlock should be a block with the increment line
+            CFGBlock incrementBlock = new CFGBlock();
+            incrementBlock.lines.add(new CFGAssignment(new Assignment(forStatement.updatingLocation, forStatement.updateAssignExpr)));
+
+            // Child of that increment block should be the evaluation
+
+
+        // If false, end with NOP
+        CFGBlock falseBlock = new NOP();
+
+        return null;
+         * 
+         */
         return null;
     }
     @Override
@@ -101,7 +127,23 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     }
     @Override
     public CFGPair visit(Program program, SymbolTable symbolTable) {
-        // TODO Auto-generated method stub
+        /**
+         * CFGBlock curBlock = initialGlobalBlock;
+        for (ImportDeclaration import_ : program.importDeclarationList){
+            CFGBlock placeholder = import_.accept(this, symbolTable);
+            curBlock.autoChild = placeholder;
+            curBlock = placeholder;  
+        }
+        for (FieldDeclaration field : program.fieldDeclarationList){
+            CFGBlock placeholder = field.accept(this, symbolTable);
+            curBlock.autoChild = placeholder;
+            curBlock = placeholder;  
+        }
+        for (MethodDefinition method : program.methodDefinitionList){
+            methodCFGBlocks.put(method.methodName.id, method.accept(this, symbolTable));
+        }
+
+         */
         return null;
     }
     @Override
