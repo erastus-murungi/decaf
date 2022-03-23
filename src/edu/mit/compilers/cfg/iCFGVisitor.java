@@ -8,7 +8,7 @@ import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 public class iCFGVisitor implements Visitor<CFGPair> {
-    public CFGBlock initialGlobalBlock = new NOP();
+    public CFGBlock initialGlobalBlock = new CFGBlock();
     public HashMap<String, CFGBlock> methodCFGBlocks = new HashMap<>();
     public ArrayList<CFGPair> loopStack = new ArrayList<>();
 
@@ -37,7 +37,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     }
     @Override
     public CFGPair visit(MethodDefinition methodDefinition, SymbolTable symbolTable) {
-        CFGBlock initial = new NOP();
+        CFGBlock initial = new CFGBlock();
         CFGPair curPair = new CFGPair(initial, new NOP());
         for (MethodDefinitionParameter param : methodDefinition.methodDefinitionParameterList){
             CFGPair placeholder = param.accept(this, symbolTable);

@@ -1,5 +1,7 @@
 package edu.mit.compilers.cfg;
 
+import edu.mit.compilers.symbolTable.SymbolTable;
+
 import java.util.ArrayList;
 
 public class CFGBlock {
@@ -17,4 +19,8 @@ public class CFGBlock {
         falseChild = new CFGBlock();
         lines = new ArrayList<>();
     }
+
+    public<T> T accept(CFGVisitor<T> visitor, SymbolTable symbolTable) {
+        return visitor.visit(this, symbolTable);
+    };
 }
