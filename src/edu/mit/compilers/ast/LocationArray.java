@@ -32,4 +32,9 @@ public class LocationArray extends Location {
     public String toString() {
         return "LocationArray{" + "name=" + name + ", expression=" + expression + '}';
     }
+
+    @Override
+    public String getSourceCode() {
+        return String.format("%s[%s]", name.getSourceCode(), expression.getSourceCode());
+    }
 }

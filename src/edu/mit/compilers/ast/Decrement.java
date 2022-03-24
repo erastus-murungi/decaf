@@ -8,6 +8,8 @@ import edu.mit.compilers.utils.Pair;
 import java.util.Collections;
 import java.util.List;
 
+import static edu.mit.compilers.grammar.DecafScanner.DECREMENT;
+
 public class Decrement extends AssignExpr {
     public Decrement(TokenPosition tokenPosition) {
         super(tokenPosition, null);
@@ -26,6 +28,11 @@ public class Decrement extends AssignExpr {
     @Override
     public String toString() {
         return "Decrement{}";
+    }
+
+    @Override
+    public String getSourceCode() {
+        return DECREMENT;
     }
 
     @Override

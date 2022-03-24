@@ -26,6 +26,11 @@ public class MethodCallStatement extends Statement {
     }
 
     @Override
+    public String getSourceCode() {
+        return methodCall.getSourceCode();
+    }
+
+    @Override
     public boolean isTerminal() {
         return false;
     }

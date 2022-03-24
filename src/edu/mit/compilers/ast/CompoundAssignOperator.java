@@ -13,16 +13,26 @@ public class CompoundAssignOperator extends Operator {
 
     @Override
     public String opRep() {
-        switch (op) {
-            case DecafScanner.ADD_ASSIGN : return "AugmentedAdd";
-            case DecafScanner.MINUS_ASSIGN : return "AugmentedSub";
-            case DecafScanner.MULTIPLY_ASSIGN : return "AugmentedMul";
-            default : throw new IllegalArgumentException("please register compound assign operator: " + op);
-        }
+        return switch (op) {
+            case DecafScanner.ADD_ASSIGN -> "AugmentedAdd";
+            case DecafScanner.MINUS_ASSIGN -> "AugmentedSub";
+            case DecafScanner.MULTIPLY_ASSIGN -> "AugmentedMul";
+            default -> throw new IllegalArgumentException("please register compound assign operator: " + op);
+        };
     }
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return null;
+    }
+
+    @Override
+    public String getSourceCode() {
+        return switch (op) {
+            case DecafScanner.ADD_ASSIGN -> "+=";
+            case DecafScanner.MINUS_ASSIGN -> "-=";
+            case DecafScanner.MULTIPLY_ASSIGN -> "*=";
+            default -> throw new IllegalArgumentException("please register compound assign operator: " + op);
+        };
     }
 }

@@ -12,15 +12,24 @@ public class UnaryOperator extends Operator {
 
     @Override
     public String opRep() {
-         switch (op) {
-            case DecafScanner.MINUS : return "Neg";
-            case DecafScanner.NOT : return "Not";
-            default : throw new IllegalArgumentException("please register unary operator: " + op);
-        }
+        return switch (op) {
+            case DecafScanner.MINUS -> "Neg";
+            case DecafScanner.NOT -> "Not";
+            default -> throw new IllegalArgumentException("please register unary operator: " + op);
+        };
     }
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return null;
+    }
+
+    @Override
+    public String getSourceCode() {
+        return switch (op) {
+            case DecafScanner.MINUS -> "-";
+            case DecafScanner.NOT -> "!";
+            default -> throw new IllegalArgumentException("please register unary operator: " + op);
+        };
     }
 }

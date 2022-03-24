@@ -26,7 +26,12 @@ public class ExpressionParameter extends MethodCallParameter {
 
     @Override
     public String toString() {
-        return "ExprParameter{" + "expression=" + expression + '}';
+        return "ExpressionParameter{" + "expression=" + expression + '}';
+    }
+
+    @Override
+    public String getSourceCode() {
+        return expression.getSourceCode();
     }
 
     @Override

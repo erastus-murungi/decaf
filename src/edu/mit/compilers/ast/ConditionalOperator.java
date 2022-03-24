@@ -13,15 +13,24 @@ public class ConditionalOperator extends BinOperator {
 
     @Override
     public String opRep() {
-        switch (op) {
-            case DecafScanner.CONDITIONAL_OR : return "Or";
-            case DecafScanner.CONDITIONAL_AND : return "And";
-            default : throw new IllegalArgumentException("please register conditional operator: " + op);
-        }
+        return switch (op) {
+            case DecafScanner.CONDITIONAL_OR -> "Or";
+            case DecafScanner.CONDITIONAL_AND -> "And";
+            default -> throw new IllegalArgumentException("please register conditional operator: " + op);
+        };
     }
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return null;
+    }
+
+    @Override
+    public String getSourceCode() {
+        return switch (op) {
+            case DecafScanner.CONDITIONAL_OR -> "||";
+            case DecafScanner.CONDITIONAL_AND -> "&&";
+            default -> throw new IllegalArgumentException("please register conditional operator: " + op);
+        };
     }
 }

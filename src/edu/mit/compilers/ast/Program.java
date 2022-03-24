@@ -48,6 +48,21 @@ public class Program extends AST {
   }
 
   @Override
+  public String getSourceCode() {
+    String imports = String.join(";\n", importDeclarationList.stream().map(ImportDeclaration::getSourceCode).toList());
+    String fieldDeclarations = String.join(";\n", fieldDeclarationList.stream().map(FieldDeclaration::getSourceCode).toList());
+    String methodDefinitions = String.join(";\n\n", methodDefinitionList.stream().map(MethodDefinition::getSourceCode).toList());
+    if (imports.isBlank() && fieldDeclarations.isBlank()) {
+      return methodDefinitions;
+    } else if (imports.isBlank()){
+      return String.join(";\n\n\n", List.of(fieldDeclarations, methodDefinitions));
+    } else if (fieldDeclarations.isBlank()) {
+      return String.join(";\n\n\n", List.of(imports, methodDefinitions));
+    }
+    return String.join(";\n\n\n", List.of(imports, fieldDeclarations, methodDefinitions));
+  }
+
+  @Override
   public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
     return visitor.visit(this, curSymbolTable);
   }

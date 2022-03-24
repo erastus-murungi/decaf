@@ -32,6 +32,11 @@ public class Array extends AST {
     }
 
     @Override
+    public String getSourceCode() {
+        return String.format("%s[%s]", id.id, size.literal);
+    }
+
+    @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
     }

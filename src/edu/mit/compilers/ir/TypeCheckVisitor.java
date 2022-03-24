@@ -27,7 +27,6 @@ import edu.mit.compilers.ast.ImportDeclaration;
 import edu.mit.compilers.ast.Increment;
 import edu.mit.compilers.ast.IntLiteral;
 import edu.mit.compilers.ast.Len;
-import edu.mit.compilers.ast.Location;
 import edu.mit.compilers.ast.LocationArray;
 import edu.mit.compilers.ast.LocationAssignExpr;
 import edu.mit.compilers.ast.LocationVariable;
@@ -353,15 +352,16 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
 
     @Override
     public BuiltinType visit(MethodCall methodCall, SymbolTable symbolTable) {
+
         final Optional<Descriptor> optionalMethodDescriptor = methods.getDescriptorFromCurrentScope(methodCall.nameId.id);
         final Descriptor descriptor;
         if (symbolTable.containsEntry(methodCall.nameId.id)){
             exceptions.add(new DecafSemanticException(methodCall.tokenPosition, methodCall.nameId.id + " refers to locally defined variable"));
             return BuiltinType.Undefined;
         }
-
         if (imports.contains(methodCall.nameId.id)) {
             // All external functions are treated as if they return int
+            methodCall.builtinType = BuiltinType.Int;
             return BuiltinType.Int;
         }
         if (optionalMethodDescriptor.isPresent()) {
@@ -378,6 +378,7 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
         }
         checkNumberOfArgumentsAndTypesMatch(((MethodDescriptor) descriptor).methodDefinition, methodCall);
 
+        methodCall.builtinType = descriptor.type;
         return descriptor.type;
     }
 

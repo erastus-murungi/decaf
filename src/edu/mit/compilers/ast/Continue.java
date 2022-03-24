@@ -8,6 +8,8 @@ import edu.mit.compilers.utils.Pair;
 import java.util.Collections;
 import java.util.List;
 
+import static edu.mit.compilers.grammar.DecafScanner.RESERVED_CONTINUE;
+
 public class Continue extends Statement{
     public Continue(TokenPosition tokenPosition) {
         super(tokenPosition);
@@ -26,6 +28,11 @@ public class Continue extends Statement{
     @Override
     public String toString() {
         return "Continue{}";
+    }
+
+    @Override
+    public String getSourceCode() {
+        return RESERVED_CONTINUE;
     }
 
     @Override

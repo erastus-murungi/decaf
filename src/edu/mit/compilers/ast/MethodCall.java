@@ -37,6 +37,13 @@ public class MethodCall extends Expression {
     }
 
     @Override
+    public String getSourceCode() {
+        return String.format("%s(%s)",
+                nameId.getSourceCode(),
+                String.join(", ", methodCallParameterList.stream().map(MethodCallParameter::getSourceCode).toList()));
+    }
+
+    @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
     }

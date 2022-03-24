@@ -6,6 +6,8 @@ import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
 
+import static edu.mit.compilers.grammar.DecafScanner.RESERVED_IMPORT;
+
 public class ImportDeclaration extends AST {
     public final Name nameId;
 
@@ -26,6 +28,11 @@ public class ImportDeclaration extends AST {
     @Override
     public String toString() {
         return "ImportDeclaration{" + "nameId=" + nameId + '}';
+    }
+
+    @Override
+    public String getSourceCode() {
+        return String.format("%s %s", RESERVED_IMPORT, nameId.getSourceCode());
     }
 
     @Override

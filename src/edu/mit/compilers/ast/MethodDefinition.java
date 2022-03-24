@@ -11,8 +11,8 @@ import java.util.List;
 public class MethodDefinition extends AST {
     final public TokenPosition tokenPosition;
     final public BuiltinType returnType;
-    final public List<MethodDefinitionParameter> methodDefinitionParameterList;
     final public Name methodName;
+    final public List<MethodDefinitionParameter> methodDefinitionParameterList;
     final public Block block;
 
     public MethodDefinition(TokenPosition tokenPosition, BuiltinType returnType, List<MethodDefinitionParameter> methodDefinitionParameterList, Name methodName, Block block) {
@@ -43,16 +43,18 @@ public class MethodDefinition extends AST {
 
     @Override
     public String toString() {
-        return "MethodDefinition{"
-                + "returnType="
-                + returnType
-                + ", methodDeclarationArgList="
-                + methodDefinitionParameterList
-                + ", methodName="
-                + methodName
-                + ", block="
-                + block
-                + '}';
+        return "MethodDefinition{" +
+                ", returnType=" + returnType +
+                ", methodName=" + methodName +
+                ", methodDefinitionParameterList=" + methodDefinitionParameterList +
+                ", block=" + block +
+                '}';
+    }
+
+    @Override
+    public String getSourceCode() {
+        String indent = " ".repeat(returnType.getSourceCode().length() + methodName.getSourceCode().length() + 2);
+        return String.format("%s %s(%s) {\n    %s\n}", returnType.getSourceCode(), methodName.getSourceCode(), String.join( ",\n" + indent, methodDefinitionParameterList.stream().map(MethodDefinitionParameter::getSourceCode).toList()), block.getSourceCode());
     }
 
     @Override

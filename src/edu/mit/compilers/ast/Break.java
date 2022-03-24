@@ -8,6 +8,8 @@ import edu.mit.compilers.utils.Pair;
 import java.util.Collections;
 import java.util.List;
 
+import static edu.mit.compilers.grammar.DecafScanner.RESERVED_BREAK;
+
 public class Break extends Statement {
     public Break(TokenPosition tokenPosition) {
         super(tokenPosition);
@@ -26,6 +28,11 @@ public class Break extends Statement {
     @Override
     public String toString() {
         return "Break{}";
+    }
+
+    @Override
+    public String getSourceCode() {
+        return RESERVED_BREAK;
     }
 
     @Override

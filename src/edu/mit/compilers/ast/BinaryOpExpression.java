@@ -34,6 +34,11 @@ public class BinaryOpExpression extends Expression {
     }
 
     @Override
+    public String getSourceCode() {
+        return String.format("%s %s %s", lhs.getSourceCode(), op.getSourceCode(), rhs.getSourceCode());
+    }
+
+    @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
       return visitor.visit(this, curSymbolTable);
     }

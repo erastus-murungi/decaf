@@ -7,6 +7,7 @@ import edu.mit.compilers.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class FieldDeclaration extends AST {
     final public TokenPosition tokenPosition;
@@ -40,6 +41,16 @@ public class FieldDeclaration extends AST {
     @Override
     public String toString() {
         return "FieldDeclaration{" + "type=" + builtinType + ", names=" + names + ", arrays=" + arrays + '}';
+    }
+
+    @Override
+    public String getSourceCode() {
+        return String.format("%s %s", builtinType.getSourceCode(),
+                String.join(", ",
+                        Stream.concat(
+                                names.stream().map(Name::getSourceCode),
+                                arrays.stream().map(Array::getSourceCode)
+                        ).toList()));
     }
 
     @Override

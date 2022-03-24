@@ -23,6 +23,11 @@ public class MethodDefinitionParameter extends AST {
     }
 
     @Override
+    public String getSourceCode() {
+        return String.format("%s %s", builtinType.getSourceCode(), id.getSourceCode());
+    }
+
+    @Override
     public boolean isTerminal() {
         return false;
     }

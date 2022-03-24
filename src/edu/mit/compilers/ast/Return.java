@@ -8,6 +8,8 @@ import edu.mit.compilers.utils.Pair;
 import java.util.Collections;
 import java.util.List;
 
+import static edu.mit.compilers.grammar.DecafScanner.RESERVED_RETURN;
+
 public class Return extends Statement {
   public final Expression retExpression;
 
@@ -29,6 +31,11 @@ public class Return extends Statement {
   @Override
   public String toString() {
     return (retExpression == null) ? "Return{}" : "Return{" + "retExpression=" + retExpression + '}';
+  }
+
+  @Override
+  public String getSourceCode() {
+    return String.format("%s %s", RESERVED_RETURN, retExpression == null ? "" : retExpression.getSourceCode());
   }
 
   @Override
