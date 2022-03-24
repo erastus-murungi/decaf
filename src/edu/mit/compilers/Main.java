@@ -126,43 +126,6 @@ class Main {
         CFGGenerator cfgGenerator = new CFGGenerator(programNode, semChecker.globalDescriptor);
         iCFGVisitor visitor = cfgGenerator.buildiCFG();
         System.out.println(visitor.methodCFGBlocks);
-
-        List<String> subGraphs = new ArrayList<>();
-        visitor.methodCFGBlocks.forEach((methodName, methodCFG) -> {
-            subGraphs.add(String.format("subgraph %s { \n", methodName));
-            // add this node
-            Stack<CFGBlock> stack = new Stack<>();
-            List<String> nodes = new ArrayList<>();
-            List<String> edges = new ArrayList<>();
-            stack.push(methodCFG);
-            while (!stack.isEmpty()) {
-                CFGBlock cfgBlock = stack.pop();
-                if (cfgBlock instanceof CFGNonConditional) {
-                    nodes.add(String.format("   %s [shape=box];", cfgBlock.getLabel()));
-                    CFGBlock autoChild = ((CFGNonConditional) cfgBlock).autoChild;
-                    if (autoChild != null) {
-                        edges.add(String.format("   %s -> %s;", cfgBlock.getLabel(), autoChild.getLabel()));
-                        stack.push(autoChild);
-                    }
-                } else if (cfgBlock instanceof CFGConditional) {
-                        nodes.add(String.format("   %s [shape=Mdiamond];", cfgBlock.getLabel()));
-                    CFGBlock falseChild = ((CFGConditional) cfgBlock).falseChild;
-                    CFGBlock trueChild = ((CFGConditional) cfgBlock).trueChild;
-                    if (falseChild != null) {
-                        stack.push(falseChild);
-                        stack.push(trueChild);
-                        edges.add(String.format("   %s -> %s;", cfgBlock.getLabel(), falseChild.getLabel()));
-                        edges.add(String.format("   %s -> %s;", cfgBlock.getLabel(), trueChild.getLabel()));
-                    }
-                }
-            }
-            subGraphs.addAll(edges);
-            subGraphs.addAll(nodes);
-            subGraphs.add("}");
-        });
-
-        String wholeGraph = String.join("\n", subGraphs);
-        System.out.println(wholeGraph);
-        GraphVizPrinter.createDotGraph(wholeGraph, "linear");
+        GraphVizPrinter.printGraph(visitor.methodCFGBlocks);
     }
 }
