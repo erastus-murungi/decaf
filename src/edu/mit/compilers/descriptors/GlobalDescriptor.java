@@ -20,13 +20,14 @@ public class GlobalDescriptor extends Descriptor {
     public SymbolTable methodsSymbolTable;
     public TreeSet<String> imports = new TreeSet<>();
 
-    public GlobalDescriptor(BuiltinType builtinType, SymbolTable globalVariablesSymbolTable, SymbolTable methodsSymbolTable) {
+    public GlobalDescriptor(BuiltinType builtinType, SymbolTable globalVariablesSymbolTable, SymbolTable methodsSymbolTable, TreeSet<String> importDeclarations) {
         super(builtinType, "<program>");
         this.globalVariablesSymbolTable = globalVariablesSymbolTable;
         this.methodsSymbolTable = methodsSymbolTable;
+        this.imports.addAll(importDeclarations);
     }
 
     public GlobalDescriptor() {
-        this(BuiltinType.Undefined, new SymbolTable(null, SymbolTableType.Field), new SymbolTable(null, SymbolTableType.Method));
+        this(BuiltinType.Undefined, new SymbolTable(null, SymbolTableType.Field), new SymbolTable(null, SymbolTableType.Method), new TreeSet<>());
     }
 }
