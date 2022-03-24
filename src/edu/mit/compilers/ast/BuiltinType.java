@@ -14,20 +14,20 @@ public enum BuiltinType {
     Undefined;
 
     public String getSourceCode() {
-        return switch (this) {
-            case Int, IntArray -> RESERVED_INT;
-            case Bool, BoolArray -> RESERVED_BOOL;
-            case Void -> RESERVED_VOID;
-            default -> throw new IllegalStateException("Unexpected value: " + this);
-        };
+        switch (this) {
+            case Int: case IntArray: return RESERVED_INT;
+            case Bool: case BoolArray: return RESERVED_BOOL;
+            case Void: return RESERVED_VOID;
+            default: throw new IllegalStateException("Unexpected value: " + this);
+        }
     }
 
     public int getFieldSize() {
-        return switch (this) {
-            case Int, IntArray -> 4;
-            case Bool, BoolArray -> 1;
-            case Void -> 0;
-            default -> throw new IllegalStateException("Unexpected value: " + this);
-        };
+        switch (this) {
+            case Int: case IntArray: return 4;
+            case Bool: case BoolArray: return 1;
+            case Void: return 0;
+            default: throw new IllegalStateException("Unexpected value: " + this);
+        }
     }
 }

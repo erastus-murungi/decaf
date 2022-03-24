@@ -41,7 +41,12 @@ public class Block extends AST {
 
     @Override
     public String getSourceCode() {
-        String fieldDeclarations = String.join(";\n    ", fieldDeclarationList.stream().map(FieldDeclaration::getSourceCode).toList());
+        List<String> list = new ArrayList<>();
+        for (FieldDeclaration fieldDeclaration : fieldDeclarationList) {
+            String sourceCode = fieldDeclaration.getSourceCode();
+            list.add(sourceCode);
+        }
+        String fieldDeclarations = String.join(";\n    ", list);
         List<String> s = new ArrayList<>();
         for (int i = 0; i < statementList.size(); i++) {
             Statement statement = statementList.get(i);

@@ -5,6 +5,7 @@ import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable; 
 import edu.mit.compilers.utils.Pair;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -43,7 +44,12 @@ public class For extends Statement {
     @Override
     public String getSourceCode() {
         String blockString = block.getSourceCode();
-        String indentedBlockString = String.join("\n", Arrays.stream(blockString.split("\n")).map(s -> "    " + s).toList());
+        List<String> list = new ArrayList<>();
+        for (String s : blockString.split("\n")) {
+            String s1 = "    " + s;
+            list.add(s1);
+        }
+        String indentedBlockString = String.join("\n", list);
         return String.format("%s (%s = %s; %s; %s %s) {\n    %s\n    }",
                 RESERVED_FOR, initId.getSourceCode(), initExpression.getSourceCode(), terminatingCondition.getSourceCode(), updatingLocation.getSourceCode(), updateAssignExpr.getSourceCode(), indentedBlockString);
     }

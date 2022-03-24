@@ -53,8 +53,17 @@ public class MethodDefinition extends AST {
 
     @Override
     public String getSourceCode() {
+        List<String> params = new ArrayList<>();
+        for (MethodDefinitionParameter methodDefinitionParameter : methodDefinitionParameterList) {
+            String sourceCode = methodDefinitionParameter.getSourceCode();
+            params.add(sourceCode);
+        }
         String indent = " ".repeat(returnType.getSourceCode().length() + methodName.getSourceCode().length() + 2);
-        return String.format("%s %s(%s) {\n    %s\n}", returnType.getSourceCode(), methodName.getSourceCode(), String.join( ",\n" + indent, methodDefinitionParameterList.stream().map(MethodDefinitionParameter::getSourceCode).toList()), block.getSourceCode());
+        return String.format("%s %s(%s) {\n    %s\n}",
+                returnType.getSourceCode(),
+                methodName.getSourceCode(),
+                String.join( ",\n" + indent, params)
+                        , block.getSourceCode());
     }
 
     @Override

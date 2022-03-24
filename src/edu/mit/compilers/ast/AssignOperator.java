@@ -13,13 +13,13 @@ public class AssignOperator extends Operator {
 
     @Override
     public String opRep() {
-        return switch (op) {
-            case DecafScanner.ASSIGN -> "Assign";
-            case DecafScanner.ADD_ASSIGN -> "AugmentedAdd";
-            case DecafScanner.MINUS_ASSIGN -> "AugmentedSub";
-            case DecafScanner.MULTIPLY_ASSIGN -> "AugmentedMul";
-            default -> throw new IllegalArgumentException("please register assign operator: " + op);
-        };
+        switch (op) {
+            case DecafScanner.ASSIGN: return "Assign";
+            case DecafScanner.ADD_ASSIGN: return "AugmentedAdd";
+            case DecafScanner.MINUS_ASSIGN: return "AugmentedSub";
+            case DecafScanner.MULTIPLY_ASSIGN: return "AugmentedMul";
+            default: throw new IllegalArgumentException("please register assign operator: " + op);
+        }
     }
 
     @Override
@@ -29,12 +29,12 @@ public class AssignOperator extends Operator {
 
     @Override
     public String getSourceCode() {
-        return switch (op) {
-            case DecafScanner.ASSIGN -> "=";
-            case DecafScanner.ADD_ASSIGN -> "+=";
-            case DecafScanner.MINUS_ASSIGN -> "-=";
-            case DecafScanner.MULTIPLY_ASSIGN -> "*=";
-            default -> throw new IllegalArgumentException("please register assign operator: " + op);
-        };
+        switch (op) {
+            case DecafScanner.ASSIGN: return  "=";
+            case DecafScanner.ADD_ASSIGN: return  "+=";
+            case DecafScanner.MINUS_ASSIGN: return  "-=";
+            case DecafScanner.MULTIPLY_ASSIGN: return  "*=";
+            default: throw new IllegalArgumentException("please register assign operator: " + op);
+        }
     }
 }

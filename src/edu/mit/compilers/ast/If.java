@@ -5,6 +5,7 @@ import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -47,10 +48,22 @@ public class If extends Statement {
 
     @Override
     public String getSourceCode() {
-        String indentedBlockString = String.join("\n", Arrays.stream(ifBlock.getSourceCode().split("\n")).map(s -> "    " + s).toList());
-        return (elseBlock == null) ?
-                String.format("%s (%s) {\n    %s\n    }", RESERVED_IF, test.getSourceCode(), indentedBlockString) :
-                String.format("%s (%s) {\n    %s\n    } %s {\n    %s        \n    }", RESERVED_IF, test.getSourceCode(), indentedBlockString, RESERVED_ELSE, String.join("\n", Arrays.stream(elseBlock.getSourceCode().split("\n")).map(s -> "    " + s).toList()));
+        List<String> list = new ArrayList<>();
+        for (String s1 : ifBlock.getSourceCode().split("\n")) {
+            String s2 = "    " + s1;
+            list.add(s2);
+        }
+        String indentedBlockString = String.join("\n", list);
+        if ((elseBlock == null)) {
+            return String.format("%s (%s) {\n    %s\n    }", RESERVED_IF, test.getSourceCode(), indentedBlockString);
+        } else {
+            List<String> result = new ArrayList<>();
+            for (String s : elseBlock.getSourceCode().split("\n")) {
+                String s1 = "    " + s;
+                result.add(s1);
+            }
+            return String.format("%s (%s) {\n    %s\n    } %s {\n    %s        \n    }", RESERVED_IF, test.getSourceCode(), indentedBlockString, RESERVED_ELSE, String.join("\n", result));
+        }
     }
 
     @Override

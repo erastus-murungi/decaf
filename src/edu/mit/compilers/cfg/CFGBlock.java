@@ -1,13 +1,11 @@
 package edu.mit.compilers.cfg;
 
-
-import edu.mit.compilers.ast.MethodDefinition;
-import java.util.List;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.ArrayList;
+import java.util.List;
 
-public class CFGBlock {
+public abstract class CFGBlock {
     public ArrayList<CFGBlock> parents;
     public ArrayList<CFGLine> lines;
 
@@ -17,6 +15,19 @@ public class CFGBlock {
     }
 
     public<T> T accept(CFGVisitor<T> visitor, SymbolTable symbolTable) {
-        return visitor.visit(this, symbolTable);
+        return visitor.visit((CFGNonConditional) this, symbolTable);
     };
+
+    public String getLabel() {
+        List<String> list = new ArrayList<>();
+        for (CFGLine cfgLine : lines) {
+            String sourceCode = cfgLine.ast.getSourceCode();
+            list.add(sourceCode);
+        }
+        String ret =  String.join("\n", list);
+        if (ret.isBlank()) {
+            return "∅";
+        }
+        return ret;
+    }
 }

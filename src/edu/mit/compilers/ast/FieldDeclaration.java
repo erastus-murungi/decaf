@@ -45,12 +45,13 @@ public class FieldDeclaration extends AST {
 
     @Override
     public String getSourceCode() {
-        return String.format("%s %s", builtinType.getSourceCode(),
-                String.join(", ",
-                        Stream.concat(
-                                names.stream().map(Name::getSourceCode),
-                                arrays.stream().map(Array::getSourceCode)
-                        ).toList()));
+        List<String> stringList = new ArrayList<>();
+        for (Name name: names)
+            stringList.add(name.getSourceCode());
+        for (Array array: arrays)
+            stringList.add(array.getSourceCode());
+        String args = String.join(", ", stringList);
+        return String.format("%s %s", builtinType.getSourceCode(), args);
     }
 
     @Override

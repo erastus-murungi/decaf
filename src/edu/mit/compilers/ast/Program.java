@@ -6,6 +6,7 @@ import edu.mit.compilers.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class Program extends AST {
   public final List<ImportDeclaration> importDeclarationList;
@@ -49,9 +50,25 @@ public class Program extends AST {
 
   @Override
   public String getSourceCode() {
-    String imports = String.join(";\n", importDeclarationList.stream().map(ImportDeclaration::getSourceCode).toList());
-    String fieldDeclarations = String.join(";\n", fieldDeclarationList.stream().map(FieldDeclaration::getSourceCode).toList());
-    String methodDefinitions = String.join(";\n\n", methodDefinitionList.stream().map(MethodDefinition::getSourceCode).toList());
+    List<String> stringList = new ArrayList<>();
+    for (ImportDeclaration importDeclaration : importDeclarationList) {
+      String sourceCode = importDeclaration.getSourceCode();
+      stringList.add(sourceCode);
+    }
+    String imports = String.join(";\n", stringList);
+
+    List<String> list = new ArrayList<>();
+    for (FieldDeclaration fieldDeclaration : fieldDeclarationList) {
+      String sourceCode = fieldDeclaration.getSourceCode();
+      list.add(sourceCode);
+    }
+    String fieldDeclarations = String.join(";\n", list);
+    List<String> result = new ArrayList<>();
+    for (MethodDefinition methodDefinition : methodDefinitionList) {
+      String sourceCode = methodDefinition.getSourceCode();
+      result.add(sourceCode);
+    }
+    String methodDefinitions = String.join(";\n\n", result);
     if (imports.isBlank() && fieldDeclarations.isBlank()) {
       return methodDefinitions;
     } else if (imports.isBlank()){

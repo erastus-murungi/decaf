@@ -27,9 +27,14 @@ public class ThreeAddressCodeList {
 
     @Override
     public String toString() {
+        List<String> list = new ArrayList<>();
+        for (ThreeAddressCode code : codes) {
+            String toString = code.toString();
+            list.add(toString);
+        }
         return "ThreeAddressCodeList: \n" +
                 "place: " + place + "\n" +
-                "codes: \n" + String.join("\n", codes.stream().map(Object::toString).toList());
+                "codes: \n" + String.join("\n", list);
     }
 
     public void add(ThreeAddressCodeList threeAddressCodeList) {

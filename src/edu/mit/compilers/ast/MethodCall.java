@@ -38,9 +38,14 @@ public class MethodCall extends Expression {
 
     @Override
     public String getSourceCode() {
+        List<String> stringList = new ArrayList<>();
+        for (MethodCallParameter methodCallParameter : methodCallParameterList) {
+            String sourceCode = methodCallParameter.getSourceCode();
+            stringList.add(sourceCode);
+        }
         return String.format("%s(%s)",
                 nameId.getSourceCode(),
-                String.join(", ", methodCallParameterList.stream().map(MethodCallParameter::getSourceCode).toList()));
+                String.join(", ", stringList));
     }
 
     @Override

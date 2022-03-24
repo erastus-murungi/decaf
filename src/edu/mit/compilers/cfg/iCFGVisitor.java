@@ -8,7 +8,7 @@ import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 public class iCFGVisitor implements Visitor<CFGPair> {
-    public CFGBlock initialGlobalBlock = new CFGBlock();
+    public CFGBlock initialGlobalBlock = new CFGNonConditional();
     public HashMap<String, CFGBlock> methodCFGBlocks = new HashMap<>();
     public ArrayList<CFGPair> loopStack = new ArrayList<>();
 
@@ -31,14 +31,17 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     @Override
     public CFGPair visit(FieldDeclaration fieldDeclaration, SymbolTable symbolTable) {
         // multiple fields can be declared in same line, handle/flatten later
-        CFGBlock fieldDecl = new CFGBlock();
+        CFGNonConditional fieldDecl = new CFGNonConditional();
         fieldDecl.lines.add(new CFGDeclaration(fieldDeclaration));
         return new CFGPair(fieldDecl, fieldDecl);
     }
     @Override
     public CFGPair visit(MethodDefinition methodDefinition, SymbolTable symbolTable) {
-        CFGBlock initial = new CFGBlock();
+        CFGNonConditional initial = new CFGNonConditional();
         CFGPair curPair = new CFGPair(initial, new NOP());
+        initial.autoChild = curPair.endBlock;
+        ((CFGNonConditional)curPair.startBlock).autoChild = curPair.endBlock;
+        curPair.endBlock.parents.add(curPair.startBlock);
         for (MethodDefinitionParameter param : methodDefinition.methodDefinitionParameterList){
             CFGPair placeholder = param.accept(this, symbolTable);
             curPair.endBlock.autoChild = placeholder.startBlock;
@@ -46,28 +49,29 @@ public class iCFGVisitor implements Visitor<CFGPair> {
             curPair = placeholder;
         }
         CFGPair methodBody = methodDefinition.block.accept(this, symbolTable);
-        curPair.endBlock = methodBody.startBlock;
+        curPair.endBlock.autoChild = methodBody.startBlock;
         curPair.endBlock.parents.add(curPair.startBlock);
 
         return new CFGPair(initial, methodBody.endBlock);
     }
     @Override
     public CFGPair visit(ImportDeclaration importDeclaration, SymbolTable symbolTable) {
-        CFGBlock import_ = new CFGBlock();
+        CFGNonConditional import_ = new CFGNonConditional();
         import_.lines.add(new CFGDeclaration(importDeclaration));
         return new CFGPair(import_, import_);
     }
     @Override
     public CFGPair visit(For forStatement, SymbolTable symbolTable) {
         // If false, end with NOP, also end of for_statement
-        CFGBlock falseBlock = new NOP();
+        CFGNonConditional falseBlock = new NOP();
 
         // For the block, the child of that CFGBlock should be a block with the increment line
-        CFGBlock incrementBlock = new CFGBlock();
+        CFGNonConditional incrementBlock = new CFGNonConditional();
         incrementBlock.lines.add(new CFGAssignment(new Assignment(forStatement.updatingLocation, forStatement.updateAssignExpr)));
 
         // Evaluate the condition
-        CFGBlock evaluateBlock = new CFGBlock();
+        CFGExpression condition = new CFGExpression(forStatement.terminatingCondition);
+        CFGConditional evaluateBlock = new CFGConditional(condition);
         evaluateBlock.lines.add(new CFGExpression(forStatement.terminatingCondition));
         evaluateBlock.falseChild = falseBlock;
         falseBlock.parents.add(evaluateBlock);
@@ -84,7 +88,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
             evaluateBlock.parents.add(truePair.endBlock);
         }
         // Initialize the condition variable
-        CFGBlock initializeBlock = new CFGBlock();
+        CFGNonConditional initializeBlock = new CFGNonConditional();
         initializeBlock.lines.add(new CFGAssignment(forStatement.initExpression));
 
         // child of initialization block is evaluation
@@ -99,25 +103,26 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     }
     @Override
     public CFGPair visit(Break breakStatement, SymbolTable symbolTable) {
-        CFGBlock breakBlock =  new CFGBlock();
+        CFGNonConditional breakBlock = new CFGNonConditional();
         breakBlock.lines.add(new CFGExpression(breakStatement));
         return new CFGPair(breakBlock, breakBlock);
     }
 
     @Override
     public CFGPair visit(Continue continueStatement, SymbolTable symbolTable) {
-        CFGBlock continueBlock =  new CFGBlock();
+        CFGNonConditional continueBlock = new CFGNonConditional();
         continueBlock.lines.add(new CFGExpression(continueStatement));
         return new CFGPair(continueBlock, continueBlock);
     }
     @Override
     public CFGPair visit(While whileStatement, SymbolTable symbolTable) {
         // If false, end with NOP, also end of while
-        CFGBlock falseBlock = new NOP();
+        NOP falseBlock = new NOP();
 
-        // Evaluate the condition 
-        CFGBlock conditionExpr = new CFGBlock();
-        conditionExpr.lines.add(new CFGExpression(whileStatement.test));
+        // Evaluate the condition
+        CFGExpression cfgExpression = new CFGExpression(whileStatement.test);
+        CFGConditional conditionExpr = new CFGConditional(cfgExpression);
+        conditionExpr.lines.add(cfgExpression);
         conditionExpr.falseChild = falseBlock;
         falseBlock.parents.add(conditionExpr);
         loopStack.add(new CFGPair(conditionExpr, falseBlock));
@@ -168,10 +173,10 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     }
     @Override
     public CFGPair visit(Block block, SymbolTable symbolTable) {
-        CFGBlock exit = new NOP();
-        CFGBlock initial = new NOP();
+        NOP exit = new NOP();
+        NOP initial = new NOP();
         CFGPair curPair = new CFGPair(initial, new NOP());
-
+        initial.autoChild = curPair.endBlock;
         for (FieldDeclaration field : block.fieldDeclarationList){
             CFGPair placeholder = field.accept(this, symbolTable);
             curPair.endBlock.autoChild = placeholder.startBlock;
@@ -180,7 +185,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         }
         for (Statement statement : block.statementList){
            if (statement instanceof Continue) {
-               CFGBlock continueCfg = statement.accept(this, symbolTable).startBlock;
+               CFGNonConditional continueCfg = (CFGNonConditional) statement.accept(this, symbolTable).startBlock;
                CFGBlock evalBlock = loopStack.get(loopStack.size() - 1).startBlock;
                continueCfg.autoChild = evalBlock;
                evalBlock.parents.add(continueCfg);
@@ -189,8 +194,8 @@ public class iCFGVisitor implements Visitor<CFGPair> {
                return new CFGPair(initial, null);
            }
            if (statement instanceof Break ){
-                CFGBlock breakCfg = statement.accept(this, symbolTable).startBlock;
-                CFGBlock endBlock = loopStack.get(loopStack.size() - 1).endBlock;
+                CFGNonConditional breakCfg = (CFGNonConditional) statement.accept(this, symbolTable).startBlock;
+                CFGNonConditional endBlock = loopStack.get(loopStack.size() - 1).endBlock;
                 breakCfg.autoChild = endBlock;
                 endBlock.parents.add(breakCfg);
                 curPair.endBlock.autoChild = breakCfg;
@@ -201,7 +206,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
                CFGPair returnPair = statement.accept(this, symbolTable);
                curPair.endBlock.autoChild = returnPair.startBlock;
                returnPair.startBlock.parents.add(curPair.endBlock);
-               return new CFGPair(initial, null);
+               return new CFGPair(initial, returnPair.endBlock);
            }
            // recurse normally for other cases
            else {
@@ -233,7 +238,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     @Override
     public CFGPair visit(If ifStatement, SymbolTable symbolTable) {
         // always end with nop
-        CFGBlock exit = new NOP();
+        final NOP exit = new NOP();
 
         // If true, run the block.
         CFGPair truePair = ifStatement.ifBlock.accept(this, symbolTable);
@@ -241,8 +246,9 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         exit.parents.add(truePair.endBlock);
 
         // Evaluate the condition
-        CFGBlock conditionExpr = new CFGBlock();
-        conditionExpr.lines.add(new CFGExpression(ifStatement.test));
+        CFGExpression condition = new CFGExpression(ifStatement.test);
+        CFGConditional conditionExpr = new CFGConditional(condition);
+        conditionExpr.lines.add(condition);
         conditionExpr.trueChild = truePair.startBlock;
         truePair.startBlock.parents.add(conditionExpr);
 
@@ -263,9 +269,9 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     }
     @Override
     public CFGPair visit(Return returnStatement, SymbolTable symbolTable) {
-         CFGBlock returnBlock = new CFGBlock();
+         CFGNonConditional returnBlock = new CFGNonConditional();
          returnBlock.lines.add(new CFGExpression(returnStatement));
-         CFGBlock nop = new NOP();
+         NOP nop = new NOP();
          returnBlock.autoChild = nop;
          nop.parents.add(returnBlock);
          return new CFGPair(returnBlock, nop);
@@ -282,13 +288,13 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     }
     @Override
     public CFGPair visit(MethodCallStatement methodCallStatement, SymbolTable symbolTable) {
-        CFGBlock methodCallExpr = new CFGBlock();
+        CFGNonConditional methodCallExpr = new CFGNonConditional();
         methodCallExpr.lines.add(new CFGExpression(methodCallStatement));
         return new CFGPair(methodCallExpr, methodCallExpr);
     }
     @Override
     public CFGPair visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable) {
-        CFGBlock assignment = new CFGBlock();
+        CFGNonConditional assignment = new CFGNonConditional();
         assignment.lines.add(new CFGAssignment(new Assignment(locationAssignExpr.location, locationAssignExpr.assignExpr)));
         return new CFGPair(assignment, assignment);
     }
@@ -299,7 +305,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     }
     @Override
     public CFGPair visit(MethodDefinitionParameter methodDefinitionParameter, SymbolTable symbolTable) {
-        CFGBlock methodParam = new CFGBlock();
+        CFGNonConditional methodParam = new CFGNonConditional();
         methodParam.lines.add(new CFGDeclaration(methodDefinitionParameter));
         return new CFGPair(methodParam, methodParam);
     }

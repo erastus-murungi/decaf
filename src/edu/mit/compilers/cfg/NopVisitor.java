@@ -6,15 +6,21 @@ public class NopVisitor implements CFGVisitor<Void> {
     CFGBlock exit = new NOP();
 
     @Override
-    public Void visit(CFGBlock cfgBlock, SymbolTable symbolTable) {
-        if (cfgBlock.autoChild != null) {
-            cfgBlock.autoChild.accept(this, symbolTable);
+    public Void visit(CFGNonConditional cfgNonConditional, SymbolTable symbolTable) {
+        // we assume this is the first instance of the
+        if (cfgNonConditional.autoChild != null) {
+            cfgNonConditional.autoChild.accept(this, symbolTable);
         }
-        if (cfgBlock.trueChild != null) {
-            cfgBlock.trueChild.accept(this, symbolTable);
+        return null;
+    }
+
+    @Override
+    public Void visit(CFGConditional cfgConditional, SymbolTable symbolTable) {
+        if (cfgConditional.trueChild != null) {
+            cfgConditional.trueChild.accept(this, symbolTable);
         }
-        if (cfgBlock.falseChild != null) {
-            cfgBlock.falseChild.accept(this, symbolTable);
+        if (cfgConditional.falseChild != null) {
+            cfgConditional.falseChild.accept(this, symbolTable);
         }
         return null;
     }
@@ -25,16 +31,20 @@ public class NopVisitor implements CFGVisitor<Void> {
         if (nop.autoChild != null) {
             endBlock = nop.autoChild;
         }
-        for (CFGBlock parent: nop.parents) {
+        for (CFGBlock parent : nop.parents) {
             // connecting parents to child
-            if (parent.autoChild == nop) {
-                parent.autoChild = endBlock;
-            }
-            else if (parent.trueChild == nop) {
-                parent.trueChild = endBlock;
-            }
-            else if (parent.falseChild == nop) {
-                parent.falseChild = endBlock;
+            if (parent instanceof CFGConditional) {
+                CFGConditional parentConditional = (CFGConditional) parent;
+                if (parentConditional.trueChild == nop) {
+                    parentConditional.trueChild = endBlock;
+                } else if (parentConditional.falseChild == nop) {
+                    parentConditional.falseChild = endBlock;
+                }
+            } else {
+                CFGNonConditional parentNonConditional = (CFGNonConditional) parent;
+                if (parentNonConditional.autoChild == nop) {
+                    parentNonConditional.autoChild = endBlock;
+                }
             }
             endBlock.parents.add(parent);
         }

@@ -30,5 +30,10 @@ public class Assignment extends AST{
     public <T> T accept(Visitor<T> visitor, SymbolTable currentSymbolTable) {
         return null;
     }
-    
+
+    @Override
+    public String getSourceCode() {
+        return String.format("%s = %s", location.getSourceCode(), assignExpr.getSourceCode());
+    }
+
 }
