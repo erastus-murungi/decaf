@@ -34,6 +34,11 @@ public class StringLiteral extends MethodCallParameter {
     }
 
     @Override
+    public String getSourceCode() {
+        return literal;
+    }
+
+    @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
     }

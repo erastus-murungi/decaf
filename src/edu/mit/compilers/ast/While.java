@@ -7,6 +7,8 @@ import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
 
+import static edu.mit.compilers.grammar.DecafScanner.RESERVED_WHILE;
+
 public class While extends Statement {
     public final Expression test;
     public final Block body;
@@ -30,6 +32,11 @@ public class While extends Statement {
     @Override
     public String toString() {
         return "While{" + "test=" + test + ", body=" + body + '}';
+    }
+
+    @Override
+    public String getSourceCode() {
+        return String.format("%s (%s) {\n    %s\n    }", RESERVED_WHILE, test.getSourceCode(), body.getSourceCode());
     }
 
     @Override

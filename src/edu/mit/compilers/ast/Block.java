@@ -1,11 +1,13 @@
 package edu.mit.compilers.ast;
 
 import edu.mit.compilers.ir.Visitor;
-import edu.mit.compilers.symbolTable.SymbolTable; 
+import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 
+import javax.swing.plaf.nimbus.State;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class Block extends AST {
     final public List<FieldDeclaration> fieldDeclarationList;
@@ -35,6 +37,22 @@ public class Block extends AST {
     @Override
     public String toString() {
         return "Block{" + "fieldDeclarationList=" + fieldDeclarationList + ", statementList=" + statementList + '}';
+    }
+
+    @Override
+    public String getSourceCode() {
+        String fieldDeclarations = String.join(";\n    ", fieldDeclarationList.stream().map(FieldDeclaration::getSourceCode).toList());
+        List<String> s = new ArrayList<>();
+        for (int i = 0; i < statementList.size(); i++) {
+            Statement statement = statementList.get(i);
+            s.add(statement.getSourceCode());
+            if (statement instanceof For || statement instanceof While || statement instanceof If) {
+                s.add((i == statementList.size() - 1) ? "    " : "\n    ");
+            } else {
+                s.add((i == statementList.size() - 1) ? ";    " : ";\n    ");
+            }
+        }
+        return fieldDeclarations + (fieldDeclarations.isBlank() ? "" : ";\n    ") + String.join("", s);
     }
 
     @Override

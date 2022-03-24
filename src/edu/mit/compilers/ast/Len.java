@@ -7,6 +7,8 @@ import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
 
+import static edu.mit.compilers.grammar.DecafScanner.RESERVED_LEN;
+
 public class Len extends Expression {
     final public Name nameId;
     final public BuiltinType builtinType = BuiltinType.Int;
@@ -30,6 +32,11 @@ public class Len extends Expression {
     @Override
     public String toString() {
         return "Len{" + "nameId=" + nameId + '}';
+    }
+
+    @Override
+    public String getSourceCode() {
+        return String.format("%s (%s)", RESERVED_LEN, nameId.id);
     }
 
     @Override

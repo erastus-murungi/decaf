@@ -27,6 +27,11 @@ public class Name extends AST {
     }
 
     @Override
+    public String getSourceCode() {
+        return id;
+    }
+
+    @Override
     public List<Pair<String, AST>> getChildren() {
         return Collections.emptyList();
     }

@@ -31,6 +31,11 @@ public class ParenthesizedExpression extends Expression {
     }
 
     @Override
+    public String getSourceCode() {
+        return String.format("(%s)", expression.getSourceCode());
+    }
+
+    @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
     }

@@ -32,4 +32,9 @@ public class LocationVariable extends Location {
     public String toString() {
         return "LocationVariable{" + "name=" + name + '}';
     }
+
+    @Override
+    public String getSourceCode() {
+        return name.getSourceCode();
+    }
 }

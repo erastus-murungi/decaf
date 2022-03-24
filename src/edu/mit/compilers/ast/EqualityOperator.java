@@ -13,15 +13,24 @@ public class EqualityOperator extends BinOperator {
 
     @Override
     public String opRep() {
-        switch (op) {
-            case DecafScanner.EQ : return "Eq";
-            case DecafScanner.NEQ : return "NotEq";
-            default : throw new IllegalArgumentException("please register equality operator: " + op);
-    }
+        return switch (op) {
+            case DecafScanner.EQ -> "Eq";
+            case DecafScanner.NEQ -> "NotEq";
+            default -> throw new IllegalArgumentException("please register equality operator: " + op);
+        };
 }
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return null;
+    }
+
+    @Override
+    public String getSourceCode() {
+        return switch (op) {
+            case DecafScanner.EQ -> "==";
+            case DecafScanner.NEQ -> "!=";
+            default -> throw new IllegalArgumentException("please register equality operator: " + op);
+        };
     }
 }

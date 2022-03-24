@@ -28,4 +28,9 @@ public abstract class Literal extends Expression {
     public String toString() {
         return this.getClass().getSimpleName() + "{'" + literal + '\'' + '}';
     }
+
+    @Override
+    public String getSourceCode() {
+        return literal;
+    }
 }

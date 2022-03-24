@@ -9,6 +9,8 @@ import edu.mit.compilers.utils.Pair;
 import java.util.Collections;
 import java.util.List;
 
+import static edu.mit.compilers.grammar.DecafScanner.INCREMENT;
+
 public class Increment extends AssignExpr {
     public Increment(TokenPosition tokenPosition) {
         super(tokenPosition, null);
@@ -27,6 +29,11 @@ public class Increment extends AssignExpr {
     @Override
     public String toString() {
         return "Increment{}";
+    }
+
+    @Override
+    public String getSourceCode() {
+        return INCREMENT;
     }
 
     @Override

@@ -33,6 +33,11 @@ public class CompoundAssignOpExpr extends AssignExpr {
     }
 
     @Override
+    public String getSourceCode() {
+        return String.format("%s %s", compoundAssignOp.getSourceCode(), expression.getSourceCode());
+    }
+
+    @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
     }

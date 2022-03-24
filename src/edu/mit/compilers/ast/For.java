@@ -5,7 +5,10 @@ import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable; 
 import edu.mit.compilers.utils.Pair;
 
+import java.util.Arrays;
 import java.util.List;
+
+import static edu.mit.compilers.grammar.DecafScanner.RESERVED_FOR;
 
 public class For extends Statement {
     public final Name initId;
@@ -35,6 +38,14 @@ public class For extends Statement {
     @Override
     public String toString() {
         return "For{" + "initId=" + initId + ", initExpression=" + initExpression + ", terminatingCondition=" + terminatingCondition + ", updatingLocation=" + updatingLocation + ", updateAssignExpr=" + updateAssignExpr + ", block=" + block + '}';
+    }
+
+    @Override
+    public String getSourceCode() {
+        String blockString = block.getSourceCode();
+        String indentedBlockString = String.join("\n", Arrays.stream(blockString.split("\n")).map(s -> "    " + s).toList());
+        return String.format("%s (%s = %s; %s; %s %s) {\n    %s\n    }",
+                RESERVED_FOR, initId.getSourceCode(), initExpression.getSourceCode(), terminatingCondition.getSourceCode(), updatingLocation.getSourceCode(), updateAssignExpr.getSourceCode(), indentedBlockString);
     }
 
     @Override
