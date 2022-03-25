@@ -11,6 +11,11 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     public CFGBlock initialGlobalBlock = new CFGNonConditional();
     public HashMap<String, CFGBlock> methodCFGBlocks = new HashMap<>();
     public ArrayList<CFGPair> loopStack = new ArrayList<>();
+    private NOP exitNOP;
+
+    public iCFGVisitor() {
+        exitNOP = new NOP();
+    }
 
     @Override
     public CFGPair visit(IntLiteral intLiteral, SymbolTable symbolTable) {
@@ -84,15 +89,14 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         loopStack.remove(loopStack.size() - 1);
 
         incrementBlock.autoChild = evaluateBlock;
-        truePair.endBlock.autoChild = incrementBlock;
 
         evaluateBlock.trueChild = truePair.startBlock;
         truePair.startBlock.parents.add(evaluateBlock);
-        // bug
-        // if (truePair.endBlock != null){
-        //     truePair.endBlock.autoChild = evaluateBlock;
-        //     evaluateBlock.parents.add(truePair.endBlock);
-        // }
+
+        if (truePair.endBlock != exitNOP){
+            truePair.endBlock.autoChild = incrementBlock;
+            incrementBlock.parents.add(truePair.endBlock);
+        }
         // Initialize the condition variable
         CFGNonConditional initializeBlock = new CFGNonConditional();
         initializeBlock.lines.add(new CFGDeclaration(forStatement.initialization));
@@ -111,7 +115,10 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     public CFGPair visit(Break breakStatement, SymbolTable symbolTable) {
         CFGNonConditional breakBlock = new CFGNonConditional();
         breakBlock.lines.add(new CFGExpression(breakStatement));
-        return new CFGPair(breakBlock, breakBlock);
+        CFGPair pair = new CFGPair(breakBlock, breakBlock);
+        breakBlock.autoChild = null;
+        breakBlock.parents.clear();
+        return pair;
     }
 
     @Override
@@ -279,7 +286,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
          NOP nop = new NOP();
          returnBlock.autoChild = nop;
          nop.parents.add(returnBlock);
-         return new CFGPair(returnBlock, nop);
+         return new CFGPair(returnBlock, exitNOP);
     }
     @Override
     public CFGPair visit(Array array, SymbolTable symbolTable) {

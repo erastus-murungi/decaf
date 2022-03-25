@@ -103,7 +103,7 @@ class Main {
 //        }
         FileInputStream fileInputStream = null;
         try {
-            fileInputStream = new FileInputStream("/Users/erastusmurungi/IdeaProjects/compiler/tests/semantics/legal/legal-01.dcf");
+            fileInputStream = new FileInputStream("tests/semantics/legal/legal-01.dcf");
         } catch (FileNotFoundException ex) {
             ex.printStackTrace();
         }
