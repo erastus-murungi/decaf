@@ -23,7 +23,9 @@ public class CFGGenerator {
             nopVisitor.exit = new NOP();
             ((CFGNonConditional) v).autoChild.accept(nopVisitor, theSymbolWeCareAbout);
         });
-        visitor.methodCFGBlocks.forEach((k, v) -> ((CFGNonConditional) v).autoChild.accept(maximalVisitor, theSymbolWeCareAbout));
+        visitor.methodCFGBlocks.forEach((k, v) -> v.accept(maximalVisitor, theSymbolWeCareAbout));
+        visitor.initialGlobalBlock.accept(nopVisitor, theSymbolWeCareAbout);
+        visitor.initialGlobalBlock.accept(maximalVisitor, theSymbolWeCareAbout);
         return visitor;
         // visitor has all the individual method CFGs and initial declarations
         // visitor.methodCFGBlocks

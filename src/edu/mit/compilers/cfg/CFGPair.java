@@ -6,7 +6,8 @@ public class CFGPair {
 
     public CFGPair(CFGBlock startBlock, CFGNonConditional endBlock){
         this.startBlock = startBlock;
-        endBlock.parents.add(startBlock);
+        if (startBlock != endBlock)
+            endBlock.parents.add(startBlock);
         this.endBlock = endBlock;
     }
     

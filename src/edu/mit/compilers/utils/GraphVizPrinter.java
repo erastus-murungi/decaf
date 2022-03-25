@@ -30,14 +30,7 @@ import edu.mit.compilers.cfg.CFGConditional;
 import edu.mit.compilers.cfg.CFGNonConditional;
 import edu.mit.compilers.cfg.NOP;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -73,7 +66,7 @@ public class GraphVizPrinter {
     /**
      * Detects the client's operating system.
      */
-    private final static String osName = System.getProperty("os.name").replaceAll("\\s", "");
+    private final static String osName = System.getProperty("os.name").replaceAll("\\s", "").toLowerCase(Locale.ROOT);
     /**
      * ##############################################################
      * #                    Linux Configurations                    #
@@ -103,12 +96,12 @@ public class GraphVizPrinter {
     /**
      * The dir. where temporary files will be created.
      */
-    private static String TEMP_DIR = ".";
+    private static final String TEMP_DIR = ".";
 
     /**
      * Where is your dot program located? It will be called externally.
      */
-    private static String DOT = (osName.equals("Windows")) ? "c:/Program Files (x86)/Graphviz 2.28/bin/dot.exe" : (osName.equals("MacOSX")) ? "/usr/local/bin/dot" : "/usr/bin/dot";
+    private static final String DOT = (osName.equals("windows")) ? "c:/Program Files (x86)/Graphviz 2.28/bin/dot.exe" : (osName.equals("macosx")) ? "/usr/local/bin/dot" : "/usr/bin/dot";
 
     /**
      * The image size in dpi. 96 dpi is normal size. Higher values are 10% higher each.
@@ -116,7 +109,7 @@ public class GraphVizPrinter {
      * <p>
      * dpi patch by Peter Mueller
      */
-    private int[] dpiSizes = {46, 51, 57, 63, 70, 78, 86, 96, 106, 116, 128, 141, 155, 170, 187, 206, 226, 249};
+    private final int[] dpiSizes = {46, 51, 57, 63, 70, 78, 86, 96, 106, 116, 128, 141, 155, 170, 187, 206, 226, 249};
 
     /**
      * Define the index in the image size array.
@@ -272,7 +265,7 @@ public class GraphVizPrinter {
             img_stream = new byte[in.available()];
             in.read(img_stream);
             // Close it if we need to
-            if (in != null) in.close();
+            in.close();
 
             if (!img.delete())
                 System.err.println("Warning: " + img.getAbsolutePath() + " could not be deleted!");
@@ -319,7 +312,9 @@ public class GraphVizPrinter {
      * @return A string to open a graph.
      */
     public String start_graph() {
-        return "digraph G {";
+        return "digraph G {  graph [fontname = \"Courier New\"];\n" +
+                " node [fontname = \"Courier\"];\n" +
+                " edge [fontname = \"Courier\"];";
     }
 
     /**
@@ -389,66 +384,79 @@ public class GraphVizPrinter {
         gv.writeGraphToFile(gv.getGraph(gv.getDotSource(), type), out);
     }
 
-    public static void printGraph(HashMap<String, CFGBlock> methodCFGBlocks) {
+    public static String writeCFG(String name, CFGBlock cfg) {
         List<String> subGraphs = new ArrayList<>();
-        methodCFGBlocks.forEach((methodName, methodCFG) -> {
-            subGraphs.add(String.format("subgraph %s { \n", methodName));
-            // add this node
-            Stack<CFGBlock> stack = new Stack<>();
-            List<String> nodes = new ArrayList<>();
-            List<String> edges = new ArrayList<>();
-            stack.push(methodCFG);
-            Set<CFGBlock> seen = new HashSet<>();
-            while (!stack.isEmpty()) {
-                CFGBlock cfgBlock = stack.pop();
-                if (cfgBlock instanceof NOP) {
-                    nodes.add(String.format("   %s [shape=record, label=%s, color=red];", cfgBlock.hashCode(), "\"<from_node>" + escape(cfgBlock.getLabel()) + "\""));
-                    CFGBlock autoChild = ((NOP) cfgBlock).autoChild;
-                    if (autoChild != null) {
-                        edges.add(String.format("   %s -> %s;", cfgBlock.hashCode()+ ":from_node", autoChild.hashCode()+ ":from_node"));
-                        if (!seen.contains(autoChild)) {
-                            stack.push(autoChild);
-                            seen.add(autoChild);
-                        }
-                    }
-                }
-                else if (cfgBlock instanceof CFGNonConditional) {
-                    nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"<from_node>" + escape(cfgBlock.getLabel()) + "\""));
-                    CFGBlock autoChild = ((CFGNonConditional) cfgBlock).autoChild;
-                    if (autoChild != null) {
-                        edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_node", autoChild.hashCode() + ":from_node"));
-                        if (!seen.contains(autoChild)) {
-                            stack.push(autoChild);
-                            seen.add(autoChild);
-                        }
-                    }
-                } else if (cfgBlock instanceof CFGConditional) {
-                    nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"{<from_node>" + escape(cfgBlock.getLabel()) + "|{<from_true>true|<from_false>false}" + "}\""));
-                    CFGBlock falseChild = ((CFGConditional) cfgBlock).falseChild;
-                    CFGBlock trueChild = ((CFGConditional) cfgBlock).trueChild;
-                    if (falseChild != null) {
-                        if (!seen.contains(falseChild)) {
-                            stack.push(falseChild);
-                            seen.add(falseChild);
-                        }
-                        if (!seen.contains(trueChild)) {
-                            stack.push(trueChild);
-                            seen.add(trueChild);
-                        }
-                        edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_false", falseChild.hashCode() + ":from_node"));
-                        edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_true", trueChild.hashCode() + ":from_node"));
+        subGraphs.add(String.format("subgraph cluster_%s { \n label = %s", name, name));
+        // add this node
+        Stack<CFGBlock> stack = new Stack<>();
+        List<String> nodes = new ArrayList<>();
+        List<String> edges = new ArrayList<>();
+        stack.push(cfg);
+        Set<CFGBlock> seen = new HashSet<>();
+
+        while (!stack.isEmpty()) {
+            CFGBlock cfgBlock = stack.pop();
+            if (cfgBlock instanceof NOP) {
+                nodes.add(String.format("   %s [shape=record, label=%s, color=red];", cfgBlock.hashCode(), "\"<from_node>" + escape(cfgBlock.getLabel()) + "\""));
+                CFGBlock autoChild = ((NOP) cfgBlock).autoChild;
+                if (autoChild != null) {
+                    edges.add(String.format("   %s -> %s;", cfgBlock.hashCode()+ ":from_node", autoChild.hashCode()+ ":from_node"));
+                    if (!seen.contains(autoChild)) {
+                        stack.push(autoChild);
+                        seen.add(autoChild);
                     }
                 }
             }
-            subGraphs.addAll(edges);
-            subGraphs.addAll(nodes);
-            subGraphs.add("}");
-        });
+            else if (cfgBlock instanceof CFGNonConditional) {
+                nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"<from_node>" + escape(cfgBlock.getLabel()) + "\""));
+                CFGBlock autoChild = ((CFGNonConditional) cfgBlock).autoChild;
+                if (autoChild != null) {
+                    edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_node", autoChild.hashCode() + ":from_node"));
+                    if (!seen.contains(autoChild)) {
+                        stack.push(autoChild);
+                        seen.add(autoChild);
+                    }
+                }
+            } else if (cfgBlock instanceof CFGConditional) {
+                nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"{<from_node>" + escape(cfgBlock.getLabel()) + "|{<from_true> true|<from_false>false}" + "}\""));
+                CFGBlock falseChild = ((CFGConditional) cfgBlock).falseChild;
+                CFGBlock trueChild = ((CFGConditional) cfgBlock).trueChild;
+                if (falseChild != null) {
+                    if (!seen.contains(falseChild)) {
+                        stack.push(falseChild);
+                        seen.add(falseChild);
+                    }
+                    edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_false", falseChild.hashCode() + ":from_node"));
+                }
+                if (trueChild != null) {
+                    if (!seen.contains(trueChild)) {
+                        stack.push(trueChild);
+                        seen.add(trueChild);
+                    }
+                    edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_true", trueChild.hashCode() + ":from_node"));
+                }
+            }
+        }
+        subGraphs.addAll(edges);
+        subGraphs.addAll(nodes);
+        subGraphs.add("}");
 
-        String wholeGraph = String.join("\n", subGraphs);
-        System.out.println(wholeGraph);
-        GraphVizPrinter.createDotGraph(wholeGraph, "cfg");
+        return String.join("\n", subGraphs);
+    }
 
+    public static void printGraph(HashMap<String, CFGBlock> methodCFGBlocks) {
+        final String[] graph = new String[methodCFGBlocks.size()];
+        final Integer[] index = {0};
+        methodCFGBlocks.forEach((k, v) -> graph[index[0]++] = writeCFG(k, v));
+        GraphVizPrinter.createDotGraph(String.join("\n", graph), "cfg");
+        if (!osName.equals("windows")) {
+            try {
+                Process process = Runtime.getRuntime().exec("open cfg.pdf");
+                System.out.println(Utils.getStringFromInputStream(process.getInputStream()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 
@@ -470,7 +478,9 @@ public class GraphVizPrinter {
                 .replace("'", "\\'")
                 .replace("\"", "\\\"")
                 .replace("<", "\\<")
-                .replace(">", "\\>");
+                .replace(">", "\\>")
+                .replace("\n", "\\l");
+
     }
 
 } // end of class GraphViz

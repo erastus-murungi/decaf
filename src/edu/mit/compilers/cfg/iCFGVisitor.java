@@ -8,10 +8,10 @@ import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 public class iCFGVisitor implements Visitor<CFGPair> {
-    public CFGBlock initialGlobalBlock = new CFGNonConditional();
+    public CFGNonConditional initialGlobalBlock = new CFGNonConditional();
     public HashMap<String, CFGBlock> methodCFGBlocks = new HashMap<>();
     public ArrayList<CFGPair> loopStack = new ArrayList<>();
-    private NOP exitNOP;
+    private final NOP exitNOP;
 
     public iCFGVisitor() {
         exitNOP = new NOP();
@@ -21,24 +21,26 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     public CFGPair visit(IntLiteral intLiteral, SymbolTable symbolTable) {
         return null;
     }
+
     @Override
     public CFGPair visit(BooleanLiteral booleanLiteral, SymbolTable symbolTable) {
         return null;
     }
+
     @Override
     public CFGPair visit(DecimalLiteral decimalLiteral, SymbolTable symbolTable) {
         return null;
     }
+
     @Override
     public CFGPair visit(HexLiteral hexLiteral, SymbolTable symbolTable) {
         return null;
     }
+
     @Override
     public CFGPair visit(FieldDeclaration fieldDeclaration, SymbolTable symbolTable) {
         // multiple fields can be declared in same line, handle/flatten later
         CFGNonConditional fieldDecl = new CFGNonConditional();
-        fieldDecl.autoChild = fieldDecl;
-        fieldDecl.parents.add(fieldDecl);
         fieldDecl.lines.add(new CFGDeclaration(fieldDeclaration));
         return new CFGPair(fieldDecl, fieldDecl);
     }
@@ -48,7 +50,6 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         CFGPair curPair = new CFGPair(initial, new NOP());
         initial.autoChild = curPair.endBlock;
         ((CFGNonConditional)curPair.startBlock).autoChild = curPair.endBlock;
-        curPair.endBlock.parents.add(curPair.startBlock);
         for (MethodDefinitionParameter param : methodDefinition.methodDefinitionParameterList){
             CFGPair placeholder = param.accept(this, symbolTable);
             curPair.endBlock.autoChild = placeholder.startBlock;
@@ -58,7 +59,6 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         CFGPair methodBody = methodDefinition.block.accept(this, symbolTable);
         curPair.endBlock.autoChild = methodBody.startBlock;
         methodBody.startBlock.parents.add(curPair.endBlock);
-        curPair.endBlock.parents.add(curPair.startBlock);
         return new CFGPair(initial, methodBody.endBlock);
     }
     @Override
@@ -155,6 +155,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     @Override
     public CFGPair visit(Program program, SymbolTable symbolTable) {
         CFGPair curPair = new CFGPair(initialGlobalBlock, new NOP());
+        initialGlobalBlock.autoChild = curPair.endBlock;
         for (ImportDeclaration import_ : program.importDeclarationList){
             CFGPair placeholder = import_.accept(this, symbolTable);
             curPair.endBlock.autoChild = placeholder.startBlock;
@@ -170,7 +171,6 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         for (MethodDefinition method : program.methodDefinitionList){
             methodCFGBlocks.put(method.methodName.id, method.accept(this, symbolTable).startBlock);
         }
-
         // don't need to return pair bc only need start block
          return null;
     }
@@ -193,6 +193,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         for (FieldDeclaration field : block.fieldDeclarationList){
             CFGPair placeholder = field.accept(this, symbolTable);
             curPair.endBlock.autoChild = placeholder.startBlock;
+            placeholder.startBlock.parents.add(curPair.endBlock);
             curPair = placeholder;
         }
         for (Statement statement : block.statementList){
@@ -318,7 +319,6 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     @Override
     public CFGPair visit(MethodDefinitionParameter methodDefinitionParameter, SymbolTable symbolTable) {
         CFGNonConditional methodParam = new CFGNonConditional();
-        methodParam.parents.add(methodParam);
         methodParam.autoChild = methodParam;
         methodParam.lines.add(new CFGDeclaration(methodDefinitionParameter));
         return new CFGPair(methodParam, methodParam);

@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Stack;
 
@@ -103,7 +104,7 @@ class Main {
 //        }
         FileInputStream fileInputStream = null;
         try {
-            fileInputStream = new FileInputStream("tests/semantics/legal/legal-01.dcf");
+            fileInputStream = new FileInputStream("tests/codegen/input/x-26-math3.dcf");
         } catch (FileNotFoundException ex) {
             ex.printStackTrace();
         }
@@ -122,10 +123,10 @@ class Main {
         if (semChecker.hasError()) {
             System.exit(1);
         }
-        scanner.syntaxHighlight(System.out);
         CFGGenerator cfgGenerator = new CFGGenerator(programNode, semChecker.globalDescriptor);
         iCFGVisitor visitor = cfgGenerator.buildiCFG();
-        System.out.println(visitor.methodCFGBlocks);
-        GraphVizPrinter.printGraph(visitor.methodCFGBlocks);
+        HashMap<String, CFGBlock> copy = (HashMap<String, CFGBlock>) visitor.methodCFGBlocks.clone();
+        copy.put("global", visitor.initialGlobalBlock);
+        GraphVizPrinter.printGraph(copy);
     }
 }
