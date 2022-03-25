@@ -402,10 +402,10 @@ public class GraphVizPrinter {
             while (!stack.isEmpty()) {
                 CFGBlock cfgBlock = stack.pop();
                 if (cfgBlock instanceof NOP) {
-                    nodes.add(String.format("   %s [shape=box, label=%s, color=red];", cfgBlock.hashCode(), "\"" + escape(cfgBlock.getLabel()) + "\""));
+                    nodes.add(String.format("   %s [shape=record, label=%s, color=red];", cfgBlock.hashCode(), "\"<from_node>" + escape(cfgBlock.getLabel()) + "\""));
                     CFGBlock autoChild = ((NOP) cfgBlock).autoChild;
                     if (autoChild != null) {
-                        edges.add(String.format("   %s -> %s;", cfgBlock.hashCode(), autoChild.hashCode()));
+                        edges.add(String.format("   %s -> %s;", cfgBlock.hashCode()+ ":from_node", autoChild.hashCode()+ ":from_node"));
                         if (!seen.contains(autoChild)) {
                             stack.push(autoChild);
                             seen.add(autoChild);
@@ -413,17 +413,17 @@ public class GraphVizPrinter {
                     }
                 }
                 else if (cfgBlock instanceof CFGNonConditional) {
-                    nodes.add(String.format("   %s [shape=box, label=%s];", cfgBlock.hashCode(), "\"" + escape(cfgBlock.getLabel()) + "\""));
+                    nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"<from_node>" + escape(cfgBlock.getLabel()) + "\""));
                     CFGBlock autoChild = ((CFGNonConditional) cfgBlock).autoChild;
                     if (autoChild != null) {
-                        edges.add(String.format("   %s -> %s;", cfgBlock.hashCode(), autoChild.hashCode()));
+                        edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_node", autoChild.hashCode() + ":from_node"));
                         if (!seen.contains(autoChild)) {
                             stack.push(autoChild);
                             seen.add(autoChild);
                         }
                     }
                 } else if (cfgBlock instanceof CFGConditional) {
-                    nodes.add(String.format("   %s [shape=diamond, label=%s ];", cfgBlock.hashCode(), "\"" + escape(cfgBlock.getLabel()) + "\""));
+                    nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"{<from_node>" + escape(cfgBlock.getLabel()) + "|{<from_true>true|<from_false>false}" + "}\""));
                     CFGBlock falseChild = ((CFGConditional) cfgBlock).falseChild;
                     CFGBlock trueChild = ((CFGConditional) cfgBlock).trueChild;
                     if (falseChild != null) {
@@ -436,8 +436,8 @@ public class GraphVizPrinter {
                             seen.add(trueChild);
                         }
                         stack.push(trueChild);
-                        edges.add(String.format("   %s -> %s;", cfgBlock.hashCode(), falseChild.hashCode()));
-                        edges.add(String.format("   %s -> %s;", cfgBlock.hashCode(), trueChild.hashCode()));
+                        edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_false", falseChild.hashCode() + ":from_node"));
+                        edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_true", trueChild.hashCode() + ":from_node"));
                     }
                 }
             }
@@ -469,7 +469,9 @@ public class GraphVizPrinter {
                 .replace("\r", "\\r")
                 .replace("\f", "\\f")
                 .replace("'", "\\'")
-                .replace("\"", "\\\"");
+                .replace("\"", "\\\"")
+                .replace("<", "\\<")
+                .replace(">", "\\>");
     }
 
 } // end of class GraphViz

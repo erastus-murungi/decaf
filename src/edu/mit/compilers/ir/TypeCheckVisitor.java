@@ -3,47 +3,7 @@ package edu.mit.compilers.ir;
 import java.util.Optional;
 import java.util.TreeSet;
 
-import edu.mit.compilers.ast.ArithmeticOperator;
-import edu.mit.compilers.ast.Array;
-import edu.mit.compilers.ast.AssignOpExpr;
-import edu.mit.compilers.ast.BinaryOpExpression;
-import edu.mit.compilers.ast.Block;
-import edu.mit.compilers.ast.BooleanLiteral;
-import edu.mit.compilers.ast.Break;
-import edu.mit.compilers.ast.BuiltinType;
-import edu.mit.compilers.ast.CharLiteral;
-import edu.mit.compilers.ast.CompoundAssignOpExpr;
-import edu.mit.compilers.ast.ConditionalOperator;
-import edu.mit.compilers.ast.Continue;
-import edu.mit.compilers.ast.DecimalLiteral;
-import edu.mit.compilers.ast.Decrement;
-import edu.mit.compilers.ast.EqualityOperator;
-import edu.mit.compilers.ast.ExpressionParameter;
-import edu.mit.compilers.ast.FieldDeclaration;
-import edu.mit.compilers.ast.For;
-import edu.mit.compilers.ast.HexLiteral;
-import edu.mit.compilers.ast.If;
-import edu.mit.compilers.ast.ImportDeclaration;
-import edu.mit.compilers.ast.Increment;
-import edu.mit.compilers.ast.IntLiteral;
-import edu.mit.compilers.ast.Len;
-import edu.mit.compilers.ast.LocationArray;
-import edu.mit.compilers.ast.LocationAssignExpr;
-import edu.mit.compilers.ast.LocationVariable;
-import edu.mit.compilers.ast.MethodCall;
-import edu.mit.compilers.ast.MethodCallParameter;
-import edu.mit.compilers.ast.MethodCallStatement;
-import edu.mit.compilers.ast.MethodDefinition;
-import edu.mit.compilers.ast.MethodDefinitionParameter;
-import edu.mit.compilers.ast.Name;
-import edu.mit.compilers.ast.ParenthesizedExpression;
-import edu.mit.compilers.ast.Program;
-import edu.mit.compilers.ast.RelationalOperator;
-import edu.mit.compilers.ast.Return;
-import edu.mit.compilers.ast.Statement;
-import edu.mit.compilers.ast.StringLiteral;
-import edu.mit.compilers.ast.UnaryOpExpression;
-import edu.mit.compilers.ast.While;
+import edu.mit.compilers.ast.*;
 import edu.mit.compilers.descriptors.ArrayDescriptor;
 import edu.mit.compilers.descriptors.Descriptor;
 import edu.mit.compilers.descriptors.MethodDescriptor;
@@ -126,34 +86,34 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
 
     @Override
     public BuiltinType visit(For forStatement, SymbolTable symbolTable) {
-        Optional<Descriptor> optionalDescriptor = symbolTable.getDescriptorFromValidScopes(forStatement.initId.id);
+        Optional<Descriptor> optionalDescriptor = symbolTable.getDescriptorFromValidScopes(forStatement.initialization.initId.id);
         if (optionalDescriptor.isEmpty())
-            exceptions.add(new DecafSemanticException(forStatement.initId.tokenPosition, forStatement.initId + " must be declared in scope"));
+            exceptions.add(new DecafSemanticException(forStatement.initialization.initId.tokenPosition, forStatement.initialization.initId + " must be declared in scope"));
         else {
             Descriptor initDescriptor = optionalDescriptor.get();
             if (initDescriptor.type != BuiltinType.Int)
-                exceptions.add(new DecafSemanticException(forStatement.initId.tokenPosition, forStatement.initId + " must type must be " + BuiltinType.Int + " not " + initDescriptor.type));
+                exceptions.add(new DecafSemanticException(forStatement.tokenPosition, forStatement.initialization.initId + " must type must be " + BuiltinType.Int + " not " + initDescriptor.type));
 
-            BuiltinType type = forStatement.initExpression.accept(this, symbolTable);
+            BuiltinType type = forStatement.initialization.initExpression.accept(this, symbolTable);
             if (type != BuiltinType.Int)
-                exceptions.add(new DecafSemanticException(forStatement.initExpression.tokenPosition, "init expression must evaluate to an int"));
+                exceptions.add(new DecafSemanticException(forStatement.initialization.initExpression.tokenPosition, "init expression must evaluate to an int"));
 
             BuiltinType testType = forStatement.terminatingCondition.accept(this, symbolTable);
             if (testType != BuiltinType.Bool)
                 exceptions.add(new DecafSemanticException(forStatement.terminatingCondition.tokenPosition, "for-loop test must evaluate to " + BuiltinType.Bool + " not " + testType));
 
-            optionalDescriptor = symbolTable.getDescriptorFromValidScopes(forStatement.updatingLocation.name.id);
+            optionalDescriptor = symbolTable.getDescriptorFromValidScopes(forStatement.update.updateLocation.name.id);
             if (optionalDescriptor.isEmpty())
-                exceptions.add(new DecafSemanticException(forStatement.updatingLocation.tokenPosition, forStatement.updatingLocation.name + " must be declared in scope"));
+                exceptions.add(new DecafSemanticException(forStatement.update.updateLocation.tokenPosition, forStatement.update.updateLocation.name + " must be declared in scope"));
             else {
                 Descriptor updatingDescriptor = optionalDescriptor.get();
                 if (updatingDescriptor.type != BuiltinType.Int)
-                    exceptions.add(new DecafSemanticException(forStatement.initExpression.tokenPosition, "update location must have type int, not " + updatingDescriptor.type));
-                BuiltinType updateExprType = forStatement.updateAssignExpr.accept(this, symbolTable);
-                if (forStatement.updateAssignExpr instanceof CompoundAssignOpExpr)
-                    updateExprType = forStatement.updateAssignExpr.expression.builtinType;
+                    exceptions.add(new DecafSemanticException(forStatement.initialization.initExpression.tokenPosition, "update location must have type int, not " + updatingDescriptor.type));
+                BuiltinType updateExprType = forStatement.update.updateAssignExpr.accept(this, symbolTable);
+                if (forStatement.update.updateAssignExpr instanceof CompoundAssignOpExpr)
+                    updateExprType = forStatement.update.updateAssignExpr.expression.builtinType;
                 if (updateExprType != BuiltinType.Int)
-                    exceptions.add(new DecafSemanticException(forStatement.updateAssignExpr.tokenPosition, "incrementing/decrementing must have type int, not " + updateExprType));
+                    exceptions.add(new DecafSemanticException(forStatement.update.updateAssignExpr.tokenPosition, "incrementing/decrementing must have type int, not " + updateExprType));
             }
         }
         return BuiltinType.Undefined;
@@ -498,6 +458,11 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
     public BuiltinType visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable curSymbolTable) {
         compoundAssignOpExpr.expression.builtinType = compoundAssignOpExpr.expression.accept(this, curSymbolTable);
         return BuiltinType.Undefined;
+    }
+
+    @Override
+    public BuiltinType visit(Initialization initialization, SymbolTable symbolTable) {
+        return null;
     }
 
     private void checkIntBounds() {

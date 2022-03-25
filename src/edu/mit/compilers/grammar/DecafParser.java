@@ -611,6 +611,7 @@ public class DecafParser {
         consumeToken(ASSIGN, DecafScanner.ASSIGN);
 
         final Expression initializationExpression = parseOrExpr();
+        final Initialization initialization = new Initialization(initId, initializationExpression);
 
         consumeToken(SEMICOLON, DecafScanner.SEMICOLON);
 
@@ -618,14 +619,15 @@ public class DecafParser {
 
         consumeToken(SEMICOLON, DecafScanner.SEMICOLON);
 
-        final Location updatingLocation = parseLocation(consumeToken(ID, DecafScanner.IDENTIFIER));
-        final AssignExpr updatingAssignExpr = parseCompoundAssignExpr();
+        final Location updateLocation = parseLocation(consumeToken(ID, DecafScanner.IDENTIFIER));
+        final AssignExpr updateAssignExpr = parseCompoundAssignExpr();
+        final Update update = new Update(updateLocation, updateAssignExpr);
 
         consumeToken(RIGHT_PARENTHESIS, DecafScanner.RIGHT_PARENTHESIS);
 
         final Block block = parseBlock();
 
-        return new For(tokenPosition, initId, initializationExpression, terminatingCondition, updatingLocation, updatingAssignExpr, block);
+        return new For(tokenPosition, initialization, terminatingCondition, update, block);
     }
 
     private Statement parseStatement() throws DecafParserException {

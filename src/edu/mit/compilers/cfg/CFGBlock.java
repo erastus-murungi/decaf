@@ -15,7 +15,11 @@ public abstract class CFGBlock {
     }
 
     public<T> T accept(CFGVisitor<T> visitor, SymbolTable symbolTable) {
-        return visitor.visit((CFGNonConditional) this, symbolTable);
+        if (this instanceof CFGConditional)
+            return visitor.visit((CFGConditional)this, symbolTable);
+        else if (this instanceof NOP)
+            return visitor.visit((NOP)this, symbolTable);
+        else return visitor.visit((CFGNonConditional) this, symbolTable);
     };
 
     public String getLabel() {
@@ -29,5 +33,10 @@ public abstract class CFGBlock {
             return "∅";
         }
         return ret;
+    }
+
+    @Override
+    public String toString() {
+        return getLabel();
     }
 }

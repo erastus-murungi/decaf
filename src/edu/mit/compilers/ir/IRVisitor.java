@@ -129,12 +129,12 @@ public class IRVisitor implements Visitor<Void> {
     public Void visit(For forStatement, SymbolTable symbolTable) {
         // this is the name of our loop variable that we initialize in the creation of the for loop
         // for ( index = 0 ...) <-- index is the example here
-        String initializedVariableName = forStatement.initId.id;
+        String initializedVariableName = forStatement.initialization.initId.id;
 
         // check if the variable exists
         if (symbolTable.getDescriptorFromValidScopes(initializedVariableName).isPresent()) {
             Descriptor initVariableDescriptor = symbolTable.entries.get(initializedVariableName);
-            Expression initExpression = forStatement.initExpression;
+            Expression initExpression = forStatement.initialization.initExpression;
             // update the symbol table to have the full expression
             symbolTable.entries.put(initializedVariableName, new VariableDescriptor(initializedVariableName, initExpression, initVariableDescriptor.type));
 
@@ -216,6 +216,11 @@ public class IRVisitor implements Visitor<Void> {
 
     public Void visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable symbolTable) {
         compoundAssignOpExpr.expression.accept(this, symbolTable);
+        return null;
+    }
+
+    @Override
+    public Void visit(Initialization initialization, SymbolTable symbolTable) {
         return null;
     }
 

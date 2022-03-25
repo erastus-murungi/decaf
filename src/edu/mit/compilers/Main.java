@@ -104,8 +104,8 @@ class Main {
         FileInputStream fileInputStream = null;
         try {
             fileInputStream = new FileInputStream("/Users/erastusmurungi/IdeaProjects/compiler/tests/semantics/legal/legal-01.dcf");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+        } catch (FileNotFoundException ex) {
+            ex.printStackTrace();
         }
         assert fileInputStream != null;
         String sourceCode = Utils.getStringFromInputStream(fileInputStream);

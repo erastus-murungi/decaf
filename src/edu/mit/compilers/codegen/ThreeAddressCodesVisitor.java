@@ -238,4 +238,9 @@ public class ThreeAddressCodesVisitor implements Visitor<ThreeAddressCodeList> {
     public ThreeAddressCodeList visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable curSymbolTable) {
         return null;
     }
+
+    @Override
+    public ThreeAddressCodeList visit(Initialization initialization, SymbolTable symbolTable) {
+        return null;
+    }
 }

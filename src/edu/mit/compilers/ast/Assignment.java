@@ -6,7 +6,7 @@ import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 
-public class Assignment extends AST{
+public class Assignment extends AST {
     public Location location;
     public AssignExpr assignExpr;
 
@@ -33,7 +33,7 @@ public class Assignment extends AST{
 
     @Override
     public String getSourceCode() {
-        return String.format("%s = %s", location.getSourceCode(), assignExpr.getSourceCode());
+        return String.format("%s %s", location.getSourceCode(), assignExpr.getSourceCode());
     }
 
 }
