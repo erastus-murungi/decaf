@@ -88,10 +88,11 @@ public class iCFGVisitor implements Visitor<CFGPair> {
 
         evaluateBlock.trueChild = truePair.startBlock;
         truePair.startBlock.parents.add(evaluateBlock);
-        if (truePair.endBlock != null){
-            truePair.endBlock.autoChild = evaluateBlock;
-            evaluateBlock.parents.add(truePair.endBlock);
-        }
+        // bug
+        // if (truePair.endBlock != null){
+        //     truePair.endBlock.autoChild = evaluateBlock;
+        //     evaluateBlock.parents.add(truePair.endBlock);
+        // }
         // Initialize the condition variable
         CFGNonConditional initializeBlock = new CFGNonConditional();
         initializeBlock.lines.add(new CFGDeclaration(forStatement.initialization));
