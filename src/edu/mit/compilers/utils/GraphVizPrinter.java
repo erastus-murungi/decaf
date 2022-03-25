@@ -435,7 +435,6 @@ public class GraphVizPrinter {
                             stack.push(trueChild);
                             seen.add(trueChild);
                         }
-                        stack.push(trueChild);
                         edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_false", falseChild.hashCode() + ":from_node"));
                         edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_true", trueChild.hashCode() + ":from_node"));
                     }
