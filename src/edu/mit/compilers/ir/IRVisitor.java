@@ -191,7 +191,9 @@ public class IRVisitor implements Visitor<Void> {
     }
 
     public Void visit(Block block, SymbolTable symbolTable) {
-        block.blockSymbolTable = new SymbolTable(symbolTable, SymbolTableType.Field);
+        SymbolTable blockST = new SymbolTable(symbolTable, SymbolTableType.Field);
+        block.blockSymbolTable = blockST;
+        symbolTable.children.add(blockST);
         for (FieldDeclaration fieldDeclaration : block.fieldDeclarationList)
             fieldDeclaration.accept(this, block.blockSymbolTable);
         for (Statement statement : block.statementList)
