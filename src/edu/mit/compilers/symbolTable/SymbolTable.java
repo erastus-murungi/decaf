@@ -1,6 +1,8 @@
 package edu.mit.compilers.symbolTable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import edu.mit.compilers.descriptors.Descriptor;
@@ -10,6 +12,7 @@ public class SymbolTable {
     public final SymbolTable parent;
     public final SymbolTableType symbolTableType;
     public final HashMap<String, Descriptor> entries = new HashMap<>();
+    public ArrayList<SymbolTable> children = new ArrayList<>();
 
     public SymbolTable(SymbolTable parent, SymbolTableType symbolTableType) {
         super();
@@ -73,5 +76,14 @@ public class SymbolTable {
             else
                 return parent.isShadowingParameter(stringId);
         }
+    }
+
+    public String toString() {
+        String output = "";
+        for (Map.Entry<String, Descriptor> entry: entries.entrySet()) {
+            output += entry.getKey();
+            output += "\n";
+        }
+        return output;
     }
 }
