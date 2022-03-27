@@ -17,12 +17,12 @@ import static edu.mit.compilers.grammar.TokenType.*;
 public class DecafParser {
     public final DecafScanner scanner;
 
-    private boolean error = false;
     private boolean showTrace = false;
     private ArrayList<Token> tokens;
     private int currentTokenIndex;
     private Program root;
     private final DecafExceptionProcessor decafExceptionProcessor;
+    private List<DecafParserException> errors = new ArrayList<>();
 
     public Program getRoot() {
         return root;
@@ -45,10 +45,8 @@ public class DecafParser {
         try {
             processImportDeclarations(program.importDeclarationList);
             processFieldOrMethod(program);
-        } catch (DecafException e) {
-            e.printStackTrace();
-            error = true;
-            return;
+        } catch (DecafParserException e) {
+            errors.add(e);
         }
         root = program;
         if (showTrace)
@@ -106,7 +104,7 @@ public class DecafParser {
     }
 
     public boolean hasError() {
-        return error;
+        return errors.size() > 0;
     }
 
     private Expression parseOrExpr() throws DecafParserException {

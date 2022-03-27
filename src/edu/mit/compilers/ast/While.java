@@ -4,7 +4,9 @@ import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
+import edu.mit.compilers.utils.Utils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_WHILE;
@@ -36,7 +38,7 @@ public class While extends Statement {
 
     @Override
     public String getSourceCode() {
-        return String.format("%s (%s) {\n    %s\n    }", RESERVED_WHILE, test.getSourceCode(), body.getSourceCode());
+        return String.format("%s (%s) {\n    %s\n    }", RESERVED_WHILE, test.getSourceCode(), Utils.indentBlock(body));
     }
 
     @Override

@@ -10,7 +10,6 @@ import java.util.Set;
 public class NopVisitor implements CFGVisitor<Void> {
     CFGBlock exit;
     final Set<CFGBlock> seen;
-    final List<CFGBlock> order = new ArrayList<>();
 
     public NopVisitor() {
         seen = new HashSet<>();
@@ -20,7 +19,6 @@ public class NopVisitor implements CFGVisitor<Void> {
     public Void visit(CFGNonConditional cfgNonConditional, SymbolTable symbolTable) {
         if (!seen.contains(cfgNonConditional)) {
             seen.add(cfgNonConditional);
-            order.add(cfgNonConditional);
             // we assume this is the first instance of the
             if (cfgNonConditional.autoChild != null) {
                 cfgNonConditional.autoChild.accept(this, symbolTable);
@@ -33,7 +31,6 @@ public class NopVisitor implements CFGVisitor<Void> {
     public Void visit(CFGConditional cfgConditional, SymbolTable symbolTable) {
         if (!seen.contains(cfgConditional)) {
             seen.add(cfgConditional);
-            order.add(cfgConditional);
             if (cfgConditional.trueChild != null) {
                 cfgConditional.trueChild.accept(this, symbolTable);
             }
@@ -49,7 +46,6 @@ public class NopVisitor implements CFGVisitor<Void> {
         if (!seen.contains(nop)) {
             List<CFGBlock> parentsCopy = new ArrayList<>(nop.parents);
             seen.add(nop);
-            order.add(nop);
             CFGBlock endBlock = exit;
             if (nop.autoChild != null) {
                 nop.autoChild.accept(this, symbolTable);

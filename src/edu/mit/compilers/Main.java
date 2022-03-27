@@ -22,6 +22,8 @@ import edu.mit.compilers.utils.Utils;
 
 class Main {
     public static void main(String[] args) {
+        CLI.parse(args, new String[0]);
+        CLI.debug = true;
 //        try {
 //            CLI.parse(args, new String[0]);
 //            InputStream inputStream = CLI.infile == null ? System.in : new java.io.FileInputStream(CLI.infile);
@@ -104,7 +106,7 @@ class Main {
 //        }
         FileInputStream fileInputStream = null;
         try {
-            fileInputStream = new FileInputStream("tests/codegen/input/x-26-math3.dcf");
+            fileInputStream = new FileInputStream("tests/codegen/input/x-08-loop-break-continue.dcf");
         } catch (FileNotFoundException ex) {
             ex.printStackTrace();
         }
@@ -113,7 +115,11 @@ class Main {
         DecafExceptionProcessor decafExceptionProcessor = new DecafExceptionProcessor(sourceCode);
         DecafScanner scanner = new DecafScanner(sourceCode, decafExceptionProcessor);
         DecafParser parser = new DecafParser(scanner);
-        //          parser.setTrace(CLI.debug);
+        parser.setTrace(CLI.debug);
+        if (parser.hasError()) {
+            System.out.println(parser);
+            System.exit(1);
+        }
         parser.program();
         AST programNode = parser.getRoot();
 
@@ -121,12 +127,16 @@ class Main {
         semChecker.setTrace(CLI.debug);
         semChecker.runChecks(decafExceptionProcessor);
         if (semChecker.hasError()) {
+            semChecker.printAllExceptions(decafExceptionProcessor);
             System.exit(1);
         }
         CFGGenerator cfgGenerator = new CFGGenerator(programNode, semChecker.globalDescriptor);
         iCFGVisitor visitor = cfgGenerator.buildiCFG();
-        HashMap<String, CFGBlock> copy = (HashMap<String, CFGBlock>) visitor.methodCFGBlocks.clone();
-        copy.put("global", visitor.initialGlobalBlock);
-        GraphVizPrinter.printGraph(copy);
+        if (CLI.debug) {
+            HashMap<String, CFGBlock> copy = (HashMap<String, CFGBlock>) visitor.methodCFGBlocks.clone();
+            copy.put("global", visitor.initialGlobalBlock);
+            GraphVizPrinter.printGraph(copy);
+            System.out.println(programNode.getSourceCode());
+        }
     }
 }

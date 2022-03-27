@@ -1,9 +1,13 @@
 package edu.mit.compilers.utils;
 
+import edu.mit.compilers.ast.Block;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -84,6 +88,20 @@ public class Utils {
 
   public static String coloredPrint(String string, String color) {
     return color + string + ANSIColorConstants.ANSI_RESET;
+  }
+
+  public static String indentBlock(Block body) {
+    String blockString = body.getSourceCode();
+    return indentBlock(blockString);
+  }
+
+  public static String indentBlock(String blockString) {
+    List<String> list = new ArrayList<>();
+    for (String s : blockString.split("\n")) {
+      String s1 = "    " + s;
+      list.add(s1);
+    }
+    return String.join("\n", list);
   }
 
   public interface ANSIColorConstants {

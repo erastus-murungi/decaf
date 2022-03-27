@@ -33,7 +33,7 @@ public class UnaryOpExpression extends Expression {
 
     @Override
     public String getSourceCode() {
-        return String.format("%s%s", op.getSourceCode(), operand.getSourceCode());
+        return String.format("%s(%s)", op.getSourceCode(), operand.getSourceCode());
     }
 
     @Override
