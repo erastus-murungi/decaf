@@ -6,7 +6,6 @@ import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 public class ConditionalOperator extends BinOperator {
-
     public ConditionalOperator(TokenPosition tokenPosition, @DecafScanner.ConditionalOperator String op) {
         super(tokenPosition, op);
     }

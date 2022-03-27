@@ -94,7 +94,7 @@ public class DecafScanner {
 
     private final String inputString;
     private final Logger logger = Logger.getLogger(DecafScanner.class.getName());
-    DecafExceptionProcessor decafExceptionProcessor;
+    final DecafExceptionProcessor decafExceptionProcessor;
     private final List<String> syntaxLines = new ArrayList<>();
     private int column;
     private int line;

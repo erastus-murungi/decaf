@@ -31,7 +31,7 @@ public class MaximalVisitor implements CFGVisitor<CFGBlock> {
                 cfgNonConditional.autoChild = grandChild;
             } else {
                 CFGConditional child = (CFGConditional) cfgNonConditional.autoChild;
-                if (visited.get(child) == null || visited.get(child) == 1) {
+                if (visited.get(child) == null || visited.get(child) == 1 || cfgNonConditional.parents.size() == 0) {
                     // we should put our code into the conditional;
                     if (child != null) {
                         child.lines.addAll(0, cfgNonConditional.lines);

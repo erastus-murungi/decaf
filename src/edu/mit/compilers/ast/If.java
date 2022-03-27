@@ -4,6 +4,8 @@ import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
+import edu.mit.compilers.utils.Utils;
+import jdk.jshell.execution.Util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,21 +50,11 @@ public class If extends Statement {
 
     @Override
     public String getSourceCode() {
-        List<String> list = new ArrayList<>();
-        for (String s1 : ifBlock.getSourceCode().split("\n")) {
-            String s2 = "    " + s1;
-            list.add(s2);
-        }
-        String indentedBlockString = String.join("\n", list);
+        String indentedBlockString = Utils.indentBlock(ifBlock);
         if ((elseBlock == null)) {
             return String.format("%s (%s) {\n    %s\n    }", RESERVED_IF, test.getSourceCode(), indentedBlockString);
         } else {
-            List<String> result = new ArrayList<>();
-            for (String s : elseBlock.getSourceCode().split("\n")) {
-                String s1 = "    " + s;
-                result.add(s1);
-            }
-            return String.format("%s (%s) {\n    %s\n    } %s {\n    %s        \n    }", RESERVED_IF, test.getSourceCode(), indentedBlockString, RESERVED_ELSE, String.join("\n", result));
+            return String.format("%s (%s) {\n    %s\n    } %s {\n    %s        \n    }", RESERVED_IF, test.getSourceCode(), indentedBlockString, RESERVED_ELSE, Utils.indentBlock(elseBlock));
         }
     }
 

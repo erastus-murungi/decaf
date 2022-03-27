@@ -384,9 +384,18 @@ public class GraphVizPrinter {
         gv.writeGraphToFile(gv.getGraph(gv.getDotSource(), type), out);
     }
 
+
+    private static boolean parentMightBeConditional(CFGBlock block) {
+        for (CFGBlock parent: block.parents) {
+            if (parent instanceof CFGConditional)
+                return true;
+        }
+        return false;
+    }
+
     public static String writeCFG(String name, CFGBlock cfg) {
         List<String> subGraphs = new ArrayList<>();
-        subGraphs.add(String.format("subgraph cluster_%s { \n label = %s", name, name));
+        subGraphs.add(String.format("subgraph cluster_%s { \n label = %s", escape(name), escape(name)));
         // add this node
         Stack<CFGBlock> stack = new Stack<>();
         List<String> nodes = new ArrayList<>();
@@ -418,18 +427,20 @@ public class GraphVizPrinter {
                     }
                 }
             } else if (cfgBlock instanceof CFGConditional) {
+                if (cfgBlock.getLabel().equals("1 < 2"))
+                    System.out.println("stop");
                 nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"{<from_node>" + escape(cfgBlock.getLabel()) + "|{<from_true> true|<from_false>false}" + "}\""));
                 CFGBlock falseChild = ((CFGConditional) cfgBlock).falseChild;
                 CFGBlock trueChild = ((CFGConditional) cfgBlock).trueChild;
                 if (falseChild != null) {
-                    if (!seen.contains(falseChild)) {
+                    if ((!seen.contains(falseChild))) {
                         stack.push(falseChild);
                         seen.add(falseChild);
                     }
                     edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_false", falseChild.hashCode() + ":from_node"));
                 }
                 if (trueChild != null) {
-                    if (!seen.contains(trueChild)) {
+                    if ((!seen.contains(trueChild)))  {
                         stack.push(trueChild);
                         seen.add(trueChild);
                     }
@@ -445,18 +456,22 @@ public class GraphVizPrinter {
     }
 
     public static void printGraph(HashMap<String, CFGBlock> methodCFGBlocks) {
+        printGraph(methodCFGBlocks, "cfg");
+    }
+
+    public static void printGraph(HashMap<String, CFGBlock> methodCFGBlocks, String graphFilename) {
         final String[] graph = new String[methodCFGBlocks.size()];
         final Integer[] index = {0};
         methodCFGBlocks.forEach((k, v) -> graph[index[0]++] = writeCFG(k, v));
-        GraphVizPrinter.createDotGraph(String.join("\n", graph), "cfg");
-        if (!osName.equals("windows")) {
-            try {
-                Process process = Runtime.getRuntime().exec("open cfg.pdf");
-                System.out.println(Utils.getStringFromInputStream(process.getInputStream()));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        GraphVizPrinter.createDotGraph(String.join("\n", graph), graphFilename);
+//        if (!osName.equals("windows")) {
+//            try {
+//                Process process = Runtime.getRuntime().exec("open cfg.pdf");
+//                System.out.println(Utils.getStringFromInputStream(process.getInputStream()));
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
     }
 
 
@@ -479,7 +494,9 @@ public class GraphVizPrinter {
                 .replace("\"", "\\\"")
                 .replace("<", "\\<")
                 .replace(">", "\\>")
-                .replace("\n", "\\l");
+                .replace("\n", "\\l")
+                .replace("||", "\\|\\|")
+                ;
 
     }
 

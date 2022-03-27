@@ -6,13 +6,15 @@ public class CFGConditional extends CFGBlock {
 
     public CFGExpression condition;
 
-    public CFGConditional(CFGBlock trueChild, CFGBlock falseChild, CFGExpression condition) {
+    public CFGConditional(CFGExpression condition, CFGBlock trueChild, CFGBlock falseChild) {
         this.trueChild = trueChild;
         this.falseChild = falseChild;
         this.condition = condition;
+        lines.add(this.condition);
     }
 
     public CFGConditional(CFGExpression condition) {
         this.condition = condition;
+        lines.add(this.condition);
     }
 }
