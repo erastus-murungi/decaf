@@ -69,6 +69,7 @@ public class MaximalVisitor implements CFGVisitor<CFGBlock> {
                 cfgConditional.trueChild = ((NOP) cfgConditional.trueChild).autoChild;
             if (cfgConditional.falseChild instanceof NOP)
                 cfgConditional.falseChild = ((NOP) cfgConditional.falseChild).autoChild;
+//            return cfgConditional;
         }
         visited.put(cfgConditional, visited.get(cfgConditional) + 1);
         return cfgConditional;

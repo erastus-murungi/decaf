@@ -9,8 +9,14 @@ import edu.mit.compilers.symbolTable.SymbolTable;
 public class iCFGVisitor implements Visitor<CFGPair> {
     public CFGNonConditional initialGlobalBlock = new CFGNonConditional();
     public HashMap<String, CFGBlock> methodCFGBlocks = new HashMap<>();
-    public ArrayList<CFGPair> loopStack = new ArrayList<>();
+
+    public Stack<CFGNonConditional> loopStack = new Stack<>(); // keeps track  of how deep we are inside loop structures
     public Stack<CFGNonConditional> breakBlocks = new Stack<>(); // a bunch of break blocks to point to the right place
+    public Stack<CFGBlock> continueBlocks = new Stack<>(); // a bunch of continue blocks to point to the right place
+
+    /**
+     * We need a global NOP which represents the end of all computation in a method
+     */
     private final NOP exitNOP;
 
     public iCFGVisitor() {
@@ -19,22 +25,22 @@ public class iCFGVisitor implements Visitor<CFGPair> {
 
     @Override
     public CFGPair visit(IntLiteral intLiteral, SymbolTable symbolTable) {
-        return null;
+        throw new IllegalStateException("we cannot visit " + intLiteral.getClass().getSimpleName());
     }
 
     @Override
     public CFGPair visit(BooleanLiteral booleanLiteral, SymbolTable symbolTable) {
-        return null;
+        throw new IllegalStateException("we cannot visit " + booleanLiteral.getClass().getSimpleName());
     }
 
     @Override
     public CFGPair visit(DecimalLiteral decimalLiteral, SymbolTable symbolTable) {
-        return null;
+        throw new IllegalStateException("we cannot visit " + decimalLiteral.getClass().getSimpleName());
     }
 
     @Override
     public CFGPair visit(HexLiteral hexLiteral, SymbolTable symbolTable) {
-        return null;
+        throw new IllegalStateException("we cannot visit " + hexLiteral.getClass().getSimpleName());
     }
 
     @Override
@@ -85,10 +91,12 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         incrementBlock.autoChild = evaluateBlock;
         evaluateBlock.parents.add(incrementBlock);
 
+        // In for loops, continue should point to an incrementBlock
+        continueBlocks.push(incrementBlock);
+
         // If true, run the block.
-        loopStack.add(new CFGPair(evaluateBlock, falseBlock));
+        loopStack.add(falseBlock);
         CFGPair truePair = forStatement.block.accept(this, symbolTable);
-        loopStack.remove(loopStack.size() - 1);
 
         evaluateBlock.falseChild = falseBlock;
 
@@ -111,21 +119,37 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         incrementBlock.autoChild = evaluateBlock;
         evaluateBlock.parents.add(incrementBlock);
 
-        NOP nop = new NOP();
-        nop.parents.add(falseBlock);
-        falseBlock.autoChild = nop;
-        return new CFGPair(initializeBlock, nop, false);
+
+//        NOP nop = new NOP();
+//        nop.parents.add(falseBlock);
+//        falseBlock.autoChild = nop;
+
+        handleBreaksInLoops();
+        continueBlocks.pop();
+        return new CFGPair(initializeBlock, falseBlock, false);
+    }
+
+    private void handleBreaksInLoops() {
+        if (!breakBlocks.isEmpty() && !loopStack.isEmpty()) {
+            CFGBlock afterLoop = loopStack.peek();
+            for (CFGNonConditional breakBlock: breakBlocks) {
+                breakBlock.autoChild = afterLoop;
+                afterLoop.parents.add(breakBlock);
+            }
+        }
+        loopStack.pop();
     }
 
     @Override
     public CFGPair visit(Break breakStatement, SymbolTable symbolTable) {
-        return null;
+        throw new IllegalStateException("we cannot visit " + breakStatement.getClass().getSimpleName());
     }
 
     @Override
     public CFGPair visit(Continue continueStatement, SymbolTable symbolTable) {
         // unreachable: it's equivalent to returning a NOP
-        return null;
+        // Any loop node which sends a visitor to a block should handle continue logic
+        throw new IllegalStateException("we cannot visit " + continueStatement.getClass().getSimpleName());
     }
 
     @Override
@@ -138,7 +162,10 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         CFGConditional conditionExpr = new CFGConditional(cfgExpression);
         conditionExpr.falseChild = falseBlock;
         falseBlock.parents.add(conditionExpr);
-        loopStack.add(new CFGPair(conditionExpr, falseBlock));
+        loopStack.add(falseBlock);
+
+        // In for loops, continue should point to the evaluation expression
+        continueBlocks.push(conditionExpr);
 
         // If true, run the block.
         CFGPair truePair = whileStatement.body.accept(this, symbolTable);
@@ -150,7 +177,8 @@ public class iCFGVisitor implements Visitor<CFGPair> {
             conditionExpr.parents.add(truePair.endBlock);
         }
 
-        loopStack.remove(loopStack.size() - 1);
+        handleBreaksInLoops();
+        continueBlocks.pop();
         return new CFGPair(conditionExpr, falseBlock);
     }
 
@@ -180,13 +208,13 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     @Override
     public CFGPair visit(UnaryOpExpression unaryOpExpression, SymbolTable symbolTable) {
         // unreachable
-        return null;
-    }
+        throw new IllegalStateException("we cannot visit " + unaryOpExpression.getClass().getSimpleName());
+}
 
     @Override
     public CFGPair visit(BinaryOpExpression binaryOpExpression, SymbolTable symbolTable) {
         // unreachable
-        return null;
+        throw new IllegalStateException("we cannot visit " + binaryOpExpression.getClass().getSimpleName());
     }
 
     @Override
@@ -206,16 +234,20 @@ public class iCFGVisitor implements Visitor<CFGPair> {
             if (statement instanceof Continue) {
                 // will return a NOP() for sure because Continue blocks should be pointers back to the evaluation block
                 CFGNonConditional continueCfg = new NOP();
-                CFGBlock evalBlock = loopStack.get(loopStack.size() - 1).startBlock;
-                continueCfg.autoChild = evalBlock.parents.get(0);
-                evalBlock.parents.get(0).parents.add(continueCfg);
-                return new CFGPair(continueCfg, continueCfg, false);
+                CFGBlock nextBlock = continueBlocks.peek();
+                continueCfg.autoChild = nextBlock;
+                nextBlock.parents.add(continueCfg);
+                continueCfg.parents.add(curPair.endBlock);
+                curPair.endBlock.autoChild = continueCfg;
+                return new CFGPair(initial, continueCfg);
             }
             if (statement instanceof Break) {
                 // a break is not a real block either
                 CFGNonConditional breakCfg = new NOP();
                 breakBlocks.add(breakCfg);
-                return new CFGPair(breakCfg, breakCfg);
+                breakCfg.parents.add(curPair.endBlock);
+                curPair.endBlock.autoChild = breakCfg;
+                return new CFGPair(initial, breakCfg);
             }
             if (statement instanceof Return) {
                 CFGPair returnPair = statement.accept(this, symbolTable);
@@ -226,15 +258,6 @@ public class iCFGVisitor implements Visitor<CFGPair> {
             // recurse normally for other cases
             else {
                 CFGPair placeholder = statement.accept(this, symbolTable);
-                if (!breakBlocks.isEmpty() && !loopStack.isEmpty()) {
-                    CFGBlock afterLoop = loopStack.get(loopStack.size() - 1).endBlock;
-                    for (CFGNonConditional breakBlock: breakBlocks) {
-                        breakBlock.autoChild = afterLoop;
-                        afterLoop.parents.add(breakBlock);
-                    }
-                    breakBlocks.clear();
-                }
-
                 curPair.endBlock.autoChild = placeholder.startBlock;
                 placeholder.startBlock.parents.add(curPair.endBlock);
                 curPair = placeholder;
@@ -248,19 +271,18 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     @Override
     public CFGPair visit(ParenthesizedExpression parenthesizedExpression, SymbolTable symbolTable) {
         // unreachable (expr)
-        return null;
-    }
+        throw new IllegalStateException("we cannot visit " + parenthesizedExpression.getClass().getSimpleName());}
 
     @Override
     public CFGPair visit(LocationArray locationArray, SymbolTable symbolTable) {
         // unreachable
-        return null;
+        throw new IllegalStateException("we cannot visit " + locationArray.getClass().getSimpleName());
     }
 
     @Override
     public CFGPair visit(ExpressionParameter expressionParameter, SymbolTable symbolTable) {
         // unreachable
-        return null;
+        throw new IllegalStateException("we cannot visit " + expressionParameter.getClass().getSimpleName());
     }
 
     @Override
@@ -302,22 +324,19 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     public CFGPair visit(Return returnStatement, SymbolTable symbolTable) {
         CFGNonConditional returnBlock = new CFGNonConditional();
         returnBlock.lines.add(new CFGExpression(returnStatement));
-        NOP nop = new NOP();
-        returnBlock.autoChild = nop;
-        nop.parents.add(returnBlock);
         return new CFGPair(returnBlock, exitNOP);
     }
 
     @Override
     public CFGPair visit(Array array, SymbolTable symbolTable) {
         // unreachable
-        return null;
+        throw new IllegalStateException("we cannot visit " + array.getClass().getSimpleName());
     }
 
     @Override
     public CFGPair visit(MethodCall methodCall, SymbolTable symbolTable) {
         // unreachable - handle later in assembly gen
-        return null;
+        throw new IllegalStateException("we cannot visit " + methodCall.getClass().getSimpleName());
     }
 
     @Override
@@ -337,7 +356,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     @Override
     public CFGPair visit(AssignOpExpr assignOpExpr, SymbolTable symbolTable) {
         // unreachable - should've been combined into an Assignment elsewhere
-        return null;
+        throw new IllegalStateException("we cannot visit " + assignOpExpr.getClass().getSimpleName());
     }
 
     @Override
@@ -351,53 +370,53 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     @Override
     public CFGPair visit(Name name, SymbolTable symbolTable) {
         // unreachable
-        return null;
+        throw new IllegalStateException("we cannot visit " + name.getClass().getSimpleName());
     }
 
     @Override
     public CFGPair visit(LocationVariable locationVariable, SymbolTable symbolTable) {
         // unreachable
-        return null;
+        throw new IllegalStateException("we cannot visit " + locationVariable.getClass().getSimpleName());
     }
 
     @Override
     public CFGPair visit(Len len, SymbolTable symbolTable) {
         // unreachable (expr)
-        return null;
+        throw new IllegalStateException("we cannot visit " + len.getClass().getSimpleName());
     }
 
     @Override
     public CFGPair visit(Increment increment, SymbolTable symbolTable) {
         // unreachable
-        return null;
+        throw new IllegalStateException("we cannot visit " + increment.getClass().getSimpleName());
     }
 
     @Override
     public CFGPair visit(Decrement decrement, SymbolTable symbolTable) {
         // unreachable
-        return null;
+        throw new IllegalStateException("we cannot visit " + decrement.getClass().getSimpleName());
     }
 
     @Override
     public CFGPair visit(CharLiteral charLiteral, SymbolTable symbolTable) {
         // unreachable
-        return null;
+        throw new IllegalStateException("we cannot visit " + charLiteral.getClass().getSimpleName());
     }
 
     @Override
     public CFGPair visit(StringLiteral stringLiteral, SymbolTable symbolTable) {
         // unreachable
-        return null;
+        throw new IllegalStateException("we cannot visit " + stringLiteral.getClass().getSimpleName());
     }
 
     @Override
     public CFGPair visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable curSymbolTable) {
         // unreachable
-        return null;
+        throw new IllegalStateException("we cannot visit " + compoundAssignOpExpr.getClass().getSimpleName());
     }
 
     @Override
     public CFGPair visit(Initialization initialization, SymbolTable symbolTable) {
-        return null;
+        throw new IllegalStateException("we cannot visit " + initialization.getClass().getSimpleName());
     }
 }
