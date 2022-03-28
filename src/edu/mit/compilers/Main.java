@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.Stack;
 
 import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.ast.Program;
 import edu.mit.compilers.cfg.*;
+import edu.mit.compilers.codegen.ThreeAddressCodesVisitor;
 import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.Token;
@@ -106,7 +108,7 @@ class Main {
 //        }
         FileInputStream fileInputStream = null;
         try {
-            fileInputStream = new FileInputStream("tests/codegen/input/x-08-loop-break-continue.dcf");
+            fileInputStream = new FileInputStream("tests/codegen/test.dcf");
         } catch (FileNotFoundException ex) {
             ex.printStackTrace();
         }
@@ -136,7 +138,10 @@ class Main {
             HashMap<String, CFGBlock> copy = (HashMap<String, CFGBlock>) visitor.methodCFGBlocks.clone();
             copy.put("global", visitor.initialGlobalBlock);
             GraphVizPrinter.printGraph(copy);
-            System.out.println(programNode.getSourceCode());
+//            System.out.println(programNode.getSourceCode());
         }
+
+        ThreeAddressCodesVisitor threeAddressCodesVisitor = new ThreeAddressCodesVisitor();
+        threeAddressCodesVisitor.visit((Program) programNode, semChecker.globalDescriptor.globalVariablesSymbolTable);
     }
 }

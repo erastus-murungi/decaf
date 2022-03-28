@@ -13,12 +13,16 @@ import java.util.List;
 public class ThreeAddressCodesVisitor implements Visitor<ThreeAddressCodeList> {
     @Override
     public ThreeAddressCodeList visit(IntLiteral intLiteral, SymbolTable symbolTable) {
-        return null;
+        return new ThreeAddressCodeList(
+                intLiteral.getSourceCode(),
+                Collections.singletonList(new CopyInstruction(intLiteral.literal, TemporaryNameGenerator.getNextTemporaryVariable(), intLiteral)));
     }
 
     @Override
     public ThreeAddressCodeList visit(BooleanLiteral booleanLiteral, SymbolTable symbolTable) {
-        return null;
+        return new ThreeAddressCodeList(
+                booleanLiteral.getSourceCode(),
+                Collections.singletonList(new CopyInstruction(booleanLiteral.literal, TemporaryNameGenerator.getNextTemporaryVariable(), booleanLiteral)));
     }
 
     @Override
@@ -35,7 +39,14 @@ public class ThreeAddressCodesVisitor implements Visitor<ThreeAddressCodeList> {
 
     @Override
     public ThreeAddressCodeList visit(FieldDeclaration fieldDeclaration, SymbolTable symbolTable) {
-        return null;
+        ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList();
+        for (Name name: fieldDeclaration.names) {
+            threeAddressCodeList.addCode(new CopyInstruction(name.id, TemporaryNameGenerator.getNextTemporaryVariable(), name));
+        }
+        for (Array name: fieldDeclaration.arrays) {
+
+        }
+        return threeAddressCodeList;
     }
 
     @Override
@@ -46,7 +57,7 @@ public class ThreeAddressCodesVisitor implements Visitor<ThreeAddressCodeList> {
         List<String> newParamNames = new ArrayList<>();
         for (MethodDefinitionParameter methodDefinitionParameter: methodDefinition.methodDefinitionParameterList) {
             threeAddressCodeList.add(methodDefinitionParameter.accept(this, symbolTable));
-            newParamNames.add(((DirectAssignment)threeAddressCodeList.getFromLast(0)).dst);
+            newParamNames.add(((CopyInstruction)threeAddressCodeList.getFromLast(0)).dst);
         }
 
         List<PushParameter> pushParams = new ArrayList<>();
@@ -55,8 +66,7 @@ public class ThreeAddressCodesVisitor implements Visitor<ThreeAddressCodeList> {
             threeAddressCodeList.addCode(pushParameter);
             pushParams.add(pushParameter);
         }
-
-//        threeAddressCodeList.add(methodDefinition.block.accept(this, symbolTable));
+        threeAddressCodeList.add(methodDefinition.block.accept(this, symbolTable));
         for (int i = pushParams.size() - 1; i >= 0; i--) {
             threeAddressCodeList.addCode(new PopParameter(pushParams.get(i).which, methodDefinition.methodDefinitionParameterList.get(i)));
         }
@@ -94,13 +104,15 @@ public class ThreeAddressCodesVisitor implements Visitor<ThreeAddressCodeList> {
 
     @Override
     public ThreeAddressCodeList visit(Program program, SymbolTable symbolTable) {
+        ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList();
         for (ImportDeclaration importDeclaration : program.importDeclarationList)
             importDeclaration.accept(this, symbolTable);
         for (FieldDeclaration fieldDeclaration : program.fieldDeclarationList)
-            fieldDeclaration.accept(this, symbolTable);
+            threeAddressCodeList.add(fieldDeclaration.accept(this, symbolTable));
         for (MethodDefinition methodDefinition : program.methodDefinitionList)
-            methodDefinition.accept(this, symbolTable);
-        return null;
+            threeAddressCodeList.add(methodDefinition.accept(this, symbolTable));
+        System.out.println(threeAddressCodeList);
+        return threeAddressCodeList;
     }
 
     @Override
@@ -128,13 +140,14 @@ public class ThreeAddressCodesVisitor implements Visitor<ThreeAddressCodeList> {
 
     @Override
     public ThreeAddressCodeList visit(Block block, SymbolTable symbolTable) {
+        ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList();
         for (FieldDeclaration fieldDeclaration : block.fieldDeclarationList) {
-            fieldDeclaration.accept(this, symbolTable);
+            threeAddressCodeList.add(fieldDeclaration.accept(this, symbolTable));
         }
         for (Statement statement : block.statementList) {
             statement.accept(this, symbolTable);
         }
-        return null;
+        return threeAddressCodeList;
     }
 
     @Override
@@ -194,7 +207,7 @@ public class ThreeAddressCodesVisitor implements Visitor<ThreeAddressCodeList> {
     public ThreeAddressCodeList visit(MethodDefinitionParameter methodDefinitionParameter, SymbolTable symbolTable) {
         String temporaryVariable = TemporaryNameGenerator.getNextTemporaryVariable();
         return new ThreeAddressCodeList(temporaryVariable,
-                Collections.singletonList(new DirectAssignment(methodDefinitionParameter.id.id, temporaryVariable, methodDefinitionParameter)));
+                Collections.singletonList(new CopyInstruction(methodDefinitionParameter.id.id, temporaryVariable, methodDefinitionParameter)));
     }
 
     @Override

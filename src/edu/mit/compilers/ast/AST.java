@@ -9,16 +9,6 @@ import java.util.List;
 import java.util.Optional;
 
 public abstract class AST {
-    private ThreeAddressCodeList threeAddressCodeList;
-
-    public void setThreeAddressCodeList(ThreeAddressCodeList threeAddressCodeList) {
-        this.threeAddressCodeList = threeAddressCodeList;
-    }
-
-    public Optional<ThreeAddressCodeList> getThreeAddressCodeList() {
-        return Optional.of(threeAddressCodeList);
-    }
-
     public abstract List<Pair<String, AST>> getChildren();
 
     public abstract boolean isTerminal();

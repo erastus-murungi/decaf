@@ -7,8 +7,7 @@ import edu.mit.compilers.utils.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MethodBegin extends ThreeAddressCode{
-    String label;
+public class MethodBegin extends ThreeAddressCode {
     int sizeOfLocalsAndTemps;
     MethodDefinition methodDefinition;
 

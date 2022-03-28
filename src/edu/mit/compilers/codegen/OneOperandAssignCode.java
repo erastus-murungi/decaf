@@ -2,7 +2,7 @@ package edu.mit.compilers.codegen;
 
 import edu.mit.compilers.ast.AST;
 
-public class OneOperandAssignCode extends Assignment {
+public class OneOperandAssignCode extends AbstractAssignment {
     String result;
     String operand;
     String operator;

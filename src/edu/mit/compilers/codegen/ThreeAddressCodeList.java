@@ -2,10 +2,30 @@ package edu.mit.compilers.codegen;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class ThreeAddressCodeList {
     public String place;
-    private List<ThreeAddressCode> codes;
+    private final List<ThreeAddressCode> codes;
+
+    private ThreeAddressCodeList next;
+    private ThreeAddressCodeList prev;
+
+    public Optional<ThreeAddressCodeList> getNext() {
+        return Optional.of(next);
+    }
+
+    public void setNext(ThreeAddressCodeList next) {
+        this.next = next;
+    }
+
+    public Optional<ThreeAddressCodeList> getPrev() {
+        return Optional.of(prev);
+    }
+
+    public void setPrev(ThreeAddressCodeList prev) {
+        this.prev = prev;
+    }
 
     public ThreeAddressCodeList(String place, List<ThreeAddressCode> codes) {
         this.place = place;
@@ -32,9 +52,7 @@ public class ThreeAddressCodeList {
             String toString = code.toString();
             list.add(toString);
         }
-        return "ThreeAddressCodeList: \n" +
-                "place: " + place + "\n" +
-                "codes: \n" + String.join("\n", list);
+        return String.join("\n", list);
     }
 
     public void add(ThreeAddressCodeList threeAddressCodeList) {

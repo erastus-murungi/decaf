@@ -1,5 +1,11 @@
 package edu.mit.compilers.codegen;
 
-public class MethodCall {
+import edu.mit.compilers.ast.AST;
+
+public class MethodCall extends ThreeAddressCode {
     String label;
+
+    public MethodCall(AST source) {
+        super(source);
+    }
 }
