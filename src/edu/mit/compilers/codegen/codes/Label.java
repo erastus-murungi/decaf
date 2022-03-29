@@ -2,9 +2,11 @@ package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.cfg.CFGBlock;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
+import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class Label extends ThreeAddressCode {
@@ -27,5 +29,10 @@ public class Label extends ThreeAddressCode {
     @Override
     public <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, SymbolTable currentSymbolTable, E extra) {
         return visitor.visit(this, currentSymbolTable, extra);
+    }
+
+    @Override
+    public List<AbstractName> getNames() {
+        return Collections.emptyList();
     }
 }

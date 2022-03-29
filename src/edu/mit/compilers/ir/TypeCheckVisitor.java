@@ -36,18 +36,21 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
 
     @Override
     public BuiltinType visit(BooleanLiteral booleanLiteral, SymbolTable symbolTable) {
+        booleanLiteral.builtinType = BuiltinType.Bool;
         return BuiltinType.Bool;
     }
 
     @Override
     public BuiltinType visit(DecimalLiteral decimalLiteral, SymbolTable symbolTable) {
         intLiteral = decimalLiteral;
+        decimalLiteral.builtinType = BuiltinType.Int;
         return BuiltinType.Int;
     }
 
     @Override
     public BuiltinType visit(HexLiteral hexLiteral, SymbolTable symbolTable) {
         intLiteral = hexLiteral;
+        hexLiteral.builtinType = BuiltinType.Int;
         return BuiltinType.Int;
     }
 
@@ -452,11 +455,13 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
 
     @Override
     public BuiltinType visit(CharLiteral charLiteral, SymbolTable symbolTable) {
+        charLiteral.builtinType = BuiltinType.Int;
         return BuiltinType.Int;
     }
 
     @Override
     public BuiltinType visit(StringLiteral stringLiteral, SymbolTable symbolTable) {
+        stringLiteral.builtinType = BuiltinType.String;
         return BuiltinType.String;
     }
 

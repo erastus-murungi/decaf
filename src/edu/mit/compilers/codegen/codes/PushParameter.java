@@ -2,15 +2,20 @@ package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
+import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
+import java.util.List;
+
 public class PushParameter extends ThreeAddressCode {
     public AssignableName parameterName;
+    public final int parameterIndex;
 
-    public PushParameter(AssignableName parameterName, AST source) {
+    public PushParameter(AssignableName parameterName, int parameterIndex, AST source) {
         super(source);
         this.parameterName = parameterName;
+        this.parameterIndex = parameterIndex;
     }
 
     @Override
@@ -21,5 +26,10 @@ public class PushParameter extends ThreeAddressCode {
     @Override
     public <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, SymbolTable currentSymbolTable, E extra) {
         return visitor.visit(this, currentSymbolTable, extra);
+    }
+
+    @Override
+    public List<AbstractName> getNames() {
+        return List.of(parameterName);
     }
 }

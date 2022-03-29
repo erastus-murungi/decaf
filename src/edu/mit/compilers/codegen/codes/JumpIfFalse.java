@@ -5,6 +5,8 @@ import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
+import java.util.List;
+
 public class JumpIfFalse extends ThreeAddressCode {
     public final AbstractName condition;
     public final Label trueLabel;
@@ -24,4 +26,10 @@ public class JumpIfFalse extends ThreeAddressCode {
     public <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, SymbolTable currentSymbolTable, E extra) {
         return visitor.visit(this, currentSymbolTable, extra);
     }
+
+    @Override
+    public List<AbstractName> getNames() {
+        return List.of(condition);
+    }
+
 }

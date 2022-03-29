@@ -6,8 +6,10 @@ import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
+import java.util.List;
+
 public class CopyInstruction extends AbstractAssignment {
-    AbstractName src;
+    public AbstractName src;
 
     public CopyInstruction(AbstractName src, AssignableName dst, AST source) {
         super(dst, source);
@@ -29,4 +31,10 @@ public class CopyInstruction extends AbstractAssignment {
     public <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, SymbolTable currentSymbolTable, E extra) {
         return visitor.visit(this, currentSymbolTable, extra);
     }
+
+    @Override
+    public List<AbstractName> getNames() {
+        return List.of(src, dst);
+    }
+
 }

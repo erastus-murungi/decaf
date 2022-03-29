@@ -7,13 +7,15 @@ import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
+import java.util.List;
+
 public class TwoOperandAssign extends AbstractAssignment {
     AbstractName fstOperand;
     String operator;
     AbstractName sndOperand;
 
 
-    public TwoOperandAssign(AST source, AssignableName result, AbstractName fstOperand, String operator, AssignableName sndOperand, String comment) {
+    public TwoOperandAssign(AST source, AssignableName result, AbstractName fstOperand, String operator, AbstractName sndOperand, String comment) {
         super(result, source, comment);
         this.fstOperand = fstOperand;
         this.operator = operator;
@@ -30,5 +32,10 @@ public class TwoOperandAssign extends AbstractAssignment {
     @Override
     public <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, SymbolTable currentSymbolTable, E extra) {
         return visitor.visit(this, currentSymbolTable, extra);
+    }
+
+    @Override
+    public List<AbstractName> getNames() {
+        return List.of(dst, fstOperand, sndOperand);
     }
 }

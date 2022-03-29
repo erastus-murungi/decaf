@@ -2,8 +2,12 @@ package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.codegen.TemporaryNameGenerator;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
+import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Utils;
+
+import java.util.Collections;
+import java.util.List;
 
 public class StringLiteralStackAllocation extends ThreeAddressCode {
     public String label;
@@ -28,5 +32,14 @@ public class StringLiteralStackAllocation extends ThreeAddressCode {
     @Override
     public <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, SymbolTable currentSymbolTable, E extra) {
         return visitor.visit(this, currentSymbolTable, extra);
+    }
+
+    @Override
+    public List<AbstractName> getNames() {
+        return Collections.emptyList();
+    }
+
+    public String getASM() {
+        return String.format("%s:\n%s.%s %s\n%s.align 16", label, INDENT, "string", stringConstant, INDENT);
     }
 }

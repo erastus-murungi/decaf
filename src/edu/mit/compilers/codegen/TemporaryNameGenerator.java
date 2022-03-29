@@ -22,11 +22,11 @@ public class TemporaryNameGenerator {
 
     public static String getNextLabel() {
         ++labelIndex;
-        return "_L" + labelIndex;
+        return "L" + labelIndex;
     }
 
     public static String getNextStringLiteralIndex() {
         ++stringLiteralIndex;
-        return "_L_str_" + stringLiteralIndex;
+        return "string_" + stringLiteralIndex;
     }
 }

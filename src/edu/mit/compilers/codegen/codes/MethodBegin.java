@@ -1,72 +1,46 @@
 package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.*;
-import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
+import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.symbolTable.SymbolTable;
-import edu.mit.compilers.utils.Pair;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 public class MethodBegin extends ThreeAddressCode {
-    int sizeOfLocalsAndTemps;
-    MethodDefinition methodDefinition;
+    public long sizeOfLocals;
+    public final MethodDefinition methodDefinition;
+    private List<AbstractName> locals;
 
     public MethodBegin(MethodDefinition methodDefinition) {
         super(methodDefinition);
         this.methodDefinition = methodDefinition;
-        this.sizeOfLocalsAndTemps  = getSizeOfLocalsAndTemps(methodDefinition);
+        this.sizeOfLocals = -1;
     }
 
     @Override
     public String toString() {
-        return String.format("%s:\n%s%s %s", methodDefinition.methodName.id, DOUBLE_INDENT, "BeginFunction", sizeOfLocalsAndTemps);
-    }
-
-    public static int getSizeOfLocalsAndTemps(MethodDefinition methodDefinition) {
-        int sum = 0;
-        for (FieldDeclaration fieldDeclaration: methodDefinition.block.fieldDeclarationList) {
-            int fieldSize;
-            if (fieldDeclaration.builtinType == BuiltinType.Int || fieldDeclaration.builtinType == BuiltinType.IntArray) {
-                fieldSize = 4;
-            } else {
-                fieldSize = 1;
-            }
-            sum += (fieldSize * fieldDeclaration.names.size());
-            sum += fieldDeclaration.arrays.stream().map((array -> array.size.convertToLong().intValue() * fieldSize)).reduce(0, Integer::sum);
-        }
-
-        List<AST> charLiterals = new ArrayList<>();
-        findType(methodDefinition.block, CharLiteral.class, charLiterals);
-        sum += (charLiterals.size());
-        List<AST> stringLiterals = new ArrayList<>();
-        findType(methodDefinition.block, StringLiteral.class, stringLiterals);
-        sum += stringLiterals.stream().map(stringLiteral -> stringLiteral.getSourceCode().length()).reduce(0, Integer::sum);
-
-        List<AST> methodCalls = new ArrayList<>();
-        findType(methodDefinition.block, MethodCall.class, methodCalls);
-        sum += methodCalls.stream().map((methodCall) -> ((MethodCall) methodCall).builtinType.getFieldSize()).reduce(0, Integer::sum);
-
-        List<AST> methodCallStatements = new ArrayList<>();
-        findType(methodDefinition.block, MethodCallStatement.class, methodCallStatements);
-        sum += methodCallStatements.stream().map((methodCallStatement) -> ((MethodCallStatement) methodCallStatement).methodCall.builtinType.getFieldSize()).reduce(0, Integer::sum);
-        return sum;
-    }
-
-    public static void findType(AST root, Class<?> tClass, List<AST> nodes) {
-        if (root.getClass().equals(tClass)) {
-            nodes.add(root);
-        }
-        if (!root.isTerminal()) {
-            for (Pair<String, AST> stringASTPair : root.getChildren()) {
-                findType(stringASTPair.second(), tClass, nodes);
-            }
-        }
+        return String.format("%s:\n%s%s %s", methodDefinition.methodName.id, DOUBLE_INDENT, "BeginFunction", sizeOfLocals);
     }
 
     @Override
     public <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, SymbolTable currentSymbolTable, E extra) {
         return visitor.visit(this, currentSymbolTable, extra);
+    }
+
+    @Override
+    public List<AbstractName> getNames() {
+        return Collections.emptyList();
+    }
+
+    public void setLocals(List<AbstractName> locals) {
+        this.locals = locals;
+        this.sizeOfLocals = locals.stream().map(abstractName -> abstractName.size).reduce(0, Integer::sum);
+    }
+
+    public Optional<List<AbstractName>> getLocals() {
+        return Optional.ofNullable(locals);
     }
 }

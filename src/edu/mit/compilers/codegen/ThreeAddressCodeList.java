@@ -3,14 +3,13 @@ package edu.mit.compilers.codegen;
 import edu.mit.compilers.codegen.codes.ThreeAddressCode;
 import edu.mit.compilers.codegen.names.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Consumer;
 
-public class ThreeAddressCodeList {
-    public AssignableName place;
+public class ThreeAddressCodeList implements Iterable<ThreeAddressCode> {
+    public AbstractName place;
     private final List<ThreeAddressCode> codes;
-    public static final AssignableName UNDEFINED = new VariableName(null);
+    public static final AbstractName UNDEFINED = new VariableName(null, -1);
 
     private ThreeAddressCodeList next;
     private ThreeAddressCodeList prev;
@@ -31,12 +30,12 @@ public class ThreeAddressCodeList {
         this.prev = prev;
     }
 
-    public ThreeAddressCodeList(AssignableName place, List<ThreeAddressCode> codes) {
+    public ThreeAddressCodeList(AbstractName place, List<ThreeAddressCode> codes) {
         this.place = place;
         this.codes = codes;
     }
 
-    public ThreeAddressCodeList(AssignableName place) {
+    public ThreeAddressCodeList(AbstractName place) {
         codes = new ArrayList<>();
         if (place == null)
             throw new IllegalArgumentException("null not allowed");
@@ -47,9 +46,6 @@ public class ThreeAddressCodeList {
         return codes.get(index);
     }
 
-    public ThreeAddressCode getFromLast(int index) {
-        return codes.get(codes.size() - 1 - index);
-    }
 
     @Override
     public String toString() {
@@ -71,5 +67,20 @@ public class ThreeAddressCodeList {
 
     public boolean isEmpty() {
         return this.codes.isEmpty();
+    }
+
+    @Override
+    public Iterator<ThreeAddressCode> iterator() {
+        return codes.iterator();
+    }
+
+    @Override
+    public void forEach(Consumer<? super ThreeAddressCode> action) {
+        codes.forEach(action);
+    }
+
+    @Override
+    public Spliterator<ThreeAddressCode> spliterator() {
+        return codes.spliterator();
     }
 }

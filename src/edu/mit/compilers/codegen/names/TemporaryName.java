@@ -5,12 +5,13 @@ import edu.mit.compilers.codegen.TemporaryNameGenerator;
 public class TemporaryName extends AssignableName {
     final String index;
 
-    public TemporaryName(int index) {
+    public TemporaryName(int index, int size) {
+        super(size);
         this.index = String.valueOf(index);
     }
 
-    public static TemporaryName generateTemporaryName() {
-        return new TemporaryName(TemporaryNameGenerator.getNextTemporaryVariable());
+    public static TemporaryName generateTemporaryName(int size) {
+        return new TemporaryName(TemporaryNameGenerator.getNextTemporaryVariable(), size);
     }
 
     @Override
