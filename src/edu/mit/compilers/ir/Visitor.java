@@ -45,4 +45,6 @@ public interface Visitor<T> {
      T visit(StringLiteral stringLiteral, SymbolTable symbolTable);
      T visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable symbolTable);
      T visit(Initialization initialization, SymbolTable symbolTable);
+     T visit(Assignment assignment, SymbolTable symbolTable);
+     T visit(Update update, SymbolTable symbolTable);
 }

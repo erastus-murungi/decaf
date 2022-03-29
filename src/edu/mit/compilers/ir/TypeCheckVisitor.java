@@ -1,5 +1,6 @@
 package edu.mit.compilers.ir;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
 
@@ -101,7 +102,7 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
             BuiltinType testType = forStatement.terminatingCondition.accept(this, symbolTable);
             if (testType != BuiltinType.Bool)
                 exceptions.add(new DecafSemanticException(forStatement.terminatingCondition.tokenPosition, "for-loop test must evaluate to " + BuiltinType.Bool + " not " + testType));
-
+            forStatement.block.accept(this, symbolTable);
             optionalDescriptor = symbolTable.getDescriptorFromValidScopes(forStatement.update.updateLocation.name.id);
             if (optionalDescriptor.isEmpty())
                 exceptions.add(new DecafSemanticException(forStatement.update.updateLocation.tokenPosition, forStatement.update.updateLocation.name + " must be declared in scope"));
@@ -310,6 +311,15 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
         }
     }
 
+    private void visitMethodCallParameters(List<MethodCallParameter> methodCallParameterList, SymbolTable symbolTable) {
+        for (MethodCallParameter methodCallParameter : methodCallParameterList) {
+            if (methodCallParameter instanceof ExpressionParameter)
+                visit(((ExpressionParameter) methodCallParameter), symbolTable);
+            else
+                visit((StringLiteral) methodCallParameter, symbolTable);
+        }
+    }
+
     @Override
     public BuiltinType visit(MethodCall methodCall, SymbolTable symbolTable) {
 
@@ -322,6 +332,7 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
         if (imports.contains(methodCall.nameId.id)) {
             // All external functions are treated as if they return int
             methodCall.builtinType = BuiltinType.Int;
+            visitMethodCallParameters(methodCall.methodCallParameterList, symbolTable);
             return BuiltinType.Int;
         }
         if (optionalMethodDescriptor.isPresent()) {
@@ -330,12 +341,7 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
             exceptions.add(new DecafSemanticException(methodCall.tokenPosition, "method " + methodCall.nameId.id + " not found"));
             return BuiltinType.Undefined;
         }
-        for (MethodCallParameter methodCallParameter : methodCall.methodCallParameterList) {
-            if (methodCallParameter instanceof ExpressionParameter)
-                visit(((ExpressionParameter) methodCallParameter), symbolTable);
-            else
-                visit((StringLiteral) methodCallParameter, symbolTable);
-        }
+        visitMethodCallParameters(methodCall.methodCallParameterList, symbolTable);
         checkNumberOfArgumentsAndTypesMatch(((MethodDescriptor) descriptor).methodDefinition, methodCall);
 
         methodCall.builtinType = descriptor.type;
@@ -431,7 +437,7 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
 
     @Override
     public BuiltinType visit(Len len, SymbolTable symbolTable) {
-        return BuiltinType.Undefined;
+        return BuiltinType.Int;
     }
 
     @Override
@@ -462,6 +468,16 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
 
     @Override
     public BuiltinType visit(Initialization initialization, SymbolTable symbolTable) {
+        return null;
+    }
+
+    @Override
+    public BuiltinType visit(Assignment assignment, SymbolTable symbolTable) {
+        return null;
+    }
+
+    @Override
+    public BuiltinType visit(Update update, SymbolTable symbolTable) {
         return null;
     }
 

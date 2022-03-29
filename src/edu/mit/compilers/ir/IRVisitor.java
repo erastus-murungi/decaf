@@ -15,8 +15,8 @@ import java.util.Optional;
 import java.util.TreeSet;
 
 public class IRVisitor implements Visitor<Void> {
-    SymbolTable fields = new SymbolTable(null, SymbolTableType.Field);
-    SymbolTable methods = new SymbolTable(null, SymbolTableType.Method);
+    SymbolTable fields = new SymbolTable(null, SymbolTableType.Field, null);
+    SymbolTable methods = new SymbolTable(null, SymbolTableType.Method, null);
     public TreeSet<String> imports = new TreeSet<>();
 
     int depth = 0; // the number of nested while/for loops we are in
@@ -50,7 +50,7 @@ public class IRVisitor implements Visitor<Void> {
                 exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field " + name.id + " already declared"));
             } else {
                 // fields just declared do not have a value.
-                symbolTable.entries.put(name.id, new VariableDescriptor(name.id, null, type));
+                symbolTable.entries.put(name.id, new VariableDescriptor(name.id, type, name));
             }
         }
         for (Array array : fieldDeclaration.arrays) {
@@ -60,7 +60,7 @@ public class IRVisitor implements Visitor<Void> {
                 exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field " + array.id.id + " already declared"));
             } else {
                 // TODO: Check hex parse long
-                symbolTable.entries.put(array.id.id, new ArrayDescriptor(array.id.id, array.size.convertToLong(), type == BuiltinType.Int ? BuiltinType.IntArray : (type == BuiltinType.Bool) ? BuiltinType.BoolArray : BuiltinType.Undefined));
+                symbolTable.entries.put(array.id.id, new ArrayDescriptor(array.id.id, array.size.convertToLong(), type == BuiltinType.Int ? BuiltinType.IntArray : (type == BuiltinType.Bool) ? BuiltinType.BoolArray : BuiltinType.Undefined, array));
             }
         }
         return null;
@@ -98,8 +98,8 @@ public class IRVisitor implements Visitor<Void> {
     }
 
     public Void visit(MethodDefinition methodDefinition, SymbolTable symbolTable) {
-        SymbolTable parameterSymbolTable = new SymbolTable(fields, SymbolTableType.Parameter);
-        SymbolTable localSymbolTable = new SymbolTable(parameterSymbolTable, SymbolTableType.Field);
+        SymbolTable parameterSymbolTable = new SymbolTable(fields, SymbolTableType.Parameter, methodDefinition.block);
+        SymbolTable localSymbolTable = new SymbolTable(parameterSymbolTable, SymbolTableType.Field, methodDefinition.block);
         if (methods.containsEntry(methodDefinition.methodName.id) || imports.contains(methodDefinition.methodName.id) || fields.containsEntry(methodDefinition.methodName.id)) {
             // method already defined. add an exception
             exceptions.add(new DecafSemanticException(methodDefinition.tokenPosition, "Method name " + methodDefinition.methodName.id + " already defined"));
@@ -137,7 +137,8 @@ public class IRVisitor implements Visitor<Void> {
             if (initVariableDescriptor.isPresent()) {
                 Expression initExpression = forStatement.initialization.initExpression;
                 // update the symbol table to have the full expression
-                symbolTable.entries.put(initializedVariableName, new VariableDescriptor(initializedVariableName, initExpression, initVariableDescriptor.get().type));
+                symbolTable.entries.put(initializedVariableName,
+                        new VariableDescriptor(initializedVariableName, initVariableDescriptor.get().type, forStatement.initialization.initId));
             }
 
             // visit the block
@@ -193,7 +194,7 @@ public class IRVisitor implements Visitor<Void> {
     }
 
     public Void visit(Block block, SymbolTable symbolTable) {
-        SymbolTable blockST = new SymbolTable(symbolTable, SymbolTableType.Field);
+        SymbolTable blockST = new SymbolTable(symbolTable, SymbolTableType.Field, block);
         block.blockSymbolTable = blockST;
         symbolTable.children.add(blockST);
         for (FieldDeclaration fieldDeclaration : block.fieldDeclarationList)
@@ -224,6 +225,16 @@ public class IRVisitor implements Visitor<Void> {
 
     @Override
     public Void visit(Initialization initialization, SymbolTable symbolTable) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Assignment assignment, SymbolTable symbolTable) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Update update, SymbolTable symbolTable) {
         return null;
     }
 
@@ -306,7 +317,10 @@ public class IRVisitor implements Visitor<Void> {
 
     public Void visit(Len len, SymbolTable symbolTable) {
         String arrayName = len.nameId.id;
-        if (symbolTable.getDescriptorFromValidScopes(arrayName).isPresent()) {
+        Optional<Descriptor> descriptor = symbolTable.getDescriptorFromValidScopes(arrayName);
+        if (descriptor.isEmpty()) {
+            exceptions.add(new DecafSemanticException(len.nameId.tokenPosition, arrayName + " not in scope"));
+        } else if (!(descriptor.get() instanceof ArrayDescriptor)) {
             exceptions.add(new DecafSemanticException(len.nameId.tokenPosition, "the argument of the len operator must be an array"));
         }
         return null;
