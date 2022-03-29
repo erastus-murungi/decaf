@@ -193,7 +193,7 @@ public class DecafParser {
 
     private Expression parseUnaryOpExpr() throws DecafParserException {
         final Token unaryOpToken = consumeTokenNoCheck();
-        return new UnaryOpExpression(new UnaryOperator(unaryOpToken.tokenPosition(), unaryOpToken.lexeme()), parseOrExpr());
+        return new UnaryOpExpression(new UnaryOperator(unaryOpToken.tokenPosition(), unaryOpToken.lexeme()), parseExpr());
     }
 
     private Expression parseParenthesizedExpression() throws DecafParserException {
@@ -757,7 +757,6 @@ public class DecafParser {
     }
 
     private static class PrintConstants {
-        public static final String PIPE = "│";
         public static final String ELBOW = "└──";
         public static final String TEE = "├──";
         public static final String PIPE_PREFIX = "│   ";
