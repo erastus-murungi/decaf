@@ -27,11 +27,19 @@ public class Update extends AST {
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable currentSymbolTable) {
-        return null;
+        return visitor.visit(this, currentSymbolTable);
     }
 
     @Override
     public String getSourceCode() {
         return String.format("%s %s", updateLocation.getSourceCode(), updateAssignExpr.getSourceCode());
+    }
+
+    @Override
+    public String toString() {
+        return "Update{" +
+                "updateLocation=" + updateLocation +
+                ", updateAssignExpr=" + updateAssignExpr +
+                '}';
     }
 }

@@ -10,7 +10,7 @@ import java.util.List;
 
 public class StringLiteral extends MethodCallParameter {
     final TokenPosition tokenPosition;
-    final String literal;
+    final public String literal;
 
     public StringLiteral(TokenPosition tokenPosition, String literal) {
         this.tokenPosition = tokenPosition;

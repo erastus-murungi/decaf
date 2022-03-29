@@ -14,7 +14,7 @@ public class LocationVariable extends Location {
 
     @Override
     public List<Pair<String, AST>> getChildren() {
-        return Collections.emptyList();
+        return Collections.singletonList(new Pair<>("name", name));
     }
 
     @Override

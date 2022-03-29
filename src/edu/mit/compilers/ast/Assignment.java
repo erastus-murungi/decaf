@@ -13,7 +13,6 @@ public class Assignment extends AST {
     public Assignment (Location location, AssignExpr assignmentExpr){
         this.location = location;
         this.assignExpr = assignmentExpr;
-
     }
 
     @Override
@@ -28,7 +27,7 @@ public class Assignment extends AST {
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable currentSymbolTable) {
-        return null;
+        return visitor.visit(this, currentSymbolTable);
     }
 
     @Override

@@ -14,9 +14,7 @@ import static edu.mit.compilers.grammar.DecafScanner.RESERVED_FOR;
 
 public class For extends Statement {
     public final Initialization initialization;
-
     final public Expression terminatingCondition;
-
     public final Update update;
     public final Block block;
 
@@ -37,7 +35,8 @@ public class For extends Statement {
         return List.of(
                 new Pair<>("initialization", initialization),
                 new Pair<>("terminatingCondition", terminatingCondition),
-                new Pair<>("update", update));
+                new Pair<>("update", update),
+                new Pair<>("block", block));
     }
 
     @Override
