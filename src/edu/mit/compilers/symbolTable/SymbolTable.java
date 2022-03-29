@@ -1,23 +1,28 @@
 package edu.mit.compilers.symbolTable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import edu.mit.compilers.ast.Block;
+import edu.mit.compilers.ast.BuiltinType;
+import edu.mit.compilers.descriptors.ArrayDescriptor;
 import edu.mit.compilers.descriptors.Descriptor;
+import edu.mit.compilers.descriptors.VariableDescriptor;
 
 
 public class SymbolTable {
-    public final SymbolTable parent;
+    public SymbolTable parent;
     public final SymbolTableType symbolTableType;
     public final HashMap<String, Descriptor> entries = new HashMap<>();
     public ArrayList<SymbolTable> children = new ArrayList<>();
+    public final Block owner;
 
-    public SymbolTable(SymbolTable parent, SymbolTableType symbolTableType) {
+    public SymbolTable(SymbolTable parent, SymbolTableType symbolTableType, Block owner) {
         super();
         this.parent = parent;
         this.symbolTableType = symbolTableType;
+        this.owner = owner;
     }
 
     /**
@@ -79,11 +84,66 @@ public class SymbolTable {
     }
 
     public String toString() {
-        String output = "";
-        for (Map.Entry<String, Descriptor> entry: entries.entrySet()) {
-            output += entry.getKey();
-            output += "\n";
+        return myToString("", "");
+    }
+
+    private static String padRight(String s, Optional<Integer> n) {
+        return n.map(integer -> s + " ".repeat(integer + 4 - s.length())).orElse(s);
+    }
+
+
+    public String myToString(String suffix) {
+        return myToString("", suffix);
+    }
+
+    @SuppressWarnings("unchecked")
+    public String myToString(String indent, String suffix) {
+        String repeat = " ".repeat(Math.max(0, indent.length() - 8));
+        String repeat1 = "-".repeat(Math.min(indent.length(), 8));
+        if (this.entries.size() == 0) {
+            return (repeat + repeat1 + "EmptySymbolTable " + suffix);
         }
-        return output;
+        final String IDENTIFIER = "Identifier";
+        final String DESCRIPTOR_CLASSES = "Descriptor Types";
+        final String BUILTIN_TYPES = "Builtin Types";
+        final String ARRAY_LENGTH = "Array Length";
+
+        Optional<Integer> maxLengthIds = Stream.concat(Stream.of(IDENTIFIER, "-".repeat(IDENTIFIER.length())), this.entries.keySet().stream().map(Object::toString)).map(String::length).reduce(Math::max);
+
+        Stream<String> maxLengthIdsStream = Stream.concat(Stream.of(IDENTIFIER, "-".repeat(IDENTIFIER.length())), this.entries.keySet().stream().map(Object::toString));
+
+        List<String> ids = maxLengthIdsStream.map(((String s) -> padRight(s, maxLengthIds))).collect(Collectors.toList());
+
+        Optional<Integer> maxMethodD = Stream.concat(Stream.of(DESCRIPTOR_CLASSES, "-".repeat(DESCRIPTOR_CLASSES.length())), this.entries.keySet().stream().map(Object::getClass).map(Class::getSimpleName)).map(String::length).reduce(Math::max);
+        List<String> descriptorTypes = Stream.concat(Stream.of(DESCRIPTOR_CLASSES, "-".repeat(DESCRIPTOR_CLASSES.length())), this.entries.values().stream().map(Object::getClass).map(Class::getSimpleName)).map(s -> padRight(s, maxMethodD)).collect(Collectors.toList());
+
+        List<Descriptor> list1 = new ArrayList<>(this.entries.values());
+        List<String> builtins = new ArrayList<>();
+        for (Descriptor descriptor1 : list1) {
+            BuiltinType type = descriptor1.type;
+            String toString = type.toString();
+            builtins.add(toString);
+        }
+        Optional<Integer> maxLengthTypes = Stream.concat(Stream.of(BUILTIN_TYPES, "-".repeat(BUILTIN_TYPES.length())), builtins.stream()).map(String::length).reduce(Math::max);
+        List<String> builtinTypes = Stream.concat(Stream.of(BUILTIN_TYPES, "-".repeat(BUILTIN_TYPES.length())), builtins.stream()).map(Object::toString).map((String s) -> padRight(s, maxLengthTypes)).collect(Collectors.toList());
+
+        List<String> list = new ArrayList<>();
+        for (Descriptor descriptor : list1) {
+            String o = (descriptor instanceof ArrayDescriptor) ? ((ArrayDescriptor) descriptor).size.toString() : "N / A";
+            list.add(o);
+        }
+        Optional<Integer> maxLengthArraySize = Stream.concat(Stream.of(ARRAY_LENGTH, "-".repeat(ARRAY_LENGTH.length())), list.stream()).map(String::length).reduce(Math::max);
+        List<String> arraySizes = Stream.concat(Stream.of(ARRAY_LENGTH, "-".repeat(ARRAY_LENGTH.length())), list.stream()).map(s -> padRight(s, maxLengthArraySize)).collect(Collectors.toList());
+
+
+        List<String> rows = new ArrayList<>();
+        rows.add(repeat + repeat1 + "SymbolTable: " + suffix);
+        for (int i = 0; i < ids.size(); i++) {
+            rows.add(indent + String.join("", ids.get(i), descriptorTypes.get(i), builtinTypes.get(i), arraySizes.get(i)));
+        }
+        return String.join("\n", rows);
+    }
+    public boolean isEmpty() {
+        return entries.isEmpty();
     }
 }
