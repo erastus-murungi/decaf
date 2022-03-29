@@ -25,10 +25,15 @@ package edu.mit.compilers.utils;
  ******************************************************************************
  */
 
+import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.ast.Block;
+import edu.mit.compilers.ast.MethodDefinition;
+import edu.mit.compilers.ast.Program;
 import edu.mit.compilers.cfg.CFGBlock;
 import edu.mit.compilers.cfg.CFGConditional;
 import edu.mit.compilers.cfg.CFGNonConditional;
 import edu.mit.compilers.cfg.NOP;
+import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.io.*;
 import java.util.*;
@@ -393,6 +398,50 @@ public class GraphVizPrinter {
         return false;
     }
 
+    public static String writeSymbolTable(AST root,
+                                          HashMap<String, SymbolTable> methods) {
+        List<String> subGraphs = new ArrayList<>();// add this node
+        Stack<AST> stack = new Stack<>();
+        List<String> nodes = new ArrayList<>();
+        List<String> edges = new ArrayList<>();
+        stack.push(root);
+
+        while (!stack.isEmpty()) {
+            AST ast = stack.pop();
+            for (Pair<String, AST> astPair: ast.getChildren()) {
+                AST child = astPair.second;
+                if (child instanceof Block) {
+                    SymbolTable blockSymbolTable = ((Block) child).blockSymbolTable;
+                    if (blockSymbolTable.isEmpty())
+                        continue;
+                    nodes.add(String.format("   %s [shape=record, label=%s, color=blue];", blockSymbolTable.hashCode(), "\"<from_node>" + escape(blockSymbolTable.toString()).replace(" ", "\u2007") + "\""));
+                    for (SymbolTable symbolTable: blockSymbolTable.children) {
+                        if (symbolTable.isEmpty())
+                            continue;
+                        edges.add(String.format("   %s -> %s;", blockSymbolTable.hashCode() + ":from_node", symbolTable.hashCode() + ":from_node"));
+                    }
+                }
+                if (child instanceof MethodDefinition) {
+                    SymbolTable blockSymbolTable = methods.get(((MethodDefinition) child).methodName.id);
+                    if (blockSymbolTable.isEmpty())
+                        continue;
+                    nodes.add(String.format("   %s [shape=record, label=%s, color=blue];", blockSymbolTable.hashCode(), "\"<from_node>" + escape(blockSymbolTable.myToString(((MethodDefinition) child).methodName.id)).replace(" ", "\u2007") + "\""));
+                    for (SymbolTable symbolTable: blockSymbolTable.children) {
+                        if (symbolTable.isEmpty())
+                            continue;
+                        edges.add(String.format("   %s -> %s;", blockSymbolTable.hashCode() + ":from_node", symbolTable.hashCode() + ":from_node"));
+                    }
+
+                }
+                stack.push(child);
+            }
+        }
+        subGraphs.addAll(edges);
+        subGraphs.addAll(nodes);
+
+        return String.join("\n", subGraphs);
+    }
+
     public static String writeCFG(String name, CFGBlock cfg) {
         List<String> subGraphs = new ArrayList<>();
         subGraphs.add(String.format("subgraph cluster_%s { \n label = %s", escape(name), escape(name)));
@@ -474,6 +523,19 @@ public class GraphVizPrinter {
 //        }
     }
 
+    public static void printSymbolTables(AST root,
+                                  HashMap<String, SymbolTable> methods) {
+        GraphVizPrinter.createDotGraph(writeSymbolTable(root, methods), "symbolTables");
+//        if (!osName.equals("windows")) {
+//            try {
+//                Process process = Runtime.getRuntime().exec("open cfg.pdf");
+//                System.out.println(Utils.getStringFromInputStream(process.getInputStream()));
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+    }
+
 
     /**
      * escape()
@@ -487,7 +549,6 @@ public class GraphVizPrinter {
         return s.replace("\\", "\\\\")
                 .replace("\t", "\\t")
                 .replace("\b", "\\b")
-                .replace("\n", "\\n")
                 .replace("\r", "\\r")
                 .replace("\f", "\\f")
                 .replace("'", "\\'")
@@ -496,6 +557,10 @@ public class GraphVizPrinter {
                 .replace(">", "\\>")
                 .replace("\n", "\\l")
                 .replace("||", "\\|\\|")
+                .replace("[", "\\[")
+                .replace("]", "\\]")
+                .replace("{", "\\{")
+                .replace("}", "\\}")
                 ;
 
     }
