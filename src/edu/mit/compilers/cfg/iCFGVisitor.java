@@ -419,4 +419,14 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     public CFGPair visit(Initialization initialization, SymbolTable symbolTable) {
         throw new IllegalStateException("we cannot visit " + initialization.getClass().getSimpleName());
     }
+
+    @Override
+    public CFGPair visit(Assignment assignment, SymbolTable symbolTable) {
+        return null;
+    }
+
+    @Override
+    public CFGPair visit(Update update, SymbolTable symbolTable) {
+        return null;
+    }
 }
