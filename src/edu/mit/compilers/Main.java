@@ -7,7 +7,7 @@ import java.util.HashMap;
 import edu.mit.compilers.ast.Program;
 import edu.mit.compilers.cfg.*;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
-import edu.mit.compilers.codegen.ThreeAddressListFillerVisitor;
+import edu.mit.compilers.codegen.ThreeAddressCodesListConverter;
 import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.ir.DecafSemanticChecker;
@@ -135,12 +135,12 @@ class Main {
             GraphVizPrinter.printGraph(copy);
         }
 
-        ThreeAddressListFillerVisitor threeAddressListFillerVisitor = new ThreeAddressListFillerVisitor(cfgGenerator.globalDescriptor);
-        ThreeAddressCodeList threeAddressCodeList = threeAddressListFillerVisitor.fill(visitor, programNode);
+        ThreeAddressCodesListConverter threeAddressCodesListConverter = new ThreeAddressCodesListConverter(cfgGenerator.globalDescriptor);
+        ThreeAddressCodeList threeAddressCodeList = threeAddressCodesListConverter.fill(visitor, programNode);
         if (CLI.debug) {
             System.out.println(programNode.getSourceCode());
             System.out.println(threeAddressCodeList);
-            GraphVizPrinter.printSymbolTables(programNode, threeAddressListFillerVisitor.cfgSymbolTables);
+            GraphVizPrinter.printSymbolTables(programNode, threeAddressCodesListConverter.cfgSymbolTables);
         }
     }
 }
