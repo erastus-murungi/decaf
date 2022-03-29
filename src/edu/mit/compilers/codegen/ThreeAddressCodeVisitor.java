@@ -22,8 +22,6 @@ public interface ThreeAddressCodeVisitor<ReturnType, ExtraInfoType> {
 
     ReturnType visit(PopParameter popParameter, SymbolTable symbolTable, ExtraInfoType extraInfo);
 
-    ReturnType visit(ProgramBegin programBegin, SymbolTable symbolTable, ExtraInfoType extraInfo);
-
     ReturnType visit(PushParameter pushParameter, SymbolTable symbolTable, ExtraInfoType extraInfo);
 
     ReturnType visit(StringLiteralStackAllocation stringLiteralStackAllocation, SymbolTable symbolTable, ExtraInfoType extraInfo);
@@ -31,4 +29,6 @@ public interface ThreeAddressCodeVisitor<ReturnType, ExtraInfoType> {
     ReturnType visit(TwoOperandAssign twoOperandAssign, SymbolTable symbolTable, ExtraInfoType extraInfo);
 
     ReturnType visit(UnconditionalJump unconditionalJump, SymbolTable symbolTable, ExtraInfoType extraInfo);
+
+    ReturnType visit(DataSectionAllocation dataSectionAllocation, SymbolTable currentSymbolTable, ExtraInfoType extra);
 }

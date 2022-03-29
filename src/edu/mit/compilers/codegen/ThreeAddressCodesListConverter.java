@@ -93,7 +93,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             List<AssignableName> newParamNames = new ArrayList<>();
             for (MethodCallParameter methodCallParameter : methodCallParameterList) {
                 ThreeAddressCodeList paramTACList = methodCallParameter.accept(this, symbolTable);
-                threeAddressCodeList.add(methodCallParameter.accept(this, symbolTable));
+                threeAddressCodeList.add(paramTACList);
                 newParamNames.add(paramTACList.place);
             }
 
@@ -535,9 +535,22 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         throw new IllegalStateException("expected to find method " + name);
     }
 
-    private ThreeAddressCodeList initProgram(Program program, CFGNonConditional initialGlobalBlock) {
+    private ThreeAddressCodeList fillOutGlobals(List<FieldDeclaration> fieldDeclarationList) {
         ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
-        threeAddressCodeList.addCode(new ProgramBegin(initialGlobalBlock));
+        for (FieldDeclaration fieldDeclaration: fieldDeclarationList) {
+            for (Name name: fieldDeclaration.names) {
+                threeAddressCodeList.addCode(new DataSectionAllocation(name, " <<<< " + name.getSourceCode(), new VariableName(name.id), fieldDeclaration.builtinType.getFieldSize(), fieldDeclaration.builtinType));
+            }
+            for (Array array: fieldDeclaration.arrays) {
+                threeAddressCodeList.addCode(new DataSectionAllocation(array, " <<<< " + array.getSourceCode(), new VariableName(array.id.id), (int) (fieldDeclaration.builtinType.getFieldSize() * array.size.convertToLong()), fieldDeclaration.builtinType));
+            }
+        }
+        return threeAddressCodeList;
+    }
+
+
+    private ThreeAddressCodeList initProgram(Program program, CFGNonConditional initialGlobalBlock) {
+        ThreeAddressCodeList threeAddressCodeList = fillOutGlobals(program.fieldDeclarationList);
         Set<String> stringLiteralList = findAllStringLiterals(program);
         for (String stringLiteral : stringLiteralList) {
             final StringLiteralStackAllocation literalStackAllocation = new StringLiteralStackAllocation(stringLiteral);
@@ -585,6 +598,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
     @Override
     public ThreeAddressCodeList visit(CFGNonConditional cfgNonConditional, SymbolTable symbolTable) {
         visited.add(cfgNonConditional);
+//        TemporaryNameGenerator.reset();
         ThreeAddressCodeList universalThreeAddressCodeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
         for (CFGLine line : cfgNonConditional.lines) {
             universalThreeAddressCodeList.add(line.ast.accept(visitor, symbolTable));
