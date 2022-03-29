@@ -1,6 +1,7 @@
-package edu.mit.compilers.codegen;
+package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.MethodDefinition;
+import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 public class MethodEnd extends ThreeAddressCode {

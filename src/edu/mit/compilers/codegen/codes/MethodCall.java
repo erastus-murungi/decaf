@@ -1,12 +1,14 @@
-package edu.mit.compilers.codegen;
+package edu.mit.compilers.codegen.codes;
 
+import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.Optional;
 
 public class MethodCall extends ThreeAddressCode {
-    private String resultLocation;
-    public MethodCall(edu.mit.compilers.ast.MethodCall methodCall, String resultLocation, String comment) {
+    private AssignableName resultLocation;
+    public MethodCall(edu.mit.compilers.ast.MethodCall methodCall, AssignableName resultLocation, String comment) {
         super(methodCall, comment);
         this.resultLocation = resultLocation;
     }
@@ -15,7 +17,7 @@ public class MethodCall extends ThreeAddressCode {
         super(methodCall, comment);
     }
 
-    public Optional<String> getResultLocation() {
+    public Optional<AssignableName> getResultLocation() {
         return Optional.ofNullable(resultLocation);
     }
 

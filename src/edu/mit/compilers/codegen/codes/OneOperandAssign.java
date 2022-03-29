@@ -1,13 +1,16 @@
-package edu.mit.compilers.codegen;
+package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
+import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 public class OneOperandAssign extends AbstractAssignment {
-    String operand;
+    AbstractName operand;
     String operator;
 
-    public OneOperandAssign(AST source, String result, String operand, String operator) {
+    public OneOperandAssign(AST source, AssignableName result, AbstractName operand, String operator) {
         super(result, source);
         this.operand = operand;
         this.operator = operator;

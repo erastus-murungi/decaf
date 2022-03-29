@@ -1,22 +1,24 @@
-package edu.mit.compilers.codegen;
+package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.Optional;
 
 public class MethodReturn extends ThreeAddressCode {
-    private String returnAddress;
+    private AssignableName returnAddress;
     public MethodReturn(AST source) {
         super(source);
     }
 
-    public MethodReturn(AST source, String returnAddress) {
+    public MethodReturn(AST source, AssignableName returnAddress) {
         super(source);
         this.returnAddress = returnAddress;
     }
 
-    public Optional<String> getReturnAddress() {
+    public Optional<AssignableName> getReturnAddress() {
         return Optional.ofNullable(returnAddress);
     }
 

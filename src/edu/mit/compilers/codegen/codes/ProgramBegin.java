@@ -1,7 +1,7 @@
-package edu.mit.compilers.codegen;
+package edu.mit.compilers.codegen.codes;
 
-import edu.mit.compilers.ast.Program;
 import edu.mit.compilers.cfg.CFGNonConditional;
+import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 public class ProgramBegin extends ThreeAddressCode {

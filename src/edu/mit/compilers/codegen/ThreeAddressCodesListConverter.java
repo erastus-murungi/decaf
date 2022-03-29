@@ -3,6 +3,8 @@ package edu.mit.compilers.codegen;
 import edu.mit.compilers.ast.*;
 import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.cfg.*;
+import edu.mit.compilers.codegen.codes.*;
+import edu.mit.compilers.codegen.names.*;
 import edu.mit.compilers.descriptors.ArrayDescriptor;
 import edu.mit.compilers.descriptors.Descriptor;
 import edu.mit.compilers.descriptors.GlobalDescriptor;
@@ -26,34 +28,34 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
 
         @Override
         public ThreeAddressCodeList visit(IntLiteral intLiteral, SymbolTable symbolTable) {
-            String temporaryVariable = TemporaryNameGenerator.getNextTemporaryVariable();
+            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
             return new ThreeAddressCodeList(
                     temporaryVariable,
-                    Collections.singletonList(new CopyInstruction(intLiteral.literal, temporaryVariable, intLiteral)));
+                    Collections.singletonList(new CopyInstruction(ConstantName.fromIntLiteral(intLiteral), temporaryVariable, intLiteral)));
         }
 
         @Override
         public ThreeAddressCodeList visit(BooleanLiteral booleanLiteral, SymbolTable symbolTable) {
-            String temporaryVariable = TemporaryNameGenerator.getNextTemporaryVariable();
+            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
             return new ThreeAddressCodeList(
                     temporaryVariable,
-                    Collections.singletonList(new CopyInstruction(booleanLiteral.literal, temporaryVariable, booleanLiteral)));
+                    Collections.singletonList(new CopyInstruction(ConstantName.fromBooleanLiteral(booleanLiteral), temporaryVariable, booleanLiteral)));
         }
 
         @Override
         public ThreeAddressCodeList visit(DecimalLiteral decimalLiteral, SymbolTable symbolTable) {
-            String temporaryVariable = TemporaryNameGenerator.getNextTemporaryVariable();
+            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
             return new ThreeAddressCodeList(
                     temporaryVariable,
-                    Collections.singletonList(new CopyInstruction(decimalLiteral.literal, temporaryVariable, decimalLiteral)));
+                    Collections.singletonList(new CopyInstruction(ConstantName.fromIntLiteral(decimalLiteral), temporaryVariable, decimalLiteral)));
         }
 
         @Override
         public ThreeAddressCodeList visit(HexLiteral hexLiteral, SymbolTable symbolTable) {
-            String temporaryVariable = TemporaryNameGenerator.getNextTemporaryVariable();
+            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
             return new ThreeAddressCodeList(
                     temporaryVariable,
-                    Collections.singletonList(new CopyInstruction(hexLiteral.convertToLong().toString(), temporaryVariable, hexLiteral)));
+                    Collections.singletonList(new CopyInstruction(ConstantName.fromIntLiteral(hexLiteral), temporaryVariable, hexLiteral)));
         }
 
         @Override
@@ -64,16 +66,17 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         public List<PushParameter> flattenMethodDefinitionArguments(ThreeAddressCodeList threeAddressCodeList,
                                                                     List<MethodDefinitionParameter> methodDefinitionParameterList,
                                                                     SymbolTable symbolTable) {
-            List<String> newParamNames = new ArrayList<>();
+            List<AssignableName> newParamNames = new ArrayList<>();
             for (MethodDefinitionParameter methodDefinitionParameter : methodDefinitionParameterList) {
-                threeAddressCodeList.add(methodDefinitionParameter.accept(this, symbolTable));
-                newParamNames.add(((CopyInstruction) threeAddressCodeList.getFromLast(0)).dst);
+                ThreeAddressCodeList paramTACList = methodDefinitionParameter.accept(this, symbolTable);
+                threeAddressCodeList.add(paramTACList);
+                newParamNames.add(paramTACList.place);
             }
             return getPushParameterCode(threeAddressCodeList, newParamNames, methodDefinitionParameterList);
         }
 
         private List<PushParameter> getPushParameterCode(ThreeAddressCodeList threeAddressCodeList,
-                                                         List<String> newParamNames,
+                                                         List<AssignableName> newParamNames,
                                                          List<? extends AST> methodCallOrDefinitionArguments) {
             List<PushParameter> pushParams = new ArrayList<>();
             for (int i = 0; i < newParamNames.size(); i++) {
@@ -87,10 +90,11 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         private List<PushParameter> flattenMethodCallArguments(ThreeAddressCodeList threeAddressCodeList,
                                                                List<MethodCallParameter> methodCallParameterList,
                                                                SymbolTable symbolTable) {
-            List<String> newParamNames = new ArrayList<>();
+            List<AssignableName> newParamNames = new ArrayList<>();
             for (MethodCallParameter methodCallParameter : methodCallParameterList) {
+                ThreeAddressCodeList paramTACList = methodCallParameter.accept(this, symbolTable);
                 threeAddressCodeList.add(methodCallParameter.accept(this, symbolTable));
-                newParamNames.add(((AbstractAssignment) threeAddressCodeList.getFromLast(0)).dst);
+                newParamNames.add(paramTACList.place);
             }
 
             return getPushParameterCode(threeAddressCodeList, newParamNames, methodCallParameterList);
@@ -136,7 +140,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             final ThreeAddressCodeList operandTACList = unaryOpExpression.operand.accept(this, symbolTable);
             final ThreeAddressCodeList retTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
             retTACList.add(operandTACList);
-            String result = TemporaryNameGenerator.getNextTemporaryVariable();
+            TemporaryName result = TemporaryName.generateTemporaryName();
             retTACList.addCode(new OneOperandAssign(unaryOpExpression, result, operandTACList.place, unaryOpExpression.op.getSourceCode()));
             retTACList.place = result;
             return retTACList;
@@ -150,7 +154,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             final ThreeAddressCodeList binOpExpressionTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
             binOpExpressionTACList.add(leftTACList);
             binOpExpressionTACList.add(rightTACList);
-            String temporaryVariable = TemporaryNameGenerator.getNextTemporaryVariable();
+            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
             binOpExpressionTACList.addCode(
                     new TwoOperandAssign(
                             binaryOpExpression,
@@ -183,18 +187,18 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             ThreeAddressCodeList locationThreeAddressCodeList = locationArray.expression.accept(this, symbolTable);
             ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
             threeAddressCodeList.add(locationThreeAddressCodeList);
-            String widthOfField = TemporaryNameGenerator.getNextTemporaryVariable();
+            TemporaryName widthOfField = TemporaryName.generateTemporaryName();
 
             Optional<Descriptor> descriptorFromValidScopes = symbolTable.getDescriptorFromValidScopes(locationArray.name.id);
             if (descriptorFromValidScopes.isEmpty()) {
                 throw new IllegalStateException("expected to find array " + locationArray.name.id + " in scope");
             } else {
                 ArrayDescriptor arrayDescriptor = (ArrayDescriptor) descriptorFromValidScopes.get();
-                threeAddressCodeList.addCode(new CopyInstruction(String.valueOf(arrayDescriptor.type.getFieldSize()), widthOfField, locationArray));
-                String offsetResult = TemporaryNameGenerator.getNextTemporaryVariable();
+                threeAddressCodeList.addCode(new CopyInstruction(new ConstantName((long) arrayDescriptor.type.getFieldSize()), widthOfField, locationArray));
+                TemporaryName offsetResult = TemporaryName.generateTemporaryName();
                 threeAddressCodeList.addCode(new TwoOperandAssign(null, offsetResult, locationThreeAddressCodeList.place, DecafScanner.MULTIPLY, widthOfField, "offset"));
-                String locationResult = TemporaryNameGenerator.getNextTemporaryVariable();
-                threeAddressCodeList.addCode(new TwoOperandAssign(null, locationResult, locationArray.name.id, DecafScanner.PLUS, offsetResult, "array location"));
+                TemporaryName locationResult = TemporaryName.generateTemporaryName();
+                threeAddressCodeList.addCode(new TwoOperandAssign(null, locationResult, new VariableName(locationArray.name.id), DecafScanner.PLUS, offsetResult, "array location"));
                 threeAddressCodeList.place = locationResult;
                 return threeAddressCodeList;
             }
@@ -205,7 +209,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             ThreeAddressCodeList expressionTACList = expressionParameter.expression.accept(this, symbolTable);
             ThreeAddressCodeList expressionParameterTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
             expressionParameterTACList.add(expressionTACList);
-            String temporaryVariable = TemporaryNameGenerator.getNextTemporaryVariable();
+            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
             expressionParameterTACList.addCode(new CopyInstruction(expressionTACList.place, temporaryVariable, expressionParameter));
             expressionParameterTACList.place = temporaryVariable;
             return expressionParameterTACList;
@@ -241,10 +245,10 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         public ThreeAddressCodeList visit(MethodCall methodCall, SymbolTable symbolTable) {
             ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
             List<PushParameter> pushParameterList = flattenMethodCallArguments(threeAddressCodeList, methodCall.methodCallParameterList, symbolTable);
-            String temporaryVariable = TemporaryNameGenerator.getNextTemporaryVariable();
-            threeAddressCodeList.addCode(new edu.mit.compilers.codegen.MethodCall(methodCall, temporaryVariable, methodCall.getSourceCode()));
+            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
+            threeAddressCodeList.addCode(new edu.mit.compilers.codegen.codes.MethodCall(methodCall, temporaryVariable, methodCall.getSourceCode()));
             for (int i = pushParameterList.size() - 1; i >= 0; i--)
-                threeAddressCodeList.addCode(new PopParameter(pushParameterList.get(i).which, methodCall.methodCallParameterList.get(i)));
+                threeAddressCodeList.addCode(new PopParameter(pushParameterList.get(i).parameterName, methodCall.methodCallParameterList.get(i)));
             threeAddressCodeList.place = temporaryVariable;
             return threeAddressCodeList;
         }
@@ -253,18 +257,18 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         public ThreeAddressCodeList visit(MethodCallStatement methodCallStatement, SymbolTable symbolTable) {
             ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
             List<PushParameter> pushParameterList = flattenMethodCallArguments(threeAddressCodeList, methodCallStatement.methodCall.methodCallParameterList, symbolTable);
-            threeAddressCodeList.addCode(new edu.mit.compilers.codegen.MethodCall(methodCallStatement.methodCall, methodCallStatement.getSourceCode()));
+            threeAddressCodeList.addCode(new edu.mit.compilers.codegen.codes.MethodCall(methodCallStatement.methodCall, methodCallStatement.getSourceCode()));
             for (int i = pushParameterList.size() - 1; i >= 0; i--)
-                threeAddressCodeList.addCode(new PopParameter(pushParameterList.get(i).which, methodCallStatement.methodCall.methodCallParameterList.get(i)));
+                threeAddressCodeList.addCode(new PopParameter(pushParameterList.get(i).parameterName, methodCallStatement.methodCall.methodCallParameterList.get(i)));
             return threeAddressCodeList;
         }
 
         @Override
         public ThreeAddressCodeList visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable) {
             ThreeAddressCodeList lhs = locationAssignExpr.location.accept(this, symbolTable);
-            String locationVariable = lhs.place;
+            AssignableName locationVariable = lhs.place;
             ThreeAddressCodeList rhs = locationAssignExpr.assignExpr.accept(this, symbolTable);
-            String valueVariable = rhs.place;
+            AssignableName valueVariable = rhs.place;
             lhs.add(rhs);
             lhs.addCode(new CopyInstruction(valueVariable, locationVariable, locationAssignExpr, locationAssignExpr.getSourceCode()));
             return lhs;
@@ -277,32 +281,32 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
 
         @Override
         public ThreeAddressCodeList visit(MethodDefinitionParameter methodDefinitionParameter, SymbolTable symbolTable) {
-            String temporaryVariable = TemporaryNameGenerator.getNextTemporaryVariable();
+            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
             return new ThreeAddressCodeList(temporaryVariable,
-                    Collections.singletonList(new CopyInstruction(methodDefinitionParameter.id.id, temporaryVariable, methodDefinitionParameter)));
+                    Collections.singletonList(new CopyInstruction(new VariableName(methodDefinitionParameter.id.id), temporaryVariable, methodDefinitionParameter)));
         }
 
         @Override
         public ThreeAddressCodeList visit(Name name, SymbolTable symbolTable) {
-            String temporaryVariable = TemporaryNameGenerator.getNextTemporaryVariable();
-            return new ThreeAddressCodeList(temporaryVariable, Collections.singletonList(new CopyInstruction(name.id, temporaryVariable, name)));
+            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
+            return new ThreeAddressCodeList(temporaryVariable, Collections.singletonList(new CopyInstruction(new VariableName(name.id), temporaryVariable, name)));
         }
 
         @Override
         public ThreeAddressCodeList visit(LocationVariable locationVariable, SymbolTable symbolTable) {
-            return new ThreeAddressCodeList(locationVariable.name.id);
+            return new ThreeAddressCodeList(new VariableName(locationVariable.name.id));
         }
 
         @Override
         public ThreeAddressCodeList visit(Len len, SymbolTable symbolTable) {
             ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
-            String temporaryNumberOfElemsVariable = TemporaryNameGenerator.getNextTemporaryVariable();
+            TemporaryName temporaryNumberOfElemsVariable = TemporaryName.generateTemporaryName();
             Optional<Descriptor> optionalDescriptor = symbolTable.getDescriptorFromValidScopes(len.nameId.id);
             if (optionalDescriptor.isEmpty())
                 throw new IllegalStateException(len.nameId.id + " should be present");
             else {
                 ArrayDescriptor arrayDescriptor = (ArrayDescriptor) optionalDescriptor.get();
-                threeAddressCodeList.addCode(new CopyInstruction(arrayDescriptor.size.toString(), temporaryNumberOfElemsVariable, len));
+                threeAddressCodeList.addCode(new CopyInstruction(new ConstantName(arrayDescriptor.size), temporaryNumberOfElemsVariable, len));
                 threeAddressCodeList.place = temporaryNumberOfElemsVariable;
                 return threeAddressCodeList;
             }
@@ -325,12 +329,11 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
 
         @Override
         public ThreeAddressCodeList visit(StringLiteral stringLiteral, SymbolTable symbolTable) {
-            String temporaryVariable = TemporaryNameGenerator.getNextTemporaryVariable();
-
+            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
             return new ThreeAddressCodeList(
                     temporaryVariable,
                     Collections.singletonList(
-                            new CopyInstruction(literalStackAllocationHashMap.get(stringLiteral.literal).label, temporaryVariable, stringLiteral)));
+                            new CopyInstruction(new StringConstantName(literalStackAllocationHashMap.get(stringLiteral.literal).label), temporaryVariable, stringLiteral)));
         }
 
         @Override
@@ -438,7 +441,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             ThreeAddressCodeList updateExprTAC;
             BinaryOpExpression binaryOpExpression = new BinaryOpExpression(lhs, binOperator, rhs);
             updateExprTAC = binaryOpExpression.accept(this, symbolTable);
-            CopyInstruction copyInstruction = new CopyInstruction(updateExprTAC.place, locationId, source);
+            CopyInstruction copyInstruction = new CopyInstruction(updateExprTAC.place, new VariableName(locationId), source);
             updateExprTAC.addCode(copyInstruction);
             return updateExprTAC;
         }
@@ -518,7 +521,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         threeAddressCodeList.add(dispatch(methodStart, symbolTable));
 
         for (int i = pushParams.size() - 1; i >= 0; i--)
-            threeAddressCodeList.addCode(new PopParameter(pushParams.get(i).which, methodDefinition.methodDefinitionParameterList.get(i)));
+            threeAddressCodeList.addCode(new PopParameter(pushParams.get(i).parameterName, methodDefinition.methodDefinitionParameterList.get(i)));
         threeAddressCodeList.addCode(new MethodEnd(methodDefinition));
         return threeAddressCodeList;
     }

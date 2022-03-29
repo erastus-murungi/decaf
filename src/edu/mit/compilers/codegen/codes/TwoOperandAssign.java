@@ -1,15 +1,19 @@
-package edu.mit.compilers.codegen;
+package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
+import edu.mit.compilers.codegen.codes.AbstractAssignment;
+import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 public class TwoOperandAssign extends AbstractAssignment {
-    String fstOperand;
+    AbstractName fstOperand;
     String operator;
-    String sndOperand;
+    AbstractName sndOperand;
 
 
-    public TwoOperandAssign(AST source, String result, String fstOperand, String operator, String sndOperand, String comment) {
+    public TwoOperandAssign(AST source, AssignableName result, AbstractName fstOperand, String operator, AssignableName sndOperand, String comment) {
         super(result, source, comment);
         this.fstOperand = fstOperand;
         this.operator = operator;

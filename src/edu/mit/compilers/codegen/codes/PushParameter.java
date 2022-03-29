@@ -1,19 +1,21 @@
-package edu.mit.compilers.codegen;
+package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 public class PushParameter extends ThreeAddressCode {
-    public String which;
+    public AssignableName parameterName;
 
-    public PushParameter(String which, AST source) {
+    public PushParameter(AssignableName parameterName, AST source) {
         super(source);
-        this.which = which;
+        this.parameterName = parameterName;
     }
 
     @Override
     public String toString() {
-        return String.format("%s%s %s", DOUBLE_INDENT, "PushParameter", which);
+        return String.format("%s%s %s", DOUBLE_INDENT, "PushParameter", parameterName);
     }
 
     @Override

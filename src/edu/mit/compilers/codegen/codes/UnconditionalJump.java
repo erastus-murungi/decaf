@@ -1,5 +1,6 @@
-package edu.mit.compilers.codegen;
+package edu.mit.compilers.codegen.codes;
 
+import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 public class UnconditionalJump extends ThreeAddressCode {

@@ -1,7 +1,8 @@
-package edu.mit.compilers.codegen;
+package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.*;
 import edu.mit.compilers.ast.MethodCall;
+import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 

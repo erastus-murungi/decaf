@@ -1,13 +1,16 @@
 package edu.mit.compilers.codegen;
 
+import edu.mit.compilers.codegen.codes.ThreeAddressCode;
+import edu.mit.compilers.codegen.names.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class ThreeAddressCodeList {
-    public String place;
+    public AssignableName place;
     private final List<ThreeAddressCode> codes;
-    public static final String UNDEFINED = "Undefined";
+    public static final AssignableName UNDEFINED = new VariableName(null);
 
     private ThreeAddressCodeList next;
     private ThreeAddressCodeList prev;
@@ -28,12 +31,12 @@ public class ThreeAddressCodeList {
         this.prev = prev;
     }
 
-    public ThreeAddressCodeList(String place, List<ThreeAddressCode> codes) {
+    public ThreeAddressCodeList(AssignableName place, List<ThreeAddressCode> codes) {
         this.place = place;
         this.codes = codes;
     }
 
-    public ThreeAddressCodeList(String place) {
+    public ThreeAddressCodeList(AssignableName place) {
         codes = new ArrayList<>();
         if (place == null)
             throw new IllegalArgumentException("null not allowed");

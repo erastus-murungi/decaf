@@ -1,13 +1,15 @@
-package edu.mit.compilers.codegen;
+package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
+import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 public class JumpIfFalse extends ThreeAddressCode {
-    public final String condition;
+    public final AbstractName condition;
     public final Label trueLabel;
 
-    public JumpIfFalse(AST source, String condition, Label trueLabel, String comment) {
+    public JumpIfFalse(AST source, AbstractName condition, Label trueLabel, String comment) {
         super(source, comment);
         this.condition = condition;
         this.trueLabel = trueLabel;

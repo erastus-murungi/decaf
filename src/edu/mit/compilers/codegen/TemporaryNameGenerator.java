@@ -12,9 +12,9 @@ public class TemporaryNameGenerator {
         labelIndex = -1;
     }
 
-    public static String getNextTemporaryVariable() {
+    public static int getNextTemporaryVariable() {
         ++variableIndex;
-        return "_t" + variableIndex;
+        return variableIndex;
     }
 
     public static String getNextLabel() {

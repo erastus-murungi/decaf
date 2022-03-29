@@ -1,19 +1,21 @@
-package edu.mit.compilers.codegen;
+package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 public class PopParameter extends ThreeAddressCode {
-    String which;
+    AssignableName parameterName;
 
-    public PopParameter(String which, AST source) {
+    public PopParameter(AssignableName parameterName, AST source) {
         super(source);
-        this.which = which;
+        this.parameterName = parameterName;
     }
 
     @Override
     public String toString() {
-        return String.format("%s%s %s", DOUBLE_INDENT, "PopParameter", which);
+        return String.format("%s%s %s", DOUBLE_INDENT, "PopParameter", parameterName);
     }
 
     @Override

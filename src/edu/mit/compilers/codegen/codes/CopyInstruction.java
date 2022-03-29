@@ -1,17 +1,20 @@
-package edu.mit.compilers.codegen;
+package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
+import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 public class CopyInstruction extends AbstractAssignment {
-    String src;
+    AbstractName src;
 
-    public CopyInstruction(String src, String dst, AST source) {
+    public CopyInstruction(AbstractName src, AssignableName dst, AST source) {
         super(dst, source);
         this.src = src;
     }
 
-    public CopyInstruction(String src, String dst, AST source, String comment) {
+    public CopyInstruction(AbstractName src, AssignableName dst, AST source, String comment) {
         super(dst, source, comment);
         this.src = src;
     }

@@ -1,5 +1,6 @@
 package edu.mit.compilers.codegen;
 
+import edu.mit.compilers.codegen.codes.*;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 public interface ThreeAddressCodeVisitor<ReturnType, ExtraInfoType> {
