@@ -3,7 +3,6 @@ package edu.mit.compilers.codegen;
 import edu.mit.compilers.ast.*;
 import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.cfg.*;
-import edu.mit.compilers.codegen.*;
 import edu.mit.compilers.descriptors.ArrayDescriptor;
 import edu.mit.compilers.descriptors.Descriptor;
 import edu.mit.compilers.descriptors.GlobalDescriptor;
@@ -17,11 +16,11 @@ import edu.mit.compilers.utils.Pair;
 import java.util.*;
 import java.util.function.BiFunction;
 
-public class ThreeAddressListFillerVisitor implements CFGVisitor<ThreeAddressCodeList> {
-    public static class ThreeAddressCodesVisitor implements Visitor<ThreeAddressCodeList> {
+public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCodeList> {
+    private static class ThreeAddressCodesConverter implements Visitor<ThreeAddressCodeList> {
         HashMap<String, String> temporaryToStringLiteral;
 
-        public ThreeAddressCodesVisitor() {
+        public ThreeAddressCodesConverter() {
             this.temporaryToStringLiteral = new HashMap<>();
         }
 
@@ -138,7 +137,7 @@ public class ThreeAddressListFillerVisitor implements CFGVisitor<ThreeAddressCod
             final ThreeAddressCodeList retTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
             retTACList.add(operandTACList);
             String result = TemporaryNameGenerator.getNextTemporaryVariable();
-            retTACList.addCode(new OneOperandAssignCode(unaryOpExpression, result, operandTACList.place, unaryOpExpression.op.getSourceCode()));
+            retTACList.addCode(new OneOperandAssign(unaryOpExpression, result, operandTACList.place, unaryOpExpression.op.getSourceCode()));
             retTACList.place = result;
             return retTACList;
         }
@@ -153,7 +152,7 @@ public class ThreeAddressListFillerVisitor implements CFGVisitor<ThreeAddressCod
             binOpExpressionTACList.add(rightTACList);
             String temporaryVariable = TemporaryNameGenerator.getNextTemporaryVariable();
             binOpExpressionTACList.addCode(
-                    new TwoOperandAssignCode(
+                    new TwoOperandAssign(
                             binaryOpExpression,
                             temporaryVariable,
                             leftTACList.place,
@@ -193,9 +192,9 @@ public class ThreeAddressListFillerVisitor implements CFGVisitor<ThreeAddressCod
                 ArrayDescriptor arrayDescriptor = (ArrayDescriptor) descriptorFromValidScopes.get();
                 threeAddressCodeList.addCode(new CopyInstruction(String.valueOf(arrayDescriptor.type.getFieldSize()), widthOfField, locationArray));
                 String offsetResult = TemporaryNameGenerator.getNextTemporaryVariable();
-                threeAddressCodeList.addCode(new TwoOperandAssignCode(null, offsetResult, locationThreeAddressCodeList.place, DecafScanner.MULTIPLY, widthOfField, "offset"));
+                threeAddressCodeList.addCode(new TwoOperandAssign(null, offsetResult, locationThreeAddressCodeList.place, DecafScanner.MULTIPLY, widthOfField, "offset"));
                 String locationResult = TemporaryNameGenerator.getNextTemporaryVariable();
-                threeAddressCodeList.addCode(new TwoOperandAssignCode(null, locationResult, locationArray.name.id, DecafScanner.PLUS, offsetResult, "array location"));
+                threeAddressCodeList.addCode(new TwoOperandAssign(null, locationResult, locationArray.name.id, DecafScanner.PLUS, offsetResult, "array location"));
                 threeAddressCodeList.place = locationResult;
                 return threeAddressCodeList;
             }
@@ -492,7 +491,7 @@ public class ThreeAddressListFillerVisitor implements CFGVisitor<ThreeAddressCod
     }
 
 
-    ThreeAddressCodesVisitor visitor;
+    ThreeAddressCodesConverter visitor;
     Set<CFGBlock> visited = new HashSet<>();
     HashMap<CFGBlock, Label> blockToLabelHashMap = new HashMap<>();
     public HashMap<String, SymbolTable> cfgSymbolTables;
@@ -574,8 +573,8 @@ public class ThreeAddressListFillerVisitor implements CFGVisitor<ThreeAddressCod
         return threeAddressCodeList;
     }
 
-    public ThreeAddressListFillerVisitor(GlobalDescriptor globalDescriptor) {
-        this.visitor = new ThreeAddressCodesVisitor();
+    public ThreeAddressCodesListConverter(GlobalDescriptor globalDescriptor) {
+        this.visitor = new ThreeAddressCodesConverter();
         CFGSymbolTableConverter cfgSymbolTableConverter = new CFGSymbolTableConverter(globalDescriptor);
         this.cfgSymbolTables = cfgSymbolTableConverter.createCFGSymbolTables();
     }

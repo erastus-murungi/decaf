@@ -1,5 +1,7 @@
 package edu.mit.compilers.codegen;
 
+import edu.mit.compilers.symbolTable.SymbolTable;
+
 import java.util.Optional;
 
 public class MethodCall extends ThreeAddressCode {
@@ -22,5 +24,10 @@ public class MethodCall extends ThreeAddressCode {
         if (getResultLocation().isPresent())
             return String.format("%s%s = %s %s %s%s", DOUBLE_INDENT, getResultLocation().get(), "CallMethod", ((edu.mit.compilers.ast.MethodCall)source).nameId.id, DOUBLE_INDENT, getComment().isPresent() ? " <<<< " + getComment().get() : "");
         return String.format("%s%s %s %s%s", DOUBLE_INDENT, "CallMethod", ((edu.mit.compilers.ast.MethodCall)source).nameId.id, DOUBLE_INDENT, getComment().isPresent() ? " <<<< " + getComment().get() : "");
+    }
+
+    @Override
+    public <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, SymbolTable currentSymbolTable, E extra) {
+        return visitor.visit(this, currentSymbolTable, extra);
     }
 }

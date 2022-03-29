@@ -2,6 +2,7 @@ package edu.mit.compilers.codegen;
 
 import edu.mit.compilers.ast.*;
 import edu.mit.compilers.ast.MethodCall;
+import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 
 import java.util.ArrayList;
@@ -61,5 +62,10 @@ public class MethodBegin extends ThreeAddressCode {
                 findType(stringASTPair.second(), tClass, nodes);
             }
         }
+    }
+
+    @Override
+    public <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, SymbolTable currentSymbolTable, E extra) {
+        return visitor.visit(this, currentSymbolTable, extra);
     }
 }

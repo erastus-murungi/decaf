@@ -3,17 +3,19 @@ package edu.mit.compilers.codegen;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
-public class PushParameter extends ThreeAddressCode {
-    public String which;
+public class OneOperandAssign extends AbstractAssignment {
+    String operand;
+    String operator;
 
-    public PushParameter(String which, AST source) {
-        super(source);
-        this.which = which;
+    public OneOperandAssign(AST source, String result, String operand, String operator) {
+        super(result, source);
+        this.operand = operand;
+        this.operator = operator;
     }
 
     @Override
     public String toString() {
-        return String.format("%s%s %s", DOUBLE_INDENT, "PushParameter", which);
+        return String.format("%s%s = %s %s", DOUBLE_INDENT, dst, operator, operand);
     }
 
     @Override

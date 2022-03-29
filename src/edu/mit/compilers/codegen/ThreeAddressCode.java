@@ -1,6 +1,7 @@
 package edu.mit.compilers.codegen;
 
 import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.Optional;
 
@@ -26,4 +27,6 @@ public abstract class ThreeAddressCode {
     public Optional<String> getComment() {
         return Optional.ofNullable(comment);
     }
+
+    public abstract <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, SymbolTable currentSymbolTable, E extra);
 }
