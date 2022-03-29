@@ -1,9 +1,15 @@
 package edu.mit.compilers.codegen;
 
-import edu.mit.compilers.ast.AST;
-
 public class UnconditionalJump extends ThreeAddressCode {
-    public UnconditionalJump(AST source) {
-        super(source);
+    public final Label goToLabel;
+
+    public UnconditionalJump(Label goToLabel) {
+        super(null);
+        this.goToLabel = goToLabel;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s%s %s", DOUBLE_INDENT, "GoTo", goToLabel.label);
     }
 }

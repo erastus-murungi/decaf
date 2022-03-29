@@ -7,6 +7,7 @@ import java.util.Optional;
 public class ThreeAddressCodeList {
     public String place;
     private final List<ThreeAddressCode> codes;
+    public static final String UNDEFINED = "Undefined";
 
     private ThreeAddressCodeList next;
     private ThreeAddressCodeList prev;
@@ -32,9 +33,11 @@ public class ThreeAddressCodeList {
         this.codes = codes;
     }
 
-    public ThreeAddressCodeList() {
+    public ThreeAddressCodeList(String place) {
         codes = new ArrayList<>();
-        this.place = TemporaryNameGenerator.getNextTemporaryVariable();
+        if (place == null)
+            throw new IllegalArgumentException("null not allowed");
+        this.place = place;
     }
 
     public ThreeAddressCode get(int index) {
@@ -56,16 +59,14 @@ public class ThreeAddressCodeList {
     }
 
     public void add(ThreeAddressCodeList threeAddressCodeList) {
-        for (ThreeAddressCode threeAddressCode: threeAddressCodeList.codes) {
-            if (!(threeAddressCode instanceof Original)) {
-                this.codes.add(threeAddressCode);
-            }
-        }
+        this.codes.addAll(threeAddressCodeList.codes);
     }
 
     public void addCode(ThreeAddressCode threeAddressCode) {
-        if (!(threeAddressCode instanceof Original)) {
             this.codes.add(threeAddressCode);
-        }
+    }
+
+    public boolean isEmpty() {
+        return this.codes.isEmpty();
     }
 }

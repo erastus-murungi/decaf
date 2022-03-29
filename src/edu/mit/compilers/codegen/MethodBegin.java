@@ -19,7 +19,7 @@ public class MethodBegin extends ThreeAddressCode {
 
     @Override
     public String toString() {
-        return methodDefinition.methodName.id + ":\n" + "    " + "BeginFunction " + sizeOfLocalsAndTemps;
+        return String.format("%s:\n%s%s %s", methodDefinition.methodName.id, DOUBLE_INDENT, "BeginFunction", sizeOfLocalsAndTemps);
     }
 
     public static int getSizeOfLocalsAndTemps(MethodDefinition methodDefinition) {

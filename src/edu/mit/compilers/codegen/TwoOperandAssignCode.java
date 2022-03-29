@@ -3,15 +3,13 @@ package edu.mit.compilers.codegen;
 import edu.mit.compilers.ast.AST;
 
 public class TwoOperandAssignCode extends AbstractAssignment {
-    String result;
     String fstOperand;
     String operator;
     String sndOperand;
 
 
-    public TwoOperandAssignCode(AST source, String result, String fstOperand, String operator, String sndOperand) {
-        super(source);
-        this.result = result;
+    public TwoOperandAssignCode(AST source, String result, String fstOperand, String operator, String sndOperand, String comment) {
+        super(result, source, comment);
         this.fstOperand = fstOperand;
         this.operator = operator;
         this.sndOperand = sndOperand;
@@ -19,6 +17,8 @@ public class TwoOperandAssignCode extends AbstractAssignment {
 
     @Override
     public String toString() {
-        return String.format("    %s = %s %s %s", result, fstOperand, operator, sndOperand);
+        if (getComment().isPresent())
+            return String.format("%s%s = %s %s %s%s%s", DOUBLE_INDENT, dst, fstOperand, operator, sndOperand, DOUBLE_INDENT, " <<<< " + getComment().get());
+        return String.format("%s%s = %s %s %s", DOUBLE_INDENT, dst, fstOperand, operator, sndOperand);
     }
 }

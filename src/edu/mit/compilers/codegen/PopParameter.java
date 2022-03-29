@@ -12,6 +12,6 @@ public class PopParameter extends ThreeAddressCode {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s", "    ", "PopParameter", which);
+        return String.format("%s%s %s", DOUBLE_INDENT, "PopParameter", which);
     }
 }

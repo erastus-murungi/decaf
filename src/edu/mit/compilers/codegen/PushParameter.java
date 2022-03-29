@@ -3,7 +3,7 @@ package edu.mit.compilers.codegen;
 import edu.mit.compilers.ast.AST;
 
 public class PushParameter extends ThreeAddressCode {
-    String which;
+    public String which;
 
     public PushParameter(String which, AST source) {
         super(source);
@@ -12,6 +12,6 @@ public class PushParameter extends ThreeAddressCode {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s", "    ", "PushParam", which);
+        return String.format("%s%s %s", DOUBLE_INDENT, "PushParameter", which);
     }
 }

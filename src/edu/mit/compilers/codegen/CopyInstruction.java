@@ -1,19 +1,23 @@
 package edu.mit.compilers.codegen;
 
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.utils.Utils;
 
-public class CopyInstruction extends ThreeAddressCode {
+public class CopyInstruction extends AbstractAssignment {
     String src;
-    String dst;
 
     public CopyInstruction(String src, String dst, AST source) {
-        super(source);
+        super(dst, source);
         this.src = src;
-        this.dst = dst;
+    }
+
+    public CopyInstruction(String src, String dst, AST source, String comment) {
+        super(dst, source, comment);
+        this.src = src;
     }
 
     public String toString() {
-        return String.format("    %s = %s", Utils.coloredPrint(dst, Utils.ANSIColorConstants.ANSI_CYAN), src);
+        if (getComment().isPresent())
+            return String.format("%s%s = %s%s%s", DOUBLE_INDENT, dst, src, DOUBLE_INDENT, " <<<< " + getComment().get());
+        return String.format("%s%s = %s", DOUBLE_INDENT, dst, src);
     }
 }
