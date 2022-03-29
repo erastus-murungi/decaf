@@ -28,6 +28,6 @@ public class GlobalDescriptor extends Descriptor {
     }
 
     public GlobalDescriptor() {
-        this(BuiltinType.Undefined, new SymbolTable(null, SymbolTableType.Field), new SymbolTable(null, SymbolTableType.Method), new TreeSet<>());
+        this(BuiltinType.Undefined, new SymbolTable(null, SymbolTableType.Field, null), new SymbolTable(null, SymbolTableType.Method, null), new TreeSet<>());
     }
 }

@@ -1,12 +1,13 @@
 package edu.mit.compilers.descriptors;
 
 import edu.mit.compilers.ast.BuiltinType;
+import edu.mit.compilers.ast.Name;
 
 public class VariableDescriptor extends Descriptor {
-    public Object value;
+    public final Name name;
 
-    public VariableDescriptor(String id, Object value, BuiltinType type) {
+    public VariableDescriptor(String id, BuiltinType type, Name name) {
         super(type, id);
-        this.value = value;
+        this.name = name;
     }
 }

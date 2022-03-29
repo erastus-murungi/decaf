@@ -1,5 +1,6 @@
 package edu.mit.compilers.descriptors;
 
+import edu.mit.compilers.ast.Array;
 import edu.mit.compilers.ast.BuiltinType;
 
 /**
@@ -7,9 +8,11 @@ import edu.mit.compilers.ast.BuiltinType;
  */
 public class ArrayDescriptor extends Descriptor {
     public final Long size;
+    public final Array array;
 
-    public ArrayDescriptor(String id, Long size, BuiltinType type) {
+    public ArrayDescriptor(String id, Long size, BuiltinType type, Array array) {
         super(type, id);
         this.size = size;
+        this.array = array;
     }
 }
