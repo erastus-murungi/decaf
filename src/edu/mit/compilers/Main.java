@@ -2,20 +2,14 @@ package edu.mit.compilers;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Stack;
 
-import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.Program;
 import edu.mit.compilers.cfg.*;
-import edu.mit.compilers.codegen.ThreeAddressCodesVisitor;
+import edu.mit.compilers.codegen.ThreeAddressCodeList;
+import edu.mit.compilers.codegen.ThreeAddressListFillerVisitor;
 import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
-import edu.mit.compilers.grammar.Token;
 import edu.mit.compilers.ir.DecafSemanticChecker;
 import edu.mit.compilers.tools.CLI;
 import edu.mit.compilers.utils.DecafExceptionProcessor;
@@ -24,8 +18,6 @@ import edu.mit.compilers.utils.Utils;
 
 class Main {
     public static void main(String[] args) {
-        CLI.parse(args, new String[0]);
-        CLI.debug = true;
 //        try {
 //            CLI.parse(args, new String[0]);
 //            InputStream inputStream = CLI.infile == null ? System.in : new java.io.FileInputStream(CLI.infile);
@@ -106,6 +98,9 @@ class Main {
 //        } catch (Exception e) {
 //            System.err.println(CLI.infile + " " + e);
 //        }
+
+        CLI.parse(args, new String[0]);
+        CLI.debug = true;
         FileInputStream fileInputStream = null;
         try {
             fileInputStream = new FileInputStream("tests/codegen/test.dcf");
@@ -123,7 +118,7 @@ class Main {
             System.exit(1);
         }
         parser.program();
-        AST programNode = parser.getRoot();
+        Program programNode = parser.getRoot();
 
         DecafSemanticChecker semChecker = new DecafSemanticChecker(programNode);
         semChecker.setTrace(CLI.debug);
@@ -138,10 +133,14 @@ class Main {
             HashMap<String, CFGBlock> copy = (HashMap<String, CFGBlock>) visitor.methodCFGBlocks.clone();
             copy.put("global", visitor.initialGlobalBlock);
             GraphVizPrinter.printGraph(copy);
-//            System.out.println(programNode.getSourceCode());
         }
 
-        ThreeAddressCodesVisitor threeAddressCodesVisitor = new ThreeAddressCodesVisitor();
-        threeAddressCodesVisitor.visit((Program) programNode, semChecker.globalDescriptor.globalVariablesSymbolTable);
+        ThreeAddressListFillerVisitor threeAddressListFillerVisitor = new ThreeAddressListFillerVisitor(cfgGenerator.globalDescriptor);
+        ThreeAddressCodeList threeAddressCodeList = threeAddressListFillerVisitor.fill(visitor, programNode);
+        if (CLI.debug) {
+            System.out.println(programNode.getSourceCode());
+            System.out.println(threeAddressCodeList);
+            GraphVizPrinter.printSymbolTables(programNode, threeAddressListFillerVisitor.cfgSymbolTables);
+        }
     }
 }
