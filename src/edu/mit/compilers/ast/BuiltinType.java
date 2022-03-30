@@ -24,7 +24,7 @@ public enum BuiltinType {
 
     public int getFieldSize() {
         switch (this) {
-            case Int: case IntArray: return 4;
+            case Int: case IntArray: return 8;
             case Bool: case BoolArray: return 1;
             case Void: return 0;
             default: throw new IllegalStateException("Unexpected value: " + this);

@@ -322,8 +322,8 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         @Override
         public ThreeAddressCodeList visit(StringLiteral stringLiteral, SymbolTable symbolTable) {
             StringLiteralStackAllocation label = literalStackAllocationHashMap.get(stringLiteral.literal);
-            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName(label.size());
-            StringConstantName stringConstantName = new StringConstantName(label.label, label.size());
+            StringConstantName stringConstantName = new StringConstantName(label);
+            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName(stringConstantName.size);
             return new ThreeAddressCodeList(
                     temporaryVariable,
                     Collections.singletonList(
@@ -506,9 +506,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         Set<AbstractName> uniqueNames = new HashSet<>();
         for (ThreeAddressCode threeAddressCode: threeAddressCodeList)
             uniqueNames.addAll(threeAddressCode.getNames());
-        List<AbstractName> assignableNames = uniqueNames.stream().filter((name -> ((name instanceof AssignableName)))).distinct().sorted(Comparator.comparing(Object::toString)).collect(Collectors.toList());
-        System.out.println(assignableNames);
-        return assignableNames;
+        return uniqueNames.stream().filter((name -> ((name instanceof AssignableName)))).distinct().sorted(Comparator.comparing(Object::toString)).collect(Collectors.toList());
     }
 
     private ThreeAddressCodeList convertMethodDefinition(MethodDefinition methodDefinition,
