@@ -150,7 +150,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
             case "-":
                     return x64builder.addLine(x64InstructionLine(X64Instruction.mov, sourceStackLocation, destStackLocation))
-                                .addLine(x64InstructionLine(X64Instruction.not, destStackLocation));
+                                .addLine(x64InstructionLine(X64Instruction.neg, destStackLocation));
             case "--":
                     return x64builder.addLine(x64InstructionLine(X64Instruction.mov, sourceStackLocation, destStackLocation))
                                 .addLine(x64InstructionLine(X64Instruction.dec, destStackLocation));
