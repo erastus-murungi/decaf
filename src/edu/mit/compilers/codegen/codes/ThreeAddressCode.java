@@ -3,7 +3,6 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +30,7 @@ public abstract class ThreeAddressCode {
         return Optional.ofNullable(comment);
     }
 
-    public abstract <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, SymbolTable currentSymbolTable, E extra);
+    public abstract <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, E extra);
 
     public abstract List<AbstractName> getNames();
 }

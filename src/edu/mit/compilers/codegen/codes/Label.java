@@ -27,8 +27,8 @@ public class Label extends ThreeAddressCode {
     }
 
     @Override
-    public <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, SymbolTable currentSymbolTable, E extra) {
-        return visitor.visit(this, currentSymbolTable, extra);
+    public <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, E extra) {
+        return visitor.visit(this, extra);
     }
 
     @Override

@@ -10,26 +10,16 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64Builder> {
-    boolean textAdded = false;
 
-    HashMap<String, Set<X64Register>> usedRegisters = new HashMap<>();
+    private boolean textAdded = false;
     final Set<AbstractName> globals = new HashSet<>();
     final Stack<MethodBegin> callStack = new Stack<>();
 
-    public X64Register findUnUsedRegister(String method) {
-        Set<X64Register> registers = usedRegisters.get(method);
-        for (X64Register x64Register: X64Register.availableRegs) {
-            if (!registers.contains(x64Register))
-                return x64Register;
-        }
-        return null;
-    }
-
-    public X64Program convert(ThreeAddressCodeList threeAddressCodeList, SymbolTable symbolTable) {
+    public X64Program convert(ThreeAddressCodeList threeAddressCodeList) {
         X64Builder x64Builder = initializeDataSection();
         final X64Builder root = x64Builder;
         for (ThreeAddressCode threeAddressCode : threeAddressCodeList) {
-            x64Builder = threeAddressCode.accept(this, symbolTable, x64Builder);
+            x64Builder = threeAddressCode.accept(this, x64Builder);
             if (x64Builder == null)
                 break;
         }
@@ -50,20 +40,20 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     }
 
     @Override
-    public X64Builder visit(CopyInstruction copyInstruction, SymbolTable symbolTable, X64Builder x64builder) {
+    public X64Builder visit(CopyInstruction copyInstruction, X64Builder x64builder) {
         if (copyInstruction.dst instanceof TemporaryName && copyInstruction.src instanceof ConstantName)
             return x64builder.addLine(x64InstructionLine(X64Instruction.movq, copyInstruction.src, stackOffset(copyInstruction.dst)));
         return x64builder;
     }
 
     @Override
-    public X64Builder visit(JumpIfFalse jumpIfFalse, SymbolTable symbolTable, X64Builder x64builder) {
+    public X64Builder visit(JumpIfFalse jumpIfFalse, X64Builder x64builder) {
         return null;
     }
 
     @Override
-    public X64Builder visit(Label label, SymbolTable symbolTable, X64Builder x64builder) {
-        return null;
+    public X64Builder visit(Label label, X64Builder x64builder) {
+        return x64builder.addLine(new X64Code(label.label + ":\n"));
     }
 
     public String tabSpaced(Object s) {
@@ -98,7 +88,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
         return x64Builder;
     }
     @Override
-    public X64Builder visit(MethodBegin methodBegin, SymbolTable symbolTable, X64Builder x64builder) {
+    public X64Builder visit(MethodBegin methodBegin, X64Builder x64builder) {
         if (!textAdded) {
             x64builder = x64builder.addLine(new X64Code(".text"));
             textAdded = true;
@@ -117,31 +107,31 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     }
 
     @Override
-    public X64Builder visit(MethodCall methodCall, SymbolTable symbolTable, X64Builder x64builder) {
+    public X64Builder visit(MethodCall methodCall, X64Builder x64builder) {
         if (methodCall.getResultLocation().isPresent())
             return x64builder.addLine(x64InstructionLine(X64Instruction.call, methodCall.getMethodName())).addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, "8(%rbp)"));
         return x64builder.addLine(x64InstructionLine(X64Instruction.call, methodCall.getMethodName()));
     }
 
     @Override
-    public X64Builder visit(MethodEnd methodEnd, SymbolTable symbolTable, X64Builder x64builder) {
-        return x64builder.addLine(new X64Code(tabIndented("leave"))).addLine(new X64Code(tabIndented("ret")));
+    public X64Builder visit(MethodEnd methodEnd, X64Builder x64builder) {
+        return x64builder.addLine(x64InstructionLine("leave")).addLine(new X64Code(tabIndented("ret")));
     }
 
     @Override
-    public X64Builder visit(MethodReturn methodReturn, SymbolTable symbolTable, X64Builder x64builder) {
+    public X64Builder visit(MethodReturn methodReturn, X64Builder x64builder) {
         if (methodReturn.getReturnAddress().isPresent())
             x64builder = x64builder.addLine(x64InstructionLine(X64Instruction.movq, methodReturn.getReturnAddress(), X64Register.RAX));
-        return x64builder.addLine(x64InstructionLine(x64InstructionLine("leave"))).addLine(x64InstructionLine("ret")).addLine(new X64Code("\n"));
+        return x64builder.addLine(x64InstructionLine(x64InstructionLine("leave"))).addLine(x64InstructionLine("ret")).addLine(x64InstructionLine("\n"));
     }
 
     @Override
-    public X64Builder visit(OneOperandAssign oneOperandAssign, SymbolTable symbolTable, X64Builder x64builder) {
+    public X64Builder visit(OneOperandAssign oneOperandAssign, X64Builder x64builder) {
         return null;
     }
 
     @Override
-    public X64Builder visit(PopParameter popParameter, SymbolTable symbolTable, X64Builder x64builder) {
+    public X64Builder visit(PopParameter popParameter, X64Builder x64builder) {
         return x64builder;
     }
 
@@ -162,7 +152,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     }
 
     @Override
-    public X64Builder visit(PushParameter pushParameter, SymbolTable symbolTable, X64Builder x64builder) {
+    public X64Builder visit(PushParameter pushParameter, X64Builder x64builder) {
         if (pushParameter.parameterIndex < 6)
             return x64builder.addLine(x64InstructionLine(X64Instruction.movq, getLocalVariableStackOffset(pushParameter.parameterName), X64Register.argumentRegs[pushParameter.parameterIndex]));
         else
@@ -171,22 +161,22 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     }
 
     @Override
-    public X64Builder visit(StringLiteralStackAllocation stringLiteralStackAllocation, SymbolTable symbolTable, X64Builder x64builder) {
-        return x64builder.addLine(new X64Code(stringLiteralStackAllocation.getASM()));
+    public X64Builder visit(StringLiteralStackAllocation stringLiteralStackAllocation, X64Builder x64builder) {
+        return x64builder.addLine(x64InstructionLine(stringLiteralStackAllocation.getASM()));
     }
 
     @Override
-    public X64Builder visit(TwoOperandAssign twoOperandAssign, SymbolTable symbolTable, X64Builder x64builder) {
+    public X64Builder visit(TwoOperandAssign twoOperandAssign, X64Builder x64builder) {
         return null;
     }
 
     @Override
-    public X64Builder visit(UnconditionalJump unconditionalJump, SymbolTable symbolTable, X64Builder x64builder) {
-        return null;
+    public X64Builder visit(UnconditionalJump unconditionalJump, X64Builder x64builder) {
+        return x64builder.addLine(x64InstructionLine(X64Instruction.jmp, "." + unconditionalJump.goToLabel));
     }
 
     @Override
-    public X64Builder visit(DataSectionAllocation dataSectionAllocation, SymbolTable currentSymbolTable, X64Builder x64builder) {
+    public X64Builder visit(DataSectionAllocation dataSectionAllocation, X64Builder x64builder) {
         globals.add(dataSectionAllocation.variableName);
         return x64builder.addLine(new X64Code(dataSectionAllocation.toString()));
     }
