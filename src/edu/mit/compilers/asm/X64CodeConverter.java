@@ -127,7 +127,24 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(OneOperandAssign oneOperandAssign, X64Builder x64builder) {
-        return null;
+        String srcStackLoc = getRbpArgumentIndex(callStack.peek().nameToStackOffset.get(oneOperandAssign.operand));
+        String destinationStackLoc = getRbpArgumentIndex(callStack.peek().nameToStackOffset.get(oneOperandAssign.dst));
+        switch (oneOperandAssign.operator) {
+
+            case "!":{
+                return x64builder.addLine(x64InstructionLine("mov", srcStackLoc, X64Register.RAX))
+                .addLine(x64InstructionLine("not", srcStackLoc, X64Register.RAX))
+                .addLine(x64InstructionLine("mov", X64Register.RAX, destinationStackLoc));
+            }
+            case "-":{
+                return x64builder.addLine(x64InstructionLine("mov", srcStackLoc, X64Register.RAX))
+                .addLine(x64InstructionLine("neg", srcStackLoc, X64Register.RAX))
+                .addLine(x64InstructionLine("mov", X64Register.RAX, destinationStackLoc));
+            }
+            default: return null;
+        }
+
+
     }
 
     @Override
