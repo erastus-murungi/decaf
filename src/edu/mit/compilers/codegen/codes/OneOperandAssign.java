@@ -8,8 +8,8 @@ import edu.mit.compilers.codegen.names.AssignableName;
 import java.util.List;
 
 public class OneOperandAssign extends AbstractAssignment {
-    AbstractName operand;
-    String operator;
+    public AbstractName operand;
+    public String operator;
 
     public OneOperandAssign(AST source, AssignableName result, AbstractName operand, String operator) {
         super(result, source);
