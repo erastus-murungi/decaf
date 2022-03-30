@@ -11,12 +11,12 @@ import java.util.List;
 
 public class StringLiteralStackAllocation extends ThreeAddressCode {
     public String label;
-    String stringConstant;
-    String stringConstantEscaped;
+    public String stringConstant;
+    public String stringConstantEscaped;
 
     public StringLiteralStackAllocation(String stringConstant) {
         super(null);
-        label = TemporaryNameGenerator.getNextStringLiteralIndex();
+        this.label = TemporaryNameGenerator.getNextStringLiteralIndex();
         this.stringConstant = stringConstant;
         this.stringConstantEscaped = Utils.translateEscapes(stringConstant.substring(1, stringConstant.length() - 1));
     }
@@ -26,7 +26,7 @@ public class StringLiteralStackAllocation extends ThreeAddressCode {
     }
 
     public String toString() {
-        return String.format("%s%s:\n%s%s%s", INDENT, label, DOUBLE_INDENT, stringConstant, DOUBLE_INDENT + " <<<< " + size() + " bytes");
+        return String.format("%s%s:\n%s%s%s\n", INDENT, label, DOUBLE_INDENT, stringConstant, DOUBLE_INDENT + " <<<< " + size() + " bytes");
     }
 
     @Override
@@ -40,6 +40,6 @@ public class StringLiteralStackAllocation extends ThreeAddressCode {
     }
 
     public String getASM() {
-        return String.format("%s:\n%s.%s %s\n%s.align 16", label, INDENT, "string", stringConstant, INDENT);
+        return String.format("%s:\n%s.%s %s\n%s.align 16\n", label, INDENT, "string", stringConstant, INDENT);
     }
 }

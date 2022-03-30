@@ -3,21 +3,23 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.*;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.ConstantName;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 
 public class MethodBegin extends ThreeAddressCode {
-    public long sizeOfLocals;
+    public ConstantName sizeOfLocals;
     public final MethodDefinition methodDefinition;
     private List<AbstractName> locals;
+    public HashMap<String, Integer> nameToStackOffset = new HashMap<>();
 
     public MethodBegin(MethodDefinition methodDefinition) {
         super(methodDefinition);
         this.methodDefinition = methodDefinition;
-        this.sizeOfLocals = -1;
+        this.sizeOfLocals = null;
     }
 
     @Override
@@ -37,10 +39,11 @@ public class MethodBegin extends ThreeAddressCode {
 
     public void setLocals(List<AbstractName> locals) {
         this.locals = locals;
-        this.sizeOfLocals = locals.stream().map(abstractName -> abstractName.size).reduce(0, Integer::sum);
+        this.sizeOfLocals = new ConstantName(
+                8L * locals.stream().map(abstractName -> abstractName.size).reduce(0, Integer::sum), BuiltinType.Int.getFieldSize());
     }
 
-    public Optional<List<AbstractName>> getLocals() {
-        return Optional.ofNullable(locals);
+    public List<AbstractName> getLocals() {
+        return locals;
     }
 }
