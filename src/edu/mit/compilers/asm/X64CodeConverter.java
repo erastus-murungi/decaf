@@ -167,7 +167,54 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(TwoOperandAssign twoOperandAssign, X64Builder x64builder) {
-        return null;
+        String fstOperandStackLoc = getRbpArgumentIndex(callStack.peek().nameToStackOffset.get(twoOperandAssign.fstOperand));
+        String sndOperandStackLoc = getRbpArgumentIndex(callStack.peek().nameToStackOffset.get(twoOperandAssign.sndOperand));
+        String dstStackLoc = getRbpArgumentIndex(callStack.peek().nameToStackOffset.get(twoOperandAssign.dst));
+        switch (twoOperandAssign.operator) {
+            case "+": return x64builder.addLine(x64InstructionLine("mov", fstOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("add", sndOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("mov", X64Register.RAX, dstStackLoc));
+            case "-": return x64builder.addLine(x64InstructionLine("mov", fstOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("sub", sndOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("mov", X64Register.RAX, dstStackLoc));
+            case "*": return x64builder.addLine(x64InstructionLine("mov", fstOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("imul", sndOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("mov", X64Register.RAX, dstStackLoc));
+            // TODO: cheatsheet says that %rdx:%rax is divided by S (source) but we are going to assume just %rax for now
+            case "/": return x64builder.addLine(x64InstructionLine("mov", fstOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("idivq", sndOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("mov", X64Register.RAX, dstStackLoc));
+            // TODO: cheatsheet says that %rdx:%rax is divided by S (source) but we are going to assume just %rax for now
+            case "%": return x64builder.addLine(x64InstructionLine("mov", fstOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("idivq", sndOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("mov", X64Register.RDX, dstStackLoc));
+            case "||": return x64builder.addLine(x64InstructionLine("mov", fstOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("or", sndOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("mov", X64Register.RAX, dstStackLoc));
+            case "&&": return x64builder.addLine(x64InstructionLine("mov", fstOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("and", sndOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("mov", X64Register.RAX, dstStackLoc));
+            case "==": return x64builder.addLine(x64InstructionLine("mov", sndOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("cmp", fstOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("sete", X64Register.RAX, dstStackLoc));
+            case "!=": return x64builder.addLine(x64InstructionLine("mov", sndOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("cmp", fstOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("setne", X64Register.RAX, dstStackLoc));
+            case "<": return x64builder.addLine(x64InstructionLine("mov", sndOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("cmp", fstOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("setl", X64Register.RAX, dstStackLoc));
+            case ">": return x64builder.addLine(x64InstructionLine("mov", sndOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("cmp", fstOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("setg", X64Register.RAX, dstStackLoc));
+            case "<=": return x64builder.addLine(x64InstructionLine("mov", sndOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("cmp", fstOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("setle", X64Register.RAX, dstStackLoc));
+            case ">=": return x64builder.addLine(x64InstructionLine("mov", sndOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("cmp", fstOperandStackLoc, X64Register.RAX))
+                    .addLine(x64InstructionLine("setge", X64Register.RAX, dstStackLoc));
+            default: return null;
+        }
+
     }
 
     @Override
