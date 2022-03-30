@@ -6,6 +6,7 @@ import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.ConstantName;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +41,7 @@ public class MethodBegin extends ThreeAddressCode {
     public void setLocals(List<AbstractName> locals) {
         this.locals = locals;
         this.sizeOfLocals = new ConstantName(
-                8L * locals.stream().map(abstractName -> abstractName.size).reduce(0, Integer::sum), BuiltinType.Int.getFieldSize());
+                2* (long) locals.stream().map(abstractName -> abstractName.size).reduce(0, Integer::sum), BuiltinType.Int.getFieldSize());
     }
 
     public List<AbstractName> getLocals() {

@@ -8,11 +8,13 @@ import edu.mit.compilers.codegen.names.AssignableName;
 import java.util.List;
 
 public class PopParameter extends ThreeAddressCode {
-    AssignableName parameterName;
+    public AssignableName parameterName;
+    public int parameterIndex;
 
-    public PopParameter(AssignableName parameterName, AST source) {
+    public PopParameter(AssignableName parameterName, AST source, int parameterIndex) {
         super(source);
         this.parameterName = parameterName;
+        this.parameterIndex = parameterIndex;
     }
 
     @Override

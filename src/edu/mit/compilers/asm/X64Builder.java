@@ -3,6 +3,7 @@ package edu.mit.compilers.asm;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class X64Builder {
     private final List<X64Code> x64CodeList;
@@ -23,5 +24,10 @@ public class X64Builder {
 
     public X64Program build() {
         return new X64Program(x64CodeList);
+    }
+
+    @Override
+    public String toString() {
+        return String.join("\n", x64CodeList.stream().map(X64Code::toString).collect(Collectors.joining()));
     }
 }

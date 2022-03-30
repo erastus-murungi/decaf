@@ -9,9 +9,9 @@ import edu.mit.compilers.codegen.names.AssignableName;
 import java.util.List;
 
 public class TwoOperandAssign extends AbstractAssignment {
-    AbstractName fstOperand;
-    String operator;
-    AbstractName sndOperand;
+    public AbstractName fstOperand;
+    public String operator;
+    public AbstractName sndOperand;
 
 
     public TwoOperandAssign(AST source, AssignableName result, AbstractName fstOperand, String operator, AbstractName sndOperand, String comment) {

@@ -12,6 +12,9 @@ public class MethodEnd extends ThreeAddressCode {
         super(methodDefinition);
     }
 
+    public String methodName() {
+        return ((MethodDefinition) source).methodName.id;
+    }
     @Override
     public String toString() {
         return String.format("%s%s %s", DOUBLE_INDENT, "EndFunction", ((MethodDefinition)source).methodName.id);

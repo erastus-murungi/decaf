@@ -1,5 +1,55 @@
 package edu.mit.compilers.asm;
 
+import edu.mit.compilers.grammar.DecafScanner;
+
 public enum X64Instruction {
-    andq, setge, sete, shl, jne, ret, popq, and, cmp, jnz, mov, xor, setle, setg, subq, align, setne, inc, jge, test, call, string, movzx, dec, custom, shr, movl, jz, addq, not, setl, imul, jmp, movq, orq, newline, or, cqto, idiv, neg, leaq, pushq, jl
+    andq, setge, add, sub, sete, shl, jne, ret, cqto, popq, and, cmp, jnz, mov, xor, setle, setg, subq, align, setne, inc, jge, test, call, string, movzx, dec, custom, shr, movl, jz, addq, not, setl, imulq, jmp, movq, orq, newline, or, idivq, neg, leaq, pushq, jl, leave, movzbq;
+
+    public static X64Instruction getX64OperatorCode(String operator) {
+        switch (operator) {
+            case DecafScanner.PLUS:
+                return addq;
+            case DecafScanner.MINUS:
+                return subq;
+            case DecafScanner.DIVIDE:
+                return idivq;
+            case DecafScanner.GEQ:
+            case DecafScanner.GT:
+            case DecafScanner.LT:
+            case DecafScanner.LEQ:
+            case DecafScanner.EQ:
+            case DecafScanner.NEQ:
+                return cmp;
+            case DecafScanner.MULTIPLY:
+                return imulq;
+        }
+        throw new IllegalStateException("operator " + operator + " not found");
+    }
+
+    public static X64Instruction getCorrectComparisonSetInstruction(String operator) {
+        switch (operator) {
+            case DecafScanner.GEQ:
+                return setge;
+            case DecafScanner.GT:
+                return setg;
+            case DecafScanner.LT:
+                return setl;
+            case DecafScanner.LEQ:
+                return setle;
+            case DecafScanner.EQ:
+                return sete;
+            case DecafScanner.NEQ:
+                return setne;
+        }
+        throw new IllegalStateException("operator " + operator + " not found");
+    }
+
+    @Override
+    public String toString() {
+        String s = super.toString();
+        if (s.length() < 4) {
+            s = s + " ".repeat(4 - s.length());
+        }
+        return s;
+    }
 }

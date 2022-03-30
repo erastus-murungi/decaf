@@ -12,6 +12,6 @@ public class StringConstantName extends AbstractName {
 
     @Override
     public String toString() {
-        return stringConstant.label;
+        return "$" + stringConstant.label;
     }
 }

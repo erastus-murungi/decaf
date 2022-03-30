@@ -16,7 +16,7 @@ public enum X64Register {
     R12,
     R13,
     R14,
-    R15;
+    R15, al;
 
     @Override
     public String toString() {
