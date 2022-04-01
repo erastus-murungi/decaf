@@ -1,25 +1,14 @@
 package edu.mit.compilers.cfg;
 
-import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public abstract class CFGBlock {
     public ArrayList<CFGBlock> parents;
     public ArrayList<CFGLine> lines;
-    private ThreeAddressCodeList threeAddressCodeList;
 
-    // to be set later by the ThreeAddressListVisitor
-    public void setThreeAddressCodeList(ThreeAddressCodeList threeAddressCodeList) {
-        this.threeAddressCodeList = threeAddressCodeList;
-    }
-
-    public Optional<ThreeAddressCodeList> getThreeAddressCodeList() {
-        return Optional.of(threeAddressCodeList);
-    }
 
     public CFGBlock() {
         parents = new ArrayList<>();

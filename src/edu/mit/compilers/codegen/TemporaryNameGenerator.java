@@ -12,7 +12,6 @@ public class TemporaryNameGenerator {
     public static void reset() {
         highestValue = Math.max(highestValue, variableIndex);
         variableIndex = -1;
-        labelIndex = -1;
     }
 
     public static int getNextTemporaryVariable() {

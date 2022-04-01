@@ -141,10 +141,10 @@ class Main {
 
 
         CLI.parse(args, new String[0]);
-        CLI.debug = false;
+        CLI.debug = true;
         FileInputStream fileInputStream = null;
         try {
-            fileInputStream = new FileInputStream("tests/codegen/input/03-math.dcf");
+            fileInputStream = new FileInputStream("tests/codegen/test.dcf");
         } catch (FileNotFoundException ex) {
             ex.printStackTrace();
         }
@@ -186,6 +186,12 @@ class Main {
         System.out.println(threeAddressCodeList);
         X64CodeConverter x64CodeConverter = new X64CodeConverter();
         X64Program x64Program = x64CodeConverter.convert(threeAddressCodeList);
+        try {
+            PrintStream printStream = new PrintStream(new FileOutputStream("tests/output.S"));
+            printStream.println(x64Program);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
         System.out.println(x64Program);
     }
 

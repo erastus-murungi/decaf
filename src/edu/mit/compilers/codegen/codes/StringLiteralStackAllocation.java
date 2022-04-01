@@ -26,7 +26,7 @@ public class StringLiteralStackAllocation extends ThreeAddressCode {
     }
 
     public String toString() {
-        return String.format("%s%s:\n%s%s%s\n", INDENT, label, DOUBLE_INDENT, stringConstant, DOUBLE_INDENT + " <<<< " + size() + " bytes");
+        return String.format("%s%s:\n%s%s%s\n", INDENT, label, DOUBLE_INDENT, stringConstant, DOUBLE_INDENT + "#" + size() + " bytes");
     }
 
     @Override

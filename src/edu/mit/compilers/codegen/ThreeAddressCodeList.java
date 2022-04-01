@@ -30,6 +30,10 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode> {
         this.prev = prev;
     }
 
+    public void prepend(ThreeAddressCode code) {
+        codes.add(0, code);
+    }
+
     public ThreeAddressCodeList(AbstractName place, List<ThreeAddressCode> codes) {
         this.place = place;
         this.codes = codes;
