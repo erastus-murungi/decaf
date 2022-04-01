@@ -665,9 +665,6 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         universalThreeAddressCodeList.addCode(conditionalLabel);
         universalThreeAddressCodeList.add(testConditionThreeAddressList);
 
-        if (conditionalLabel.label.equals("L23")) {
-            System.out.println("stop");
-        }
 
         blockToCodeHashMap.put(cfgConditional, universalThreeAddressCodeList);
         ThreeAddressCodeList falseBlock = null, trueBlock = null;
@@ -706,26 +703,6 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         universalThreeAddressCodeList.addCode(
                 new JumpIfFalse(condition, testConditionThreeAddressList.place, falseLabel, "if !(" + cfgConditional.condition.ast.getSourceCode() + ")"));
 
-//        if (trueBlock != null) {
-//            universalThreeAddressCodeList.add(trueBlock);
-//            if (falseBlock != null) {
-//                universalThreeAddressCodeList.addCode(new UnconditionalJump(codeToNextChildMap.getOrDefault(falseBlock, endLabelGlobal)));
-//            }
-//        } else {
-//            universalThreeAddressCodeList.addCode(new UnconditionalJump(endLabelGlobal));
-//        }
-//        if (falseBlock != null) {
-//            // no need for consecutive similar labels
-//            if (!falseBlock.isEmpty() && falseBlock.get(0) instanceof Label) {
-//                String label = ((Label) falseBlock.get(0)).label;
-//                if (!label.equals(falseLabel.label))
-//                    universalThreeAddressCodeList.addCode(falseLabel);
-//            } else {
-//                universalThreeAddressCodeList.addCode(endLabelGlobal);
-//            }
-//            universalThreeAddressCodeList.add(falseBlock);
-//        } else {
-//            universalThreeAddressCodeList.addCode(new UnconditionalJump(endLabelGlobal));
 //        }
         if (trueBlock == null) {
             universalThreeAddressCodeList.addCode(new UnconditionalJump(endLabelGlobal));
@@ -740,6 +717,8 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
                 UnconditionalJump unconditionalJump = (UnconditionalJump) falseBlock.get(0);
                 if (!unconditionalJump.goToLabel.label.equals(falseLabel.label))
                     universalThreeAddressCodeList.addCode(falseLabel);
+            } else {
+                universalThreeAddressCodeList.addCode(falseLabel);
             }
             universalThreeAddressCodeList.add(falseBlock);
         } else {
