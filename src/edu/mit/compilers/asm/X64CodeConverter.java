@@ -37,10 +37,6 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(CopyInstruction copyInstruction, X64Builder x64builder) {
-        if (copyInstruction.dst
-                .toString()
-                .equals("a"))
-            System.out.println("stop");
         return x64builder
                 .addLine(x64InstructionLine(X64Instruction.movq, getLocalVariableStackOffset(copyInstruction.src), X64Register.RAX))
                 .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, getLocalVariableStackOffset(copyInstruction.dst)));
@@ -125,8 +121,8 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
                     .addLine(x64InstructionLine(X64Instruction.call, methodCall.getMethodName()))
                     .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, getLocalVariableStackOffset(methodCall
                             .getResultLocation()
-                            .get())));
-        return x64builder.addLine(x64InstructionLine(X64Instruction.call, methodCall.getMethodName()));
+                            .get()))).addLine(x64InstructionLine(X64Instruction.andl,  "$0xfffffff0", "%esp"));
+        return x64builder.addLine(x64InstructionLine(X64Instruction.call, methodCall.getMethodName())).addLine(x64InstructionLine(X64Instruction.andl,  "$0xfffffff0", "%esp"));
     }
 
     @Override
