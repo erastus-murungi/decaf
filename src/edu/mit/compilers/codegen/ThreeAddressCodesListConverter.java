@@ -704,8 +704,8 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         Label falseLabel = getLabel(cfgConditional.falseChild, conditionLabel);
         Label endLabel = new Label(conditionLabel.label + "end", null);
 
-        if (endLabel.label.equals("L3end"))
-            System.out.println("stop");
+        // if (endLabel.label.equals("L3end"))
+            // System.out.println("stop");
 
         JumpIfFalse jumpIfFalse =
                 new JumpIfFalse(condition,
