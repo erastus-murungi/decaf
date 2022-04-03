@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class DataSectionAllocation extends ThreeAddressCode {
-    public static final int DEFAULT_ALIGNMENT = 8;
+    public static final int DEFAULT_ALIGNMENT = 16;
 
     public final VariableName variableName;
     public final int size;
@@ -37,6 +37,6 @@ public class DataSectionAllocation extends ThreeAddressCode {
 
     @Override
     public String toString() {
-        return String.format("%s.comm _%s,%s,%s %s %s", INDENT, variableName, size, alignment, DOUBLE_INDENT, getComment().get() + " " + type.getSourceCode());
+        return String.format("%s.comm %s,%s,%s %s %s", INDENT, variableName, size, alignment, DOUBLE_INDENT, getComment().orElse(" ") + type.getSourceCode());
     }
 }

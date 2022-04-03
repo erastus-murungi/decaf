@@ -12,23 +12,56 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode> {
     public static final AbstractName UNDEFINED = new VariableName(null, -1);
 
     private ThreeAddressCodeList next;
-    private ThreeAddressCodeList prev;
+
+    public int size() {
+        return codes.size();
+    }
+
+    public int flattenedSize() {
+        return flatten().size();
+    }
 
     public Optional<ThreeAddressCodeList> getNext() {
-        return Optional.of(next);
+        return Optional.ofNullable(next);
     }
 
-    public void setNext(ThreeAddressCodeList next) {
-        this.next = next;
+    public ThreeAddressCodeList flatten() {
+        ThreeAddressCodeList flattenTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
+        ThreeAddressCodeList tacList = this;
+        while (tacList.getNext().isPresent()) {
+            flattenTACList.add(tacList);
+            tacList = tacList.getNext()
+                             .get();
+        }
+        flattenTACList.add(tacList);
+        return flattenTACList;
     }
 
-    public Optional<ThreeAddressCodeList> getPrev() {
-        return Optional.of(prev);
+
+    public static ThreeAddressCodeList of(ThreeAddressCode code) {
+        ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList(UNDEFINED);
+        threeAddressCodeList.addCode(code);
+        return threeAddressCodeList;
+
     }
 
-    public void setPrev(ThreeAddressCodeList prev) {
-        this.prev = prev;
+    public ThreeAddressCode last() {
+        ThreeAddressCodeList flattened = flatten();
+        return flattened.get(flattened.size() - 1);
     }
+
+    public ThreeAddressCode first() {
+        return codes.get(0);
+    }
+
+    public ThreeAddressCodeList setNext(ThreeAddressCodeList next) {
+        ThreeAddressCodeList head = this;
+        while (head.getNext().isPresent())
+            head = head.getNext().get();
+        head.next = next;
+        return next;
+    }
+
 
     public void prepend(ThreeAddressCode code) {
         codes.add(0, code);
@@ -54,7 +87,7 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode> {
     @Override
     public String toString() {
         List<String> list = new ArrayList<>();
-        for (ThreeAddressCode code : codes) {
+        for (ThreeAddressCode code : flatten()) {
             String toString = code.toString();
             list.add(toString);
         }

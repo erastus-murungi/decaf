@@ -6,10 +6,8 @@ import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.ConstantName;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class MethodBegin extends ThreeAddressCode {
     public ConstantName sizeOfLocals;
@@ -38,10 +36,42 @@ public class MethodBegin extends ThreeAddressCode {
         return Collections.emptyList();
     }
 
+    private void reorderLocals() {
+        List<AbstractName> methodParametersNames = new ArrayList<>();
+
+        Set<String> methodParameters = methodDefinition.methodDefinitionParameterList
+                .stream()
+                .map(methodDefinitionParameter -> methodDefinitionParameter.id.id)
+                .collect(Collectors.toSet());
+
+        List<AbstractName> methodParamNamesList = new ArrayList<>();
+        for (AbstractName name : locals)
+            if (methodParameters.contains(name.toString())) {
+                methodParamNamesList.add(name);
+            }
+        for (AbstractName local : locals) {
+            if (methodParameters.contains(local.toString())) {
+                methodParametersNames.add(local);
+            }
+        }
+        for (AbstractName name : methodParametersNames) {
+            locals.remove(name);
+        }
+        locals.addAll(0, methodParamNamesList
+                .stream()
+                .sorted(Comparator.comparing(AbstractName::toString))
+                .collect(Collectors.toList()));
+    }
+
+
     public void setLocals(List<AbstractName> locals) {
         this.locals = locals;
+        reorderLocals();
         this.sizeOfLocals = new ConstantName(
-                2* (long) locals.stream().map(abstractName -> abstractName.size).reduce(0, Integer::sum), BuiltinType.Int.getFieldSize());
+                (long) locals
+                        .stream()
+                        .map(abstractName -> abstractName.size)
+                        .reduce(0, Integer::sum), BuiltinType.Int.getFieldSize());
     }
 
     public List<AbstractName> getLocals() {

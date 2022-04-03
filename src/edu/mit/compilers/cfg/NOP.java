@@ -2,9 +2,21 @@ package edu.mit.compilers.cfg;
 
 import edu.mit.compilers.symbolTable.SymbolTable;
 
+import java.util.Optional;
+
 public class NOP extends CFGNonConditional {
+    String nopLabel;
     public NOP() {
         super(null);
+    }
+
+    public NOP(String label) {
+        super(null);
+        this.nopLabel = label;
+    }
+
+    public Optional<String> getNopLabel() {
+        return Optional.ofNullable(nopLabel);
     }
 
     public<T> T accept(CFGVisitor<T> visitor, SymbolTable symbolTable) {
@@ -13,6 +25,6 @@ public class NOP extends CFGNonConditional {
 
     @Override
     public String getLabel() {
-        return "NOP";
+        return String.format("NOP{%s}", getNopLabel().orElse(""));
     }
 }

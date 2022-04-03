@@ -19,7 +19,7 @@ public class PushParameter extends ThreeAddressCode {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s", DOUBLE_INDENT, "PushParameter", parameterName);
+        return String.format("%s%s %s%s%s", DOUBLE_INDENT, "PushParameter", parameterName, DOUBLE_INDENT, getComment().orElse(""));
     }
 
     @Override

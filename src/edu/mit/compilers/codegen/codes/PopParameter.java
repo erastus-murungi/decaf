@@ -11,15 +11,15 @@ public class PopParameter extends ThreeAddressCode {
     public AssignableName parameterName;
     public int parameterIndex;
 
-    public PopParameter(AssignableName parameterName, AST source, int parameterIndex) {
-        super(source);
+    public PopParameter(AssignableName parameterName, AST source,  int parameterIndex, String comment) {
+        super(source, comment);
         this.parameterName = parameterName;
         this.parameterIndex = parameterIndex;
     }
 
     @Override
     public String toString() {
-        return String.format("%s%s %s", DOUBLE_INDENT, "PopParameter", parameterName);
+        return String.format("%s%s %s%s%s", DOUBLE_INDENT, "PopParameter", parameterName, DOUBLE_INDENT, getComment().orElse(""));
     }
 
     @Override

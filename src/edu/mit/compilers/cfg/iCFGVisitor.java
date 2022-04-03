@@ -10,7 +10,6 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     public CFGNonConditional initialGlobalBlock = new CFGNonConditional();
     public HashMap<String, CFGBlock> methodCFGBlocks = new HashMap<>();
 
-    public Stack<CFGNonConditional> loopStack = new Stack<>(); // keeps track  of how deep we are inside loop structures
     public Stack<CFGNonConditional> breakBlocks = new Stack<>(); // a bunch of break blocks to point to the right place
     public Stack<CFGBlock> continueBlocks = new Stack<>(); // a bunch of continue blocks to point to the right place
 
@@ -79,7 +78,10 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     @Override
     public CFGPair visit(For forStatement, SymbolTable symbolTable) {
         // If false, end with NOP, also end of for_statement
-        CFGNonConditional falseBlock = new NOP();
+        NOP falseBlock = new NOP("For Loop (false) " + forStatement.terminatingCondition.getSourceCode());
+        NOP exit = new NOP("Exit For");
+        falseBlock.autoChild = exit;
+        exit.parents.add(falseBlock);
 
         // For the block, the child of that CFGBlock should be a block with the increment line
         CFGNonConditional incrementBlock = new CFGNonConditional();
@@ -95,10 +97,10 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         continueBlocks.push(incrementBlock);
 
         // If true, run the block.
-        loopStack.add(falseBlock);
         CFGPair truePair = forStatement.block.accept(this, symbolTable);
 
         evaluateBlock.falseChild = falseBlock;
+        evaluateBlock.falseChild.parents.add(evaluateBlock);
 
         evaluateBlock.trueChild = truePair.startBlock;
         truePair.startBlock.parents.add(evaluateBlock);
@@ -124,20 +126,20 @@ public class iCFGVisitor implements Visitor<CFGPair> {
 //        nop.parents.add(falseBlock);
 //        falseBlock.autoChild = nop;
 
-        handleBreaksInLoops();
+        handleBreaksInLoops(falseBlock);
+
         continueBlocks.pop();
-        return new CFGPair(initializeBlock, falseBlock, false);
+        return new CFGPair(initializeBlock, exit, false);
     }
 
-    private void handleBreaksInLoops() {
-        if (!breakBlocks.isEmpty() && !loopStack.isEmpty()) {
-            CFGBlock afterLoop = loopStack.peek();
+    private void handleBreaksInLoops(CFGBlock cfgBlock) {
+        if (!breakBlocks.isEmpty()) {
             for (CFGNonConditional breakBlock: breakBlocks) {
-                breakBlock.autoChild = afterLoop;
-                afterLoop.parents.add(breakBlock);
+                breakBlock.autoChild = cfgBlock;
+                cfgBlock.parents.add(breakBlock);
             }
         }
-        loopStack.pop();
+        breakBlocks.clear();
     }
 
     @Override
@@ -162,7 +164,6 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         CFGConditional conditionExpr = new CFGConditional(cfgExpression);
         conditionExpr.falseChild = falseBlock;
         falseBlock.parents.add(conditionExpr);
-        loopStack.add(falseBlock);
 
         // In for loops, continue should point to the evaluation expression
         continueBlocks.push(conditionExpr);
@@ -177,7 +178,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
             conditionExpr.parents.add(truePair.endBlock);
         }
 
-        handleBreaksInLoops();
+        handleBreaksInLoops(falseBlock);
         continueBlocks.pop();
         return new CFGPair(conditionExpr, falseBlock);
     }
@@ -217,6 +218,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         throw new IllegalStateException("we cannot visit " + binaryOpExpression.getClass().getSimpleName());
     }
 
+
     @Override
     public CFGPair visit(Block block, SymbolTable symbolTable) {
         NOP initial = new NOP();
@@ -230,6 +232,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
             placeholder.startBlock.parents.add(curPair.endBlock);
             curPair = placeholder;
         }
+
         for (Statement statement : block.statementList) {
             if (statement instanceof Continue) {
                 // will return a NOP() for sure because Continue blocks should be pointers back to the evaluation block
@@ -243,11 +246,11 @@ public class iCFGVisitor implements Visitor<CFGPair> {
             }
             if (statement instanceof Break) {
                 // a break is not a real block either
-                CFGNonConditional breakCfg = new NOP();
+                CFGNonConditional breakCfg = new NOP("Break");
                 breakBlocks.add(breakCfg);
                 breakCfg.parents.add(curPair.endBlock);
                 curPair.endBlock.autoChild = breakCfg;
-                return new CFGPair(initial, breakCfg);
+                return new CFGPair(initial, breakCfg, false);
             }
             if (statement instanceof Return) {
                 CFGPair returnPair = statement.accept(this, symbolTable);

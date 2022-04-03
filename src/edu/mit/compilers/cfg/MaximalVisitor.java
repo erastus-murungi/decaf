@@ -62,14 +62,8 @@ public class MaximalVisitor implements CFGVisitor<CFGBlock> {
     public CFGBlock visit(CFGConditional cfgConditional, SymbolTable symbolTable) {
         if (!visited.containsKey(cfgConditional)) {
             visited.put(cfgConditional, 1);
-            cfgConditional.trueChild.accept(this, symbolTable);
-            cfgConditional.falseChild.accept(this, symbolTable);
-            // Absorb the NOPs
-            if (cfgConditional.trueChild instanceof NOP)
-                cfgConditional.trueChild = ((NOP) cfgConditional.trueChild).autoChild;
-            if (cfgConditional.falseChild instanceof NOP)
-                cfgConditional.falseChild = ((NOP) cfgConditional.falseChild).autoChild;
-//            return cfgConditional;
+            cfgConditional.trueChild = cfgConditional.trueChild.accept(this, symbolTable);
+            cfgConditional.falseChild = cfgConditional.falseChild.accept(this, symbolTable);
         }
         visited.put(cfgConditional, visited.get(cfgConditional) + 1);
         return cfgConditional;
@@ -77,7 +71,11 @@ public class MaximalVisitor implements CFGVisitor<CFGBlock> {
 
     @Override
     public CFGBlock visit(NOP nop, SymbolTable symbolTable) {
-        visit((CFGNonConditional) nop, symbolTable);
-        return nop.autoChild;
+        CFGBlock block = nop.autoChild;
+        while (block instanceof NOP)
+            block = ((NOP) block).autoChild;
+        if (block instanceof CFGNonConditional)
+            return visit((CFGNonConditional) block, symbolTable);
+        return block;
     }
 }

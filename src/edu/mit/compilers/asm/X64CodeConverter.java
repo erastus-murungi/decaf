@@ -13,9 +13,10 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     private boolean textAdded = false;
     private final Set<AbstractName> globals = new HashSet<>();
     private final Stack<MethodBegin> callStack = new Stack<>();
-    public final int WORD_SIZE = 8;
-    public final int MAXIMUM_NUMBER_OF_REG_ARGUMENTS = 6;
+    public final int N_ARG_REGISTERS = 6;
     public String lastComparisonOperator = null;
+    private ConstantName ZERO = new ConstantName(0L, 8);
+    private ConstantName ONE = new ConstantName(1L, 8);
 
     public X64Program convert(ThreeAddressCodeList threeAddressCodeList) {
         X64Builder x64Builder = initializeDataSection();
@@ -36,6 +37,10 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(CopyInstruction copyInstruction, X64Builder x64builder) {
+        if (copyInstruction.dst
+                .toString()
+                .equals("a"))
+            System.out.println("stop");
         return x64builder
                 .addLine(x64InstructionLine(X64Instruction.movq, getLocalVariableStackOffset(copyInstruction.src), X64Register.RAX))
                 .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, getLocalVariableStackOffset(copyInstruction.dst)));
@@ -43,8 +48,13 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(JumpIfFalse jumpIfFalse, X64Builder x64builder) {
+        if (lastComparisonOperator == null) {
+            return x64builder
+                    .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, getLocalVariableStackOffset(jumpIfFalse.condition)))
+                    .addLine(x64InstructionLine(X64Instruction.je, x64Label(jumpIfFalse.trueLabel)));
+        }
         return x64builder.addLine(
-                x64InstructionLine(X64Instruction.getCorrectJumpIfFalseInstruction(lastComparisonOperator), "." + jumpIfFalse.trueLabel.label));
+                x64InstructionLine(X64Instruction.getCorrectJumpIfFalseInstruction(lastComparisonOperator), x64Label(jumpIfFalse.trueLabel)));
     }
 
     @Override
@@ -68,7 +78,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     }
 
     public X64Code x64Label(Label label) {
-        return new X64Code("." + label.label + ":");
+        return new X64Code("." + label.label);
     }
 
     public X64Code x64BlankLine() {
@@ -113,7 +123,9 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
                 .isPresent())
             return x64builder
                     .addLine(x64InstructionLine(X64Instruction.call, methodCall.getMethodName()))
-                    .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, getLocalVariableStackOffset(methodCall.getResultLocation().get())));
+                    .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, getLocalVariableStackOffset(methodCall
+                            .getResultLocation()
+                            .get())));
         return x64builder.addLine(x64InstructionLine(X64Instruction.call, methodCall.getMethodName()));
     }
 
@@ -173,24 +185,47 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(PushParameter pushParameter, X64Builder x64builder) {
-        if (pushParameter.parameterIndex < MAXIMUM_NUMBER_OF_REG_ARGUMENTS)
-            return x64builder.addLine(x64InstructionLine(X64Instruction.movq, getLocalVariableStackOffset(pushParameter.parameterName), X64Register.argumentRegs[pushParameter.parameterIndex]));
+        if (pushParameter.parameterIndex < N_ARG_REGISTERS)
+            return x64builder.addLine(x64InstructionLine(X64Instruction.movq,
+                    getLocalVariableStackOffset(pushParameter.parameterName),
+                    X64Register.argumentRegs[pushParameter.parameterIndex]));
         else
-            return x64builder
-                    .addLine(x64InstructionLine(X64Instruction.movq, getLocalVariableStackOffset(pushParameter.parameterName), X64Register.R12))
-                    .addLine(x64InstructionLine(X64Instruction.movq, X64Register.R12, getRbpArgumentIndex(16 + WORD_SIZE * (pushParameter.parameterIndex + 2 - MAXIMUM_NUMBER_OF_REG_ARGUMENTS))));
+            return x64builder.addLine(x64InstructionLine(X64Instruction.pushq, getLocalVariableStackOffset(pushParameter.parameterName)));
+//            return x64builder
+//                    .addLine(x64InstructionLine(
+//                            X64Instruction.movq,
+//                            getLocalVariableStackOffset(pushParameter.parameterName),
+//                            X64Register.R12))
+//                    .addLine(x64InstructionLine(
+//                            X64Instruction.movq,
+//                            X64Register.R12,
+//                            getRbpCallingArgument(16 + 8 * (pushParameter.parameterIndex + 1 - N_ARG_REGISTERS))));
     }
 
     @Override
     public X64Builder visit(PopParameter popParameter, X64Builder x64builder) {
-        if (popParameter.parameterIndex < MAXIMUM_NUMBER_OF_REG_ARGUMENTS)
-            return x64builder.addLine(x64InstructionLine(X64Instruction.movq, X64Register.argumentRegs[popParameter.parameterIndex], getLocalVariableStackOffset(popParameter.parameterName)));
+        if (popParameter.parameterIndex < N_ARG_REGISTERS)
+            return x64builder
+                    .addLine(x64InstructionLine(X64Instruction.movq,
+                            X64Register.argumentRegs[popParameter.parameterIndex],
+                            getLocalVariableStackOffset(popParameter.parameterName)));
         else
-             return x64builder.addLine(x64InstructionLine(X64Instruction.movq, getRbpArgumentIndex(16 + WORD_SIZE * (popParameter.parameterIndex + 2 - MAXIMUM_NUMBER_OF_REG_ARGUMENTS)), X64Register.R12))
-                .addLine(x64InstructionLine(X64Instruction.movq, X64Register.R12, getLocalVariableStackOffset(popParameter.parameterName)));
+            return x64builder
+                    .addLine(x64InstructionLine(
+                            X64Instruction.movq,
+                            getRbpCalledArgument((popParameter.parameterIndex + 1 - N_ARG_REGISTERS) * 8 + 8),
+                            X64Register.R12))
+                    .addLine(x64InstructionLine(
+                            X64Instruction.movq,
+                            X64Register.R12,
+                            getLocalVariableStackOffset(popParameter.parameterName)));
     }
 
-    public String getRbpArgumentIndex(int index) {
+    public String getRbpCalledArgument(int index) {
+        return String.format("%s(%s)", index, X64Register.RBP);
+    }
+
+    public String getRbpCallingArgument(int index) {
         return String.format("%s(%s)", index, X64Register.RBP);
     }
 
@@ -266,7 +301,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(UnconditionalJump unconditionalJump, X64Builder x64builder) {
-        return x64builder.addLine(x64InstructionLine(X64Instruction.jmp, "." + unconditionalJump.goToLabel.label));
+        return x64builder.addLine(x64InstructionLine(X64Instruction.jmp, x64Label(unconditionalJump.goToLabel)));
     }
 
     @Override

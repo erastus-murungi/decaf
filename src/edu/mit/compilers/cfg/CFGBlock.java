@@ -21,7 +21,7 @@ public abstract class CFGBlock {
         else if (this instanceof NOP)
             return visitor.visit((NOP)this, symbolTable);
         else return visitor.visit((CFGNonConditional) this, symbolTable);
-    };
+    }
 
     public String getLabel() {
         List<String> list = new ArrayList<>();
