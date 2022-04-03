@@ -153,20 +153,20 @@ class Main {
         DecafExceptionProcessor decafExceptionProcessor = new DecafExceptionProcessor(sourceCode);
         DecafScanner scanner = new DecafScanner(sourceCode, decafExceptionProcessor);
         DecafParser parser = new DecafParser(scanner);
-//        parser.setTrace(CLI.debug);
-//        if (parser.hasError()) {
-//            System.out.println(parser);
-//            System.exit(1);
-//        }
+       parser.setTrace(CLI.debug);
+       if (parser.hasError()) {
+           System.out.println(parser);
+           System.exit(1);
+       }
         parser.program();
         Program programNode = parser.getRoot();
         DecafSemanticChecker semChecker = new DecafSemanticChecker(programNode);
         semChecker.setTrace(CLI.debug);
         semChecker.runChecks(decafExceptionProcessor);
-//        if (semChecker.hasError()) {
-//            semChecker.printAllExceptions(decafExceptionProcessor);
-//            System.exit(1);
-//        }
+       if (semChecker.hasError()) {
+           semChecker.printAllExceptions(decafExceptionProcessor);
+           System.exit(1);
+       }
         CFGGenerator cfgGenerator = new CFGGenerator(programNode, semChecker.globalDescriptor);
         iCFGVisitor visitor = cfgGenerator.buildiCFG();
 //        if (CLI.debug) {
