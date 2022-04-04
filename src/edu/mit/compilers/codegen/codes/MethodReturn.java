@@ -6,6 +6,8 @@ import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,6 +38,8 @@ public class MethodReturn extends ThreeAddressCode {
 
     @Override
     public List<AbstractName> getNames() {
+        if (returnAddress == null)
+            return Collections.emptyList();
         return List.of(returnAddress);
     }
 }
