@@ -56,6 +56,22 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     }
 
     @Override
+    public X64Builder visit(ArrayBoundsCheck arrayBoundsCheck, X64Builder x64builder) {
+        return x64builder
+                .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, getLocalVariableStackOffset(arrayBoundsCheck.location)))
+                .addLine(x64InstructionLine(X64Instruction.jl, x64Label(arrayBoundsCheck.boundsBad)))
+                // diff btwn mov and movq?
+                .addLine(x64InstructionLine(X64Instruction.mov, getLocalVariableStackOffset(arrayBoundsCheck.location), X64Register.RAX))
+                .addLine(x64InstructionLine(X64Instruction.cmp, "$"+arrayBoundsCheck.arraySize, X64Register.RAX))
+                .addLine(x64InstructionLine(X64Instruction.jge, x64Label(arrayBoundsCheck.boundsBad)))
+                .addLine(x64InstructionLine(X64Instruction.jmp, x64Label(arrayBoundsCheck.boundsGood)))
+                // TODO: handle bound error code
+                .addLine(x64InstructionLine(X64Instruction.mov, "$1", X64Register.RAX))
+                .addLine(x64InstructionLine(X64Instruction.call, "exit"))
+                .addLine(x64InstructionLine(x64Label(arrayBoundsCheck.boundsGood)));
+    }
+
+    @Override
     public X64Builder visit(Label label, X64Builder x64builder) {
         return x64builder.addLine(new X64Code("." + label.label + ":"));
     }
