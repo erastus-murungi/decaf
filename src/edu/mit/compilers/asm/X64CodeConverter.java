@@ -1,5 +1,6 @@
 package edu.mit.compilers.asm;
 
+import edu.mit.compilers.ast.MethodDefinition;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.codes.*;
@@ -11,7 +12,8 @@ import java.util.stream.Collectors;
 public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64Builder> {
 
     private boolean textAdded = false;
-    private final Set<DataSectionAllocation> globals = new HashSet<>();
+    private final Set<DataSectionAllocation> globalsDataSection = new HashSet<>();
+    private final Set<AbstractName> globals = new HashSet<>();
     private final Stack<MethodBegin> callStack = new Stack<>();
     public final int N_ARG_REGISTERS = 6;
     public String lastComparisonOperator = null;
@@ -120,9 +122,13 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
         if (methodName.equals("main"))
             x64builder = x64builder.addLine(new X64Code(".globl main"));
 
-        for (DataSectionAllocation globalVariable : globals)
+        for (DataSectionAllocation globalVariable : globalsDataSection)
             for (int i = 0; i < globalVariable.size; i += 8)
                 x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, i + " + " + globalVariable.variableName));
+
+        for (AbstractName name : globals)
+            for (int i = 0; i < name.size; i += 8)
+                x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, i + " + " + getLocalVariableStackOffset(name)));
 
         callStack.push(methodBegin);
         return saveBaseAndStackPointer(x64builder.addLine(new X64Code(methodName + ":")))
@@ -323,7 +329,8 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(DataSectionAllocation dataSectionAllocation, X64Builder x64builder) {
-        globals.add(dataSectionAllocation);
+        globalsDataSection.add(dataSectionAllocation);
+        globals.add(dataSectionAllocation.variableName);
         return x64builder.addLine(new X64Code(dataSectionAllocation.toString()));
     }
 }
