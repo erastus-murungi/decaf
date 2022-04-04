@@ -146,6 +146,18 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             return parenthesizedExpression.expression.accept(this, symbolTable);
         }
 
+
+        private void addArrayAccessBoundsCheck(
+                ThreeAddressCodeList threeAddressCodeList,
+                VariableName variableName,
+                long arraySize
+        ) {
+            final String boundsIndex = TemporaryNameGenerator.getNextBoundsCheckLabel();
+            Label boundsBad = new Label("LTZero" + boundsIndex, null);
+            Label boundsGood = new Label("LTEArraySize" + boundsIndex, null);
+            threeAddressCodeList.addCode(new ArrayBoundsCheck(null, null, arraySize, variableName, boundsBad, boundsGood));
+        }
+
         @Override
         public ThreeAddressCodeList visit(LocationArray locationArray, SymbolTable symbolTable) {
             ThreeAddressCodeList locationThreeAddressCodeList = locationArray.expression.accept(this, symbolTable);
@@ -158,6 +170,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             } else {
                 ArrayDescriptor arrayDescriptor = (ArrayDescriptor) descriptorFromValidScopes.get();
                 ArrayAccess arrayAccess = new ArrayAccess(locationArray, locationArray.getSourceCode(), new VariableName(locationArray.name.id, arrayDescriptor.size * 16), new ConstantName(arrayDescriptor.size, 8), locationThreeAddressCodeList.place);
+                addArrayAccessBoundsCheck(threeAddressCodeList, arrayAccess.arrayName, arrayAccess.arrayLength.size);
                 threeAddressCodeList.addCode(arrayAccess);
                 threeAddressCodeList.place = arrayAccess.arrayName;
                 return threeAddressCodeList;
@@ -555,7 +568,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
                 long size = (fieldDeclaration.builtinType.getFieldSize() * array.size.convertToLong());
                 threeAddressCodeList.addCode(new DataSectionAllocation(array, "# " + array.getSourceCode(),
                         new VariableName(array.id.id,
-                        size), size, fieldDeclaration.builtinType));
+                                size), size, fieldDeclaration.builtinType));
             }
         }
         return threeAddressCodeList;

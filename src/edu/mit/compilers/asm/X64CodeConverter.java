@@ -61,17 +61,21 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     @Override
     public X64Builder visit(ArrayBoundsCheck arrayBoundsCheck, X64Builder x64builder) {
         return x64builder
-                .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, resolveLoadLocation(arrayBoundsCheck.location)))
-                .addLine(x64InstructionLine(X64Instruction.jl, x64Label(arrayBoundsCheck.boundsBad)))
-                // diff btwn mov and movq?
-                .addLine(x64InstructionLine(X64Instruction.mov, resolveLoadLocation(arrayBoundsCheck.location), X64Register.RAX))
-                .addLine(x64InstructionLine(X64Instruction.cmp, "$" + arrayBoundsCheck.arraySize, X64Register.RAX))
-                .addLine(x64InstructionLine(X64Instruction.jge, x64Label(arrayBoundsCheck.boundsBad)))
-                .addLine(x64InstructionLine(X64Instruction.jmp, x64Label(arrayBoundsCheck.boundsGood)))
-                // TODO: handle bound error code
-                .addLine(x64InstructionLine(X64Instruction.mov, "$1", X64Register.RAX))
+                .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(arrayBoundsCheck.location), X64Register.R13))
+                .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, X64Register.R13))
+                .addLine(x64InstructionLine(X64Instruction.jge, x64Label(arrayBoundsCheck.indexIsLTEZero)))
+                .addLine(x64InstructionLine(X64Instruction.movl, ONE, "%edi"))
                 .addLine(x64InstructionLine(X64Instruction.call, "exit"))
-                .addLine(x64InstructionLine(x64Label(arrayBoundsCheck.boundsGood)));
+
+                .addLine(new X64Code("." + arrayBoundsCheck.indexIsLTEZero.label + ":\n"))
+
+                .addLine(x64InstructionLine(X64Instruction.cmp, "$" + arrayBoundsCheck.arraySize, X64Register.R13))
+                .addLine(x64InstructionLine(X64Instruction.jl, x64Label(arrayBoundsCheck.indexIsLessThanArraySize)))
+
+                .addLine(x64InstructionLine(X64Instruction.movl, ONE, "%edi"))
+                .addLine(x64InstructionLine(X64Instruction.call, "exit"))
+
+                .addLine(new X64Code("." + arrayBoundsCheck.indexIsLessThanArraySize.label + ":\n"));
     }
 
     @Override
