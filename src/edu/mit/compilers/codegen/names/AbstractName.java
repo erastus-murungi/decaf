@@ -3,10 +3,10 @@ package edu.mit.compilers.codegen.names;
 import java.util.Objects;
 
 public class AbstractName {
-    public int size;
+    public int wordSize;
 
-    public AbstractName(int size) {
-        this.size = size;
+    public AbstractName(int wordSize) {
+        this.wordSize = wordSize;
     }
 
     @Override
@@ -21,6 +21,6 @@ public class AbstractName {
 
     @Override
     public int hashCode() {
-        return Objects.hash(size);
+        return Objects.hash(wordSize);
     }
 }

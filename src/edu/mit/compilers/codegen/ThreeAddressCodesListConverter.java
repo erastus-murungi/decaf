@@ -156,16 +156,25 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             if (descriptorFromValidScopes.isEmpty()) {
                 throw new IllegalStateException("expected to find array " + locationArray.name.id + " in scope");
             } else {
+
                 ArrayDescriptor arrayDescriptor = (ArrayDescriptor) descriptorFromValidScopes.get();
-                TemporaryName widthOfField = TemporaryName.generateTemporaryName((int) (arrayDescriptor.size * arrayDescriptor.type.getFieldSize()));
-                threeAddressCodeList.addCode(new CopyInstruction(new ConstantName((long) arrayDescriptor.type.getFieldSize(), arrayDescriptor.type.getFieldSize()), widthOfField, locationArray));
-                TemporaryName offsetResult = TemporaryName.generateTemporaryName(BuiltinType.Int.getFieldSize());
-                threeAddressCodeList.addCode(new TwoOperandAssign(null, offsetResult, locationThreeAddressCodeList.place, DecafScanner.MULTIPLY, widthOfField, "offset"));
                 TemporaryName locationResult = TemporaryName.generateTemporaryName(arrayDescriptor.type.getFieldSize());
-                //
-                threeAddressCodeList.addCode(new TwoOperandAssign(null, locationResult, new VariableName(locationArray.name.id, arrayDescriptor.type.getFieldSize()), DecafScanner.PLUS, offsetResult, "array location"));
+                ArrayName arrayName = getArrayName(locationArray, symbolTable, locationThreeAddressCodeList.place);
+                threeAddressCodeList.addCode(new CopyInstruction(arrayName, locationResult, locationArray, locationArray.getSourceCode()));
                 threeAddressCodeList.place = locationResult;
                 return threeAddressCodeList;
+
+            }
+        }
+
+        public ArrayName getArrayName(LocationArray locationArray, SymbolTable symbolTable, AbstractName index) {
+            Optional<Descriptor> descriptorFromValidScopes = symbolTable.getDescriptorFromValidScopes(locationArray.name.id);
+            if (descriptorFromValidScopes.isEmpty()) {
+                throw new IllegalStateException("expected to find array " + locationArray.name.id + " in scope");
+            } else {
+                // let's create a new array access
+                ArrayDescriptor arrayDescriptor = (ArrayDescriptor) descriptorFromValidScopes.get();
+                return new ArrayName(locationArray.name.id, 8, arrayDescriptor.size, index);
             }
         }
 
@@ -250,11 +259,27 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             return threeAddressCodeList;
         }
 
+        private ThreeAddressCodeList handleLocationArray(ThreeAddressCodeList threeAddressCodes,
+                                                         LocationArray locationArray,
+                                                         SymbolTable symbolTable,
+                                                         AbstractName rhsPlace,
+                                                         AbstractName index) {
+            final ArrayName arrayName = getArrayName(locationArray, symbolTable, index);
+            threeAddressCodes.addCode(new CopyInstruction(rhsPlace, arrayName, locationArray, locationArray.getSourceCode()));
+            threeAddressCodes.place = arrayName;
+            return threeAddressCodes;
+        }
+
         @Override
         public ThreeAddressCodeList visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable) {
             ThreeAddressCodeList lhs = locationAssignExpr.location.accept(this, symbolTable);
-            AssignableName locationVariable = (AssignableName) lhs.place;
             ThreeAddressCodeList rhs = locationAssignExpr.assignExpr.accept(this, symbolTable);
+            if (locationAssignExpr.location instanceof LocationArray) {
+                ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
+                threeAddressCodeList.add(lhs);
+                return handleLocationArray(threeAddressCodeList, (LocationArray) locationAssignExpr.location, symbolTable, rhs.place, lhs.place);
+            }
+            AssignableName locationVariable = (AssignableName) lhs.place;
             AbstractName valueVariable = rhs.place;
             lhs.add(rhs);
             lhs.addCode(new CopyInstruction(valueVariable, locationVariable, locationAssignExpr, locationAssignExpr.getSourceCode()));
@@ -322,7 +347,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         public ThreeAddressCodeList visit(StringLiteral stringLiteral, SymbolTable symbolTable) {
             StringLiteralStackAllocation label = literalStackAllocationHashMap.get(stringLiteral.literal);
             StringConstantName stringConstantName = new StringConstantName(label);
-            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName(stringConstantName.size);
+            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName(stringConstantName.wordSize);
             return new ThreeAddressCodeList(
                     temporaryVariable,
                     Collections.singletonList(
@@ -369,8 +394,17 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
                 threeAddressCodeList.place = lhs.place;
                 return threeAddressCodeList;
             }
-
             ThreeAddressCodeList rhs = assignment.assignExpr.expression.accept(this, symbolTable);
+            if (assignment.location instanceof LocationArray) {
+                final LocationArray location = (LocationArray) assignment.location;
+                final ThreeAddressCodeList index = location.expression.accept(this, symbolTable);
+                if (assignment.location instanceof LocationArray) {
+                    ThreeAddressCodeList codeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
+                    codeList.add(index);
+                    codeList.add(rhs);
+                    return handleLocationArray(codeList, location, symbolTable, rhs.place, index.place);
+                }
+            }
             ThreeAddressCodeList lhs = assignment.location.accept(this, symbolTable);
             threeAddressCodeList.add(rhs);
             threeAddressCodeList.add(lhs);
@@ -545,13 +579,13 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             for (Name name : fieldDeclaration.names) {
                 threeAddressCodeList.addCode(new DataSectionAllocation(name, "# " + name.getSourceCode(), new VariableName(name.id, symbolTable
                         .getDescriptorFromValidScopes(name.id)
-                        .get().type.getFieldSize()), fieldDeclaration.builtinType.getFieldSize(), fieldDeclaration.builtinType));
+                        .get().type.getFieldSize()), fieldDeclaration.builtinType));
             }
-            for (Array array : fieldDeclaration.arrays) {
-                threeAddressCodeList.addCode(new DataSectionAllocation(array, "# " + array.getSourceCode(), new VariableName(array.id.id, symbolTable
-                        .getDescriptorFromValidScopes(array.id.id)
-                        .get().type.getFieldSize()), (int) (fieldDeclaration.builtinType.getFieldSize() * array.size.convertToLong()), fieldDeclaration.builtinType));
-            }
+//            for (Array array : fieldDeclaration.arrays) {
+//                threeAddressCodeList.addCode(new DataSectionAllocation(array, "# " + array.getSourceCode(), new VariableName(array.id.id, symbolTable
+//                        .getDescriptorFromValidScopes(array.id.id)
+//                        .get().type.getFieldSize()), (int) (fieldDeclaration.builtinType.getFieldSize() * array.size.convertToLong()), fieldDeclaration.builtinType));
+//            }
         }
         return threeAddressCodeList;
     }

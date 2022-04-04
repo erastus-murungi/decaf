@@ -8,6 +8,7 @@ import java.util.List;
 
 public class LocationArray extends Location {
     public final Expression expression;
+
     public LocationArray(Name name, Expression expression) {
         super(name);
         this.expression = expression;

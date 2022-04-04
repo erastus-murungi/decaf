@@ -3,8 +3,6 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.*;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.ConstantName;
-import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -67,7 +65,7 @@ public class MethodBegin extends ThreeAddressCode {
     public void setLocals(List<AbstractName> locals) {
         this.locals = locals;
         reorderLocals();
-        this.sizeOfLocals = (long) locals.stream().map(abstractName -> abstractName.size).reduce(0, Integer::sum);
+        this.sizeOfLocals = (long) locals.stream().map(abstractName -> abstractName.wordSize).reduce(0, Integer::sum);
     }
 
     public List<AbstractName> getLocals() {
