@@ -112,7 +112,7 @@ public class DecafParser {
         if (getCurrentTokenType() == CONDITIONAL_OR) {
             TokenPosition tokenPosition = consumeTokenNoCheck().tokenPosition();
             Expression rhs = parseOrExpr();
-            return new BinaryOpExpression(lhs, new ConditionalOperator(tokenPosition, DecafScanner.CONDITIONAL_OR), rhs);
+            return BinaryOpExpression.of(lhs, new ConditionalOperator(tokenPosition, DecafScanner.CONDITIONAL_OR), rhs);
         }
         return lhs;
     }
@@ -122,7 +122,7 @@ public class DecafParser {
         if (getCurrentTokenType() == CONDITIONAL_AND) {
             TokenPosition tokenPosition = consumeTokenNoCheck().tokenPosition();
             Expression rhs = parseAndExpr();
-            return new BinaryOpExpression(lhs, new ConditionalOperator(tokenPosition, DecafScanner.CONDITIONAL_AND), rhs);
+            return BinaryOpExpression.of(lhs, new ConditionalOperator(tokenPosition, DecafScanner.CONDITIONAL_AND), rhs);
         }
         return lhs;
     }
@@ -133,9 +133,9 @@ public class DecafParser {
             Token token = consumeTokenNoCheck();
             Expression rhs = parseEqualityExpr();
             if (token.tokenType() == EQ) {
-                return new BinaryOpExpression(lhs, new EqualityOperator(token.tokenPosition(), DecafScanner.EQ), rhs);
+                return BinaryOpExpression.of(lhs, new EqualityOperator(token.tokenPosition(), DecafScanner.EQ), rhs);
             } else {
-                return new BinaryOpExpression(lhs, new EqualityOperator(token.tokenPosition(), DecafScanner.NEQ), rhs);
+                return BinaryOpExpression.of(lhs, new EqualityOperator(token.tokenPosition(), DecafScanner.NEQ), rhs);
             }
         }
         return lhs;
@@ -151,10 +151,10 @@ public class DecafParser {
             Token token = consumeTokenNoCheck();
             Expression rhs = parseRelationalExpr();
             switch (token.tokenType()) {
-                case GT: return new BinaryOpExpression(lhs, new RelationalOperator(token.tokenPosition(), DecafScanner.GT), rhs);
-                case LT: return new BinaryOpExpression(lhs, new RelationalOperator(token.tokenPosition(), DecafScanner.LT), rhs);
-                case LEQ: return new BinaryOpExpression(lhs, new RelationalOperator(token.tokenPosition(), DecafScanner.LEQ), rhs);
-                default: return new BinaryOpExpression(lhs, new RelationalOperator(token.tokenPosition(), DecafScanner.GEQ), rhs);
+                case GT: return BinaryOpExpression.of(lhs, new RelationalOperator(token.tokenPosition(), DecafScanner.GT), rhs);
+                case LT: return BinaryOpExpression.of(lhs, new RelationalOperator(token.tokenPosition(), DecafScanner.LT), rhs);
+                case LEQ: return BinaryOpExpression.of(lhs, new RelationalOperator(token.tokenPosition(), DecafScanner.LEQ), rhs);
+                default: return BinaryOpExpression.of(lhs, new RelationalOperator(token.tokenPosition(), DecafScanner.GEQ), rhs);
             }
         }
         return lhs;
@@ -166,9 +166,9 @@ public class DecafParser {
             Token token = consumeTokenNoCheck();
             Expression rhs = parseEqualityExpr();
             if (token.tokenType() == PLUS) {
-                return new BinaryOpExpression(lhs, new ArithmeticOperator(token.tokenPosition(), DecafScanner.PLUS), rhs);
+                return BinaryOpExpression.of(lhs, new ArithmeticOperator(token.tokenPosition(), DecafScanner.PLUS), rhs);
             } else {
-                return new BinaryOpExpression(lhs, new ArithmeticOperator(token.tokenPosition(), DecafScanner.MINUS), rhs);
+                return BinaryOpExpression.of(lhs, new ArithmeticOperator(token.tokenPosition(), DecafScanner.MINUS), rhs);
             }
         }
         return lhs;
@@ -183,9 +183,9 @@ public class DecafParser {
             Token token = consumeTokenNoCheck();
             Expression rhs = parseMulDivRemExpr();
             switch (token.tokenType()) {
-                case MOD: return new BinaryOpExpression(lhs, new ArithmeticOperator(token.tokenPosition(), DecafScanner.MOD), rhs);
-                case MULTIPLY: return new BinaryOpExpression(lhs, new ArithmeticOperator(token.tokenPosition(), DecafScanner.MULTIPLY), rhs);
-                default: return new BinaryOpExpression(lhs, new ArithmeticOperator(token.tokenPosition(), DecafScanner.DIVIDE), rhs);
+                case MOD: return BinaryOpExpression.of(lhs, new ArithmeticOperator(token.tokenPosition(), DecafScanner.MOD), rhs);
+                case MULTIPLY: return BinaryOpExpression.of(lhs, new ArithmeticOperator(token.tokenPosition(), DecafScanner.MULTIPLY), rhs);
+                default: return BinaryOpExpression.of(lhs, new ArithmeticOperator(token.tokenPosition(), DecafScanner.DIVIDE), rhs);
             }
         }
         return lhs;
@@ -245,6 +245,8 @@ public class DecafParser {
             }
         }
     }
+
+
 
     private void parseFieldDeclarationGroup(List<Name> variables, List<Array> arrays, Name nameId) throws DecafParserException {
         if (getCurrentToken().tokenType() == LEFT_SQUARE_BRACKET) {

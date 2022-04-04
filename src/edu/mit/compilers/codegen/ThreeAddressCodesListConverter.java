@@ -162,6 +162,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
                 TemporaryName offsetResult = TemporaryName.generateTemporaryName(BuiltinType.Int.getFieldSize());
                 threeAddressCodeList.addCode(new TwoOperandAssign(null, offsetResult, locationThreeAddressCodeList.place, DecafScanner.MULTIPLY, widthOfField, "offset"));
                 TemporaryName locationResult = TemporaryName.generateTemporaryName(arrayDescriptor.type.getFieldSize());
+                //
                 threeAddressCodeList.addCode(new TwoOperandAssign(null, locationResult, new VariableName(locationArray.name.id, arrayDescriptor.type.getFieldSize()), DecafScanner.PLUS, offsetResult, "array location"));
                 threeAddressCodeList.place = locationResult;
                 return threeAddressCodeList;
@@ -418,7 +419,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
                 AST source
         ) {
             ThreeAddressCodeList updateExprTAC;
-            BinaryOpExpression binaryOpExpression = new BinaryOpExpression(lhs, binOperator, rhs);
+            BinaryOpExpression binaryOpExpression = BinaryOpExpression.of(lhs, binOperator, rhs);
             binaryOpExpression.builtinType = symbolTable
                     .getDescriptorFromValidScopes(locationId)
                     .get().type;

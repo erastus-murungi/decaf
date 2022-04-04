@@ -103,6 +103,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(MethodBegin methodBegin, X64Builder x64builder) {
+        lastComparisonOperator = null;
         if (!textAdded) {
             x64builder = x64builder.addLine(new X64Code(".text"));
             textAdded = true;
