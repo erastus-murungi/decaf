@@ -30,9 +30,9 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         @Override
         public ThreeAddressCodeList visit(IntLiteral intLiteral, SymbolTable symbolTable) {
             TemporaryName temporaryVariable = TemporaryName.generateTemporaryName(BuiltinType.Int.getFieldSize());
-            return new ThreeAddressCodeList(
-                    temporaryVariable,
-                    Collections.singletonList(new CopyInstruction(ConstantName.fromIntLiteral(intLiteral), temporaryVariable, intLiteral)));
+            return ThreeAddressCodeList.of(
+                    new CopyInstruction(ConstantName.fromIntLiteral(intLiteral), temporaryVariable, intLiteral),
+                    temporaryVariable);
         }
 
         @Override
@@ -71,7 +71,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
 
         @Override
         public ThreeAddressCodeList visit(ImportDeclaration importDeclaration, SymbolTable symbolTable) {
-            return null;
+            throw new IllegalStateException("An import statement is illegal");
         }
 
         @Override
@@ -157,19 +157,20 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
                 throw new IllegalStateException("expected to find array " + locationArray.name.id + " in scope");
             } else {
                 ArrayDescriptor arrayDescriptor = (ArrayDescriptor) descriptorFromValidScopes.get();
-                TemporaryName widthOfField = TemporaryName.generateTemporaryName((int) (arrayDescriptor.size * arrayDescriptor.type.getFieldSize()));
-                threeAddressCodeList.addCode(new CopyInstruction(new ConstantName((long) arrayDescriptor.type.getFieldSize(), arrayDescriptor.type.getFieldSize()), widthOfField, locationArray));
-                TemporaryName offsetResult = TemporaryName.generateTemporaryName(BuiltinType.Int.getFieldSize());
-                threeAddressCodeList.addCode(new TwoOperandAssign(null, offsetResult, locationThreeAddressCodeList.place, DecafScanner.MULTIPLY, widthOfField, "offset"));
-                TemporaryName locationResult = TemporaryName.generateTemporaryName(arrayDescriptor.type.getFieldSize());
-                // bounds check
-                Label boundsBad = new Label("boundsBad"+TemporaryNameGenerator.getNextLabel(), null);
-                Label boundsGood = new Label("boundsGood"+TemporaryNameGenerator.getNextLabel(), null);
-                threeAddressCodeList.addCode(new ArrayBoundsCheck(null, null, arrayDescriptor.size, locationResult, boundsBad, boundsGood));
-
-                threeAddressCodeList.addCode(new TwoOperandAssign(null, locationResult, new VariableName(locationArray.name.id, arrayDescriptor.type.getFieldSize()), DecafScanner.PLUS, offsetResult, "array location"));
-                threeAddressCodeList.place = locationResult;
+                ArrayAccess arrayAccess = new ArrayAccess(locationArray, locationArray.getSourceCode(), new VariableName(locationArray.name.id, 8), new ConstantName(arrayDescriptor.size, 8), locationThreeAddressCodeList.place);
+                threeAddressCodeList.addCode(arrayAccess);
+                threeAddressCodeList.place = arrayAccess.arrayName;
                 return threeAddressCodeList;
+//                threeAddressCodeList.addCode(new TwoOperandAssign(null, offsetResult, locationThreeAddressCodeList.place, DecafScanner.MULTIPLY, widthOfField, "offset"));
+//                TemporaryName locationResult = TemporaryName.generateTemporaryName(arrayDescriptor.type.getFieldSize());
+//                // bounds check
+//                Label boundsBad = new Label("boundsBad"+TemporaryNameGenerator.getNextLabel(), null);
+//                Label boundsGood = new Label("boundsGood"+TemporaryNameGenerator.getNextLabel(), null);
+//                threeAddressCodeList.addCode(new ArrayBoundsCheck(null, null, arrayDescriptor.size, locationResult, boundsBad, boundsGood));
+//
+//                threeAddressCodeList.addCode(new TwoOperandAssign(null, locationResult, new VariableName(locationArray.name.id, arrayDescriptor.type.getFieldSize()), DecafScanner.PLUS, offsetResult, "array location"));
+//                threeAddressCodeList.place = locationResult;
+//                return threeAddressCodeList;
             }
         }
 
@@ -243,7 +244,6 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             threeAddressCodeList.place = temporaryVariable;
             return threeAddressCodeList;
         }
-
 
 
         @Override
@@ -641,7 +641,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             if (label == null) {
                 return new Label(TemporaryNameGenerator.getNextLabel(), cfgBlock1);
             } else {
-                label.aliasLabels.add(from == null? "haha" : from.label + "_False");
+                label.aliasLabels.add(from == null ? "haha" : from.label + "_False");
             }
             return label;
         };
@@ -733,7 +733,9 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             conditionLabelTACList.setNext(trueBlock);
             return conditionLabelTACList;
         }
-        conditionLabelTACList.setNext(trueBlock).setNext(falseBlock);
+        conditionLabelTACList
+                .setNext(trueBlock)
+                .setNext(falseBlock);
         return conditionLabelTACList;
     }
 

@@ -42,7 +42,12 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode> {
         ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList(UNDEFINED);
         threeAddressCodeList.addCode(code);
         return threeAddressCodeList;
+    }
 
+    public static ThreeAddressCodeList of(ThreeAddressCode code, AssignableName place) {
+        ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList(place);
+        threeAddressCodeList.addCode(code);
+        return threeAddressCodeList;
     }
 
     public ThreeAddressCode last() {
