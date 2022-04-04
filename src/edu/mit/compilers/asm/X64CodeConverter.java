@@ -37,10 +37,10 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(CopyInstruction copyInstruction, X64Builder x64builder) {
-        if (copyInstruction.dst
-                .toString()
-                .equals("a"))
-            System.out.println("stop");
+//        if (copyInstruction.dst
+//                .toString()
+//                .equals("a"))
+//            System.out.println("stop");
         return x64builder
                 .addLine(x64InstructionLine(X64Instruction.movq, getLocalVariableStackOffset(copyInstruction.src), X64Register.RAX))
                 .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, getLocalVariableStackOffset(copyInstruction.dst)));
@@ -55,6 +55,22 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
         }
         return x64builder.addLine(
                 x64InstructionLine(X64Instruction.getCorrectJumpIfFalseInstruction(lastComparisonOperator), x64Label(jumpIfFalse.trueLabel)));
+    }
+
+    @Override
+    public X64Builder visit(ArrayBoundsCheck arrayBoundsCheck, X64Builder x64builder) {
+        return x64builder
+                .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, getLocalVariableStackOffset(arrayBoundsCheck.location)))
+                .addLine(x64InstructionLine(X64Instruction.jl, x64Label(arrayBoundsCheck.boundsBad)))
+                // diff btwn mov and movq?
+                .addLine(x64InstructionLine(X64Instruction.mov, getLocalVariableStackOffset(arrayBoundsCheck.location), X64Register.RAX))
+                .addLine(x64InstructionLine(X64Instruction.cmp, "$"+arrayBoundsCheck.arraySize, X64Register.RAX))
+                .addLine(x64InstructionLine(X64Instruction.jge, x64Label(arrayBoundsCheck.boundsBad)))
+                .addLine(x64InstructionLine(X64Instruction.jmp, x64Label(arrayBoundsCheck.boundsGood)))
+                // TODO: handle bound error code
+                .addLine(x64InstructionLine(X64Instruction.mov, "$1", X64Register.RAX))
+                .addLine(x64InstructionLine(X64Instruction.call, "exit"))
+                .addLine(x64InstructionLine(x64Label(arrayBoundsCheck.boundsGood)));
     }
 
     @Override

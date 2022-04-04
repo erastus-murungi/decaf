@@ -162,6 +162,11 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
                 TemporaryName offsetResult = TemporaryName.generateTemporaryName(BuiltinType.Int.getFieldSize());
                 threeAddressCodeList.addCode(new TwoOperandAssign(null, offsetResult, locationThreeAddressCodeList.place, DecafScanner.MULTIPLY, widthOfField, "offset"));
                 TemporaryName locationResult = TemporaryName.generateTemporaryName(arrayDescriptor.type.getFieldSize());
+                // bounds check
+                Label boundsBad = new Label("boundsBad"+TemporaryNameGenerator.getNextLabel(), null);
+                Label boundsGood = new Label("boundsGood"+TemporaryNameGenerator.getNextLabel(), null);
+                threeAddressCodeList.addCode(new ArrayBoundsCheck(null, null, arrayDescriptor.size, locationResult, boundsBad, boundsGood));
+
                 threeAddressCodeList.addCode(new TwoOperandAssign(null, locationResult, new VariableName(locationArray.name.id, arrayDescriptor.type.getFieldSize()), DecafScanner.PLUS, offsetResult, "array location"));
                 threeAddressCodeList.place = locationResult;
                 return threeAddressCodeList;
@@ -704,8 +709,8 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         Label falseLabel = getLabel(cfgConditional.falseChild, conditionLabel);
         Label endLabel = new Label(conditionLabel.label + "end", null);
 
-        if (endLabel.label.equals("L3end"))
-            System.out.println("stop");
+//        if (endLabel.label.equals("L3end"))
+//            System.out.println("stop");
 
         JumpIfFalse jumpIfFalse =
                 new JumpIfFalse(condition,
