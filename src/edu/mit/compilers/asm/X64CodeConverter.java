@@ -181,10 +181,12 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
         switch (oneOperandAssign.operator) {
             case "!":
+            lastComparisonOperator = null;
                 return x64builder
                         .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
-                        .addLine(x64InstructionLine(X64Instruction.not, X64Register.RAX))
-                        .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, destStackLocation));
+                        .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, destStackLocation))
+                        .addLine(x64InstructionLine(X64Instruction.xorb, ONE, destStackLocation))
+                        .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO,destStackLocation));
             case "-":
                 return x64builder
                         .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
