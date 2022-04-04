@@ -1,6 +1,5 @@
 package edu.mit.compilers.asm;
 
-import edu.mit.compilers.ast.Array;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.codes.*;
@@ -57,6 +56,23 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     }
 
     @Override
+    public X64Builder visit(ArrayBoundsCheck arrayBoundsCheck, X64Builder x64builder) {
+        return x64builder
+                .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, getLocalVariableStackOffset(arrayBoundsCheck.location, x64builder)))
+                .addLine(x64InstructionLine(X64Instruction.jl, "." + arrayBoundsCheck.boundsBad.label))
+                // diff btwn mov and movq?
+                .addLine(x64InstructionLine(X64Instruction.mov, getLocalVariableStackOffset(arrayBoundsCheck.location, x64builder), X64Register.RAX))
+                .addLine(x64InstructionLine(X64Instruction.cmp, "$"+arrayBoundsCheck.arraySize, X64Register.RAX))
+                .addLine(x64InstructionLine(X64Instruction.jge, "." + arrayBoundsCheck.boundsBad.label))
+                .addLine(x64InstructionLine(X64Instruction.jmp, "." + arrayBoundsCheck.boundsGood.label))
+                .addLine(x64SetLabel(arrayBoundsCheck.boundsBad))
+                // TODO: handle bound error code
+                .addLine(x64InstructionLine(X64Instruction.mov, ONE, X64Register.RAX))
+                .addLine(x64InstructionLine(X64Instruction.call, "exit"))
+                .addLine(x64SetLabel(arrayBoundsCheck.boundsGood));
+    }
+
+    @Override
     public X64Builder visit(Label label, X64Builder x64builder) {
         return x64builder.addLine(new X64Code("." + label.label + ":"));
     }
@@ -82,6 +98,10 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     public X64Code x64Label(Label label) {
         return new X64Code("." + label.label);
+    }
+
+    public X64Code x64SetLabel(Label label) {
+        return new X64Code("." + label.label + ":");
     }
 
     public X64Code x64BlankLine() {
@@ -278,13 +298,6 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     public String getRbpCallingArgument(int index) {
         return String.format("%s(%s)", index, X64Register.RBP);
     }
-
-
-//    public String getLocalVariableStackOffset(AbstractName name) {
-//        if (globals.contains(name) || name instanceof StringConstantName || name instanceof ConstantName)
-//            return name.toString();
-//        return String.format("-%s(%s)", callStack.peek().nameToStackOffset.get(name.toString()), X64Register.RBP);
-//    }
 
     public String getLocalVariableStackOffset(AbstractName name, X64Builder x64Builder) {
         if (name instanceof ArrayName) {

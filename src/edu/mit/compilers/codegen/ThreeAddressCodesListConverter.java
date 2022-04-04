@@ -156,15 +156,29 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             if (descriptorFromValidScopes.isEmpty()) {
                 throw new IllegalStateException("expected to find array " + locationArray.name.id + " in scope");
             } else {
-
+                // bounds check
                 ArrayDescriptor arrayDescriptor = (ArrayDescriptor) descriptorFromValidScopes.get();
-                TemporaryName locationResult = TemporaryName.generateTemporaryName(arrayDescriptor.type.getFieldSize());
                 ArrayName arrayName = getArrayName(locationArray, symbolTable, locationThreeAddressCodeList.place);
+//                addArrayAccessBoundsCheck(threeAddressCodeList, arrayName, symbolTable);
+                TemporaryName locationResult = TemporaryName.generateTemporaryName(arrayDescriptor.type.getFieldSize());
                 threeAddressCodeList.addCode(new CopyInstruction(arrayName, locationResult, locationArray, locationArray.getSourceCode()));
                 threeAddressCodeList.place = locationResult;
                 return threeAddressCodeList;
 
             }
+        }
+
+        private void addArrayAccessBoundsCheck(
+                ThreeAddressCodeList threeAddressCodeList,
+                ArrayName arrayToCheck,
+                SymbolTable symbolTable
+        ) {
+            Optional<Descriptor> optionalDescriptor = symbolTable.getDescriptorFromValidScopes(arrayToCheck.label.toString());
+            ArrayDescriptor arrayDescriptor = (ArrayDescriptor) optionalDescriptor.get();
+            final String boundsIndex = TemporaryNameGenerator.getNextBoundsCheckLabel();
+            Label boundsBad = new Label("BoundsBad"+ boundsIndex, null);
+            Label boundsGood = new Label("BoundsGood" + boundsIndex, null);
+            threeAddressCodeList.addCode(new ArrayBoundsCheck(null, null, arrayDescriptor.size, arrayToCheck, boundsBad, boundsGood));
         }
 
         public ArrayName getArrayName(LocationArray locationArray, SymbolTable symbolTable, AbstractName index) {
@@ -264,7 +278,9 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
                                                          SymbolTable symbolTable,
                                                          AbstractName rhsPlace,
                                                          AbstractName index) {
+
             final ArrayName arrayName = getArrayName(locationArray, symbolTable, index);
+//            addArrayAccessBoundsCheck(threeAddressCodes, arrayName, symbolTable);
             threeAddressCodes.addCode(new CopyInstruction(rhsPlace, arrayName, locationArray, locationArray.getSourceCode()));
             threeAddressCodes.place = arrayName;
             return threeAddressCodes;

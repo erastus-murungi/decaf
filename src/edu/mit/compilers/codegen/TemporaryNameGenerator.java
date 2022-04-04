@@ -4,8 +4,15 @@ package edu.mit.compilers.codegen;
 public class TemporaryNameGenerator {
     private static int variableIndex = -1;
     private static int labelIndex = -1;
+    public static int boundsCheckIndex = -1;
     private static int stringLiteralIndex = -1;
     public static int highestValue = 0;
+
+
+    public static String getNextBoundsCheckLabel() {
+        ++boundsCheckIndex;
+        return String.valueOf(boundsCheckIndex);
+    }
 
     private TemporaryNameGenerator() {}
 

@@ -32,4 +32,6 @@ public interface ThreeAddressCodeVisitor<ReturnType, ExtraInfoType> {
     ReturnType visit(UnconditionalJump unconditionalJump, ExtraInfoType extraInfo);
 
     ReturnType visit(DataSectionAllocation dataSectionAllocation, ExtraInfoType extra);
+
+    ReturnType visit(ArrayBoundsCheck arrayBoundsCheck, ExtraInfoType extra);
 }
