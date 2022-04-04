@@ -61,13 +61,13 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     @Override
     public X64Builder visit(ArrayBoundsCheck arrayBoundsCheck, X64Builder x64builder) {
         return x64builder
-                .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(arrayBoundsCheck.location), X64Register.R13))
+                .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(arrayBoundsCheck.arrayIndex), X64Register.R13))
                 .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, X64Register.R13))
-                .addLine(x64InstructionLine(X64Instruction.jge, x64Label(arrayBoundsCheck.indexIsLTEZero)))
+                .addLine(x64InstructionLine(X64Instruction.jge, x64Label(arrayBoundsCheck.indexIsGTEZero)))
                 .addLine(x64InstructionLine(X64Instruction.movl, ONE, "%edi"))
                 .addLine(x64InstructionLine(X64Instruction.call, "exit"))
 
-                .addLine(new X64Code("." + arrayBoundsCheck.indexIsLTEZero.label + ":\n"))
+                .addLine(new X64Code("." + arrayBoundsCheck.indexIsGTEZero.label + ":\n"))
 
                 .addLine(x64InstructionLine(X64Instruction.cmp, "$" + arrayBoundsCheck.arraySize, X64Register.R13))
                 .addLine(x64InstructionLine(X64Instruction.jl, x64Label(arrayBoundsCheck.indexIsLessThanArraySize)))
@@ -159,15 +159,10 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
             methodBegin.nameToStackOffset.put(variableName.toString(), stackOffsetIndex);
             stackOffsetIndex += 8;
             if (!globals.contains(variableName)) {
-                final String location = resolveLoadLocation(variableName);
-//                x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, location));
                 for (int i = 0; i < variableName.size; i += 8)
-//                    x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, i + " + " + location));
                     x64builder.addLine(x64InstructionLine(X64Instruction.pushq, ZERO));
             }
         }
-
-
         return x64builder;
     }
 
