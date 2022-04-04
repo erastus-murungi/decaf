@@ -169,7 +169,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
                 throw new IllegalStateException("expected to find array " + locationArray.name.id + " in scope");
             } else {
                 ArrayDescriptor arrayDescriptor = (ArrayDescriptor) descriptorFromValidScopes.get();
-                ArrayAccess arrayAccess = new ArrayAccess(locationArray, locationArray.getSourceCode(), new VariableName(locationArray.name.id, arrayDescriptor.size * 16), new ConstantName(arrayDescriptor.size, 8), locationThreeAddressCodeList.place);
+                ArrayAccess arrayAccess = new ArrayAccess(locationArray, locationArray.getSourceCode(), new ArrayName(locationArray.name.id, arrayDescriptor.size * 16), new ConstantName(arrayDescriptor.size, 8), locationThreeAddressCodeList.place);
                 addArrayAccessBoundsCheck(threeAddressCodeList, arrayAccess.accessIndex, arrayAccess.arrayLength);
                 threeAddressCodeList.addCode(arrayAccess);
                 threeAddressCodeList.place = arrayAccess.arrayName;
@@ -182,7 +182,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             ThreeAddressCodeList expressionTACList = expressionParameter.expression.accept(this, symbolTable);
             ThreeAddressCodeList expressionParameterTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
             expressionParameterTACList.add(expressionTACList);
-            if (expressionParameter.expression instanceof Location) {
+            if (expressionParameter.expression instanceof LocationVariable) {
                 // no need for temporaries
                 expressionParameterTACList.place = new VariableName(((Location) expressionParameter.expression).name.id, 16);
             } else {
@@ -493,8 +493,22 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
 
     private List<AbstractName> getLocals(ThreeAddressCodeList threeAddressCodeList) {
         Set<AbstractName> uniqueNames = new HashSet<>();
-        for (ThreeAddressCode threeAddressCode : threeAddressCodeList)
-            uniqueNames.addAll(threeAddressCode.getNames());
+
+        for (ThreeAddressCode threeAddressCode : threeAddressCodeList) {
+            for (AbstractName name : threeAddressCode.getNames()) {
+                if (name instanceof ArrayName) {
+                    uniqueNames.add(name);
+                }
+            }
+        }
+
+        for (ThreeAddressCode threeAddressCode : threeAddressCodeList) {
+            for (AbstractName name: threeAddressCode.getNames()) {
+                if (!(name instanceof ArrayName)) {
+                    uniqueNames.add(name);
+                }
+            }
+        }
         return uniqueNames
                 .stream()
                 .filter((name -> ((name instanceof AssignableName))))
@@ -562,7 +576,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             for (Array array : fieldDeclaration.arrays) {
                 long size = (fieldDeclaration.builtinType.getFieldSize() * array.size.convertToLong());
                 threeAddressCodeList.addCode(new DataSectionAllocation(array, "# " + array.getSourceCode(),
-                        new VariableName(array.id.id,
+                        new ArrayName(array.id.id,
                                 size), size, fieldDeclaration.builtinType));
             }
         }

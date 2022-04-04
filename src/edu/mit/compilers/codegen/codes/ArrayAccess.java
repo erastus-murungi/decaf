@@ -3,20 +3,22 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.ConstantName;
 import edu.mit.compilers.codegen.names.VariableName;
 
+import java.util.Collections;
 import java.util.List;
 
 public class ArrayAccess extends ThreeAddressCode {
-    public VariableName arrayName;
+    public ArrayName arrayName;
     public ConstantName arrayLength;
     public AbstractName accessIndex;
 
 
     public ArrayAccess(AST source,
                        String comment,
-                       VariableName arrayName,
+                       ArrayName arrayName,
                        ConstantName arrayLength,
                        AbstractName accessIndex) {
         super(source, comment);
@@ -32,12 +34,12 @@ public class ArrayAccess extends ThreeAddressCode {
 
     @Override
     public List<AbstractName> getNames() {
-        return List.of(arrayName);
+        return Collections.emptyList();
     }
 
 
     @Override
     public String toString() {
-        return String.format("%sload(%s[%s]) for", DOUBLE_INDENT, arrayName, accessIndex);
+        return String.format("%sload(%s[%s])", DOUBLE_INDENT, arrayName, accessIndex);
     }
 }
