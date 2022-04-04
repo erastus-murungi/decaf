@@ -157,7 +157,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
                 throw new IllegalStateException("expected to find array " + locationArray.name.id + " in scope");
             } else {
                 ArrayDescriptor arrayDescriptor = (ArrayDescriptor) descriptorFromValidScopes.get();
-                ArrayAccess arrayAccess = new ArrayAccess(locationArray, locationArray.getSourceCode(), new VariableName(locationArray.name.id, 8), new ConstantName(arrayDescriptor.size, 8), locationThreeAddressCodeList.place);
+                ArrayAccess arrayAccess = new ArrayAccess(locationArray, locationArray.getSourceCode(), new VariableName(locationArray.name.id, arrayDescriptor.size * 16), new ConstantName(arrayDescriptor.size, 8), locationThreeAddressCodeList.place);
                 threeAddressCodeList.addCode(arrayAccess);
                 threeAddressCodeList.place = arrayAccess.arrayName;
                 return threeAddressCodeList;
@@ -552,9 +552,10 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
                         .get().type.getFieldSize()), fieldDeclaration.builtinType.getFieldSize(), fieldDeclaration.builtinType));
             }
             for (Array array : fieldDeclaration.arrays) {
-                threeAddressCodeList.addCode(new DataSectionAllocation(array, "# " + array.getSourceCode(), new VariableName(array.id.id, symbolTable
-                        .getDescriptorFromValidScopes(array.id.id)
-                        .get().type.getFieldSize()), (int) (fieldDeclaration.builtinType.getFieldSize() * array.size.convertToLong()), fieldDeclaration.builtinType));
+                long size = (fieldDeclaration.builtinType.getFieldSize() * array.size.convertToLong());
+                threeAddressCodeList.addCode(new DataSectionAllocation(array, "# " + array.getSourceCode(),
+                        new VariableName(array.id.id,
+                        size), size, fieldDeclaration.builtinType));
             }
         }
         return threeAddressCodeList;

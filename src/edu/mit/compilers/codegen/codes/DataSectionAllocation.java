@@ -13,11 +13,11 @@ public class DataSectionAllocation extends ThreeAddressCode {
     public static final int DEFAULT_ALIGNMENT = 8;
 
     public final VariableName variableName;
-    public final int size;
+    public final long size;
     public final int alignment;
     public final BuiltinType type;
 
-    public DataSectionAllocation(AST source, String comment, VariableName variableName, int size, BuiltinType builtinType) {
+    public DataSectionAllocation(AST source, String comment, VariableName variableName, long size, BuiltinType builtinType) {
         super(source, comment);
         this.variableName = variableName;
         this.size = size;

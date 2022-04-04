@@ -67,7 +67,7 @@ public class MethodBegin extends ThreeAddressCode {
     public void setLocals(List<AbstractName> locals) {
         this.locals = locals;
         reorderLocals();
-        this.sizeOfLocals = (long) locals.stream().map(abstractName -> abstractName.size).reduce(0, Integer::sum);
+        this.sizeOfLocals = locals.stream().map(abstractName -> abstractName.size).reduce(0L, Long::sum);
     }
 
     public List<AbstractName> getLocals() {

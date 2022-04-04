@@ -1,7 +1,7 @@
 package edu.mit.compilers.codegen.names;
 
 public class AssignableName extends AbstractName {
-    public AssignableName(int size) {
+    public AssignableName(long size) {
         super(size);
     }
 }

@@ -6,7 +6,7 @@ public class StringConstantName extends AbstractName {
     StringLiteralStackAllocation stringConstant;
 
     public StringConstantName(StringLiteralStackAllocation stringConstant) {
-        super(0);
+        super(16);
         this.stringConstant = stringConstant;
     }
 

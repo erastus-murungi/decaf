@@ -130,10 +130,35 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
         return x64builder;
     }
 
+    private void hoistArraysAndVariables(MethodBegin methodBegin, X64Builder x64Builder) {
+        List<VariableName> arrayNames = new ArrayList<>();
+        for (AbstractName name : methodBegin.getLocals()) {
+            if (name instanceof VariableName) {
+                VariableName variableName = (VariableName) name;
+                arrayNames.add(variableName);
+            }
+        }
+        for (VariableName arrayName : arrayNames) {
+            methodBegin
+                    .getLocals()
+                    .remove(arrayName);
+            methodBegin.sizeOfLocals -= arrayName.size;
+            globals.add(arrayName);
+        }
+
+        for (VariableName arrayName : arrayNames) {
+            x64Builder.addLine(x64InstructionLine(String.format("%s:\n\t\t.zero %s",
+                    arrayName,
+                    arrayName.size)));
+        }
+    }
+
     @Override
     public X64Builder visit(MethodBegin methodBegin, X64Builder x64builder) {
         lastComparisonOperator = null;
         callStack.push(methodBegin);
+        hoistArraysAndVariables(methodBegin, x64builder);
+
         if (!textAdded) {
             x64builder = x64builder.addLine(new X64Code(".text"));
             textAdded = true;
@@ -215,8 +240,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
                 return x64builder
                         .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
                         .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, destStackLocation))
-                        .addLine(x64InstructionLine(X64Instruction.xorb, ONE, destStackLocation))
-                        .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, destStackLocation));
+                        .addLine(x64InstructionLine(X64Instruction.xorb, ONE, destStackLocation));
             case "-":
                 return x64builder
                         .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
@@ -351,10 +375,11 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(DataSectionAllocation dataSectionAllocation, X64Builder x64builder) {
-        globals.add(dataSectionAllocation.variableName);
-        return x64builder.addLine(x64InstructionLine(String.format("%s:\n\t\t.zero %s",
-                dataSectionAllocation.variableName,
-                dataSectionAllocation.size * dataSectionAllocation.alignment)));
+//        globals.add(dataSectionAllocation.variableName);
+        return x64builder;
+//        return x64builder.addLine(x64InstructionLine(String.format("%s:\n\t\t.zero %s",
+//                dataSectionAllocation.variableName,
+//                dataSectionAllocation.size * dataSectionAllocation.alignment)));
     }
 }
 

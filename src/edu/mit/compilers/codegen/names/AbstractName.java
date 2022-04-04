@@ -3,9 +3,9 @@ package edu.mit.compilers.codegen.names;
 import java.util.Objects;
 
 public class AbstractName {
-    public int size;
+    public long size;
 
-    public AbstractName(int size) {
+    public AbstractName(long size) {
         this.size = size;
     }
 

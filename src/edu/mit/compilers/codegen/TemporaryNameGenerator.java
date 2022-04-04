@@ -2,10 +2,10 @@ package edu.mit.compilers.codegen;
 
 
 public class TemporaryNameGenerator {
-    private static int variableIndex = -1;
-    private static int labelIndex = -1;
-    private static int stringLiteralIndex = -1;
-    public static int highestValue = 0;
+    private static long variableIndex = -1;
+    private static long labelIndex = -1;
+    private static long stringLiteralIndex = -1;
+    public static long highestValue = 0;
 
     private TemporaryNameGenerator() {}
 
@@ -14,7 +14,7 @@ public class TemporaryNameGenerator {
         variableIndex = -1;
     }
 
-    public static int getNextTemporaryVariable() {
+    public static long getNextTemporaryVariable() {
         ++variableIndex;
         return variableIndex;
     }
