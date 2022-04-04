@@ -44,13 +44,13 @@ public class ShortCircuitProcessor {
                         if (operator.op.equals(CONDITIONAL_AND)) {
 
                             // Not (A and B) is the same as Not A or Not B.
-                            return new BinaryOpExpression(
+                            return BinaryOpExpression.of(
                                     new UnaryOpExpression(unaryNot, simplify(binaryOpExpression.lhs)),
                                     new ConditionalOperator(binaryOpExpression.tokenPosition, CONDITIONAL_OR),
                                     new UnaryOpExpression(unaryNot, simplify(binaryOpExpression.rhs)));
                         } else {
                             // Not (A or B) is the same as Not A and Not B.
-                            return new BinaryOpExpression(
+                            return BinaryOpExpression.of(
                                     new UnaryOpExpression(unaryNot, simplify(binaryOpExpression.lhs)),
                                     new ConditionalOperator(binaryOpExpression.tokenPosition, CONDITIONAL_AND),
                                     new UnaryOpExpression(unaryNot, simplify(binaryOpExpression.rhs)));
