@@ -10,7 +10,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     public CFGNonConditional initialGlobalBlock = new CFGNonConditional();
     public HashMap<String, CFGBlock> methodCFGBlocks = new HashMap<>();
 
-    public Stack<CFGNonConditional> breakBlocks = new Stack<>(); // a bunch of break blocks to point to the right place
+    public Stack<List<CFGNonConditional>> loopToBreak = new Stack<>(); // a bunch of break blocks to point to the right place
     public Stack<CFGBlock> continueBlocks = new Stack<>(); // a bunch of continue blocks to point to the right place
 
     /**
@@ -77,6 +77,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
 
     @Override
     public CFGPair visit(For forStatement, SymbolTable symbolTable) {
+        loopToBreak.push(new ArrayList<>());
         // If false, end with NOP, also end of for_statement
         NOP falseBlock = new NOP("For Loop (false) " + forStatement.terminatingCondition.getSourceCode());
         NOP exit = new NOP("Exit For");
@@ -133,13 +134,17 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     }
 
     private void handleBreaksInLoops(CFGBlock cfgBlock) {
+        List<CFGNonConditional> toRemove = new ArrayList<>();
+        List<CFGNonConditional> breakBlocks = loopToBreak.pop();
         if (!breakBlocks.isEmpty()) {
             for (CFGNonConditional breakBlock: breakBlocks) {
                 breakBlock.autoChild = cfgBlock;
+                toRemove.add(breakBlock);
                 cfgBlock.parents.add(breakBlock);
             }
         }
-        breakBlocks.clear();
+        for (CFGNonConditional breakBlock: toRemove)
+            breakBlocks.remove(breakBlock);
     }
 
     @Override
@@ -156,6 +161,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
 
     @Override
     public CFGPair visit(While whileStatement, SymbolTable symbolTable) {
+        loopToBreak.push(new ArrayList<>());
         // If false, end with NOP, also end of while
         NOP falseBlock = new NOP();
 
@@ -247,7 +253,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
             if (statement instanceof Break) {
                 // a break is not a real block either
                 CFGNonConditional breakCfg = new NOP("Break");
-                breakBlocks.add(breakCfg);
+                loopToBreak.peek().add(breakCfg);
                 breakCfg.parents.add(curPair.endBlock);
                 curPair.endBlock.autoChild = breakCfg;
                 return new CFGPair(initial, breakCfg, false);
