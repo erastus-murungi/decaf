@@ -44,15 +44,17 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
                 .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, getLocalVariableStackOffset(copyInstruction.dst)));
     }
 
-    @Override
     public X64Builder visit(JumpIfFalse jumpIfFalse, X64Builder x64builder) {
         if (lastComparisonOperator == null) {
             return x64builder
                     .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, getLocalVariableStackOffset(jumpIfFalse.condition)))
                     .addLine(x64InstructionLine(X64Instruction.je, x64Label(jumpIfFalse.trueLabel)));
+        } else {
+            x64builder.addLine(
+                    x64InstructionLine(X64Instruction.getCorrectJumpIfFalseInstruction(lastComparisonOperator), x64Label(jumpIfFalse.trueLabel)));
         }
-        return x64builder.addLine(
-                x64InstructionLine(X64Instruction.getCorrectJumpIfFalseInstruction(lastComparisonOperator), x64Label(jumpIfFalse.trueLabel)));
+        lastComparisonOperator = null;
+        return x64builder;
     }
 
     @Override
@@ -62,7 +64,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
                 .addLine(x64InstructionLine(X64Instruction.jl, x64Label(arrayBoundsCheck.boundsBad)))
                 // diff btwn mov and movq?
                 .addLine(x64InstructionLine(X64Instruction.mov, getLocalVariableStackOffset(arrayBoundsCheck.location), X64Register.RAX))
-                .addLine(x64InstructionLine(X64Instruction.cmp, "$"+arrayBoundsCheck.arraySize, X64Register.RAX))
+                .addLine(x64InstructionLine(X64Instruction.cmp, "$" + arrayBoundsCheck.arraySize, X64Register.RAX))
                 .addLine(x64InstructionLine(X64Instruction.jge, x64Label(arrayBoundsCheck.boundsBad)))
                 .addLine(x64InstructionLine(X64Instruction.jmp, x64Label(arrayBoundsCheck.boundsGood)))
                 // TODO: handle bound error code
@@ -204,12 +206,12 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
         switch (oneOperandAssign.operator) {
             case "!":
-            lastComparisonOperator = null;
+                lastComparisonOperator = null;
                 return x64builder
                         .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
                         .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, destStackLocation))
                         .addLine(x64InstructionLine(X64Instruction.xorb, ONE, destStackLocation))
-                        .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO,destStackLocation));
+                        .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, destStackLocation));
             case "-":
                 return x64builder
                         .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
