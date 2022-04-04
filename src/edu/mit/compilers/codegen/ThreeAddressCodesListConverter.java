@@ -150,7 +150,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         private void addArrayAccessBoundsCheck(
                 ThreeAddressCodeList threeAddressCodeList,
                 AbstractName arrayIndex,
-                long arraySize
+                ConstantName arraySize
         ) {
             final String boundsIndex = TemporaryNameGenerator.getNextBoundsCheckLabel();
             Label boundsBad = new Label("LTZero" + boundsIndex, null);
@@ -170,7 +170,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             } else {
                 ArrayDescriptor arrayDescriptor = (ArrayDescriptor) descriptorFromValidScopes.get();
                 ArrayAccess arrayAccess = new ArrayAccess(locationArray, locationArray.getSourceCode(), new VariableName(locationArray.name.id, arrayDescriptor.size * 16), new ConstantName(arrayDescriptor.size, 8), locationThreeAddressCodeList.place);
-                addArrayAccessBoundsCheck(threeAddressCodeList, arrayAccess.accessIndex, arrayAccess.arrayLength.size);
+                addArrayAccessBoundsCheck(threeAddressCodeList, arrayAccess.accessIndex, arrayAccess.arrayLength);
                 threeAddressCodeList.addCode(arrayAccess);
                 threeAddressCodeList.place = arrayAccess.arrayName;
                 return threeAddressCodeList;

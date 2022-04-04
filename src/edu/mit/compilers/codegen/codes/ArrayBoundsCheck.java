@@ -3,6 +3,7 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.ConstantName;
 
 import java.util.Collections;
 import java.util.List;
@@ -10,10 +11,10 @@ import java.util.List;
 public class ArrayBoundsCheck extends ThreeAddressCode{
     public Label indexIsLessThanArraySize;
     public Label indexIsGTEZero;
-    public Long arraySize;
+    public ConstantName arraySize;
     public AbstractName arrayIndex;
 
-    public ArrayBoundsCheck(AST source, String comment, AbstractName arrayIndex, Long arraySize, Label indexIsLessThanArraySize, Label indexIsGTEZero) {
+    public ArrayBoundsCheck(AST source, String comment, AbstractName arrayIndex, ConstantName arraySize, Label indexIsLessThanArraySize, Label indexIsGTEZero) {
         super(source, comment);
         this.arraySize = arraySize;
         this.indexIsLessThanArraySize = indexIsLessThanArraySize;

@@ -69,7 +69,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
                 .addLine(new X64Code("." + arrayBoundsCheck.indexIsGTEZero.label + ":\n"))
 
-                .addLine(x64InstructionLine(X64Instruction.cmp, "$" + arrayBoundsCheck.arraySize, X64Register.R13))
+                .addLine(x64InstructionLine(X64Instruction.cmp, arrayBoundsCheck.arraySize, X64Register.R13))
                 .addLine(x64InstructionLine(X64Instruction.jl, x64Label(arrayBoundsCheck.indexIsLessThanArraySize)))
 
                 .addLine(x64InstructionLine(X64Instruction.movl, ONE, "%edi"))
@@ -195,7 +195,10 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
         // apparently we need a return code of zero
         return (methodEnd
                 .methodName()
-                .equals("main") ? x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, X64Register.RAX)) : x64builder)
+                .equals("main") ?
+                x64builder
+                        .addLine(x64InstructionLine(X64Instruction.movq, ZERO, X64Register.RAX))
+                        .addLine(x64InstructionLine(X64Instruction.xor, "%edi", "%edi")) : x64builder)
                 .addLine(x64InstructionLine(X64Instruction.leave))
                 .addLine(x64InstructionLine(X64Instruction.ret))
                 .addLine(x64BlankLine());
