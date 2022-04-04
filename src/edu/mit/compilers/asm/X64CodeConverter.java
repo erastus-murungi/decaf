@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64Builder> {
 
     private boolean textAdded = false;
-    private final Set<DataSectionAllocation> globalsDataSection = new HashSet<>();
     private final Set<AbstractName> globals = new HashSet<>();
     private final Stack<MethodBegin> callStack = new Stack<>();
     public final int N_ARG_REGISTERS = 6;
@@ -146,14 +145,14 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
         for (final AbstractName variableName : methodBegin.getLocals()) {
             methodBegin.nameToStackOffset.put(variableName.toString(), stackOffsetIndex);
             stackOffsetIndex += 8;
+            if (variableName instanceof VariableName) {
+                x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, resolveLoadLocation(variableName)));
+            }
         }
 
         if (methodName.equals("main"))
             x64builder = x64builder.addLine(new X64Code(".globl main"));
 
-        for (AbstractName name : methodBegin.getLocals())
-            if (name.size == 8)
-                x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, resolveLoadLocation(name)));
 
         return saveBaseAndStackPointer(x64builder.addLine(new X64Code(methodName + ":")))
                 .addLine(x64InstructionLine(X64Instruction.subq, new ConstantName(roundUp16(methodBegin.sizeOfLocals), 8), X64Register.RSP));
@@ -188,7 +187,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
         // apparently we need a return code of zero
         return (methodEnd
                 .methodName()
-                .equals("main") ? x64builder.addLine(x64InstructionLine(X64Instruction.movq, "$0", X64Register.RAX)) : x64builder)
+                .equals("main") ? x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, X64Register.RAX)) : x64builder)
                 .addLine(x64InstructionLine(X64Instruction.leave))
                 .addLine(x64InstructionLine(X64Instruction.ret))
                 .addLine(x64BlankLine());
@@ -352,7 +351,6 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(DataSectionAllocation dataSectionAllocation, X64Builder x64builder) {
-        globalsDataSection.add(dataSectionAllocation);
         globals.add(dataSectionAllocation.variableName);
         return x64builder.addLine(x64InstructionLine(String.format("%s:\n\t\t.zero %s",
                 dataSectionAllocation.variableName,
