@@ -131,17 +131,7 @@ public class IRVisitor implements Visitor<Void> {
         // for ( index = 0 ...) <-- index is the example here
         String initializedVariableName = forStatement.initialization.initId.id;
 
-        // check if the variable exists
         if (symbolTable.getDescriptorFromValidScopes(initializedVariableName).isPresent()) {
-            Optional<Descriptor> initVariableDescriptor = symbolTable.getDescriptorFromCurrentScope(initializedVariableName);
-            if (initVariableDescriptor.isPresent()) {
-                Expression initExpression = forStatement.initialization.initExpression;
-                // update the symbol table to have the full expression
-                symbolTable.entries.put(initializedVariableName,
-                        new VariableDescriptor(initializedVariableName, initVariableDescriptor.get().type, forStatement.initialization.initId));
-            }
-
-            // visit the block
             ++depth;
             forStatement.block.accept(this, symbolTable);
             --depth;
