@@ -144,23 +144,27 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
         final String methodName = methodBegin.methodDefinition.methodName.id;
         int stackOffsetIndex = 8;
 
+        if (methodName.equals("main"))
+            x64builder = x64builder.addLine(new X64Code(".globl main"));
+
+        x64builder.addLine(new X64Code(methodName + ":"));
+        saveBaseAndStackPointer(x64builder)
+                .addLine(x64InstructionLine(X64Instruction.subq, new ConstantName(roundUp16(methodBegin.sizeOfLocals), 8), X64Register.RSP));
+
         for (final AbstractName variableName : methodBegin.getLocals()) {
             methodBegin.nameToStackOffset.put(variableName.toString(), stackOffsetIndex);
             stackOffsetIndex += 8;
             if (!globals.contains(variableName)) {
                 final String location = resolveLoadLocation(variableName);
-                x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, location));
-                for (int i = 8; i < variableName.size; i += 8)
-                    x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, i + " + " + location));
+//                x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, location));
+                for (int i = 0; i < variableName.size; i += 8)
+//                    x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, i + " + " + location));
+                    x64builder.addLine(x64InstructionLine(X64Instruction.pushq, ZERO));
             }
         }
 
-        if (methodName.equals("main"))
-            x64builder = x64builder.addLine(new X64Code(".globl main"));
 
-
-        return saveBaseAndStackPointer(x64builder.addLine(new X64Code(methodName + ":")))
-                .addLine(x64InstructionLine(X64Instruction.subq, new ConstantName(roundUp16(methodBegin.sizeOfLocals), 8), X64Register.RSP));
+        return x64builder;
     }
 
     /**
