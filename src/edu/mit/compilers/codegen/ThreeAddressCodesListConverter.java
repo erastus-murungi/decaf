@@ -174,16 +174,6 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
                 threeAddressCodeList.addCode(arrayAccess);
                 threeAddressCodeList.place = arrayAccess.arrayName;
                 return threeAddressCodeList;
-//                threeAddressCodeList.addCode(new TwoOperandAssign(null, offsetResult, locationThreeAddressCodeList.place, DecafScanner.MULTIPLY, widthOfField, "offset"));
-//                TemporaryName locationResult = TemporaryName.generateTemporaryName(arrayDescriptor.type.getFieldSize());
-//                // bounds check
-//                Label boundsBad = new Label("boundsBad"+TemporaryNameGenerator.getNextLabel(), null);
-//                Label boundsGood = new Label("boundsGood"+TemporaryNameGenerator.getNextLabel(), null);
-//                threeAddressCodeList.addCode(new ArrayBoundsCheck(null, null, arrayDescriptor.size, locationResult, boundsBad, boundsGood));
-//
-//                threeAddressCodeList.addCode(new TwoOperandAssign(null, locationResult, new VariableName(locationArray.name.id, arrayDescriptor.type.getFieldSize()), DecafScanner.PLUS, offsetResult, "array location"));
-//                threeAddressCodeList.place = locationResult;
-//                return threeAddressCodeList;
             }
         }
 
@@ -192,9 +182,14 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             ThreeAddressCodeList expressionTACList = expressionParameter.expression.accept(this, symbolTable);
             ThreeAddressCodeList expressionParameterTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
             expressionParameterTACList.add(expressionTACList);
-            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName(expressionParameter.expression.builtinType.getFieldSize());
-            expressionParameterTACList.addCode(new CopyInstruction(expressionTACList.place, temporaryVariable, expressionParameter));
-            expressionParameterTACList.place = temporaryVariable;
+            if (expressionParameter.expression instanceof Location) {
+                // no need for temporaries
+                expressionParameterTACList.place = new VariableName(((Location) expressionParameter.expression).name.id, 16);
+            } else {
+                TemporaryName temporaryVariable = TemporaryName.generateTemporaryName(expressionParameter.expression.builtinType.getFieldSize());
+                expressionParameterTACList.addCode(new CopyInstruction(expressionTACList.place, temporaryVariable, expressionParameter));
+                expressionParameterTACList.place = temporaryVariable;
+            }
             return expressionParameterTACList;
         }
 
