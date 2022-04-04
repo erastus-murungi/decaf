@@ -423,7 +423,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
                 AST source
         ) {
             ThreeAddressCodeList updateExprTAC;
-            BinaryOpExpression binaryOpExpression = new BinaryOpExpression(lhs, binOperator, rhs);
+            BinaryOpExpression binaryOpExpression = BinaryOpExpression.of(lhs, binOperator, rhs);
             binaryOpExpression.builtinType = symbolTable
                     .getDescriptorFromValidScopes(locationId)
                     .get().type;
@@ -547,12 +547,12 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
         for (FieldDeclaration fieldDeclaration : fieldDeclarationList) {
             for (Name name : fieldDeclaration.names) {
-                threeAddressCodeList.addCode(new DataSectionAllocation(name, "#" + name.getSourceCode(), new VariableName(name.id, symbolTable
+                threeAddressCodeList.addCode(new DataSectionAllocation(name, "# " + name.getSourceCode(), new VariableName(name.id, symbolTable
                         .getDescriptorFromValidScopes(name.id)
                         .get().type.getFieldSize()), fieldDeclaration.builtinType.getFieldSize(), fieldDeclaration.builtinType));
             }
             for (Array array : fieldDeclaration.arrays) {
-                threeAddressCodeList.addCode(new DataSectionAllocation(array, "#" + array.getSourceCode(), new VariableName(array.id.id, symbolTable
+                threeAddressCodeList.addCode(new DataSectionAllocation(array, "# " + array.getSourceCode(), new VariableName(array.id.id, symbolTable
                         .getDescriptorFromValidScopes(array.id.id)
                         .get().type.getFieldSize()), (int) (fieldDeclaration.builtinType.getFieldSize() * array.size.convertToLong()), fieldDeclaration.builtinType));
             }
@@ -692,7 +692,9 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
     @Override
     public ThreeAddressCodeList visit(CFGConditional cfgConditional, SymbolTable symbolTable) {
         visited.add(cfgConditional);
+
         Expression condition = (Expression) (cfgConditional.condition).ast;
+
         ThreeAddressCodeList testConditionThreeAddressList = getConditionTACList(condition, symbolTable);
 
         final Label conditionLabel = getLabel(cfgConditional, null);
@@ -708,9 +710,6 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
 
         Label falseLabel = getLabel(cfgConditional.falseChild, conditionLabel);
         Label endLabel = new Label(conditionLabel.label + "end", null);
-
-//        if (endLabel.label.equals("L3end"))
-//            System.out.println("stop");
 
         JumpIfFalse jumpIfFalse =
                 new JumpIfFalse(condition,

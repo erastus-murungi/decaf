@@ -476,8 +476,8 @@ public class GraphVizPrinter {
                     }
                 }
             } else if (cfgBlock instanceof CFGConditional) {
-                if (cfgBlock.getLabel().equals("1 < 2"))
-                    System.out.println("stop");
+                //if (cfgBlock.getLabel().equals("1 < 2"))
+                    // System.out.println("stop");
                 nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"{<from_node>" + escape(cfgBlock.getLabel()) + "|{<from_true> true|<from_false>false}" + "}\""));
                 CFGBlock falseChild = ((CFGConditional) cfgBlock).falseChild;
                 CFGBlock trueChild = ((CFGConditional) cfgBlock).trueChild;

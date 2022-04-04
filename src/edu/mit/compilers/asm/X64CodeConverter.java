@@ -1,5 +1,6 @@
 package edu.mit.compilers.asm;
 
+import edu.mit.compilers.ast.MethodDefinition;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.codes.*;
@@ -11,6 +12,7 @@ import java.util.stream.Collectors;
 public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64Builder> {
 
     private boolean textAdded = false;
+    private final Set<DataSectionAllocation> globalsDataSection = new HashSet<>();
     private final Set<AbstractName> globals = new HashSet<>();
     private final Stack<MethodBegin> callStack = new Stack<>();
     public final int N_ARG_REGISTERS = 6;
@@ -37,10 +39,6 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(CopyInstruction copyInstruction, X64Builder x64builder) {
-//        if (copyInstruction.dst
-//                .toString()
-//                .equals("a"))
-//            System.out.println("stop");
         return x64builder
                 .addLine(x64InstructionLine(X64Instruction.movq, getLocalVariableStackOffset(copyInstruction.src), X64Register.RAX))
                 .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, getLocalVariableStackOffset(copyInstruction.dst)));
@@ -110,26 +108,54 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
                         x64InstructionLine(X64Instruction.movq, X64Register.RSP, X64Register.RBP));
     }
 
+    private X64Builder pushScope(long size, boolean areMethodParams, X64Builder x64builder) {
+        saveBaseAndStackPointer(x64builder);
+
+        if (areMethodParams) //don't modify params
+            x64builder.addLine(x64InstructionLine(X64Instruction.subq, "$" + size, X64Instruction.subq));
+        else
+            for (long i = 0; i < size; i += 8)
+                x64builder.addLine(x64InstructionLine(X64Instruction.pushq, "$0")); //fields should be initialized to 0
+        return x64builder;
+    }
+
     @Override
     public X64Builder visit(MethodBegin methodBegin, X64Builder x64builder) {
+        lastComparisonOperator = null;
         if (!textAdded) {
             x64builder = x64builder.addLine(new X64Code(".text"));
             textAdded = true;
         }
 
         final String methodName = methodBegin.methodDefinition.methodName.id;
-        int stackOffsetIndex = 16;
+        int stackOffsetIndex = 8;
 
         for (final AbstractName variableName : methodBegin.getLocals()) {
             methodBegin.nameToStackOffset.put(variableName.toString(), stackOffsetIndex);
-            stackOffsetIndex += 16;
+            stackOffsetIndex += 8;
         }
 
         if (methodName.equals("main"))
             x64builder = x64builder.addLine(new X64Code(".globl main"));
+
+        for (DataSectionAllocation globalVariable : globalsDataSection)
+            for (int i = 0; i < globalVariable.size; i += 8)
+                x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, i + " + " + globalVariable.variableName));
+
+        for (AbstractName name : globals)
+            for (int i = 0; i < name.size; i += 8)
+                x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, i + " + " + getLocalVariableStackOffset(name)));
+
         callStack.push(methodBegin);
         return saveBaseAndStackPointer(x64builder.addLine(new X64Code(methodName + ":")))
-                .addLine(x64InstructionLine(X64Instruction.subq, methodBegin.sizeOfLocals, X64Register.RSP));
+                .addLine(x64InstructionLine(X64Instruction.subq, new ConstantName(roundUp(methodBegin.sizeOfLocals, 16), 8), X64Register.RSP));
+    }
+
+    /**
+     * round n up to nearest multiple of m
+     */
+    private static long roundUp(long n, long m) {
+        return n >= 0 ? ((n + m - 1) / m) * m : (n / m) * m;
     }
 
     @Override
@@ -138,11 +164,15 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
                 .getResultLocation()
                 .isPresent())
             return x64builder
+                    .addLine((x64InstructionLine(X64Instruction.xor, X64Register.RAX, X64Register.RAX)))
                     .addLine(x64InstructionLine(X64Instruction.call, methodCall.getMethodName()))
                     .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, getLocalVariableStackOffset(methodCall
                             .getResultLocation()
                             .get())));
-        return x64builder.addLine(x64InstructionLine(X64Instruction.call, methodCall.getMethodName()));
+        return x64builder
+                .addLine(x64InstructionLine(X64Instruction.xor, X64Register.RAX, X64Register.RAX))
+                .addLine(x64InstructionLine(X64Instruction.call,
+                        methodCall.getMethodName()));
     }
 
     @Override
@@ -174,10 +204,12 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
         switch (oneOperandAssign.operator) {
             case "!":
+            lastComparisonOperator = null;
                 return x64builder
                         .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
-                        .addLine(x64InstructionLine(X64Instruction.not, X64Register.RAX))
-                        .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, destStackLocation));
+                        .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, destStackLocation))
+                        .addLine(x64InstructionLine(X64Instruction.xorb, ONE, destStackLocation))
+                        .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO,destStackLocation));
             case "-":
                 return x64builder
                         .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
@@ -207,15 +239,6 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
                     X64Register.argumentRegs[pushParameter.parameterIndex]));
         else
             return x64builder.addLine(x64InstructionLine(X64Instruction.pushq, getLocalVariableStackOffset(pushParameter.parameterName)));
-//            return x64builder
-//                    .addLine(x64InstructionLine(
-//                            X64Instruction.movq,
-//                            getLocalVariableStackOffset(pushParameter.parameterName),
-//                            X64Register.R12))
-//                    .addLine(x64InstructionLine(
-//                            X64Instruction.movq,
-//                            X64Register.R12,
-//                            getRbpCallingArgument(16 + 8 * (pushParameter.parameterIndex + 1 - N_ARG_REGISTERS))));
     }
 
     @Override
@@ -322,6 +345,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(DataSectionAllocation dataSectionAllocation, X64Builder x64builder) {
+        globalsDataSection.add(dataSectionAllocation);
         globals.add(dataSectionAllocation.variableName);
         return x64builder.addLine(new X64Code(dataSectionAllocation.toString()));
     }

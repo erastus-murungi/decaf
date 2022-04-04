@@ -3,7 +3,7 @@ package edu.mit.compilers.asm;
 import edu.mit.compilers.grammar.DecafScanner;
 
 public enum X64Instruction {
-    andq, setge, add, cmpq ,sub, sete, shl, jne, ret, cqto, popq, and, cmp, jnz, mov, xor, setle, setg, subq, align, setne, inc, jge, test, call, string, movzx, dec, custom, shr, movl, jz, addq, not, setl, imulq, jmp, movq, orq, newline, or, idivq, neg, leaq, pushq, jl, leave, movzbq, jle, jg, je;
+    andq, setge, add, cmpq ,sub, sete, shl, jne, ret, cqto, popq, and, cmp, jnz, mov, xor, setle, setg, subq, align, setne, inc, jge, test, call, string, movzx, dec, custom, shr, movl, jz, addq, not, setl, imulq, jmp, movq, orq, newline, or, idivq, neg, leaq, pushq, jl, leave, movzbq, jle, jg, je, andl, xorb;
 
     public static X64Instruction getX64OperatorCode(String operator) {
         switch (operator) {
