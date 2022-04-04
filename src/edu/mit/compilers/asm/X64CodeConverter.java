@@ -130,34 +130,11 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
         return x64builder;
     }
 
-    private void hoistArraysAndVariables(MethodBegin methodBegin, X64Builder x64Builder) {
-        List<VariableName> arrayNames = new ArrayList<>();
-        for (AbstractName name : methodBegin.getLocals()) {
-            if (name instanceof VariableName) {
-                VariableName variableName = (VariableName) name;
-                arrayNames.add(variableName);
-            }
-        }
-        for (VariableName arrayName : arrayNames) {
-            methodBegin
-                    .getLocals()
-                    .remove(arrayName);
-            methodBegin.sizeOfLocals -= arrayName.size;
-            globals.add(arrayName);
-        }
-
-        for (VariableName arrayName : arrayNames) {
-            x64Builder.addLine(x64InstructionLine(String.format("%s:\n\t\t.zero %s",
-                    arrayName,
-                    arrayName.size)));
-        }
-    }
-
     @Override
     public X64Builder visit(MethodBegin methodBegin, X64Builder x64builder) {
         lastComparisonOperator = null;
         callStack.push(methodBegin);
-        hoistArraysAndVariables(methodBegin, x64builder);
+
 
         if (!textAdded) {
             x64builder = x64builder.addLine(new X64Code(".text"));
@@ -170,8 +147,11 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
         for (final AbstractName variableName : methodBegin.getLocals()) {
             methodBegin.nameToStackOffset.put(variableName.toString(), stackOffsetIndex);
             stackOffsetIndex += 8;
-            if (variableName instanceof VariableName) {
-                x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, resolveLoadLocation(variableName)));
+            if (!globals.contains(variableName)) {
+                final String location = resolveLoadLocation(variableName);
+                x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, location));
+                for (int i = 8; i < variableName.size; i += 8)
+                    x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, i + " + " + location));
             }
         }
 
@@ -296,12 +276,18 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     }
 
     public String resolveLoadLocation(AbstractName name) {
-        if (name.equals(lastArrayName)) {
-                String toReturn = String.format("%s(,%s,%s)", lastArrayName, x64Registers[arrayAccessCount & 1], 8);
-                arrayAccessCount++;
-                lastArrayName = null;
-                return toReturn;
-            }
+        if (name.equals(lastArrayName) && globals.contains(name)) {
+            String toReturn = String.format("%s(,%s,%s)", lastArrayName, x64Registers[arrayAccessCount & 1], 8);
+            arrayAccessCount++;
+            lastArrayName = null;
+            return toReturn;
+        } else if (name.equals(lastArrayName) && !globals.contains(name)) {
+            Integer offset = callStack.peek().nameToStackOffset.get(name.toString());
+            String toReturn = String.format("-%s(%s,%s,%s)", offset, X64Register.RBP, x64Registers[arrayAccessCount & 1], 8);
+            arrayAccessCount++;
+            lastArrayName = null;
+            return toReturn;
+        }
         if (globals.contains(name) || name instanceof StringConstantName || name instanceof ConstantName)
             return name.toString();
         return String.format("-%s(%s)", callStack.peek().nameToStackOffset.get(name.toString()), X64Register.RBP);
@@ -374,12 +360,11 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     }
 
     @Override
-    public X64Builder visit(DataSectionAllocation dataSectionAllocation, X64Builder x64builder) {
-//        globals.add(dataSectionAllocation.variableName);
-        return x64builder;
-//        return x64builder.addLine(x64InstructionLine(String.format("%s:\n\t\t.zero %s",
-//                dataSectionAllocation.variableName,
-//                dataSectionAllocation.size * dataSectionAllocation.alignment)));
+    public X64Builder visit(DataSectionAllocation dataSectionAllocation, X64Builder x64Builder) {
+        globals.add(dataSectionAllocation.variableName);
+        return x64Builder.addLine(x64InstructionLine(String.format("%s:\n\t\t.zero %s",
+                dataSectionAllocation.variableName,
+                dataSectionAllocation.variableName.size)));
     }
 }
 
