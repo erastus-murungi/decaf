@@ -438,7 +438,13 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         public ThreeAddressCodeList visit(Update update, SymbolTable symbolTable) {
             ThreeAddressCodeList updateExprTAC = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
             ThreeAddressCodeList lhs = update.updateLocation.accept(this, symbolTable);
-            ThreeAddressCodeList rhs = update.updateAssignExpr.expression.accept(this, symbolTable);
+
+            ThreeAddressCodeList rhs;
+            if (update.updateAssignExpr.expression != null) {
+                rhs = update.updateAssignExpr.expression.accept(this, symbolTable);
+            } else {
+                rhs = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
+            }
             updateExprTAC.add(rhs);
             updateExprTAC.add(lhs);
 
