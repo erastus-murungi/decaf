@@ -4,11 +4,20 @@ import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
+import edu.mit.compilers.utils.Utils;
 
-public class BooleanLiteral extends Literal {
-
+public class BooleanLiteral extends IntLiteral {
     public BooleanLiteral(TokenPosition tokenPosition, @DecafScanner.BooleanLiteral String literal) {
         super(tokenPosition, literal);
+    }
+
+    @Override
+    public Long convertToLong() {
+        if (Boolean.parseBoolean(Utils.translateEscapes(literal))) {
+            return 1L;
+        } else {
+            return 0L;
+        }
     }
 
     @Override
