@@ -477,11 +477,6 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             for (AbstractName name : threeAddressCode.getNames()) {
                 if (name instanceof ArrayName && !globals.contains(name.toString())) {
                     uniqueNames.add(name);
-                } else {
-                    if (name
-                            .toString()
-                            .equals("a"))
-                        System.out.println("stop");
                 }
             }
         }
