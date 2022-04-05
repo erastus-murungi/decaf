@@ -187,8 +187,8 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             if (expressionParameter.expression instanceof LocationVariable) {
                 // no need for temporaries
                 expressionParameterTACList.place = new VariableName(((Location) expressionParameter.expression).name.id, 16);
-            } else if (expressionParameter.expression instanceof Literal) {
-                expressionParameterTACList.place = new ConstantName((Long.parseLong(((Literal) expressionParameter.expression).literal)), 16);
+            } else if (expressionParameter.expression instanceof IntLiteral) {
+                expressionParameterTACList.place = new ConstantName(((IntLiteral) expressionParameter.expression).convertToLong(), 16);
             } else {
                 TemporaryName temporaryVariable = TemporaryName.generateTemporaryName(expressionParameter.expression.builtinType.getFieldSize());
                 expressionParameterTACList.addCode(new CopyInstruction(expressionTACList.place, temporaryVariable, expressionParameter));
