@@ -20,6 +20,8 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCodeList> {
+    private Set<String> globals;
+
     private static class ThreeAddressCodesConverter implements Visitor<ThreeAddressCodeList> {
         HashMap<String, String> temporaryToStringLiteral;
 
@@ -185,6 +187,8 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             if (expressionParameter.expression instanceof LocationVariable) {
                 // no need for temporaries
                 expressionParameterTACList.place = new VariableName(((Location) expressionParameter.expression).name.id, 16);
+            } else if (expressionParameter.expression instanceof Literal) {
+                expressionParameterTACList.place = new ConstantName((Long.parseLong(((Literal) expressionParameter.expression).literal)), 16);
             } else {
                 TemporaryName temporaryVariable = TemporaryName.generateTemporaryName(expressionParameter.expression.builtinType.getFieldSize());
                 expressionParameterTACList.addCode(new CopyInstruction(expressionTACList.place, temporaryVariable, expressionParameter));
@@ -222,18 +226,18 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         private void flattenMethodCallArguments(ThreeAddressCodeList threeAddressCodeList,
                                                 List<MethodCallParameter> methodCallParameterList,
                                                 SymbolTable symbolTable) {
-            List<AssignableName> newParamNames = new ArrayList<>();
+            List<AbstractName> newParamNames = new ArrayList<>();
             for (MethodCallParameter methodCallParameter : methodCallParameterList) {
                 ThreeAddressCodeList paramTACList = methodCallParameter.accept(this, symbolTable);
                 threeAddressCodeList.add(paramTACList);
-                newParamNames.add((AssignableName) paramTACList.place);
+                newParamNames.add((paramTACList.place));
             }
 
             getPushParameterCode(threeAddressCodeList, newParamNames, methodCallParameterList);
         }
 
         private void getPushParameterCode(ThreeAddressCodeList threeAddressCodeList,
-                                          List<AssignableName> newParamNames,
+                                          List<AbstractName> newParamNames,
                                           List<? extends AST> methodCallOrDefinitionArguments) {
             for (int i = newParamNames.size() - 1; i >= 0; i--) {
                 final PushParameter pushParameter = new PushParameter(newParamNames.get(i), i, methodCallOrDefinitionArguments.get(i));
@@ -361,117 +365,92 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
 
         @Override
         public ThreeAddressCodeList visit(Assignment assignment, SymbolTable symbolTable) {
-            ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
-            if (assignment.assignExpr instanceof AssignOpExpr) {
-                AssignOpExpr assignOpExpr = (AssignOpExpr) assignment.assignExpr;
-                if (!assignOpExpr.assignOp.op.equals(DecafScanner.ASSIGN)) {
-                    // simplify
-                    return convertToBinaryExpression(
-                            assignment.location,
-                            mapCompoundAssignOperator(assignOpExpr.assignOp),
-                            assignOpExpr.expression,
-                            symbolTable,
-                            assignment.location.name.id,
-                            assignment
-                    );
-                }
-            } else if (assignment.assignExpr instanceof Decrement || assignment.assignExpr instanceof Increment) {
-                ThreeAddressCodeList lhs = assignment.location.accept(this, symbolTable);
-                threeAddressCodeList.addCode(new OneOperandAssign(assignment.assignExpr, (AssignableName) lhs.place, lhs.place, assignment.assignExpr.getSourceCode()));
-                threeAddressCodeList.place = lhs.place;
-                return threeAddressCodeList;
-            }
-
-            ThreeAddressCodeList rhs = assignment.assignExpr.expression.accept(this, symbolTable);
+            ThreeAddressCodeList updateExprTAC = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
             ThreeAddressCodeList lhs = assignment.location.accept(this, symbolTable);
-            threeAddressCodeList.add(rhs);
-            threeAddressCodeList.add(lhs);
-            threeAddressCodeList.addCode(new CopyInstruction(rhs.place, (AssignableName) lhs.place, assignment));
-            threeAddressCodeList.place = lhs.place;
-            return threeAddressCodeList;
-        }
+            ThreeAddressCodeList rhs = assignment.assignExpr.expression.accept(this, symbolTable);
+            updateExprTAC.add(rhs);
+            updateExprTAC.add(lhs);
 
-        private BinOperator mapCompoundAssignOperator(AST augmentedAssignOperator) {
-            String op;
-            TokenPosition tokenPosition;
-            if (augmentedAssignOperator instanceof CompoundAssignOperator) {
-                op = ((CompoundAssignOperator) augmentedAssignOperator).op;
-                tokenPosition = ((CompoundAssignOperator) augmentedAssignOperator).tokenPosition;
-            } else if (augmentedAssignOperator instanceof AssignOperator) {
-                op = ((AssignOperator) augmentedAssignOperator).op;
-                tokenPosition = ((AssignOperator) augmentedAssignOperator).tokenPosition;
-            } else
-                throw new IllegalStateException(augmentedAssignOperator
-                        .getClass()
-                        .getSimpleName() + " not cannot be map");
-            BinOperator binOperator;
-            switch (op) {
-                case DecafScanner.ADD_ASSIGN:
-                    binOperator = new ArithmeticOperator(tokenPosition, DecafScanner.PLUS);
-                    break;
-                case DecafScanner.MINUS_ASSIGN:
-                    binOperator = new ArithmeticOperator(tokenPosition, DecafScanner.MINUS);
-                    break;
-                case DecafScanner.MULTIPLY_ASSIGN:
-                    binOperator = new ArithmeticOperator(tokenPosition, DecafScanner.MULTIPLY);
-                    break;
-                default:
-                    throw new IllegalStateException(op + " not recognized");
+            if (assignment.assignExpr instanceof AssignOpExpr) {
+                updateExprTAC.addCode(new OneOperandAssign(assignment, (AssignableName) lhs.place, rhs.place, ((AssignOpExpr) assignment.assignExpr).assignOp.getSourceCode()));
+            } else if (assignment.assignExpr instanceof Decrement || assignment.assignExpr instanceof Increment) {
+                updateExprTAC.addCode(new OneOperandAssign(assignment.assignExpr, (AssignableName) lhs.place, lhs.place, assignment.assignExpr.getSourceCode()));
+            } else {
+                updateExprTAC.addCode(new CopyInstruction(rhs.place, (AssignableName) lhs.place, assignment));
             }
-            return binOperator;
-        }
-
-
-        private ThreeAddressCodeList convertToBinaryExpression(
-                Expression lhs,
-                BinOperator binOperator,
-                Expression rhs,
-                SymbolTable symbolTable,
-                String locationId,
-                AST source
-        ) {
-            ThreeAddressCodeList updateExprTAC;
-            BinaryOpExpression binaryOpExpression = BinaryOpExpression.of(lhs, binOperator, rhs);
-            binaryOpExpression.builtinType = symbolTable
-                    .getDescriptorFromValidScopes(locationId)
-                    .get().type;
-            updateExprTAC = binaryOpExpression.accept(this, symbolTable);
-            CopyInstruction copyInstruction = new CopyInstruction(updateExprTAC.place, new VariableName(locationId, symbolTable
-                    .getDescriptorFromValidScopes(locationId)
-                    .get().type.getFieldSize()), source);
-            updateExprTAC.addCode(copyInstruction);
+            updateExprTAC.place = lhs.place;
             return updateExprTAC;
         }
 
-        @Override
+//        private BinOperator mapCompoundAssignOperator(AST augmentedAssignOperator) {
+//            String op;
+//            TokenPosition tokenPosition;
+//            if (augmentedAssignOperator instanceof CompoundAssignOperator) {
+//                op = ((CompoundAssignOperator) augmentedAssignOperator).op;
+//                tokenPosition = ((CompoundAssignOperator) augmentedAssignOperator).tokenPosition;
+//            } else if (augmentedAssignOperator instanceof AssignOperator) {
+//                op = ((AssignOperator) augmentedAssignOperator).op;
+//                tokenPosition = ((AssignOperator) augmentedAssignOperator).tokenPosition;
+//            } else
+//                throw new IllegalStateException(augmentedAssignOperator
+//                        .getClass()
+//                        .getSimpleName() + " not cannot be map");
+//            BinOperator binOperator;
+//            switch (op) {
+//                case DecafScanner.ADD_ASSIGN:
+//                    binOperator = new ArithmeticOperator(tokenPosition, DecafScanner.PLUS);
+//                    break;
+//                case DecafScanner.MINUS_ASSIGN:
+//                    binOperator = new ArithmeticOperator(tokenPosition, DecafScanner.MINUS);
+//                    break;
+//                case DecafScanner.MULTIPLY_ASSIGN:
+//                    binOperator = new ArithmeticOperator(tokenPosition, DecafScanner.MULTIPLY);
+//                    break;
+//                default:
+//                    throw new IllegalStateException(op + " not recognized");
+//            }
+//            return binOperator;
+//        }
+
+
+//        private ThreeAddressCodeList convertToBinaryExpression(
+//                Expression lhs,
+//                BinOperator binOperator,
+//                Expression rhs,
+//                SymbolTable symbolTable,
+//                String locationId,
+//                AST source
+//        ) {
+//            ThreeAddressCodeList updateExprTAC;
+//            BinaryOpExpression binaryOpExpression = BinaryOpExpression.of(lhs, binOperator, rhs);
+//            binaryOpExpression.builtinType = symbolTable
+//                    .getDescriptorFromValidScopes(locationId)
+//                    .get().type;
+//            updateExprTAC = binaryOpExpression.accept(this, symbolTable);
+//            CopyInstruction copyInstruction = new CopyInstruction(updateExprTAC.place, new VariableName(locationId, symbolTable
+//                    .getDescriptorFromValidScopes(locationId)
+//                    .get().type.getFieldSize()), source);
+//            updateExprTAC.addCode(copyInstruction);
+//            return updateExprTAC;
+//        }
+
+
         public ThreeAddressCodeList visit(Update update, SymbolTable symbolTable) {
             ThreeAddressCodeList updateExprTAC = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
-            if (update.updateAssignExpr instanceof CompoundAssignOpExpr) {
-                CompoundAssignOpExpr compoundAssignOpExpr = (CompoundAssignOpExpr) update.updateAssignExpr;
-                return convertToBinaryExpression(
-                        update.updateLocation,
-                        mapCompoundAssignOperator(compoundAssignOpExpr.compoundAssignOp),
-                        compoundAssignOpExpr.expression,
-                        symbolTable,
-                        update.updateLocation.name.id,
-                        update
-                );
-            } else if (update.updateAssignExpr instanceof Decrement || update.updateAssignExpr instanceof Increment) {
-                ThreeAddressCodeList lhs = update.updateLocation.accept(this, symbolTable);
-                updateExprTAC.addCode(new OneOperandAssign(update.updateAssignExpr, (AssignableName) lhs.place, lhs.place, update.updateAssignExpr.getSourceCode()));
-                updateExprTAC.place = lhs.place;
-                return updateExprTAC;
-            } else {
-                ThreeAddressCodeList updateLocationTAC = update.updateLocation.accept(this, symbolTable);
-                updateExprTAC = update.updateAssignExpr.accept(this, symbolTable);
-                CopyInstruction copyInstruction = new CopyInstruction(updateExprTAC.place, (AssignableName) updateLocationTAC.place, update);
+            ThreeAddressCodeList lhs = update.updateLocation.accept(this, symbolTable);
+            ThreeAddressCodeList rhs = update.updateAssignExpr.expression.accept(this, symbolTable);
+            updateExprTAC.add(rhs);
+            updateExprTAC.add(lhs);
 
-                ThreeAddressCodeList tac = new ThreeAddressCodeList(updateLocationTAC.place);
-                tac.add(updateLocationTAC);
-                tac.add(updateExprTAC);
-                tac.addCode(copyInstruction);
-                return tac;
+            if (update.updateAssignExpr instanceof CompoundAssignOpExpr) {
+                updateExprTAC.addCode(new OneOperandAssign(update, (AssignableName) lhs.place, rhs.place, ((CompoundAssignOpExpr) update.updateAssignExpr).compoundAssignOp.getSourceCode()));
+            } else if (update.updateAssignExpr instanceof Decrement || update.updateAssignExpr instanceof Increment) {
+                updateExprTAC.addCode(new OneOperandAssign(update.updateAssignExpr, (AssignableName) lhs.place, lhs.place, update.updateAssignExpr.getSourceCode()));
+            } else {
+                updateExprTAC.addCode(new CopyInstruction(rhs.place, (AssignableName) lhs.place, update));
             }
+            updateExprTAC.place = lhs.place;
+            return updateExprTAC;
         }
     }
 
@@ -496,15 +475,20 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
 
         for (ThreeAddressCode threeAddressCode : threeAddressCodeList) {
             for (AbstractName name : threeAddressCode.getNames()) {
-                if (name instanceof ArrayName) {
+                if (name instanceof ArrayName && !globals.contains(name.toString())) {
                     uniqueNames.add(name);
+                } else {
+                    if (name
+                            .toString()
+                            .equals("a"))
+                        System.out.println("stop");
                 }
             }
         }
 
         for (ThreeAddressCode threeAddressCode : threeAddressCodeList) {
-            for (AbstractName name: threeAddressCode.getNames()) {
-                if (!(name instanceof ArrayName)) {
+            for (AbstractName name : threeAddressCode.getNames()) {
+                if (!(name instanceof ArrayName) && !globals.contains(name.toString())) {
                     uniqueNames.add(name);
                 }
             }
@@ -586,6 +570,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
 
     private ThreeAddressCodeList initProgram(Program program, SymbolTable symbolTable) {
         ThreeAddressCodeList threeAddressCodeList = fillOutGlobals(program.fieldDeclarationList, symbolTable);
+        this.globals = getGlobals(threeAddressCodeList);
         Set<String> stringLiteralList = findAllStringLiterals(program);
         for (String stringLiteral : stringLiteralList) {
             final StringLiteralStackAllocation literalStackAllocation = new StringLiteralStackAllocation(stringLiteral);
@@ -593,6 +578,17 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             literalStackAllocationHashMap.put(stringLiteral, literalStackAllocation);
         }
         return threeAddressCodeList;
+    }
+
+    private Set<String> getGlobals(ThreeAddressCodeList threeAddressCodeList) {
+        HashSet<String> set = new HashSet<>();
+        for (ThreeAddressCode threeAddressCode : threeAddressCodeList) {
+            for (AbstractName name : threeAddressCode.getNames()) {
+                if (name instanceof VariableName)
+                    set.add(name.toString());
+            }
+        }
+        return set;
     }
 
     private Set<String> findAllStringLiterals(Program program) {
