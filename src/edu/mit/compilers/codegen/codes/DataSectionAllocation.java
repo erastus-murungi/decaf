@@ -32,7 +32,7 @@ public class DataSectionAllocation extends ThreeAddressCode {
 
     @Override
     public List<AbstractName> getNames() {
-        return Collections.emptyList();
+        return Collections.singletonList(variableName);
     }
 
     @Override

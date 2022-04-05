@@ -8,10 +8,10 @@ import edu.mit.compilers.codegen.names.AssignableName;
 import java.util.List;
 
 public class PushParameter extends ThreeAddressCode {
-    public AssignableName parameterName;
+    public AbstractName parameterName;
     public final int parameterIndex;
 
-    public PushParameter(AssignableName parameterName, int parameterIndex, AST source) {
+    public PushParameter(AbstractName parameterName, int parameterIndex, AST source) {
         super(source);
         this.parameterName = parameterName;
         this.parameterIndex = parameterIndex;
