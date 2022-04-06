@@ -148,10 +148,11 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
         for (final AbstractName variableName : methodBegin.getLocals()) {
             methodBegin.nameToStackOffset.put(variableName.toString(), stackOffsetIndex);
-            stackOffsetIndex += 8;
             if (!globals.contains(variableName)) {
-                for (int i = 0; i < variableName.size; i += 8)
+                for (int i = 0; i < variableName.size; i += 8) {
+                    stackOffsetIndex += 8;
                     x64builder.addLine(x64InstructionLineWithComment(String.format("%s[%s..%s] = 0    (%s)", variableName, i, i + 7, resolveLoadLocation(variableName)), X64Instruction.pushq, ZERO));
+                }
             }
         }
         if (roundUp16(methodBegin.sizeOfLocals) != methodBegin.sizeOfLocals) {
