@@ -446,38 +446,28 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         printParseTree(expr);
         System.out.println();
         if (expr instanceof BinaryOpExpression) {
-            System.out.println("inside expr");
             if (((BinaryOpExpression) expr).rhs instanceof  BinaryOpExpression) {
-                System.out.println("rhs expr");
                 BinaryOpExpression rhsBinOpExpr = (BinaryOpExpression) ((BinaryOpExpression) expr).rhs;
-                if (BinaryOpExpression.operatorPrecedence.get(((BinaryOpExpression) expr).op).equals(BinaryOpExpression.operatorPrecedence.get(rhsBinOpExpr.op))) {
-                    System.out.println("same precedence");
+                if (BinaryOpExpression.operatorPrecedence.get(((BinaryOpExpression) expr).op.getSourceCode()).equals(BinaryOpExpression.operatorPrecedence.get(rhsBinOpExpr.op.getSourceCode()))) {
                     rhsBinOpExpr.lhs = expr;
                     ((BinaryOpExpression) expr).rhs = rhsBinOpExpr.lhs;
                     rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);
                     rotateBinaryOpExpression(((BinaryOpExpression) expr).rhs);
                     rotateBinaryOpExpression(rhsBinOpExpr.rhs);
-                    System.out.println("rotatation");
-                    System.out.println(rhsBinOpExpr);
-                    System.out.println();
                     return rhsBinOpExpr;
                 }
             }
-            System.out.println("test");
-            System.out.println(((BinaryOpExpression) expr).lhs);
-            System.out.println(((BinaryOpExpression) expr).rhs);
-            System.out.println();
             rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);
             rotateBinaryOpExpression(((BinaryOpExpression) expr).rhs);
         }
         else if (expr instanceof ParenthesizedExpression) {
-            System.out.println("paren " + ((ParenthesizedExpression) expr).expression);
             rotateBinaryOpExpression(((ParenthesizedExpression) expr).expression);
         }
         else if (expr instanceof MethodCall) {
-            for (MethodCallParameter param: ((MethodCall) expr).methodCallParameterList) {
+            for (int i = 0; i < ((MethodCall) expr).methodCallParameterList.size(); i++) {
+                MethodCallParameter param = ((MethodCall) expr).methodCallParameterList.get(i);
                 if (param instanceof ExpressionParameter) {
-                    rotateBinaryOpExpression(((ExpressionParameter) param).expression);
+                    ((MethodCall) expr).methodCallParameterList.set(i, new ExpressionParameter(rotateBinaryOpExpression(((ExpressionParameter) param).expression)));
                 }
             }
         }
