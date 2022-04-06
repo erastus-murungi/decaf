@@ -15,8 +15,8 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     private final Stack<MethodBegin> callStack = new Stack<>();
     public final int N_ARG_REGISTERS = 6;
     public String lastComparisonOperator = null;
-    private final ConstantName ZERO = new ConstantName(0L, 8);
-    private final ConstantName ONE = new ConstantName(1L, 8);
+    private final ConstantName ZERO = new ConstantName(0L);
+    private final ConstantName ONE = new ConstantName(1L);
     private int arrayAccessCount = 0;
     private final X64Register[] x64Registers = {X64Register.RBX, X64Register.RCX};
     private VariableName lastArrayName = null;

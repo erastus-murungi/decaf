@@ -1,5 +1,7 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.utils.Utils;
+
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_INT;
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_BOOL;
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_VOID;
@@ -22,9 +24,9 @@ public enum BuiltinType {
         }
     }
 
-    public int getFieldSize() {
+    public long getFieldSize() {
         switch (this) {
-            case Int: case IntArray: case Bool: case BoolArray: return 16;
+            case Int: case IntArray: case Bool: case BoolArray: return Utils.WORD_SIZE;
             case Void: return 0;
             default: throw new IllegalStateException("Unexpected value: " + this);
         }

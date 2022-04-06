@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 public class ThreeAddressCodeList implements Iterable<ThreeAddressCode> {
     public AbstractName place;
     private final List<ThreeAddressCode> codes;
-    public static final AbstractName UNDEFINED = new VariableName(null, -1);
+    public static final AbstractName UNDEFINED = new VariableName(null);
 
     private ThreeAddressCodeList next;
 

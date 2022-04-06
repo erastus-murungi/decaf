@@ -7,17 +7,17 @@ import edu.mit.compilers.ast.IntLiteral;
 public class ConstantName extends AbstractName {
     String value;
 
-    public ConstantName(Long value, int size) {
-        super(size);
+    public ConstantName(Long value) {
+        super();
         this.value = String.valueOf(value);
     }
 
     public static ConstantName fromIntLiteral(IntLiteral intLiteral) {
-        return new ConstantName(intLiteral.convertToLong(), BuiltinType.Int.getFieldSize());
+        return new ConstantName(intLiteral.convertToLong());
     }
 
     public static ConstantName fromBooleanLiteral(BooleanLiteral booleanLiteral) {
-        return new ConstantName((long) (Boolean.parseBoolean(booleanLiteral.literal) ? 1 : 0), BuiltinType.Bool.getFieldSize());
+        return new ConstantName(booleanLiteral.convertToLong());
     }
 
     @Override
