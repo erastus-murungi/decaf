@@ -33,15 +33,17 @@ public class CFGGenerator {
         rootNode.accept(visitor, globalDescriptor.globalVariablesSymbolTable);
         SymbolTable theSymbolWeCareAbout = globalDescriptor.globalVariablesSymbolTable;
 
-        NOP exitNode = new NOP();
+       
 
         visitor.methodCFGBlocks.forEach((k, v) -> {
+            NOP exitNode = new NOP();
             nopVisitor.exit = exitNode;
             ((CFGNonConditional) v).autoChild.accept(nopVisitor, theSymbolWeCareAbout);
+            if(!allPathsReturn(exitNode, new HashSet<>())){
+                error = true;
+            }
         });
-
-        System.out.println(exitNode.parents);
-        this.error = !allPathsReturn(exitNode, new TreeSet<>());
+       
 
         visitor.methodCFGBlocks.forEach((k, v) -> v.accept(maximalVisitor, theSymbolWeCareAbout));
         visitor.initialGlobalBlock.accept(nopVisitor, theSymbolWeCareAbout);
@@ -126,7 +128,7 @@ public class CFGGenerator {
     }
 
     
-    private boolean allPathsReturn(CFGBlock node, TreeSet<CFGBlock> seen){
+    private boolean allPathsReturn(CFGBlock node, HashSet<CFGBlock> seen){
         seen.add(node);
         for(CFGLine line : node.lines){
             if (line.ast instanceof Return) {
