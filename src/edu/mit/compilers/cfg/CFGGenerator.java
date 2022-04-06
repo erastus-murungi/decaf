@@ -1,6 +1,7 @@
 package edu.mit.compilers.cfg;
 
 import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.ast.Return;
 import edu.mit.compilers.descriptors.GlobalDescriptor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Utils;
@@ -9,14 +10,20 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
+import java.util.TreeSet;
 
 public class CFGGenerator {
     public AST rootNode;
     public GlobalDescriptor globalDescriptor;
+    private boolean error = false;
 
     public CFGGenerator(AST ast, GlobalDescriptor globalDescriptor) {
         this.rootNode = ast;
         this.globalDescriptor = globalDescriptor;
+    }
+
+    public boolean hasError(){
+        return error;
     }
 
     public iCFGVisitor buildiCFG() {
@@ -26,11 +33,15 @@ public class CFGGenerator {
         rootNode.accept(visitor, globalDescriptor.globalVariablesSymbolTable);
         SymbolTable theSymbolWeCareAbout = globalDescriptor.globalVariablesSymbolTable;
 
+        NOP exitNode = new NOP();
 
         visitor.methodCFGBlocks.forEach((k, v) -> {
-            nopVisitor.exit = new NOP();
+            nopVisitor.exit = exitNode;
             ((CFGNonConditional) v).autoChild.accept(nopVisitor, theSymbolWeCareAbout);
         });
+
+        System.out.println(exitNode.parents);
+        this.error = !allPathsReturn(exitNode, new TreeSet<>());
 
         visitor.methodCFGBlocks.forEach((k, v) -> v.accept(maximalVisitor, theSymbolWeCareAbout));
         visitor.initialGlobalBlock.accept(nopVisitor, theSymbolWeCareAbout);
@@ -111,6 +122,27 @@ public class CFGGenerator {
                     System.out.println();
                 }
             }
+        }
+    }
+
+    
+    private boolean allPathsReturn(CFGBlock node, TreeSet<CFGBlock> seen){
+        seen.add(node);
+        for(CFGLine line : node.lines){
+            if (line.ast instanceof Return) {
+                return true;
+            }
+        }
+        if (node.parents.size() == 0){
+            return false;
+        } else {
+            boolean allPaths = true;
+            for (CFGBlock parent: node.parents){
+                if (!seen.contains(parent) && !allPathsReturn(parent, seen)){
+                    allPaths = false;
+                }
+            }
+            return allPaths;
         }
     }
 }
