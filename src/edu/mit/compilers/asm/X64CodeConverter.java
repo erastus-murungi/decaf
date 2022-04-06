@@ -21,7 +21,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     private final ConstantName FOUR = new ConstantName(4L);
     private int arrayAccessCount = 0;
     private final X64Register[] x64Registers = {X64Register.RBX, X64Register.RCX};
-    private Stack<Pair<ArrayName, X64Register>> stackArrays = new Stack<>();
+    private final Stack<Pair<ArrayName, X64Register>> stackArrays = new Stack<>();
 
 
     public X64Program convert(ThreeAddressCodeList threeAddressCodeList) {
@@ -125,8 +125,8 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
         return new X64Code(tabSpaced(instruction) + commaSeparated(args), comment);
     }
 
-    private X64Builder saveBaseAndStackPointer(X64Builder x64Builder) {
-        return x64Builder
+    private void saveBaseAndStackPointer(X64Builder x64Builder) {
+        x64Builder
                 .addLine(
                         x64InstructionLine(X64Instruction.pushq, X64Register.RBP))
                 .addLine(
@@ -161,9 +161,9 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
                 }
             }
         }
-        if (roundUp16(methodBegin.sizeOfLocals) != methodBegin.sizeOfLocals) {
-            x64builder.addLine(x64InstructionLineWithComment("padding", X64Instruction.pushq, ZERO));
-        }
+//        if (roundUp16(methodBegin.sizeOfLocals) != methodBegin.sizeOfLocals) {
+//            x64builder.addLine(x64InstructionLineWithComment("padding", X64Instruction.pushq, ZERO));
+//        }
         return x64builder;
     }
 
