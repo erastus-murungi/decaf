@@ -443,22 +443,20 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     }
 
     public static Expression rotateBinaryOpExpression(Expression expr) {
-        printParseTree(expr);
-        System.out.println();
         if (expr instanceof BinaryOpExpression) {
             if (((BinaryOpExpression) expr).rhs instanceof  BinaryOpExpression) {
-                BinaryOpExpression rhsBinOpExpr = (BinaryOpExpression) ((BinaryOpExpression) expr).rhs;
-                if (BinaryOpExpression.operatorPrecedence.get(((BinaryOpExpression) expr).op.getSourceCode()).equals(BinaryOpExpression.operatorPrecedence.get(rhsBinOpExpr.op.getSourceCode()))) {
-                    rhsBinOpExpr.lhs = expr;
-                    ((BinaryOpExpression) expr).rhs = rhsBinOpExpr.lhs;
-                    rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);
-                    rotateBinaryOpExpression(((BinaryOpExpression) expr).rhs);
-                    rotateBinaryOpExpression(rhsBinOpExpr.rhs);
-                    return rhsBinOpExpr;
+                BinaryOpExpression rhsTemp = (BinaryOpExpression) ((BinaryOpExpression) expr).rhs;
+                if (BinaryOpExpression.operatorPrecedence.get(((BinaryOpExpression) expr).op.getSourceCode()).equals(BinaryOpExpression.operatorPrecedence.get(rhsTemp.op.getSourceCode()))) {
+                    ((BinaryOpExpression) expr).rhs = rhsTemp.lhs;
+                    rhsTemp.lhs = expr;
+                    ((BinaryOpExpression) expr).lhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);
+                    ((BinaryOpExpression) expr).rhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).rhs);
+                    rhsTemp.rhs = rotateBinaryOpExpression(rhsTemp.rhs);
+                    return rhsTemp;
                 }
             }
-            rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);
-            rotateBinaryOpExpression(((BinaryOpExpression) expr).rhs);
+            ((BinaryOpExpression) expr).lhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);
+            ((BinaryOpExpression) expr).rhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).rhs);
         }
         else if (expr instanceof ParenthesizedExpression) {
             rotateBinaryOpExpression(((ParenthesizedExpression) expr).expression);

@@ -137,6 +137,13 @@ class Main {
 
                 outputStream.print(x64Program.toString());
 
+                try {
+                    PrintStream printStream = new PrintStream(new FileOutputStream("tests/output.S"));
+                    printStream.println(x64Program);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+
             }
         } catch (Exception e) {
             System.err.println(CLI.infile + " " + e);
