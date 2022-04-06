@@ -40,8 +40,11 @@ public class CFGGenerator {
             NOP exitNode = new NOP();
             nopVisitor.exit = exitNode;
             ((CFGNonConditional) v).autoChild.accept(nopVisitor, theSymbolWeCareAbout);
-            if(globalDescriptor.methodsSymbolTable.getDescriptorFromValidScopes(k).get().type != BuiltinType.Void && !allPathsReturn(exitNode, new HashSet<>())){
-                error = true;
+            HashSet<CFGBlock> nodes = getExitNodes(v, new HashSet<>());
+            for (CFGBlock node: nodes){
+                if(globalDescriptor.methodsSymbolTable.getDescriptorFromValidScopes(k).get().type != BuiltinType.Void && !allPathsReturn(node, new HashSet<>())){
+                    error = true;
+                }
             }
         });
        
@@ -62,6 +65,28 @@ public class CFGGenerator {
         visitor.initialGlobalBlock.accept(maximalVisitor, theSymbolWeCareAbout);
 
         return visitor;
+    }
+
+    private HashSet<CFGBlock> getExitNodes(CFGBlock v, HashSet<CFGBlock> seen) {
+        seen.add(v);
+        HashSet<CFGBlock> exits = new HashSet<>();
+        if (v instanceof CFGConditional){
+            CFGConditional node = (CFGConditional) v;
+            if (!seen.contains(node.trueChild))
+                exits.addAll(getExitNodes(node.trueChild, seen));
+            if (!seen.contains(node.falseChild))
+                exits.addAll(getExitNodes(node.falseChild, seen));
+        } else if (v instanceof CFGNonConditional){
+            CFGNonConditional node = (CFGNonConditional) v;
+            if (node.autoChild != null && !seen.contains(node.autoChild)){
+                exits.addAll(getExitNodes(node.autoChild, seen));
+            } else {
+                exits.add(v);  
+            }
+        } else {
+            exits.add(v);
+        } 
+        return exits;
     }
 
     public static void printAllParents(CFGBlock block) {
@@ -139,6 +164,7 @@ public class CFGGenerator {
         if (node.parents.size() == 0){
             return false;
         } else {
+            System.out.println(node.parents);
             boolean allPaths = true;
             for (CFGBlock parent: node.parents){
                 if (!seen.contains(parent) && !allPathsReturn(parent, seen)){
