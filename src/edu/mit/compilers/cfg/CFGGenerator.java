@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
-import java.util.TreeSet;
 
 public class CFGGenerator {
     public AST rootNode;
@@ -23,7 +22,7 @@ public class CFGGenerator {
         this.globalDescriptor = globalDescriptor;
     }
 
-    public boolean hasError(){
+    public boolean hasError() {
         return error;
     }
 
@@ -34,26 +33,31 @@ public class CFGGenerator {
         rootNode.accept(visitor, globalDescriptor.globalVariablesSymbolTable);
         SymbolTable theSymbolWeCareAbout = globalDescriptor.globalVariablesSymbolTable;
 
-       
 
         visitor.methodCFGBlocks.forEach((k, v) -> {
-            NOP exitNode = new NOP();
-            nopVisitor.exit = exitNode;
+            nopVisitor.exit = visitor.methodToExitNOP.get(k);
             ((CFGNonConditional) v).autoChild.accept(nopVisitor, theSymbolWeCareAbout);
             HashSet<CFGBlock> nodes = getExitNodes(v, new HashSet<>());
-            for (CFGBlock node: nodes){
-                if(globalDescriptor.methodsSymbolTable.getDescriptorFromValidScopes(k).get().type != BuiltinType.Void && !allPathsReturn(node, new HashSet<>())){
+            for (CFGBlock node : nodes) {
+                if (globalDescriptor.methodsSymbolTable
+                        .getDescriptorFromValidScopes(k)
+                        .orElseThrow().type != BuiltinType.Void && somePathDoesNotReturn(node, new HashSet<>())) {
                     error = true;
                 }
             }
         });
-       
 
-        visitor.methodCFGBlocks.forEach((k, v) -> v.accept(maximalVisitor, theSymbolWeCareAbout));
+
+        visitor.methodCFGBlocks.forEach((k, v) -> {
+            maximalVisitor.exitNOP = visitor.methodToExitNOP.get(k);
+            v.accept(maximalVisitor, theSymbolWeCareAbout);
+        });
         visitor.initialGlobalBlock.accept(nopVisitor, theSymbolWeCareAbout);
         HashMap<String, CFGBlock> methodBlocksCFG = new HashMap<>();
         visitor.methodCFGBlocks.forEach((k, v) -> {
-            if (v.getLabel().equals("∅")) {
+            if (v
+                    .getLabel()
+                    .equals("∅")) {
                 if (((CFGNonConditional) v).autoChild != null) {
                     ((CFGNonConditional) v).autoChild.parents.remove(v);
                     v = ((CFGNonConditional) v).autoChild;
@@ -70,22 +74,22 @@ public class CFGGenerator {
     private HashSet<CFGBlock> getExitNodes(CFGBlock v, HashSet<CFGBlock> seen) {
         seen.add(v);
         HashSet<CFGBlock> exits = new HashSet<>();
-        if (v instanceof CFGConditional){
+        if (v instanceof CFGConditional) {
             CFGConditional node = (CFGConditional) v;
             if (!seen.contains(node.trueChild))
                 exits.addAll(getExitNodes(node.trueChild, seen));
             if (!seen.contains(node.falseChild))
                 exits.addAll(getExitNodes(node.falseChild, seen));
-        } else if (v instanceof CFGNonConditional){
+        } else if (v instanceof CFGNonConditional) {
             CFGNonConditional node = (CFGNonConditional) v;
-            if (node.autoChild != null && !seen.contains(node.autoChild)){
+            if (node.autoChild != null && !seen.contains(node.autoChild)) {
                 exits.addAll(getExitNodes(node.autoChild, seen));
             } else {
-                exits.add(v);  
+                exits.add(v);
             }
         } else {
             exits.add(v);
-        } 
+        }
         return exits;
     }
 
@@ -100,7 +104,7 @@ public class CFGGenerator {
             }
             seen.add(block);
             System.out.println(Utils.coloredPrint(block.getLabel(), Utils.ANSIColorConstants.ANSI_PURPLE) + "  >>>>   ");
-            for (CFGBlock parent: block.parents) {
+            for (CFGBlock parent : block.parents) {
                 System.out.println(Utils.indentBlock(parent.getLabel()));
                 System.out.println();
             }
@@ -153,24 +157,24 @@ public class CFGGenerator {
         }
     }
 
-    
-    private boolean allPathsReturn(CFGBlock node, HashSet<CFGBlock> seen){
+
+    private boolean somePathDoesNotReturn(CFGBlock node, HashSet<CFGBlock> seen) {
         seen.add(node);
-        for(CFGLine line : node.lines){
+        for (CFGLine line : node.lines) {
             if (line.ast instanceof Return) {
-                return true;
+                return false;
             }
         }
-        if (node.parents.size() == 0){
-            return false;
+        if (node.parents.size() == 0) {
+            return true;
         } else {
             boolean allPaths = true;
-            for (CFGBlock parent: node.parents){
-                if (!seen.contains(parent) && !allPathsReturn(parent, seen)){
+            for (CFGBlock parent : node.parents) {
+                if (!seen.contains(parent) && somePathDoesNotReturn(parent, seen)) {
                     allPaths = false;
                 }
             }
-            return allPaths;
+            return !allPaths;
         }
     }
 }

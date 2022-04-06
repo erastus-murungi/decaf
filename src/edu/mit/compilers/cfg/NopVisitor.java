@@ -47,6 +47,10 @@ public class NopVisitor implements CFGVisitor<Void> {
             List<CFGBlock> parentsCopy = new ArrayList<>(nop.parents);
             seen.add(nop);
             CFGBlock endBlock = exit;
+            if (nop == exit) {
+                nop.autoChild = null;
+                return null;
+            }
             if (nop.autoChild != null) {
                 nop.autoChild.accept(this, symbolTable);
                 endBlock = nop.autoChild;
