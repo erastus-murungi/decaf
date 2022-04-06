@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class BinaryOpExpression extends Expression {
-    static HashMap<String, Integer> operatorPrecedence = new HashMap<>();
+    public static HashMap<String, Integer> operatorPrecedence = new HashMap<>();
     static {
         operatorPrecedence.put("*", 13);
         operatorPrecedence.put("/", 13);

@@ -6,6 +6,8 @@ import edu.mit.compilers.ast.*;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
+import static edu.mit.compilers.grammar.DecafParser.printParseTree;
+
 public class iCFGVisitor implements Visitor<CFGPair> {
     public CFGNonConditional initialGlobalBlock = new CFGNonConditional();
     public HashMap<String, CFGBlock> methodCFGBlocks = new HashMap<>();
@@ -437,5 +439,50 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     @Override
     public CFGPair visit(Update update, SymbolTable symbolTable) {
         return null;
+    }
+
+    public static Expression rotateBinaryOpExpression(Expression expr) {
+        printParseTree(expr);
+        System.out.println();
+        if (expr instanceof BinaryOpExpression) {
+            if (((BinaryOpExpression) expr).rhs instanceof  BinaryOpExpression) {
+                BinaryOpExpression rhsBinOpExpr = (BinaryOpExpression) ((BinaryOpExpression) expr).rhs;
+                System.out.println("null? " + ((BinaryOpExpression) expr).op);
+                System.out.println("null2? " + rhsBinOpExpr.op);
+                if (BinaryOpExpression.operatorPrecedence.get(((BinaryOpExpression) expr).op).equals(BinaryOpExpression.operatorPrecedence.get(rhsBinOpExpr.op))) {
+                    rhsBinOpExpr.lhs = expr;
+                    ((BinaryOpExpression) expr).rhs = rhsBinOpExpr.lhs;
+                    rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);
+                    rotateBinaryOpExpression(((BinaryOpExpression) expr).rhs);
+                    rotateBinaryOpExpression(rhsBinOpExpr.rhs);
+                    System.out.println("rotatation");
+                    System.out.println(rhsBinOpExpr);
+                    System.out.println();
+                    return rhsBinOpExpr;
+                }
+            }
+            // no rotation at this level so keep looking
+            else {
+                rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);
+                rotateBinaryOpExpression(((BinaryOpExpression) expr).rhs);
+            }
+        }
+        else if (expr instanceof ParenthesizedExpression) {
+            rotateBinaryOpExpression(((ParenthesizedExpression) expr).expression);
+        }
+        else if (expr instanceof MethodCall) {
+            for (MethodCallParameter param: ((MethodCall) expr).methodCallParameterList) {
+                if (param instanceof ExpressionParameter) {
+                    rotateBinaryOpExpression(((ExpressionParameter) param).expression);
+                }
+            }
+        }
+        else if (expr instanceof LocationArray) {
+            rotateBinaryOpExpression(((LocationArray) expr).expression);
+        }
+        else if (expr instanceof UnaryOpExpression) {
+            rotateBinaryOpExpression(((UnaryOpExpression) expr).operand);
+        }
+        return expr;
     }
 }
