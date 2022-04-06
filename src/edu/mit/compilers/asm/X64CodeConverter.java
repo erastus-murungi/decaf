@@ -161,9 +161,9 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
                 }
             }
         }
-//        if (roundUp16(methodBegin.sizeOfLocals) != methodBegin.sizeOfLocals) {
-//            x64builder.addLine(x64InstructionLineWithComment("padding", X64Instruction.pushq, ZERO));
-//        }
+        if (roundUp16(methodBegin.sizeOfLocals) != methodBegin.sizeOfLocals) {
+            x64builder.addLine(x64InstructionLineWithComment("padding", X64Instruction.pushq, ZERO));
+        }
         return x64builder;
     }
 
@@ -180,16 +180,12 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
                 .getResultLocation()
                 .isPresent())
             return x64builder
-                    .addLine(x64InstructionLine(X64Instruction.shr, FOUR, X64Register.RSP))
-                    .addLine(x64InstructionLine(X64Instruction.shl, FOUR, X64Register.RSP))
                     .addLine((x64InstructionLine(X64Instruction.xor, X64Register.RAX, X64Register.RAX)))
                     .addLine(x64InstructionLine(X64Instruction.call, methodCall.getMethodName()))
                     .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, resolveLoadLocation(methodCall
                             .getResultLocation()
                             .get())));
         return x64builder
-                .addLine(x64InstructionLine(X64Instruction.shr, FOUR, X64Register.RSP))
-                .addLine(x64InstructionLine(X64Instruction.shl, FOUR, X64Register.RSP))
                 .addLine(x64InstructionLine(X64Instruction.xor, X64Register.RAX, X64Register.RAX))
                 .addLine(x64InstructionLine(X64Instruction.call,
                         methodCall.getMethodName()));
