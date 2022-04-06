@@ -83,7 +83,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
         lastArrayName = arrayAccess.arrayName;
         return x64Builder.addLine(x64InstructionLineWithComment(
                 String.format("%s", arrayAccess), X64Instruction.movq,
-                resolveLoadLocation(arrayAccess.accessIndex),
+                X64Register.R13,
                 x64Registers[arrayAccessCount & 1]));
     }
 
