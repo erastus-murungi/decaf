@@ -35,17 +35,26 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
 
         @Override
         public ThreeAddressCodeList visit(BooleanLiteral booleanLiteral, SymbolTable symbolTable) {
-            return new ThreeAddressCodeList(ConstantName.fromBooleanLiteral(booleanLiteral));
+            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
+            return new ThreeAddressCodeList(
+                    temporaryVariable,
+                    Collections.singletonList(new CopyInstruction(ConstantName.fromBooleanLiteral(booleanLiteral), temporaryVariable, booleanLiteral)));
         }
 
         @Override
         public ThreeAddressCodeList visit(DecimalLiteral decimalLiteral, SymbolTable symbolTable) {
-            return new ThreeAddressCodeList(ConstantName.fromIntLiteral(decimalLiteral));
+            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
+            return new ThreeAddressCodeList(
+                    temporaryVariable,
+                    Collections.singletonList(new CopyInstruction(ConstantName.fromIntLiteral(decimalLiteral), temporaryVariable, decimalLiteral)));
         }
 
         @Override
         public ThreeAddressCodeList visit(HexLiteral hexLiteral, SymbolTable symbolTable) {
-            return new ThreeAddressCodeList(ConstantName.fromIntLiteral(hexLiteral));
+            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
+            return new ThreeAddressCodeList(
+                    temporaryVariable,
+                    Collections.singletonList(new CopyInstruction(ConstantName.fromIntLiteral(hexLiteral), temporaryVariable, hexLiteral)));
         }
 
         @Override
