@@ -164,7 +164,6 @@ public class CFGGenerator {
         if (node.parents.size() == 0){
             return false;
         } else {
-            System.out.println(node.parents);
             boolean allPaths = true;
             for (CFGBlock parent: node.parents){
                 if (!seen.contains(parent) && !allPathsReturn(parent, seen)){
