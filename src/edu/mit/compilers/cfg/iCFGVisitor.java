@@ -334,6 +334,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     @Override
     public CFGPair visit(Return returnStatement, SymbolTable symbolTable) {
         CFGNonConditional returnBlock = new CFGNonConditional();
+        returnStatement.retExpression = rotateBinaryOpExpression(returnStatement.retExpression);
         returnBlock.lines.add(new CFGExpression(returnStatement));
         return new CFGPair(returnBlock, exitNOP);
     }
@@ -353,6 +354,12 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     @Override
     public CFGPair visit(MethodCallStatement methodCallStatement, SymbolTable symbolTable) {
         CFGNonConditional methodCallExpr = new CFGNonConditional();
+        for (int i = 0; i < methodCallStatement.methodCall.methodCallParameterList.size(); i++) {
+            MethodCallParameter param = methodCallStatement.methodCall.methodCallParameterList.get(i);
+            if (param instanceof ExpressionParameter) {
+                methodCallStatement.methodCall.methodCallParameterList.set(i, new ExpressionParameter(rotateBinaryOpExpression(((ExpressionParameter) param).expression)));
+            }
+        }
         methodCallExpr.lines.add(new CFGExpression(methodCallStatement));
         return new CFGPair(methodCallExpr, methodCallExpr);
     }
@@ -451,8 +458,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
                     rhsTemp.lhs = expr;
                     ((BinaryOpExpression) expr).lhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);
                     ((BinaryOpExpression) expr).rhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).rhs);
-                    rhsTemp.rhs = rotateBinaryOpExpression(rhsTemp.rhs);
-                    return rhsTemp;
+                    return rotateBinaryOpExpression(rhsTemp);
                 }
             }
             ((BinaryOpExpression) expr).lhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);

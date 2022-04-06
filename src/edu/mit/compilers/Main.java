@@ -127,8 +127,8 @@ class Main {
                 ThreeAddressCodesListConverter threeAddressCodesListConverter = new ThreeAddressCodesListConverter(cfgGenerator.globalDescriptor);
                 ThreeAddressCodeList threeAddressCodeList = threeAddressCodesListConverter.fill(visitor, programNode);
                 if (CLI.debug) {
-//                    System.out.println(programNode.getSourceCode());
-//                    System.out.println(threeAddressCodeList);
+                    System.out.println(programNode.getSourceCode());
+                    System.out.println(threeAddressCodeList);
                     GraphVizPrinter.printSymbolTables(programNode, threeAddressCodesListConverter.cfgSymbolTables);
                 }
 
@@ -136,14 +136,6 @@ class Main {
                 X64Program x64Program = x64CodeConverter.convert(threeAddressCodeList);
 
                 outputStream.print(x64Program.toString());
-
-                try {
-                    PrintStream printStream = new PrintStream(new FileOutputStream("tests/output.S"));
-                    printStream.println(x64Program);
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-
             }
         } catch (Exception e) {
             System.err.println(CLI.infile + " " + e);

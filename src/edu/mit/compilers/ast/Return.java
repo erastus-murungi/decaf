@@ -11,7 +11,7 @@ import java.util.List;
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_RETURN;
 
 public class Return extends Statement {
-  public final Expression retExpression;
+  public Expression retExpression;
 
   public Return(TokenPosition tokenPosition, Expression expression) {
     super(tokenPosition);
