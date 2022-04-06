@@ -116,7 +116,7 @@ class Main {
                 CFGGenerator cfgGenerator = new CFGGenerator(programNode, semChecker.globalDescriptor);
                 iCFGVisitor visitor = cfgGenerator.buildiCFG();
                 if (cfgGenerator.hasError()){
-                    System.exit(1);
+                    System.exit(0);
                 }
                 if (CLI.debug) {
                     HashMap<String, CFGBlock> copy = (HashMap<String, CFGBlock>) visitor.methodCFGBlocks.clone();
