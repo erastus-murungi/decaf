@@ -1,6 +1,7 @@
 package edu.mit.compilers.cfg;
 
 import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.ast.BuiltinType;
 import edu.mit.compilers.ast.Return;
 import edu.mit.compilers.descriptors.GlobalDescriptor;
 import edu.mit.compilers.symbolTable.SymbolTable;
@@ -39,7 +40,7 @@ public class CFGGenerator {
             NOP exitNode = new NOP();
             nopVisitor.exit = exitNode;
             ((CFGNonConditional) v).autoChild.accept(nopVisitor, theSymbolWeCareAbout);
-            if(!allPathsReturn(exitNode, new HashSet<>())){
+            if(globalDescriptor.methodsSymbolTable.getDescriptorFromValidScopes(k).get().type != BuiltinType.Void && !allPathsReturn(exitNode, new HashSet<>())){
                 error = true;
             }
         });
