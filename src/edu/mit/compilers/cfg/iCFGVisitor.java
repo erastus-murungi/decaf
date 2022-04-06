@@ -360,6 +360,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     @Override
     public CFGPair visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable) {
         CFGNonConditional assignment = new CFGNonConditional();
+        locationAssignExpr.assignExpr.expression = rotateBinaryOpExpression(locationAssignExpr.assignExpr.expression);
         assignment.lines.add(new CFGAssignment(new Assignment(locationAssignExpr.location, locationAssignExpr.assignExpr)));
         return new CFGPair(assignment, assignment);
     }
@@ -447,8 +448,6 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         if (expr instanceof BinaryOpExpression) {
             if (((BinaryOpExpression) expr).rhs instanceof  BinaryOpExpression) {
                 BinaryOpExpression rhsBinOpExpr = (BinaryOpExpression) ((BinaryOpExpression) expr).rhs;
-                System.out.println("null? " + ((BinaryOpExpression) expr).op);
-                System.out.println("null2? " + rhsBinOpExpr.op);
                 if (BinaryOpExpression.operatorPrecedence.get(((BinaryOpExpression) expr).op).equals(BinaryOpExpression.operatorPrecedence.get(rhsBinOpExpr.op))) {
                     rhsBinOpExpr.lhs = expr;
                     ((BinaryOpExpression) expr).rhs = rhsBinOpExpr.lhs;

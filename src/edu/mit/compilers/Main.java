@@ -127,8 +127,8 @@ class Main {
                 ThreeAddressCodesListConverter threeAddressCodesListConverter = new ThreeAddressCodesListConverter(cfgGenerator.globalDescriptor);
                 ThreeAddressCodeList threeAddressCodeList = threeAddressCodesListConverter.fill(visitor, programNode);
                 if (CLI.debug) {
-                    System.out.println(programNode.getSourceCode());
-                    System.out.println(threeAddressCodeList);
+//                    System.out.println(programNode.getSourceCode());
+//                    System.out.println(threeAddressCodeList);
                     GraphVizPrinter.printSymbolTables(programNode, threeAddressCodesListConverter.cfgSymbolTables);
                 }
 
