@@ -15,7 +15,6 @@ public class ArrayAccess extends ThreeAddressCode {
     public ConstantName arrayLength;
     public AbstractName accessIndex;
 
-
     public ArrayAccess(AST source,
                        String comment,
                        ArrayName arrayName,

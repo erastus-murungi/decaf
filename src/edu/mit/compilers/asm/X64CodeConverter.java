@@ -4,6 +4,7 @@ import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.codes.*;
 import edu.mit.compilers.codegen.names.*;
+import edu.mit.compilers.utils.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -17,9 +18,11 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     public String lastComparisonOperator = null;
     private final ConstantName ZERO = new ConstantName(0L);
     private final ConstantName ONE = new ConstantName(1L);
+    private final ConstantName FOUR = new ConstantName(4L);
     private int arrayAccessCount = 0;
     private final X64Register[] x64Registers = {X64Register.RBX, X64Register.RCX};
-    private VariableName lastArrayName = null;
+    private Stack<Pair<ArrayName, X64Register>> stackArrays = new Stack<>();
+
 
     public X64Program convert(ThreeAddressCodeList threeAddressCodeList) {
         X64Builder x64Builder = initializeDataSection();
@@ -80,11 +83,14 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(ArrayAccess arrayAccess, X64Builder x64Builder) {
-        lastArrayName = arrayAccess.arrayName;
-        return x64Builder.addLine(x64InstructionLineWithComment(
+        final X64Register register = x64Registers[arrayAccessCount & 1];
+        arrayAccessCount += 1;
+        stackArrays.push(new Pair<>(arrayAccess.arrayName, register));
+        return x64Builder.addLine(
+                x64InstructionLineWithComment(
                 String.format("%s", arrayAccess), X64Instruction.movq,
                 X64Register.R13,
-                x64Registers[arrayAccessCount & 1]));
+                register));
     }
 
     @Override
@@ -174,12 +180,16 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
                 .getResultLocation()
                 .isPresent())
             return x64builder
+                    .addLine(x64InstructionLine(X64Instruction.shr, FOUR, X64Register.RSP))
+                    .addLine(x64InstructionLine(X64Instruction.shl, FOUR, X64Register.RSP))
                     .addLine((x64InstructionLine(X64Instruction.xor, X64Register.RAX, X64Register.RAX)))
                     .addLine(x64InstructionLine(X64Instruction.call, methodCall.getMethodName()))
                     .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, resolveLoadLocation(methodCall
                             .getResultLocation()
                             .get())));
         return x64builder
+                .addLine(x64InstructionLine(X64Instruction.shr, FOUR, X64Register.RSP))
+                .addLine(x64InstructionLine(X64Instruction.shl, FOUR, X64Register.RSP))
                 .addLine(x64InstructionLine(X64Instruction.xor, X64Register.RAX, X64Register.RAX))
                 .addLine(x64InstructionLine(X64Instruction.call,
                         methodCall.getMethodName()));
@@ -300,17 +310,35 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
         return String.format("%s(%s)", index, X64Register.RBP);
     }
 
+    private X64Register findLatestOccurrence(AbstractName name) {
+        for (Pair<ArrayName, X64Register> nameX64RegisterPair: stackArrays) {
+            if (nameX64RegisterPair.first() == name) {
+                return nameX64RegisterPair.second();
+            }
+        }
+        return null;
+    }
+
+    private void removeStackOccurrence(AbstractName name) {
+        Pair<ArrayName, X64Register> nameX64RegisterPairToRemove = null;
+        for (Pair<ArrayName, X64Register> nameX64RegisterPair: stackArrays) {
+            if (nameX64RegisterPair.first() == name) {
+                nameX64RegisterPairToRemove = nameX64RegisterPair;
+            }
+        }
+        stackArrays.remove(nameX64RegisterPairToRemove);
+    }
+
     public String resolveLoadLocation(AbstractName name) {
-        if (name.equals(lastArrayName) && globals.contains(name)) {
-            String toReturn = String.format("%s(,%s,%s)", lastArrayName, x64Registers[arrayAccessCount & 1], 8);
-            arrayAccessCount++;
-            lastArrayName = null;
+        X64Register reg = findLatestOccurrence(name);
+        if (reg != null && globals.contains(name)) {
+            String toReturn = String.format("%s(,%s,%s)", name, reg, 8);
+            removeStackOccurrence(name);
             return toReturn;
-        } else if (name.equals(lastArrayName) && !globals.contains(name)) {
+        } else if (reg != null && !globals.contains(name)) {
             Integer offset = callStack.peek().nameToStackOffset.get(name.toString());
             String toReturn = String.format("-%s(%s,%s,%s)", offset, X64Register.RBP, x64Registers[arrayAccessCount & 1], 8);
-            arrayAccessCount++;
-            lastArrayName = null;
+            removeStackOccurrence(name);
             return toReturn;
         }
         if (globals.contains(name) || name instanceof StringConstantName || name instanceof ConstantName)

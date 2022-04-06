@@ -13,13 +13,15 @@ public class ArrayBoundsCheck extends ThreeAddressCode{
     public Label indexIsGTEZero;
     public ConstantName arraySize;
     public AbstractName arrayIndex;
+    public ArrayAccess arrayAccess;
 
-    public ArrayBoundsCheck(AST source, String comment, AbstractName arrayIndex, ConstantName arraySize, Label indexIsLessThanArraySize, Label indexIsGTEZero) {
+    public ArrayBoundsCheck(AST source, ArrayAccess arrayAccess,String comment, AbstractName arrayIndex, ConstantName arraySize, Label indexIsLessThanArraySize, Label indexIsGTEZero) {
         super(source, comment);
         this.arraySize = arraySize;
         this.indexIsLessThanArraySize = indexIsLessThanArraySize;
         this.indexIsGTEZero = indexIsGTEZero;
         this.arrayIndex = arrayIndex;
+        this.arrayAccess = arrayAccess;
     }
 
     @Override
