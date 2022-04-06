@@ -267,29 +267,17 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
                         .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, destStackLocation))
                         .addLine(x64InstructionLine(X64Instruction.xorb, ONE, destStackLocation));
             case "-":
-                return (oneOperandAssign.operand instanceof ConstantName) ? (
-                        x64builder
-                                .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, destStackLocation))
-                                .addLine(x64InstructionLine(X64Instruction.neg, destStackLocation)))
-                        : x64builder
+                return x64builder
                         .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
                         .addLine(x64InstructionLine(X64Instruction.neg, X64Register.RAX))
                         .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, destStackLocation));
             case "--":
-                return (oneOperandAssign.operand instanceof ConstantName) ? (
-                        x64builder
-                                .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, destStackLocation))
-                                .addLine(x64InstructionLine(X64Instruction.dec, destStackLocation)))
-                        : x64builder
+                return x64builder
                         .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
                         .addLine(x64InstructionLine(X64Instruction.dec, X64Register.RAX))
                         .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, destStackLocation));
             case "++":
-                return (oneOperandAssign.operand instanceof ConstantName) ? (
-                        x64builder
-                                .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, destStackLocation))
-                                .addLine(x64InstructionLine(X64Instruction.inc, destStackLocation)))
-                        : x64builder
+                return x64builder
                         .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
                         .addLine(x64InstructionLine(X64Instruction.inc, X64Register.RAX))
                         .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, destStackLocation));
