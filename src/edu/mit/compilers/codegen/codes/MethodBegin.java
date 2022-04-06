@@ -10,7 +10,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class MethodBegin extends ThreeAddressCode {
-    public long sizeOfLocals;
     public final MethodDefinition methodDefinition;
     private List<AbstractName> locals;
     public HashMap<String, Integer> nameToStackOffset = new HashMap<>();
@@ -18,12 +17,11 @@ public class MethodBegin extends ThreeAddressCode {
     public MethodBegin(MethodDefinition methodDefinition) {
         super(methodDefinition);
         this.methodDefinition = methodDefinition;
-        this.sizeOfLocals = 0;
     }
 
     @Override
     public String toString() {
-        return String.format("%s:\n%s%s %s", methodDefinition.methodName.id, DOUBLE_INDENT, "BeginFunction", sizeOfLocals);
+        return String.format("%s:\n%s%s", methodDefinition.methodName.id, DOUBLE_INDENT, "BeginFunction");
     }
 
     @Override
@@ -67,7 +65,6 @@ public class MethodBegin extends ThreeAddressCode {
     public void setLocals(List<AbstractName> locals) {
         this.locals = locals;
         reorderLocals();
-        this.sizeOfLocals = locals.stream().map(abstractName -> abstractName.size).reduce(0L, Long::sum);
     }
 
     public List<AbstractName> getLocals() {

@@ -40,6 +40,6 @@ public class StringLiteralStackAllocation extends ThreeAddressCode {
     }
 
     public String getASM() {
-        return String.format("%s:\n%s.%s %s\n%s.align 16\n", label, INDENT, "string", stringConstant, INDENT);
+        return String.format("%s:\n%s%s.%s   %s", label, INDENT, INDENT, "string", stringConstant);
     }
 }
