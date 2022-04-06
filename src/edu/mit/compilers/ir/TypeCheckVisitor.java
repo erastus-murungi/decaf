@@ -69,11 +69,7 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
             SymbolTable parameterSymbolTable = ((MethodDescriptor) methods.getDescriptorFromCurrentScope(methodDefinition.methodName.id).get()).parameterSymbolTable;
             for (MethodDefinitionParameter methodDefinitionParameter : methodDefinition.methodDefinitionParameterList)
                 methodDefinitionParameter.accept(this, parameterSymbolTable);
-            if (returnTypeSeen == BuiltinType.Undefined) {
-                if (methodDefinition.returnType != BuiltinType.Void) {
-                    exceptions.add(new DecafSemanticException(methodDefinition.tokenPosition, "missing return statement"));
-                }
-            } else if (methodDefinition.returnType != returnTypeSeen) {
+            if (returnTypeSeen != BuiltinType.Undefined && methodDefinition.returnType != returnTypeSeen) {
                 exceptions.add(new DecafSemanticException(methodDefinition.tokenPosition, methodDefinition.methodName.id + " does not have a declared type " + methodDefinition.returnType + " instead it returns type " + returnTypeSeen));
             }
             returnTypeSeen = BuiltinType.Undefined;
