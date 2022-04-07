@@ -568,7 +568,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             universalThreeAddressCodeList.add(line.ast.accept(visitor, symbolTable));
         }
         blockToCodeHashMap.put(cfgNonConditional, universalThreeAddressCodeList);
-        if (!(cfgNonConditional.autoChild instanceof NOP)) {
+        if (!(cfgNonConditional instanceof NOP) && !(cfgNonConditional.autoChild instanceof NOP)) {
             if (visited.contains(cfgNonConditional.autoChild)) {
                 assert blockToLabelHashMap.containsKey(cfgNonConditional.autoChild);
                 universalThreeAddressCodeList.setNext(ThreeAddressCodeList.of(new UnconditionalJump(blockToLabelHashMap.get(cfgNonConditional.autoChild))));
