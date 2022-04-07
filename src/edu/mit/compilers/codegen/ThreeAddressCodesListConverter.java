@@ -568,7 +568,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             universalThreeAddressCodeList.add(line.ast.accept(visitor, symbolTable));
         }
         blockToCodeHashMap.put(cfgNonConditional, universalThreeAddressCodeList);
-        if (cfgNonConditional.autoChild != null) {
+        if (!(cfgNonConditional.autoChild instanceof NOP)) {
             if (visited.contains(cfgNonConditional.autoChild)) {
                 assert blockToLabelHashMap.containsKey(cfgNonConditional.autoChild);
                 universalThreeAddressCodeList.setNext(ThreeAddressCodeList.of(new UnconditionalJump(blockToLabelHashMap.get(cfgNonConditional.autoChild))));
@@ -582,7 +582,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
     }
 
     private Label getLabel(CFGBlock cfgBlock, Label from) {
-        if (cfgBlock == null) {
+        if (cfgBlock instanceof NOP) {
             return endLabelGlobal;
         }
         BiFunction<CFGBlock, Label, Label> function = (cfgBlock1, label) -> {
@@ -618,7 +618,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         ThreeAddressCodeList codeList;
         ThreeAddressCodeList trueBlock;
 
-        if (child != null) {
+        if (!(child instanceof NOP)) {
             if (visited.contains(child)) {
                 codeList = blockToCodeHashMap.get(child);
                 Label label;
@@ -646,6 +646,8 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         ThreeAddressCodeList testConditionThreeAddressList = getConditionTACList(condition, symbolTable);
 
         final Label conditionLabel = getLabel(cfgConditional, null);
+        if (conditionLabel.label.equals("L23"))
+            System.out.println("stop");
 
         final ThreeAddressCodeList conditionLabelTACList = ThreeAddressCodeList.of(conditionLabel);
         conditionLabelTACList.add(testConditionThreeAddressList);
@@ -658,7 +660,8 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
 
         Label falseLabel = getLabel(cfgConditional.falseChild, conditionLabel);
         Label endLabel = new Label(conditionLabel.label + "end", null);
-
+        if (endLabel.label.equals("L23end"))
+            System.out.println("no");
         JumpIfFalse jumpIfFalse =
                 new JumpIfFalse(condition,
                         testConditionThreeAddressList.place,
