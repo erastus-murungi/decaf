@@ -27,19 +27,28 @@ public class CFGGenerator {
         final MethodDefinition methodDefinition = methodDescriptor.methodDefinition;
         if (methodDescriptor.type == BuiltinType.Void)
             return;
-        exitNop.parents.removeIf(block -> !block
+
+        exitNop.parents.removeIf(block -> !(block
                 .getSuccessors()
-                .contains(exitNop));
-        List<CFGBlock> allExecutionPathsReturn = exitNop.parents
+                .contains(exitNop)));
+
+        final List<CFGBlock> allExecutionPathsReturn = exitNop.parents
                 .stream()
-                .filter(cfgBlock -> (!cfgBlock.lines.isEmpty() && !(cfgBlock.lastASTLine() instanceof Return)))
+                .filter(cfgBlock -> (!cfgBlock.lines.isEmpty() && (cfgBlock.lastASTLine() instanceof Return)))
                 .collect(Collectors.toList());
-        if (allExecutionPathsReturn.size() != exitNop.parents.size()) {
-            errors.addAll(allExecutionPathsReturn
+
+        final List<CFGBlock> allExecutionsPathsThatDontReturn = exitNop.parents
+                .stream()
+                .filter(cfgBlock -> (cfgBlock.lines.isEmpty() || (!(cfgBlock.lastASTLine() instanceof Return))))
+                .collect(Collectors.toList());
+
+        if (allExecutionPathsReturn.size() != allExecutionsPathsThatDontReturn.size()) {
+            errors.addAll(allExecutionsPathsThatDontReturn
                     .stream()
-                    .map(cfgBlock -> new DecafException(methodDefinition.tokenPosition, methodDefinition.methodName.id + "'s execution path ends with " + cfgBlock
-                            .lastASTLine()
-                            .getSourceCode() + " instead of a return statement"))
+                    .map(cfgBlock -> new DecafException(methodDefinition.tokenPosition, methodDefinition.methodName.id + "'s execution path ends with " +
+                            (cfgBlock.lines.isEmpty() ? "" : (cfgBlock
+                                    .lastASTLine()
+                                    .getSourceCode())) + " instead of a return statement"))
                     .collect(Collectors.toList()));
         }
         if (allExecutionPathsReturn.isEmpty()) {
