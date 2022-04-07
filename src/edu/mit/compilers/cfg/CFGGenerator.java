@@ -2,6 +2,7 @@ package edu.mit.compilers.cfg;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.BuiltinType;
+import edu.mit.compilers.ast.MethodDefinition;
 import edu.mit.compilers.ast.Return;
 import edu.mit.compilers.descriptors.GlobalDescriptor;
 import edu.mit.compilers.descriptors.MethodDescriptor;
@@ -23,6 +24,7 @@ public class CFGGenerator {
     }
 
     private void catchFalloutError(NOP exitNop, MethodDescriptor methodDescriptor) {
+        final MethodDefinition methodDefinition = methodDescriptor.methodDefinition;
         if (methodDescriptor.type == BuiltinType.Void)
             return;
         exitNop.parents.removeIf(block -> !block
@@ -30,15 +32,20 @@ public class CFGGenerator {
                 .contains(exitNop));
         List<CFGBlock> allExecutionPathsReturn = exitNop.parents
                 .stream()
-                .filter(cfgBlock -> (!(cfgBlock.lastASTLine() instanceof Return)))
+                .filter(cfgBlock -> (!cfgBlock.lines.isEmpty() && !(cfgBlock.lastASTLine() instanceof Return)))
                 .collect(Collectors.toList());
-        if (!allExecutionPathsReturn.isEmpty()) {
+        if (allExecutionPathsReturn.size() != exitNop.parents.size()) {
             errors.addAll(allExecutionPathsReturn
                     .stream()
-                    .map(cfgBlock -> new DecafException(methodDescriptor.methodDefinition.tokenPosition, methodDescriptor.methodDefinition.methodName.id + "'s execution path ends with " + cfgBlock
+                    .map(cfgBlock -> new DecafException(methodDefinition.tokenPosition, methodDefinition.methodName.id + "'s execution path ends with " + cfgBlock
                             .lastASTLine()
                             .getSourceCode() + " instead of a return statement"))
                     .collect(Collectors.toList()));
+        }
+        if (allExecutionPathsReturn.isEmpty()) {
+            errors.add(new DecafException(
+                    methodDefinition.tokenPosition,
+                    methodDefinition.methodName.id + " method does not return expected type " + methodDefinition.returnType));
         }
     }
 
@@ -53,16 +60,18 @@ public class CFGGenerator {
         visitor.methodCFGBlocks.forEach((k, v) -> {
             nopVisitor.exit = visitor.methodToExitNOP.get(k);
             ((CFGNonConditional) v).autoChild.accept(nopVisitor, theSymbolWeCareAbout);
-            catchFalloutError(nopVisitor.exit, (MethodDescriptor) globalDescriptor.methodsSymbolTable.getDescriptorFromValidScopes(k).orElseThrow());
         });
 
         visitor.methodCFGBlocks.forEach((k, v) -> {
             maximalVisitor.exitNOP = visitor.methodToExitNOP.get(k);
             v.accept(maximalVisitor, theSymbolWeCareAbout);
+            catchFalloutError(maximalVisitor.exitNOP, (MethodDescriptor) globalDescriptor.methodsSymbolTable
+                    .getDescriptorFromValidScopes(k)
+                    .orElseThrow());
         });
 
         if (errors.size() > 0) {
-            for (DecafException decafException: errors)
+            for (DecafException decafException : errors)
                 decafException.printStackTrace();
             System.exit(-2);
         }
