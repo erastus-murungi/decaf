@@ -646,8 +646,6 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         ThreeAddressCodeList testConditionThreeAddressList = getConditionTACList(condition, symbolTable);
 
         final Label conditionLabel = getLabel(cfgConditional, null);
-        if (conditionLabel.label.equals("L23"))
-            System.out.println("stop");
 
         final ThreeAddressCodeList conditionLabelTACList = ThreeAddressCodeList.of(conditionLabel);
         conditionLabelTACList.add(testConditionThreeAddressList);
@@ -660,8 +658,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
 
         Label falseLabel = getLabel(cfgConditional.falseChild, conditionLabel);
         Label endLabel = new Label(conditionLabel.label + "end", null);
-        if (endLabel.label.equals("L23end"))
-            System.out.println("no");
+
         JumpIfFalse jumpIfFalse =
                 new JumpIfFalse(condition,
                         testConditionThreeAddressList.place,
