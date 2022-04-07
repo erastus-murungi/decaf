@@ -3,6 +3,7 @@ package edu.mit.compilers.asm;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.codes.*;
+import edu.mit.compilers.codegen.codes.RuntimeException;
 import edu.mit.compilers.codegen.names.*;
 import edu.mit.compilers.utils.Pair;
 
@@ -93,6 +94,13 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
                 x64InstructionLine(X64Instruction.movq,
                         X64Register.R13,
                         register));
+    }
+
+    @Override
+    public X64Builder visit(RuntimeException runtimeException, X64Builder x64Builder) {
+        return x64Builder
+                .addLine(x64InstructionLine(X64Instruction.mov, new ConstantName((long) runtimeException.errorCode), "%edi"))
+                .addLine(x64InstructionLine(X64Instruction.call, "exit"));
     }
 
     @Override

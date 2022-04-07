@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 public class CFGGenerator {
     public AST rootNode;
     public GlobalDescriptor globalDescriptor;
-    List<DecafException> errors = new ArrayList<>();
+    public List<DecafException> errors = new ArrayList<>();
 
     public CFGGenerator(AST ast, GlobalDescriptor globalDescriptor) {
         this.rootNode = ast;
@@ -45,7 +45,8 @@ public class CFGGenerator {
         if (allExecutionPathsReturn.size() != allExecutionsPathsThatDontReturn.size()) {
             errors.addAll(allExecutionsPathsThatDontReturn
                     .stream()
-                    .map(cfgBlock -> new DecafException(methodDefinition.tokenPosition, methodDefinition.methodName.id + "'s execution path ends with " +
+                    .map(cfgBlock -> new DecafException(methodDefinition.tokenPosition,
+                            methodDefinition.methodName.id + "'s execution path ends with" +
                             (cfgBlock.lines.isEmpty() ? "" : (cfgBlock
                                     .lastASTLine()
                                     .getSourceCode())) + " instead of a return statement"))
@@ -79,11 +80,11 @@ public class CFGGenerator {
                     .orElseThrow());
         });
 
-        if (errors.size() > 0) {
-            for (DecafException decafException : errors)
-                decafException.printStackTrace();
-            System.exit(-2);
-        }
+//        if (errors.size() > 0) {
+//            for (DecafException decafException : errors)
+//                decafException.printStackTrace();
+//            System.exit(-2);
+//        }
         visitor.initialGlobalBlock.accept(nopVisitor, theSymbolWeCareAbout);
         HashMap<String, CFGBlock> methodBlocksCFG = new HashMap<>();
         visitor.methodCFGBlocks.forEach((k, v) -> {
