@@ -124,7 +124,7 @@ class Main {
                     GraphVizPrinter.printGraph(copy);
                 }
 
-                ThreeAddressCodesListConverter threeAddressCodesListConverter = new ThreeAddressCodesListConverter(cfgGenerator.globalDescriptor);
+                ThreeAddressCodesListConverter threeAddressCodesListConverter = new ThreeAddressCodesListConverter(cfgGenerator);
                 ThreeAddressCodeList threeAddressCodeList = threeAddressCodesListConverter.fill(visitor, programNode);
                 if (CLI.debug) {
                     System.out.println(programNode.getSourceCode());

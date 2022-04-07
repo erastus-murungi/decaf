@@ -2,6 +2,7 @@ package edu.mit.compilers.codegen;
 
 import com.sun.source.tree.ArrayAccessTree;
 import edu.mit.compilers.codegen.codes.*;
+import edu.mit.compilers.codegen.codes.RuntimeException;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 public interface ThreeAddressCodeVisitor<ReturnType, ExtraInfoType> {
@@ -37,4 +38,6 @@ public interface ThreeAddressCodeVisitor<ReturnType, ExtraInfoType> {
     ReturnType visit(ArrayBoundsCheck arrayBoundsCheck, ExtraInfoType extra);
 
     ReturnType visit(ArrayAccess arrayAccess, ExtraInfoType extra);
+
+    ReturnType visit(RuntimeException runtimeException, ExtraInfoType extraInfo);
 }

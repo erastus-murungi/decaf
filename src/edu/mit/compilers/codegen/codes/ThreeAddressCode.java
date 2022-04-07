@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public abstract class ThreeAddressCode {
-    AST source;
+    public AST source;
     private String comment;
     public static final String INDENT = "    ";
     public static final String DOUBLE_INDENT = INDENT + INDENT;

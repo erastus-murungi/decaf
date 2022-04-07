@@ -4,10 +4,11 @@ import edu.mit.compilers.ast.*;
 import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.cfg.*;
 import edu.mit.compilers.codegen.codes.*;
+import edu.mit.compilers.codegen.codes.RuntimeException;
 import edu.mit.compilers.codegen.names.*;
 import edu.mit.compilers.descriptors.ArrayDescriptor;
 import edu.mit.compilers.descriptors.Descriptor;
-import edu.mit.compilers.descriptors.GlobalDescriptor;
+import edu.mit.compilers.exceptions.DecafException;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
@@ -19,6 +20,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCodeList> {
+    private final List<DecafException> errors;
     private Set<String> globals;
 
     private static class ThreeAddressCodesConverter implements Visitor<ThreeAddressCodeList> {
@@ -442,6 +444,11 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
         MethodBegin methodBegin = new MethodBegin(methodDefinition);
         threeAddressCodeList.addCode(methodBegin);
+        if (!this.errors.isEmpty()) {
+            for (DecafException error: errors) {
+                threeAddressCodeList.addCode(new RuntimeException(error.getMessage(), -2, error));
+            }
+        }
 
         flattenMethodDefinitionArguments(threeAddressCodeList, methodDefinition.methodDefinitionParameterList);
 
@@ -554,9 +561,10 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         return threeAddressCodeList;
     }
 
-    public ThreeAddressCodesListConverter(GlobalDescriptor globalDescriptor) {
+    public ThreeAddressCodesListConverter(CFGGenerator cfgGenerator) {
+        this.errors = cfgGenerator.errors;
         this.visitor = new ThreeAddressCodesConverter();
-        CFGSymbolTableConverter cfgSymbolTableConverter = new CFGSymbolTableConverter(globalDescriptor);
+        CFGSymbolTableConverter cfgSymbolTableConverter = new CFGSymbolTableConverter(cfgGenerator.globalDescriptor);
         this.cfgSymbolTables = cfgSymbolTableConverter.createCFGSymbolTables();
     }
 
@@ -568,7 +576,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
             universalThreeAddressCodeList.add(line.ast.accept(visitor, symbolTable));
         }
         blockToCodeHashMap.put(cfgNonConditional, universalThreeAddressCodeList);
-        if (cfgNonConditional.autoChild != null) {
+        if (!(cfgNonConditional instanceof NOP) && !(cfgNonConditional.autoChild instanceof NOP)) {
             if (visited.contains(cfgNonConditional.autoChild)) {
                 assert blockToLabelHashMap.containsKey(cfgNonConditional.autoChild);
                 universalThreeAddressCodeList.setNext(ThreeAddressCodeList.of(new UnconditionalJump(blockToLabelHashMap.get(cfgNonConditional.autoChild))));
@@ -582,7 +590,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
     }
 
     private Label getLabel(CFGBlock cfgBlock, Label from) {
-        if (cfgBlock == null) {
+        if (cfgBlock instanceof NOP) {
             return endLabelGlobal;
         }
         BiFunction<CFGBlock, Label, Label> function = (cfgBlock1, label) -> {
@@ -618,7 +626,7 @@ public class ThreeAddressCodesListConverter implements CFGVisitor<ThreeAddressCo
         ThreeAddressCodeList codeList;
         ThreeAddressCodeList trueBlock;
 
-        if (child != null) {
+        if (!(child instanceof NOP)) {
             if (visited.contains(child)) {
                 codeList = blockToCodeHashMap.get(child);
                 Label label;

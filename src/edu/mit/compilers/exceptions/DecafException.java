@@ -1,6 +1,8 @@
 package edu.mit.compilers.exceptions;
 
 
+import edu.mit.compilers.grammar.TokenPosition;
+
 public class DecafException extends Exception {
     final public int line;
     final public int column;
@@ -9,6 +11,12 @@ public class DecafException extends Exception {
         super(errMessage);
         this.line = line;
         this.column = column;
+    }
+
+    public DecafException(TokenPosition tokenPosition, String errMessage) {
+        super(errMessage);
+        line = tokenPosition.line();
+        column = tokenPosition.column();
     }
 
     @Override

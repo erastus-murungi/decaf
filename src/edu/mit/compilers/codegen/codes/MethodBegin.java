@@ -43,10 +43,11 @@ public class MethodBegin extends ThreeAddressCode {
                 .collect(Collectors.toSet());
 
         List<AbstractName> methodParamNamesList = new ArrayList<>();
-        for (AbstractName name : locals)
+        for (AbstractName name : locals) {
             if (methodParameters.contains(name.toString())) {
                 methodParamNamesList.add(name);
             }
+        }
         for (AbstractName local : locals) {
             if (methodParameters.contains(local.toString())) {
                 methodParametersNames.add(local);

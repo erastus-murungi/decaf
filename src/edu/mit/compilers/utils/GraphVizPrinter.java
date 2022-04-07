@@ -455,7 +455,7 @@ public class GraphVizPrinter {
         while (!stack.isEmpty()) {
             CFGBlock cfgBlock = stack.pop();
             if (cfgBlock instanceof NOP) {
-                nodes.add(String.format("   %s [shape=record, label=%s, color=red];", cfgBlock.hashCode(), "\"<from_node>" + escape(cfgBlock.getLabel()) + "\""));
+                nodes.add(String.format("   %s [shape=record, style=filled, fillcolor=gray, label=%s];", cfgBlock.hashCode(), "\"<from_node>" + escape(cfgBlock.getLabel()) + "\""));
                 CFGBlock autoChild = ((NOP) cfgBlock).autoChild;
                 if (autoChild != null) {
                     edges.add(String.format("   %s -> %s;", cfgBlock.hashCode()+ ":from_node", autoChild.hashCode()+ ":from_node"));
@@ -476,9 +476,7 @@ public class GraphVizPrinter {
                     }
                 }
             } else if (cfgBlock instanceof CFGConditional) {
-                //if (cfgBlock.getLabel().equals("1 < 2"))
-                    // System.out.println("stop");
-                nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"{<from_node>" + escape(cfgBlock.getLabel()) + "|{<from_true> true|<from_false>false}" + "}\""));
+                nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"{<from_node>" + escape(cfgBlock.getLabel()) + "|{<from_true> T|<from_false>F}" + "}\""));
                 CFGBlock falseChild = ((CFGConditional) cfgBlock).falseChild;
                 CFGBlock trueChild = ((CFGConditional) cfgBlock).trueChild;
                 if (falseChild != null) {

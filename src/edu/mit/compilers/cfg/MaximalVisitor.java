@@ -7,6 +7,7 @@ import java.util.HashMap;
 
 public class MaximalVisitor implements CFGVisitor<CFGBlock> {
     HashMap<CFGBlock, Integer> visited = new HashMap<>();
+    public NOP exitNOP;
 
     @Override
     public CFGBlock visit(CFGNonConditional cfgNonConditional, SymbolTable symbolTable) {
@@ -19,6 +20,8 @@ public class MaximalVisitor implements CFGVisitor<CFGBlock> {
             }
 
             if (cfgNonConditional.autoChild instanceof CFGNonConditional) {
+                if (cfgNonConditional.autoChild == exitNOP)
+                    return cfgNonConditional;
                 CFGNonConditional child = (CFGNonConditional) cfgNonConditional.autoChild;
                 CFGBlock grandChild = child.autoChild;
 
@@ -71,9 +74,19 @@ public class MaximalVisitor implements CFGVisitor<CFGBlock> {
 
     @Override
     public CFGBlock visit(NOP nop, SymbolTable symbolTable) {
+        if (nop == exitNOP) {
+            if (nop.autoChild != null) {
+                throw new IllegalStateException("expected exit NOP to have no child");
+            }
+            return nop;
+        }
         CFGBlock block = nop.autoChild;
-        while (block instanceof NOP)
-            block = ((NOP) block).autoChild;
+        while (block instanceof NOP) {
+            NOP blockNOP = ((NOP) block);
+            if (block == exitNOP)
+                return blockNOP;
+            block = blockNOP.autoChild;
+        }
         if (block instanceof CFGNonConditional)
             return visit((CFGNonConditional) block, symbolTable);
         return block;

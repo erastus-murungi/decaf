@@ -1,5 +1,6 @@
 package edu.mit.compilers.cfg;
 
+import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.ArrayList;
@@ -8,6 +9,12 @@ import java.util.List;
 public abstract class CFGBlock {
     public ArrayList<CFGBlock> parents;
     public ArrayList<CFGLine> lines;
+
+    public abstract List<CFGBlock> getSuccessors();
+
+    public AST lastASTLine() {
+        return lines.get(lines.size() - 1).ast;
+    }
 
 
     public CFGBlock() {

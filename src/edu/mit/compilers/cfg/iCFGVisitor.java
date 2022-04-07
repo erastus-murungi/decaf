@@ -11,6 +11,7 @@ import static edu.mit.compilers.grammar.DecafParser.printParseTree;
 public class iCFGVisitor implements Visitor<CFGPair> {
     public CFGNonConditional initialGlobalBlock = new CFGNonConditional();
     public HashMap<String, CFGBlock> methodCFGBlocks = new HashMap<>();
+    public HashMap<String, NOP> methodToExitNOP = new HashMap<>();
 
     public Stack<List<CFGNonConditional>> loopToBreak = new Stack<>(); // a bunch of break blocks to point to the right place
     public Stack<CFGBlock> continueBlocks = new Stack<>(); // a bunch of continue blocks to point to the right place
@@ -18,10 +19,9 @@ public class iCFGVisitor implements Visitor<CFGPair> {
     /**
      * We need a global NOP which represents the end of all computation in a method
      */
-    private final NOP exitNOP;
+    private NOP exitNOP;
 
     public iCFGVisitor() {
-        exitNOP = new NOP();
     }
 
     @Override
@@ -208,7 +208,9 @@ public class iCFGVisitor implements Visitor<CFGPair> {
             curPair = placeholder;
         }
         for (MethodDefinition method : program.methodDefinitionList) {
+            exitNOP = new NOP("Exit " +  method.methodName.id);
             methodCFGBlocks.put(method.methodName.id, method.accept(this, symbolTable).startBlock);
+            methodToExitNOP.put(method.methodName.id, exitNOP);
         }
         // don't need to return pair bc only need start block
         return null;
@@ -264,7 +266,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
                 CFGPair returnPair = statement.accept(this, symbolTable);
                 curPair.endBlock.autoChild = returnPair.startBlock;
                 returnPair.startBlock.parents.add(curPair.endBlock);
-                return new CFGPair(initial, returnPair.endBlock);
+                return new CFGPair(initial, returnPair.endBlock, false);
             }
             // recurse normally for other cases
             else {
@@ -336,6 +338,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         CFGNonConditional returnBlock = new CFGNonConditional();
         returnStatement.retExpression = rotateBinaryOpExpression(returnStatement.retExpression);
         returnBlock.lines.add(new CFGExpression(returnStatement));
+        returnBlock.autoChild = exitNOP;
         return new CFGPair(returnBlock, exitNOP);
     }
 
