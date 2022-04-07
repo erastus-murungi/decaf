@@ -4,54 +4,68 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.BuiltinType;
 import edu.mit.compilers.ast.Return;
 import edu.mit.compilers.descriptors.GlobalDescriptor;
+import edu.mit.compilers.descriptors.MethodDescriptor;
+import edu.mit.compilers.exceptions.DecafException;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Utils;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class CFGGenerator {
     public AST rootNode;
     public GlobalDescriptor globalDescriptor;
-    private boolean error = false;
+    List<DecafException> errors = new ArrayList<>();
 
     public CFGGenerator(AST ast, GlobalDescriptor globalDescriptor) {
         this.rootNode = ast;
         this.globalDescriptor = globalDescriptor;
     }
 
-    public boolean hasError() {
-        return error;
+    private void catchFalloutError(NOP exitNop, MethodDescriptor methodDescriptor) {
+        if (methodDescriptor.type == BuiltinType.Void)
+            return;
+        exitNop.parents.removeIf(block -> !block
+                .getSuccessors()
+                .contains(exitNop));
+        List<CFGBlock> allExecutionPathsReturn = exitNop.parents
+                .stream()
+                .filter(cfgBlock -> (!(cfgBlock.lastASTLine() instanceof Return)))
+                .collect(Collectors.toList());
+        if (!allExecutionPathsReturn.isEmpty()) {
+            errors.addAll(allExecutionPathsReturn
+                    .stream()
+                    .map(cfgBlock -> new DecafException(methodDescriptor.methodDefinition.tokenPosition, methodDescriptor.methodDefinition.methodName.id + "'s execution path ends with " + cfgBlock
+                            .lastASTLine()
+                            .getSourceCode() + " instead of a return statement"))
+                    .collect(Collectors.toList()));
+        }
     }
 
     public iCFGVisitor buildiCFG() {
-        iCFGVisitor visitor = new iCFGVisitor();
-        MaximalVisitor maximalVisitor = new MaximalVisitor();
-        NopVisitor nopVisitor = new NopVisitor();
-        rootNode.accept(visitor, globalDescriptor.globalVariablesSymbolTable);
-        SymbolTable theSymbolWeCareAbout = globalDescriptor.globalVariablesSymbolTable;
+        final iCFGVisitor visitor = new iCFGVisitor();
+        final MaximalVisitor maximalVisitor = new MaximalVisitor();
+        final NopVisitor nopVisitor = new NopVisitor();
 
+        rootNode.accept(visitor, globalDescriptor.globalVariablesSymbolTable);
+        final SymbolTable theSymbolWeCareAbout = globalDescriptor.globalVariablesSymbolTable;
 
         visitor.methodCFGBlocks.forEach((k, v) -> {
             nopVisitor.exit = visitor.methodToExitNOP.get(k);
             ((CFGNonConditional) v).autoChild.accept(nopVisitor, theSymbolWeCareAbout);
-            HashSet<CFGBlock> nodes = getExitNodes(v, new HashSet<>());
-            for (CFGBlock node : nodes) {
-                if (globalDescriptor.methodsSymbolTable
-                        .getDescriptorFromValidScopes(k)
-                        .orElseThrow().type != BuiltinType.Void && somePathDoesNotReturn(node, new HashSet<>())) {
-                    error = true;
-                }
-            }
+            catchFalloutError(nopVisitor.exit, (MethodDescriptor) globalDescriptor.methodsSymbolTable.getDescriptorFromValidScopes(k).orElseThrow());
         });
-
 
         visitor.methodCFGBlocks.forEach((k, v) -> {
             maximalVisitor.exitNOP = visitor.methodToExitNOP.get(k);
             v.accept(maximalVisitor, theSymbolWeCareAbout);
         });
+
+        if (errors.size() > 0) {
+            for (DecafException decafException: errors)
+                decafException.printStackTrace();
+            System.exit(-2);
+        }
         visitor.initialGlobalBlock.accept(nopVisitor, theSymbolWeCareAbout);
         HashMap<String, CFGBlock> methodBlocksCFG = new HashMap<>();
         visitor.methodCFGBlocks.forEach((k, v) -> {
@@ -68,29 +82,8 @@ public class CFGGenerator {
         visitor.methodCFGBlocks = methodBlocksCFG;
         visitor.initialGlobalBlock.accept(maximalVisitor, theSymbolWeCareAbout);
 
-        return visitor;
-    }
 
-    private HashSet<CFGBlock> getExitNodes(CFGBlock v, HashSet<CFGBlock> seen) {
-        seen.add(v);
-        HashSet<CFGBlock> exits = new HashSet<>();
-        if (v instanceof CFGConditional) {
-            CFGConditional node = (CFGConditional) v;
-            if (!seen.contains(node.trueChild))
-                exits.addAll(getExitNodes(node.trueChild, seen));
-            if (!seen.contains(node.falseChild))
-                exits.addAll(getExitNodes(node.falseChild, seen));
-        } else if (v instanceof CFGNonConditional) {
-            CFGNonConditional node = (CFGNonConditional) v;
-            if (node.autoChild != null && !seen.contains(node.autoChild)) {
-                exits.addAll(getExitNodes(node.autoChild, seen));
-            } else {
-                exits.add(v);
-            }
-        } else {
-            exits.add(v);
-        }
-        return exits;
+        return visitor;
     }
 
     public static void printAllParents(CFGBlock block) {
@@ -154,27 +147,6 @@ public class CFGGenerator {
                     System.out.println();
                 }
             }
-        }
-    }
-
-
-    private boolean somePathDoesNotReturn(CFGBlock node, HashSet<CFGBlock> seen) {
-        seen.add(node);
-        for (CFGLine line : node.lines) {
-            if (line.ast instanceof Return) {
-                return false;
-            }
-        }
-        if (node.parents.size() == 0) {
-            return true;
-        } else {
-            boolean allPaths = true;
-            for (CFGBlock parent : node.parents) {
-                if (!seen.contains(parent) && somePathDoesNotReturn(parent, seen)) {
-                    allPaths = false;
-                }
-            }
-            return !allPaths;
         }
     }
 }

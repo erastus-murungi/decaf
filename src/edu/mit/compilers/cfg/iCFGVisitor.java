@@ -266,7 +266,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
                 CFGPair returnPair = statement.accept(this, symbolTable);
                 curPair.endBlock.autoChild = returnPair.startBlock;
                 returnPair.startBlock.parents.add(curPair.endBlock);
-                return new CFGPair(initial, returnPair.endBlock);
+                return new CFGPair(initial, returnPair.endBlock, false);
             }
             // recurse normally for other cases
             else {

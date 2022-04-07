@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Set;
 
 public class NopVisitor implements CFGVisitor<Void> {
-    CFGBlock exit;
+    NOP exit;
     final Set<CFGBlock> seen;
 
     public NopVisitor() {
@@ -46,7 +46,7 @@ public class NopVisitor implements CFGVisitor<Void> {
         if (!seen.contains(nop)) {
             List<CFGBlock> parentsCopy = new ArrayList<>(nop.parents);
             seen.add(nop);
-            CFGBlock endBlock = exit;
+            CFGBlock endBlock;
             if (nop == exit) {
                 nop.autoChild = null;
                 return null;
@@ -54,6 +54,8 @@ public class NopVisitor implements CFGVisitor<Void> {
             if (nop.autoChild != null) {
                 nop.autoChild.accept(this, symbolTable);
                 endBlock = nop.autoChild;
+            } else {
+                endBlock = exit;
             }
             for (CFGBlock parent : parentsCopy) {
                 // connecting parents to child
