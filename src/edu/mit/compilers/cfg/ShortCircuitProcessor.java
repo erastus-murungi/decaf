@@ -71,8 +71,8 @@ public class ShortCircuitProcessor {
             if (conditional.op instanceof ConditionalOperator) {
                 ConditionalOperator operator = (ConditionalOperator) conditional.op;
 
-                cfgConditional.falseChild.parents.remove(cfgConditional);
-                cfgConditional.trueChild.parents.remove(cfgConditional);
+                cfgConditional.falseChild.removePredecessor(cfgConditional);
+                cfgConditional.trueChild.removePredecessor(cfgConditional);
 
                 CFGExpression c1 = new CFGExpression(conditional.lhs);
                 CFGExpression c2 = new CFGExpression(conditional.rhs);
@@ -88,16 +88,16 @@ public class ShortCircuitProcessor {
                 }
 
                 // TODO: improve the parent pointer logic here by removing checks
-                if (!cfgConditional.trueChild.parents.contains(b1) && b1.trueChild == cfgConditional.trueChild)
-                    cfgConditional.trueChild.parents.add(b1);
-                if (!cfgConditional.falseChild.parents.contains(b1) && b1.falseChild == cfgConditional.falseChild)
-                    cfgConditional.falseChild.parents.add(b1);
-                if (!cfgConditional.trueChild.parents.contains(b2) && b2.trueChild == cfgConditional.trueChild)
-                    cfgConditional.trueChild.parents.add(b2);
-                if (!cfgConditional.falseChild.parents.contains(b2) && b2.falseChild == cfgConditional.falseChild)
-                    cfgConditional.falseChild.parents.add(b2);
-                if (!b2.parents.contains(b1) && (b1.falseChild == b2 || b1.trueChild == b2))
-                    b2.parents.add(b1);
+                if (!cfgConditional.trueChild.hasPredecessor(b1) && b1.trueChild == cfgConditional.trueChild)
+                    cfgConditional.trueChild.addPredecessor(b1);
+                if (!cfgConditional.falseChild.hasPredecessor(b1) && b1.falseChild == cfgConditional.falseChild)
+                    cfgConditional.falseChild.addPredecessor(b1);
+                if (!cfgConditional.trueChild.hasPredecessor(b2) && b2.trueChild == cfgConditional.trueChild)
+                    cfgConditional.trueChild.addPredecessor(b2);
+                if (!cfgConditional.falseChild.hasPredecessor(b2) && b2.falseChild == cfgConditional.falseChild)
+                    cfgConditional.falseChild.addPredecessor(b2);
+                if (!b2.hasPredecessor(b1) && (b1.falseChild == b2 || b1.trueChild == b2))
+                    b2.addPredecessor(b1);
                 return b1;
             }
         }

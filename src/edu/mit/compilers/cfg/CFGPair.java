@@ -7,7 +7,7 @@ public class CFGPair {
     public CFGPair(CFGBlock startBlock, CFGNonConditional endBlock){
         this.startBlock = startBlock;
         if (startBlock != endBlock)
-            endBlock.parents.add(startBlock);
+            endBlock.addPredecessor(startBlock);
         this.endBlock = endBlock;
     }
 
@@ -15,7 +15,7 @@ public class CFGPair {
         this.startBlock = startBlock;
         if (createLink)
             if (startBlock != endBlock)
-                endBlock.parents.add(startBlock);
+                endBlock.addPredecessor(startBlock);
         this.endBlock = endBlock;
     }
     

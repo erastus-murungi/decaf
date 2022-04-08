@@ -28,16 +28,16 @@ public class CFGGenerator {
         if (methodDescriptor.type == BuiltinType.Void)
             return;
 
-        exitNop.parents.removeIf(block -> !(block
+        exitNop.getPredecessors().removeIf(block -> !(block
                 .getSuccessors()
                 .contains(exitNop)));
 
-        final List<CFGBlock> allExecutionPathsReturn = exitNop.parents
+        final List<CFGBlock> allExecutionPathsReturn = exitNop.getPredecessors()
                 .stream()
                 .filter(cfgBlock -> (!cfgBlock.lines.isEmpty() && (cfgBlock.lastASTLine() instanceof Return)))
                 .collect(Collectors.toList());
 
-        final List<CFGBlock> allExecutionsPathsThatDontReturn = exitNop.parents
+        final List<CFGBlock> allExecutionsPathsThatDontReturn = exitNop.getPredecessors()
                 .stream()
                 .filter(cfgBlock -> (cfgBlock.lines.isEmpty() || (!(cfgBlock.lastASTLine() instanceof Return))))
                 .collect(Collectors.toList());
@@ -86,7 +86,7 @@ public class CFGGenerator {
                     .getLabel()
                     .isBlank()) {
                 if (((CFGNonConditional) v).autoChild != null) {
-                    ((CFGNonConditional) v).autoChild.parents.remove(v);
+                    ((CFGNonConditional) v).autoChild.getPredecessors().remove(v);
                     v = ((CFGNonConditional) v).autoChild;
                 }
             }
@@ -110,7 +110,7 @@ public class CFGGenerator {
             }
             seen.add(block);
             System.out.println(Utils.coloredPrint(block.getLabel(), Utils.ANSIColorConstants.ANSI_PURPLE) + "  >>>>   ");
-            for (CFGBlock parent : block.parents) {
+            for (CFGBlock parent : block.getPredecessors()) {
                 System.out.println(Utils.indentBlock(parent.getLabel()));
                 System.out.println();
             }

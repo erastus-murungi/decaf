@@ -28,20 +28,20 @@ public class MaximalVisitor implements CFGVisitor<CFGBlock> {
                 cfgNonConditional.lines.addAll(child.lines);
 
                 if (grandChild != null) {
-                    grandChild.parents.remove(cfgNonConditional.autoChild);
-                    grandChild.parents.add(cfgNonConditional);
+                    grandChild.removePredecessor(cfgNonConditional.autoChild);
+                    grandChild.addPredecessor(cfgNonConditional);
                 }
                 cfgNonConditional.autoChild = grandChild;
             } else {
                 CFGConditional child = (CFGConditional) cfgNonConditional.autoChild;
-                if (visited.get(child) == null || visited.get(child) == 1 || cfgNonConditional.parents.size() == 0) {
+                if (visited.get(child) == null || visited.get(child) == 1 || cfgNonConditional.isRoot()) {
                     // we should put our code into the conditional;
                     if (child != null) {
                         child.lines.addAll(0, cfgNonConditional.lines);
-                        if (cfgNonConditional.parents.size() == 0) {
+                        if (cfgNonConditional.isRoot()) {
                             return child;
                         }
-                        for (CFGBlock parent : cfgNonConditional.parents) {
+                        for (CFGBlock parent : cfgNonConditional.getPredecessors()) {
                             if (parent instanceof CFGConditional) {
                                 if (cfgNonConditional == ((CFGConditional) parent).falseChild) {
                                     ((CFGConditional) parent).falseChild = child;
@@ -51,8 +51,8 @@ public class MaximalVisitor implements CFGVisitor<CFGBlock> {
                             } else {
                                 ((CFGNonConditional) parent).autoChild = child;
                             }
-                            child.parents.remove(cfgNonConditional);
-                            child.parents.addAll(cfgNonConditional.parents);
+                            child.removePredecessor(cfgNonConditional);
+                            child.addPredecessors(cfgNonConditional.getPredecessors());
                         }
                     }
                 }

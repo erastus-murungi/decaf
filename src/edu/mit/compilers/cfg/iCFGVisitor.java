@@ -60,12 +60,12 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         for (MethodDefinitionParameter param : methodDefinition.methodDefinitionParameterList) {
             CFGPair placeholder = param.accept(this, symbolTable);
             curPair.endBlock.autoChild = placeholder.startBlock;
-            placeholder.startBlock.parents.add(curPair.endBlock);
+            placeholder.startBlock.getPredecessors().add(curPair.endBlock);
             curPair = placeholder;
         }
         CFGPair methodBody = methodDefinition.block.accept(this, symbolTable);
         curPair.endBlock.autoChild = methodBody.startBlock;
-        methodBody.startBlock.parents.add(curPair.endBlock);
+        methodBody.startBlock.getPredecessors().add(curPair.endBlock);
         return new CFGPair(initial, methodBody.endBlock);
     }
 
@@ -83,7 +83,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         NOP falseBlock = new NOP("For Loop (false) " + forStatement.terminatingCondition.getSourceCode());
         NOP exit = new NOP("Exit For");
         falseBlock.autoChild = exit;
-        exit.parents.add(falseBlock);
+        exit.getPredecessors().add(falseBlock);
 
         // For the block, the child of that CFGBlock should be a block with the increment line
         CFGNonConditional incrementBlock = new CFGNonConditional();
@@ -93,7 +93,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         CFGExpression condition = new CFGExpression(forStatement.terminatingCondition);
         CFGConditional evaluateBlock = ShortCircuitProcessor.shortCircuit(new CFGConditional(condition));
         incrementBlock.autoChild = evaluateBlock;
-        evaluateBlock.parents.add(incrementBlock);
+        evaluateBlock.getPredecessors().add(incrementBlock);
 
         // In for loops, continue should point to an incrementBlock
         continueBlocks.push(incrementBlock);
@@ -102,14 +102,14 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         CFGPair truePair = forStatement.block.accept(this, symbolTable);
 
         evaluateBlock.falseChild = falseBlock;
-        evaluateBlock.falseChild.parents.add(evaluateBlock);
+        evaluateBlock.falseChild.getPredecessors().add(evaluateBlock);
 
         evaluateBlock.trueChild = truePair.startBlock;
-        truePair.startBlock.parents.add(evaluateBlock);
+        truePair.startBlock.getPredecessors().add(evaluateBlock);
 
         if (truePair.endBlock != exitNOP) {
             truePair.endBlock.autoChild = incrementBlock;
-            incrementBlock.parents.add(truePair.endBlock);
+            incrementBlock.getPredecessors().add(truePair.endBlock);
         }
         // Initialize the condition variable
         CFGNonConditional initializeBlock = new CFGNonConditional();
@@ -117,15 +117,15 @@ public class iCFGVisitor implements Visitor<CFGPair> {
 
         // child of initialization block is evaluation
         initializeBlock.autoChild = evaluateBlock;
-        evaluateBlock.parents.add(initializeBlock);
+        evaluateBlock.getPredecessors().add(initializeBlock);
 
         // Child of that increment block should be the evaluation
         incrementBlock.autoChild = evaluateBlock;
-        evaluateBlock.parents.add(incrementBlock);
+        evaluateBlock.getPredecessors().add(incrementBlock);
 
 
 //        NOP nop = new NOP();
-//        nop.parents.add(falseBlock);
+//        nop.getPredecessors().add(falseBlock);
 //        falseBlock.autoChild = nop;
 
         handleBreaksInLoops(falseBlock);
@@ -141,7 +141,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
             for (CFGNonConditional breakBlock: breakBlocks) {
                 breakBlock.autoChild = cfgBlock;
                 toRemove.add(breakBlock);
-                cfgBlock.parents.add(breakBlock);
+                cfgBlock.getPredecessors().add(breakBlock);
             }
         }
         for (CFGNonConditional breakBlock: toRemove)
@@ -170,7 +170,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         CFGExpression cfgExpression = new CFGExpression(whileStatement.test);
         CFGConditional conditionExpr = new CFGConditional(cfgExpression);
         conditionExpr.falseChild = falseBlock;
-        falseBlock.parents.add(conditionExpr);
+        falseBlock.getPredecessors().add(conditionExpr);
 
         // In for loops, continue should point to the evaluation expression
         continueBlocks.push(conditionExpr);
@@ -182,7 +182,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         conditionExpr = ShortCircuitProcessor.shortCircuit(conditionExpr);
         if (truePair.endBlock != null) {
             truePair.endBlock.autoChild = conditionExpr;
-            conditionExpr.parents.add(truePair.endBlock);
+            conditionExpr.getPredecessors().add(truePair.endBlock);
         }
 
         handleBreaksInLoops(falseBlock);
@@ -197,13 +197,13 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         for (ImportDeclaration import_ : program.importDeclarationList) {
             CFGPair placeholder = import_.accept(this, symbolTable);
             curPair.endBlock.autoChild = placeholder.startBlock;
-            placeholder.startBlock.parents.add(curPair.endBlock);
+            placeholder.startBlock.getPredecessors().add(curPair.endBlock);
             curPair = placeholder;
         }
         for (FieldDeclaration field : program.fieldDeclarationList) {
             CFGPair placeholder = field.accept(this, symbolTable);
             curPair.endBlock.autoChild = placeholder.startBlock;
-            placeholder.startBlock.parents.add(curPair.endBlock);
+            placeholder.startBlock.getPredecessors().add(curPair.endBlock);
             curPair = placeholder;
         }
         for (MethodDefinition method : program.methodDefinitionList) {
@@ -238,7 +238,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         for (FieldDeclaration field : block.fieldDeclarationList) {
             CFGPair placeholder = field.accept(this, symbolTable);
             curPair.endBlock.autoChild = placeholder.startBlock;
-            placeholder.startBlock.parents.add(curPair.endBlock);
+            placeholder.startBlock.getPredecessors().add(curPair.endBlock);
             curPair = placeholder;
         }
 
@@ -248,8 +248,8 @@ public class iCFGVisitor implements Visitor<CFGPair> {
                 CFGNonConditional continueCfg = new NOP();
                 CFGBlock nextBlock = continueBlocks.peek();
                 continueCfg.autoChild = nextBlock;
-                nextBlock.parents.add(continueCfg);
-                continueCfg.parents.add(curPair.endBlock);
+                nextBlock.getPredecessors().add(continueCfg);
+                continueCfg.getPredecessors().add(curPair.endBlock);
                 curPair.endBlock.autoChild = continueCfg;
                 return new CFGPair(initial, continueCfg);
             }
@@ -257,26 +257,26 @@ public class iCFGVisitor implements Visitor<CFGPair> {
                 // a break is not a real block either
                 CFGNonConditional breakCfg = new NOP("Break");
                 loopToBreak.peek().add(breakCfg);
-                breakCfg.parents.add(curPair.endBlock);
+                breakCfg.getPredecessors().add(curPair.endBlock);
                 curPair.endBlock.autoChild = breakCfg;
                 return new CFGPair(initial, breakCfg, false);
             }
             if (statement instanceof Return) {
                 CFGPair returnPair = statement.accept(this, symbolTable);
                 curPair.endBlock.autoChild = returnPair.startBlock;
-                returnPair.startBlock.parents.add(curPair.endBlock);
+                returnPair.startBlock.getPredecessors().add(curPair.endBlock);
                 return new CFGPair(initial, returnPair.endBlock, false);
             }
             // recurse normally for other cases
             else {
                 CFGPair placeholder = statement.accept(this, symbolTable);
                 curPair.endBlock.autoChild = placeholder.startBlock;
-                placeholder.startBlock.parents.add(curPair.endBlock);
+                placeholder.startBlock.getPredecessors().add(curPair.endBlock);
                 curPair = placeholder;
             }
         }
         curPair.endBlock.autoChild = exit;
-        exit.parents.add(curPair.endBlock);
+        exit.getPredecessors().add(curPair.endBlock);
         return new CFGPair(initial, exit, false);
     }
 
@@ -307,7 +307,7 @@ public class iCFGVisitor implements Visitor<CFGPair> {
         if (truePair.endBlock.autoChild == null) {
             // handling the cases when we have a "Continue" statement
             truePair.endBlock.autoChild = exit;
-            exit.parents.add(truePair.endBlock);
+            exit.getPredecessors().add(truePair.endBlock);
         }
 
         // Evaluate the condition
@@ -319,16 +319,16 @@ public class iCFGVisitor implements Visitor<CFGPair> {
             if (falsePair.endBlock.autoChild == null) {
                 // handling the cases when we have a "Continue" statement
                 falsePair.endBlock.autoChild = exit;
-                exit.parents.add(falsePair.endBlock);
+                exit.getPredecessors().add(falsePair.endBlock);
             }
             conditionExpr = new CFGConditional(condition, truePair.startBlock, falsePair.startBlock);
             conditionExpr = ShortCircuitProcessor.shortCircuit(conditionExpr);
-            falsePair.startBlock.parents.add(conditionExpr);
+            falsePair.startBlock.getPredecessors().add(conditionExpr);
         } else {
             conditionExpr = new CFGConditional(condition, truePair.startBlock, exit);
             conditionExpr = ShortCircuitProcessor.shortCircuit(conditionExpr);
         }
-        truePair.startBlock.parents.add(conditionExpr);
+        truePair.startBlock.getPredecessors().add(conditionExpr);
         return new CFGPair(ShortCircuitProcessor.shortCircuit(conditionExpr), exit);
     }
 

@@ -389,15 +389,6 @@ public class GraphVizPrinter {
         gv.writeGraphToFile(gv.getGraph(gv.getDotSource(), type), out);
     }
 
-
-    private static boolean parentMightBeConditional(CFGBlock block) {
-        for (CFGBlock parent: block.parents) {
-            if (parent instanceof CFGConditional)
-                return true;
-        }
-        return false;
-    }
-
     public static String writeSymbolTable(AST root,
                                           HashMap<String, SymbolTable> methods) {
         List<String> subGraphs = new ArrayList<>();// add this node

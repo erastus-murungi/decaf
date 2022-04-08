@@ -44,7 +44,7 @@ public class NopVisitor implements CFGVisitor<Void> {
     @Override
     public Void visit(NOP nop, SymbolTable symbolTable) {
         if (!seen.contains(nop)) {
-            List<CFGBlock> parentsCopy = new ArrayList<>(nop.parents);
+            List<CFGBlock> parentsCopy = new ArrayList<>(nop.getPredecessors());
             seen.add(nop);
             CFGBlock endBlock;
             if (nop == exit) {
@@ -72,8 +72,8 @@ public class NopVisitor implements CFGVisitor<Void> {
                         parentNonConditional.autoChild = endBlock;
                     }
                 }
-                endBlock.parents.remove(nop);
-                endBlock.parents.add(parent);
+                endBlock.removePredecessor(nop);
+                endBlock.addPredecessor(parent);
             }
         }
         return null;
