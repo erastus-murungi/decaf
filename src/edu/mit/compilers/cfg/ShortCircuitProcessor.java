@@ -64,7 +64,7 @@ public class ShortCircuitProcessor {
     }
 
     private static CFGConditional shortCircuitImpl(CFGConditional cfgConditional) {
-        Expression expression = simplify((Expression) cfgConditional.condition.ast);
+        final Expression expression = simplify((Expression) cfgConditional.condition.ast);
 
         if (expression instanceof BinaryOpExpression) {
             BinaryOpExpression conditional = (BinaryOpExpression) expression;
@@ -74,8 +74,8 @@ public class ShortCircuitProcessor {
                 cfgConditional.falseChild.removePredecessor(cfgConditional);
                 cfgConditional.trueChild.removePredecessor(cfgConditional);
 
-                CFGExpression c1 = new CFGExpression(conditional.lhs);
-                CFGExpression c2 = new CFGExpression(conditional.rhs);
+                final CFGExpression c1 = new CFGExpression(conditional.lhs);
+                final CFGExpression c2 = new CFGExpression(conditional.rhs);
 
                 CFGConditional b1, b2;
 

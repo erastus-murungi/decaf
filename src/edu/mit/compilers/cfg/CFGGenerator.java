@@ -86,7 +86,7 @@ public class CFGGenerator {
                     .getLabel()
                     .isBlank()) {
                 if (((CFGNonConditional) v).autoChild != null) {
-                    ((CFGNonConditional) v).autoChild.getPredecessors().remove(v);
+                    ((CFGNonConditional) v).autoChild.removePredecessor(v);
                     v = ((CFGNonConditional) v).autoChild;
                 }
             }
