@@ -24,8 +24,8 @@ public class TwoOperandAssign extends AbstractAssignment {
     @Override
     public String toString() {
         if (getComment().isPresent())
-            return String.format("%s%s = %s %s %s%s%s", DOUBLE_INDENT, dst, fstOperand, operator, sndOperand, DOUBLE_INDENT, " <<<< " + getComment().get());
-        return String.format("%s%s = %s %s %s", DOUBLE_INDENT, dst, fstOperand, operator, sndOperand);
+            return String.format("%s%s \t= %s %s %s%s%s", DOUBLE_INDENT, dst, fstOperand, operator, sndOperand, DOUBLE_INDENT, " <<<< " + getComment().get());
+        return String.format("%s%s \t= %s %s %s", DOUBLE_INDENT, dst, fstOperand, operator, sndOperand);
     }
 
     @Override
