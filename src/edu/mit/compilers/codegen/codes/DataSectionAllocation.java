@@ -37,6 +37,6 @@ public class DataSectionAllocation extends ThreeAddressCode {
 
     @Override
     public String toString() {
-        return String.format("%s.comm %s,%s,%s %s %s", INDENT, variableName, size, alignment, DOUBLE_INDENT, getComment().orElse(" ") + type.getSourceCode());
+        return String.format("%s.comm %s,%s,%s %s %s", INDENT, variableName, size, alignment, DOUBLE_INDENT, getComment().orElse(" ") + " " + type.getSourceCode());
     }
 }

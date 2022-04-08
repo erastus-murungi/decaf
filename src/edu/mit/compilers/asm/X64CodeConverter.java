@@ -43,15 +43,6 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
         return x64Builder;
     }
 
-    @Override
-    public X64Builder visit(CopyInstruction copyInstruction, X64Builder x64builder) {
-        return (copyInstruction.src instanceof ConstantName) ? (
-                x64builder.addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(copyInstruction.src), resolveLoadLocation(copyInstruction.dst)))
-        ) : x64builder
-                .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(copyInstruction.src), X64Register.RAX))
-                .addLine(x64InstructionLineWithComment(String.format("%s = %s", copyInstruction.dst, copyInstruction.src), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(copyInstruction.dst)));
-    }
-
     public X64Builder visit(JumpIfFalse jumpIfFalse, X64Builder x64builder) {
         if (lastComparisonOperator == null) {
             return x64builder

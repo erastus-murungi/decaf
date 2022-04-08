@@ -7,7 +7,7 @@ import edu.mit.compilers.symbolTable.SymbolTable;
 
 public interface ThreeAddressCodeVisitor<ReturnType, ExtraInfoType> {
 
-    ReturnType visit(CopyInstruction copyInstruction, ExtraInfoType extraInfo);
+//    ReturnType visit(CopyInstruction copyInstruction, ExtraInfoType extraInfo);
 
     ReturnType visit(JumpIfFalse jumpIfFalse, ExtraInfoType extraInfo);
 

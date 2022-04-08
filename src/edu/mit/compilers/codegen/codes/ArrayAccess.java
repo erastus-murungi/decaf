@@ -39,6 +39,6 @@ public class ArrayAccess extends ThreeAddressCode {
 
     @Override
     public String toString() {
-        return String.format("%sload(%s[%s])", DOUBLE_INDENT, arrayName, accessIndex);
+        return String.format("%sload %s[%s]", DOUBLE_INDENT, arrayName, accessIndex);
     }
 }
