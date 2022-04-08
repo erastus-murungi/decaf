@@ -19,7 +19,7 @@ public class OneOperandAssign extends AbstractAssignment {
 
     @Override
     public String toString() {
-        return String.format("%s%s \t= %s %s", DOUBLE_INDENT, dst, operator, operand);
+        return String.format("%s%s %s %s", DOUBLE_INDENT, dst, operator, operand);
     }
 
     @Override

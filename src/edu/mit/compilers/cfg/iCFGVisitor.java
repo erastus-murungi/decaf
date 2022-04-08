@@ -6,7 +6,6 @@ import edu.mit.compilers.ast.*;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
-import static edu.mit.compilers.grammar.DecafParser.printParseTree;
 
 public class iCFGVisitor implements Visitor<CFGPair> {
     public CFGNonConditional initialGlobalBlock = new CFGNonConditional();

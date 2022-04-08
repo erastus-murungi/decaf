@@ -21,7 +21,7 @@ public class MethodBegin extends ThreeAddressCode {
 
     @Override
     public String toString() {
-        return String.format("%s:\n%s%s", methodDefinition.methodName.id, DOUBLE_INDENT, "BeginFunction");
+        return String.format("%s:\n%s%s", methodDefinition.methodName.id, DOUBLE_INDENT, "enter method");
     }
 
     @Override

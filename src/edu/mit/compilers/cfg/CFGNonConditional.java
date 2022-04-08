@@ -1,5 +1,7 @@
 package edu.mit.compilers.cfg;
 
+import edu.mit.compilers.symbolTable.SymbolTable;
+
 import java.util.List;
 
 public class CFGNonConditional extends CFGBlock {
@@ -15,5 +17,10 @@ public class CFGNonConditional extends CFGBlock {
     }
 
     public CFGNonConditional() {
+    }
+
+    @Override
+    public <T> T accept(CFGVisitor<T> visitor, SymbolTable symbolTable) {
+        return visitor.visit(this, symbolTable);
     }
 }

@@ -79,18 +79,12 @@ public class CFGGenerator {
                     .getDescriptorFromValidScopes(k)
                     .orElseThrow());
         });
-
-//        if (errors.size() > 0) {
-//            for (DecafException decafException : errors)
-//                decafException.printStackTrace();
-//            System.exit(-2);
-//        }
         visitor.initialGlobalBlock.accept(nopVisitor, theSymbolWeCareAbout);
         HashMap<String, CFGBlock> methodBlocksCFG = new HashMap<>();
         visitor.methodCFGBlocks.forEach((k, v) -> {
             if (v
                     .getLabel()
-                    .equals("∅")) {
+                    .isBlank()) {
                 if (((CFGNonConditional) v).autoChild != null) {
                     ((CFGNonConditional) v).autoChild.parents.remove(v);
                     v = ((CFGNonConditional) v).autoChild;

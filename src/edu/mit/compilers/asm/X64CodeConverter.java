@@ -59,7 +59,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     @Override
     public X64Builder visit(ArrayBoundsCheck arrayBoundsCheck, X64Builder x64builder) {
         return x64builder
-                .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(arrayBoundsCheck.arrayIndex), X64Register.R13))
+                .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(arrayBoundsCheck.arrayAccess.accessIndex), X64Register.R13))
                 .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, X64Register.R13))
                 .addLine(x64InstructionLine(X64Instruction.jge, x64Label(arrayBoundsCheck.indexIsGTEZero)))
                 .addLine(x64InstructionLine(X64Instruction.movl, ONE, "%edi"))
@@ -67,7 +67,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
                 .addLine(new X64Code("." + arrayBoundsCheck.indexIsGTEZero.label + ":"))
 
-                .addLine(x64InstructionLine(X64Instruction.cmp, arrayBoundsCheck.arraySize, X64Register.R13))
+                .addLine(x64InstructionLine(X64Instruction.cmp, arrayBoundsCheck.arrayAccess.arrayLength, X64Register.R13))
                 .addLine(x64InstructionLine(X64Instruction.jl, x64Label(arrayBoundsCheck.indexIsLessThanArraySize)))
 
                 .addLine(x64InstructionLine(X64Instruction.movl, ONE, "%edi"))

@@ -29,11 +29,16 @@ public class MethodCall extends ThreeAddressCode {
         return ((edu.mit.compilers.ast.MethodCall) source).nameId.id;
     }
 
+    public String getMethodReturnType() {
+        return ((edu.mit.compilers.ast.MethodCall) source).builtinType.getSourceCode();
+    }
+
+
     @Override
     public String toString() {
         if (getResultLocation().isPresent())
-            return String.format("%s%s = %s %s %s%s", DOUBLE_INDENT, getResultLocation().get(), "CallMethod",getMethodName() , DOUBLE_INDENT, getComment().isPresent() ? " <<<< " + getComment().get() : "");
-        return String.format("%s%s %s %s%s", DOUBLE_INDENT, "CallMethod", getMethodName(), DOUBLE_INDENT, getComment().isPresent() ? " <<<< " + getComment().get() : "");
+            return String.format("%s%s = %s %s %s %s%s", DOUBLE_INDENT, getResultLocation().get(), "call", getMethodReturnType(), getMethodName() , DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
+        return String.format("%s%s %s %s%s", DOUBLE_INDENT, "call", getMethodName(), DOUBLE_INDENT, getComment().isPresent() ? " #  " + getComment().get() : "");
     }
 
     @Override

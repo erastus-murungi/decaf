@@ -5,6 +5,7 @@ import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public abstract class CFGBlock {
     public ArrayList<CFGBlock> parents;
@@ -22,25 +23,10 @@ public abstract class CFGBlock {
         lines = new ArrayList<>();
     }
 
-    public<T> T accept(CFGVisitor<T> visitor, SymbolTable symbolTable) {
-        if (this instanceof CFGConditional)
-            return visitor.visit((CFGConditional)this, symbolTable);
-        else if (this instanceof NOP)
-            return visitor.visit((NOP)this, symbolTable);
-        else return visitor.visit((CFGNonConditional) this, symbolTable);
-    }
+    public abstract <T> T  accept(CFGVisitor<T> visitor, SymbolTable symbolTable);
 
     public String getLabel() {
-        List<String> list = new ArrayList<>();
-        for (CFGLine cfgLine : lines) {
-            String sourceCode = cfgLine.ast.getSourceCode();
-            list.add(sourceCode);
-        }
-        String ret =  String.join("\n", list);
-        if (ret.isBlank()) {
-            return "∅";
-        }
-        return ret;
+        return lines.stream().map(cfgLine -> cfgLine.ast.getSourceCode()).collect(Collectors.joining("\n"));
     }
 
     @Override
