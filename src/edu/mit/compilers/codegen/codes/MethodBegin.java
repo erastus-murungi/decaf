@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 public class MethodBegin extends ThreeAddressCode {
     public final MethodDefinition methodDefinition;
     private List<AbstractName> locals;
+    // to be filled in later by the X64Converter
     public HashMap<String, Integer> nameToStackOffset = new HashMap<>();
 
     public MethodBegin(MethodDefinition methodDefinition) {

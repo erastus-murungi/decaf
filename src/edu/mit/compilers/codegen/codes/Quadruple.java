@@ -2,24 +2,24 @@ package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
-import edu.mit.compilers.codegen.codes.AbstractAssignment;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
 
 import java.util.List;
 
-public class TwoOperandAssign extends AbstractAssignment {
+/**
+ * A quad has four fields which we call op arg1, arg2, and result.
+ * The op field contains an internal code for the operator.
+ * For instance, the three address instruction x = y + z is represented by placing + in op, y in arg1, z in arg2 and x in result.
+ */
+
+public class Quadruple extends Assignment {
     public AbstractName fstOperand;
     public String operator;
     public AbstractName sndOperand;
 
 
-    public TwoOperandAssign(AST source,
-                            AssignableName result,
-                            AbstractName fstOperand,
-                            String operator,
-                            AbstractName sndOperand,
-                            String comment) {
+    public Quadruple(AssignableName result, AbstractName fstOperand, String operator, AbstractName sndOperand, String comment, AST source) {
         super(result, source, comment);
         this.fstOperand = fstOperand;
         this.operator = operator;

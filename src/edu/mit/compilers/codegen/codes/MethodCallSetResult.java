@@ -1,23 +1,23 @@
 package edu.mit.compilers.codegen.codes;
 
+import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
-import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public class MethodCall extends ThreeAddressCode {
+public class MethodCallSetResult extends ThreeAddressCode {
     private AssignableName resultLocation;
 
-    public MethodCall(edu.mit.compilers.ast.MethodCall methodCall, AssignableName resultLocation, String comment) {
+    public MethodCallSetResult(MethodCall methodCall, AssignableName resultLocation, String comment) {
         super(methodCall, comment);
         this.resultLocation = resultLocation;
     }
 
-    public MethodCall(edu.mit.compilers.ast.MethodCall methodCall, String comment) {
+    public MethodCallSetResult(edu.mit.compilers.ast.MethodCall methodCall, String comment) {
         super(methodCall, comment);
     }
 

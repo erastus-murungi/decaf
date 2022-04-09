@@ -7,11 +7,11 @@ import edu.mit.compilers.codegen.names.AssignableName;
 
 import java.util.List;
 
-public class OneOperandAssign extends AbstractAssignment {
+public class Triple extends Assignment {
     public AbstractName operand;
     public String operator;
 
-    public OneOperandAssign(AST source, AssignableName result, AbstractName operand, String operator) {
+    public Triple(AssignableName result, String operator, AbstractName operand, AST source) {
         super(result, source);
         this.operand = operand;
         this.operator = operator;
