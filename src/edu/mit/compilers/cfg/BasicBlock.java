@@ -5,23 +5,23 @@ import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public abstract class CFGBlock {
-    private final ArrayList<CFGBlock> predecessors;
+public abstract class BasicBlock {
+    private final ArrayList<BasicBlock> predecessors;
+
     public ArrayList<CFGLine> lines;
 
-    public void addPredecessor(CFGBlock predecessor) {
+    public void addPredecessor(BasicBlock predecessor) {
         predecessors.add(predecessor);
     }
 
-    public void addPredecessors(Collection<CFGBlock> predecessors) {
+    public void addPredecessors(Collection<BasicBlock> predecessors) {
         this.predecessors.addAll(predecessors);
     }
 
-    public void removePredecessor(CFGBlock predecessor) {
+    public void removePredecessor(BasicBlock predecessor) {
         predecessors.remove(predecessor);
     }
 
@@ -29,27 +29,26 @@ public abstract class CFGBlock {
         return predecessors.size() == 0;
     }
 
-    public boolean hasPredecessor(CFGBlock predecessor) {
-        return predecessors.contains(predecessor);
+    public boolean doesNotContainPredecessor(BasicBlock predecessor) {
+        return !predecessors.contains(predecessor);
     }
 
-    public ArrayList<CFGBlock> getPredecessors() {
+    public ArrayList<BasicBlock> getPredecessors() {
         return predecessors;
     }
 
-    public abstract List<CFGBlock> getSuccessors();
+    public abstract List<BasicBlock> getSuccessors();
 
     public AST lastASTLine() {
         return lines.get(lines.size() - 1).ast;
     }
 
-
-    public CFGBlock() {
+    public BasicBlock() {
         predecessors = new ArrayList<>();
         lines = new ArrayList<>();
     }
 
-    public abstract <T> T  accept(CFGVisitor<T> visitor, SymbolTable symbolTable);
+    public abstract <T> T  accept(BasicBlockVisitor<T> visitor, SymbolTable symbolTable);
 
     public String getLabel() {
         return lines.stream().map(cfgLine -> cfgLine.ast.getSourceCode()).collect(Collectors.joining("\n"));

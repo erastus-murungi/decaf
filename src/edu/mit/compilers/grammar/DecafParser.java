@@ -608,7 +608,7 @@ public class DecafParser {
 
         final Name initId = parseName(DecafScanner.IDENTIFIER, ExprContext.STORE);
 
-        consumeToken(ASSIGN, DecafScanner.ASSIGN);
+        final Token assignOp = consumeToken(ASSIGN, DecafScanner.ASSIGN);
 
         final Expression initializationExpression = parseOrExpr();
         final Initialization initialization = new Initialization(initId, initializationExpression);
@@ -621,7 +621,7 @@ public class DecafParser {
 
         final Location updateLocation = parseLocation(consumeToken(ID, DecafScanner.IDENTIFIER));
         final AssignExpr updateAssignExpr = parseCompoundAssignExpr();
-        final Update update = new Update(updateLocation, updateAssignExpr);
+        final Assignment update = new Assignment(updateLocation, updateAssignExpr, new AssignOperator(assignOp.tokenPosition, assignOp.lexeme()));
 
         consumeToken(RIGHT_PARENTHESIS, DecafScanner.RIGHT_PARENTHESIS);
 

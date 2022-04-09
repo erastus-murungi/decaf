@@ -7,7 +7,7 @@ import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
 
-public class MethodDefinitionParameter extends AST {
+public class MethodDefinitionParameter extends Declaration {
     final TokenPosition tokenPosition;
     final public Name id;
     final public BuiltinType builtinType;

@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class FieldDeclaration extends AST {
+public class FieldDeclaration extends Declaration {
     final public TokenPosition tokenPosition;
     final public BuiltinType builtinType;
     final public List<Name> names;

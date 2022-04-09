@@ -1,9 +1,8 @@
 package edu.mit.compilers.codegen.codes;
 
-import edu.mit.compilers.cfg.CFGBlock;
+import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,10 +10,10 @@ import java.util.List;
 
 public class Label extends ThreeAddressCode {
     public final String label;
-    public final CFGBlock cfgBlock;
+    public final BasicBlock cfgBlock;
     public List<String> aliasLabels;
 
-    public Label(String label, CFGBlock cfgBlock) {
+    public Label(String label, BasicBlock cfgBlock) {
         super(cfgBlock == null || cfgBlock.lines.isEmpty() ? null : cfgBlock.lines.get(0).ast);
         this.cfgBlock = cfgBlock;
         this.label = label;

@@ -15,13 +15,13 @@ import static edu.mit.compilers.grammar.DecafScanner.RESERVED_FOR;
 public class For extends Statement {
     public final Initialization initialization;
     final public Expression terminatingCondition;
-    public final Update update;
+    public final Assignment update;
     public final Block block;
 
     public For(TokenPosition tokenPosition,
                Initialization initialization,
                Expression terminatingCondition,
-               Update update,
+               Assignment update,
                Block block) {
         super(tokenPosition);
         this.initialization = initialization;

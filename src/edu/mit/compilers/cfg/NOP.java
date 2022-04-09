@@ -4,7 +4,7 @@ import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.Optional;
 
-public class NOP extends CFGNonConditional {
+public class NOP extends BasicBlockBranchLess {
     String nopLabel;
     public NOP() {
         super(null);
@@ -19,7 +19,7 @@ public class NOP extends CFGNonConditional {
         return Optional.ofNullable(nopLabel);
     }
 
-    public<T> T accept(CFGVisitor<T> visitor, SymbolTable symbolTable) {
+    public<T> T accept(BasicBlockVisitor<T> visitor, SymbolTable symbolTable) {
         return visitor.visit(this, symbolTable);
     };
 

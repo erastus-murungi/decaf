@@ -4,31 +4,31 @@ import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.List;
 
-public class CFGConditional extends CFGBlock {
-    public CFGBlock trueChild;
-    public CFGBlock falseChild;
+public class BasicBlockWithBranch extends BasicBlock {
+    public BasicBlock trueChild;
+    public BasicBlock falseChild;
 
     public CFGExpression condition;
 
-    public CFGConditional(CFGExpression condition, CFGBlock trueChild, CFGBlock falseChild) {
+    public BasicBlockWithBranch(CFGExpression condition, BasicBlock trueChild, BasicBlock falseChild) {
         this.trueChild = trueChild;
         this.falseChild = falseChild;
         this.condition = condition;
         lines.add(this.condition);
     }
 
-    public CFGConditional(CFGExpression condition) {
+    public BasicBlockWithBranch(CFGExpression condition) {
         this.condition = condition;
         lines.add(this.condition);
     }
 
     @Override
-    public List<CFGBlock> getSuccessors() {
+    public List<BasicBlock> getSuccessors() {
         return List.of(trueChild, falseChild);
     }
 
     @Override
-    public <T> T accept(CFGVisitor<T> visitor, SymbolTable symbolTable) {
+    public <T> T accept(BasicBlockVisitor<T> visitor, SymbolTable symbolTable) {
         return visitor.visit(this, symbolTable);
     }
 }
