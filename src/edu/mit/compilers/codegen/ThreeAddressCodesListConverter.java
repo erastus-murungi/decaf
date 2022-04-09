@@ -350,7 +350,12 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         public ThreeAddressCodeList visit(Assignment assignment, SymbolTable symbolTable) {
             ThreeAddressCodeList updateExprTAC = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
             ThreeAddressCodeList lhs = assignment.location.accept(this, symbolTable);
-            ThreeAddressCodeList rhs = assignment.assignExpr.expression.accept(this, symbolTable);
+            ThreeAddressCodeList rhs;
+            if (assignment.assignExpr.expression != null) {
+                rhs = assignment.assignExpr.expression.accept(this, symbolTable);
+            } else {
+                rhs = ThreeAddressCodeList.empty();
+            }
             updateExprTAC.add(rhs);
             updateExprTAC.add(lhs);
 
