@@ -119,7 +119,7 @@ class Main {
                 //     System.exit(-2);
                 // }
                 if (CLI.debug) {
-                    HashMap<String, CFGBlock> copy = (HashMap<String, CFGBlock>) visitor.methodCFGBlocks.clone();
+                    HashMap<String, BasicBlock> copy = (HashMap<String, BasicBlock>) visitor.methodCFGBlocks.clone();
                     copy.put("global", visitor.initialGlobalBlock);
                     GraphVizPrinter.printGraph(copy);
                 }
