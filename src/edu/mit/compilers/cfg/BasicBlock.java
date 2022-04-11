@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 public abstract class BasicBlock {
     private final ArrayList<BasicBlock> predecessors;
 
-    public ArrayList<CFGLine> lines;
+    public ArrayList<AST> lines;
 
     public void addPredecessor(BasicBlock predecessor) {
         predecessors.add(predecessor);
@@ -40,7 +40,7 @@ public abstract class BasicBlock {
     public abstract List<BasicBlock> getSuccessors();
 
     public AST lastASTLine() {
-        return lines.get(lines.size() - 1).ast;
+        return lines.get(lines.size() - 1);
     }
 
     public BasicBlock() {
@@ -51,7 +51,7 @@ public abstract class BasicBlock {
     public abstract <T> T  accept(BasicBlockVisitor<T> visitor, SymbolTable symbolTable);
 
     public String getLabel() {
-        return lines.stream().map(cfgLine -> cfgLine.ast.getSourceCode()).collect(Collectors.joining("\n"));
+        return lines.stream().map(AST::getSourceCode).collect(Collectors.joining("\n"));
     }
 
     @Override

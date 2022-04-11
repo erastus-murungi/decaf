@@ -4,6 +4,7 @@ import edu.mit.compilers.ast.*;
 import edu.mit.compilers.ast.ConditionalOperator;
 import edu.mit.compilers.ast.UnaryOperator;
 
+import static edu.mit.compilers.cfg.iCFGVisitor.rotateBinaryOpExpression;
 import static edu.mit.compilers.grammar.DecafScanner.*;
 
 public class ShortCircuitProcessor {
@@ -64,7 +65,7 @@ public class ShortCircuitProcessor {
     }
 
     private static BasicBlockWithBranch shortCircuitImpl(BasicBlockWithBranch basicBlockWithBranch) {
-        final Expression expression = simplify((Expression) basicBlockWithBranch.condition.ast);
+        final Expression expression = simplify(basicBlockWithBranch.condition);
 
         if (expression instanceof BinaryOpExpression) {
             BinaryOpExpression conditional = (BinaryOpExpression) expression;
@@ -74,8 +75,8 @@ public class ShortCircuitProcessor {
                 basicBlockWithBranch.falseChild.removePredecessor(basicBlockWithBranch);
                 basicBlockWithBranch.trueChild.removePredecessor(basicBlockWithBranch);
 
-                final CFGExpression c1 = new CFGExpression(conditional.lhs);
-                final CFGExpression c2 = new CFGExpression(conditional.rhs);
+                final Expression c1 = rotateBinaryOpExpression(conditional.lhs);
+                final Expression c2 = rotateBinaryOpExpression(conditional.rhs);
 
                 BasicBlockWithBranch b1, b2;
 

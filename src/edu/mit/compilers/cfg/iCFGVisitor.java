@@ -4,7 +4,6 @@ import java.util.*;
 
 import edu.mit.compilers.ast.*;
 import edu.mit.compilers.grammar.DecafScanner;
-import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
@@ -49,7 +48,7 @@ public class iCFGVisitor implements Visitor<BasicBlocksPair> {
     public BasicBlocksPair visit(FieldDeclaration fieldDeclaration, SymbolTable symbolTable) {
         // multiple fields can be declared in same line, handle/flatten later
         BasicBlockBranchLess fieldDecl = new BasicBlockBranchLess();
-        fieldDecl.lines.add(new CFGDeclaration(fieldDeclaration));
+        fieldDecl.lines.add(fieldDeclaration);
         return new BasicBlocksPair(fieldDecl, fieldDecl);
     }
 
@@ -74,7 +73,7 @@ public class iCFGVisitor implements Visitor<BasicBlocksPair> {
     @Override
     public BasicBlocksPair visit(ImportDeclaration importDeclaration, SymbolTable symbolTable) {
         BasicBlockBranchLess import_ = new BasicBlockBranchLess();
-        import_.lines.add(new CFGDeclaration(importDeclaration));
+        import_.lines.add(importDeclaration);
         return new BasicBlocksPair(import_, import_);
     }
 
@@ -89,10 +88,10 @@ public class iCFGVisitor implements Visitor<BasicBlocksPair> {
 
         // For the block, the child of that CFGBlock should be a block with the increment line
         BasicBlockBranchLess incrementBlock = new BasicBlockBranchLess();
-        incrementBlock.lines.add(new CFGAssignment(forStatement.update));
+        incrementBlock.lines.add(forStatement.update);
 
         // Evaluate the condition
-        CFGExpression condition = new CFGExpression(forStatement.terminatingCondition);
+        final Expression condition = rotateBinaryOpExpression(forStatement.terminatingCondition);
         BasicBlockWithBranch evaluateBlock = ShortCircuitProcessor.shortCircuit(new BasicBlockWithBranch(condition));
         incrementBlock.autoChild = evaluateBlock;
         evaluateBlock.addPredecessor(incrementBlock);
@@ -115,7 +114,7 @@ public class iCFGVisitor implements Visitor<BasicBlocksPair> {
         }
         // Initialize the condition variable
         BasicBlockBranchLess initializeBlock = new BasicBlockBranchLess();
-        initializeBlock.lines.add(new CFGDeclaration(forStatement.initialization));
+        initializeBlock.lines.add(forStatement.initialization);
 
         // child of initialization block is evaluation
         initializeBlock.autoChild = evaluateBlock;
@@ -164,8 +163,8 @@ public class iCFGVisitor implements Visitor<BasicBlocksPair> {
         NOP falseBlock = new NOP();
 
         // Evaluate the condition
-        CFGExpression cfgExpression = new CFGExpression(whileStatement.test);
-        BasicBlockWithBranch conditionExpr = new BasicBlockWithBranch(cfgExpression);
+        Expression test = rotateBinaryOpExpression(whileStatement.test);
+        BasicBlockWithBranch conditionExpr = new BasicBlockWithBranch(test);
         conditionExpr.falseChild = falseBlock;
         falseBlock.addPredecessor(conditionExpr);
 
@@ -308,7 +307,7 @@ public class iCFGVisitor implements Visitor<BasicBlocksPair> {
         }
 
         // Evaluate the condition
-        CFGExpression condition = new CFGExpression(ifStatement.test);
+        final Expression condition = rotateBinaryOpExpression(ifStatement.test);
 
         BasicBlockWithBranch conditionExpr;
         if (ifStatement.elseBlock != null) {
@@ -333,7 +332,7 @@ public class iCFGVisitor implements Visitor<BasicBlocksPair> {
     public BasicBlocksPair visit(Return returnStatement, SymbolTable symbolTable) {
         BasicBlockBranchLess returnBlock = new BasicBlockBranchLess();
         returnStatement.retExpression = rotateBinaryOpExpression(returnStatement.retExpression);
-        returnBlock.lines.add(new CFGExpression(returnStatement));
+        returnBlock.lines.add(rotateBinaryOpExpression(returnStatement.retExpression));
         returnBlock.autoChild = exitNOP;
         return new BasicBlocksPair(returnBlock, exitNOP);
     }
@@ -359,7 +358,7 @@ public class iCFGVisitor implements Visitor<BasicBlocksPair> {
                 methodCallStatement.methodCall.methodCallParameterList.set(i, new ExpressionParameter(rotateBinaryOpExpression(((ExpressionParameter) param).expression)));
             }
         }
-        methodCallExpr.lines.add(new CFGExpression(methodCallStatement));
+        methodCallExpr.lines.add(rotateBinaryOpExpression(methodCallStatement.methodCall));
         return new BasicBlocksPair(methodCallExpr, methodCallExpr);
     }
 
@@ -386,7 +385,7 @@ public class iCFGVisitor implements Visitor<BasicBlocksPair> {
         }
 
         AssignOperator assignOperator = new AssignOperator(locationAssignExpr.tokenPosition, op);
-        assignment.lines.add(new CFGAssignment(new Assignment(locationAssignExpr.location, locationAssignExpr.assignExpr, assignOperator)));
+        assignment.lines.add(new Assignment(locationAssignExpr.location, locationAssignExpr.assignExpr, assignOperator));
         return new BasicBlocksPair(assignment, assignment);
     }
 
@@ -400,7 +399,7 @@ public class iCFGVisitor implements Visitor<BasicBlocksPair> {
     public BasicBlocksPair visit(MethodDefinitionParameter methodDefinitionParameter, SymbolTable symbolTable) {
         BasicBlockBranchLess methodParam = new BasicBlockBranchLess();
         methodParam.autoChild = methodParam;
-        methodParam.lines.add(new CFGDeclaration(methodDefinitionParameter));
+        methodParam.lines.add(methodDefinitionParameter);
         return new BasicBlocksPair(methodParam, methodParam);
     }
 

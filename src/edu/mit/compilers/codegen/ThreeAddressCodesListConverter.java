@@ -550,8 +550,8 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
     public ThreeAddressCodeList visit(BasicBlockBranchLess basicBlockBranchLess, SymbolTable symbolTable) {
         visited.add(basicBlockBranchLess);
         ThreeAddressCodeList universalThreeAddressCodeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
-        for (CFGLine line : basicBlockBranchLess.lines) {
-            universalThreeAddressCodeList.add(line.ast.accept(visitor, symbolTable));
+        for (AST line : basicBlockBranchLess.lines) {
+            universalThreeAddressCodeList.add(line.accept(visitor, symbolTable));
         }
         blockToCodeHashMap.put(basicBlockBranchLess, universalThreeAddressCodeList);
         if (!(basicBlockBranchLess instanceof NOP) && !(basicBlockBranchLess.autoChild instanceof NOP)) {
@@ -627,7 +627,7 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
     public ThreeAddressCodeList visit(BasicBlockWithBranch basicBlockWithBranch, SymbolTable symbolTable) {
         visited.add(basicBlockWithBranch);
 
-        Expression condition = (Expression) (basicBlockWithBranch.condition).ast;
+        final Expression condition = basicBlockWithBranch.condition;
 
         ThreeAddressCodeList testConditionThreeAddressList = getConditionTACList(condition, symbolTable);
 
@@ -648,7 +648,7 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         ConditionalJump jumpIfFalse =
                 new ConditionalJump(condition,
                         testConditionThreeAddressList.place,
-                        falseLabel, "if !(" + basicBlockWithBranch.condition.ast.getSourceCode() + ")");
+                        falseLabel, "if !(" + basicBlockWithBranch.condition.getSourceCode() + ")");
         conditionLabelTACList.addCode(jumpIfFalse);
         if (!(trueBlock.last() instanceof UnconditionalJump))
             trueBlock.setNext(ThreeAddressCodeList.of(new UnconditionalJump(endLabel)));

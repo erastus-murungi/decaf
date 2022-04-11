@@ -14,7 +14,7 @@ public class Label extends ThreeAddressCode {
     public List<String> aliasLabels;
 
     public Label(String label, BasicBlock cfgBlock) {
-        super(cfgBlock == null || cfgBlock.lines.isEmpty() ? null : cfgBlock.lines.get(0).ast);
+        super(cfgBlock == null || cfgBlock.lines.isEmpty() ? null : cfgBlock.lines.get(0));
         this.cfgBlock = cfgBlock;
         this.label = label;
         this.aliasLabels = new ArrayList<>();
