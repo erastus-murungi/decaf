@@ -16,6 +16,6 @@ public class TemporaryName extends AssignableName {
 
     @Override
     public String toString() {
-        return "tmp" + index;
+        return String.format("tmp%03d", index);
     }
 }

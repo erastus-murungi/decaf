@@ -28,7 +28,7 @@ public class MethodReturn extends ThreeAddressCode {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s", DOUBLE_INDENT, "Return", getReturnAddress().isEmpty() ? " " : getReturnAddress().get());
+        return String.format("%s%s %s", DOUBLE_INDENT, "return", getReturnAddress().isEmpty() ? " " : getReturnAddress().get());
     }
 
     @Override

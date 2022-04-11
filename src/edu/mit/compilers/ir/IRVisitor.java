@@ -223,11 +223,6 @@ public class IRVisitor implements Visitor<Void> {
         return null;
     }
 
-    @Override
-    public Void visit(Update update, SymbolTable symbolTable) {
-        return null;
-    }
-
     public Void visit(ExpressionParameter expressionParameter, SymbolTable symbolTable) {
         return null;
     }

@@ -8,7 +8,7 @@ import java.util.List;
 
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_IMPORT;
 
-public class ImportDeclaration extends AST {
+public class ImportDeclaration extends Declaration {
     public final Name nameId;
 
     public ImportDeclaration(Name nameId) {

@@ -102,18 +102,18 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
             if (testType != BuiltinType.Bool)
                 exceptions.add(new DecafSemanticException(forStatement.terminatingCondition.tokenPosition, "for-loop test must evaluate to " + BuiltinType.Bool + " not " + testType));
             forStatement.block.accept(this, symbolTable);
-            optionalDescriptor = symbolTable.getDescriptorFromValidScopes(forStatement.update.updateLocation.name.id);
+            optionalDescriptor = symbolTable.getDescriptorFromValidScopes(forStatement.update.location.name.id);
             if (optionalDescriptor.isEmpty())
-                exceptions.add(new DecafSemanticException(forStatement.update.updateLocation.tokenPosition, forStatement.update.updateLocation.name + " must be declared in scope"));
+                exceptions.add(new DecafSemanticException(forStatement.update.location.tokenPosition, forStatement.update.location.name + " must be declared in scope"));
             else {
                 Descriptor updatingDescriptor = optionalDescriptor.get();
                 if (updatingDescriptor.type != BuiltinType.Int)
                     exceptions.add(new DecafSemanticException(forStatement.initialization.initExpression.tokenPosition, "update location must have type int, not " + updatingDescriptor.type));
-                BuiltinType updateExprType = forStatement.update.updateAssignExpr.accept(this, symbolTable);
-                if (forStatement.update.updateAssignExpr instanceof CompoundAssignOpExpr)
-                    updateExprType = forStatement.update.updateAssignExpr.expression.builtinType;
+                BuiltinType updateExprType = forStatement.update.assignExpr.accept(this, symbolTable);
+                if (forStatement.update.assignExpr instanceof CompoundAssignOpExpr)
+                    updateExprType = forStatement.update.assignExpr.expression.builtinType;
                 if (updateExprType != BuiltinType.Int)
-                    exceptions.add(new DecafSemanticException(forStatement.update.updateAssignExpr.tokenPosition, "incrementing/decrementing must have type int, not " + updateExprType));
+                    exceptions.add(new DecafSemanticException(forStatement.update.assignExpr.tokenPosition, "incrementing/decrementing must have type int, not " + updateExprType));
             }
         }
         return BuiltinType.Undefined;
@@ -477,10 +477,6 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
         return null;
     }
 
-    @Override
-    public BuiltinType visit(Update update, SymbolTable symbolTable) {
-        return null;
-    }
 
     private void checkIntBounds() {
         if (intLiteral != null) {

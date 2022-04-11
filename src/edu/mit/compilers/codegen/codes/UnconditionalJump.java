@@ -16,7 +16,7 @@ public class UnconditionalJump extends ThreeAddressCode {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s", DOUBLE_INDENT, "GoTo", goToLabel.label);
+        return String.format("%s%s %s", DOUBLE_INDENT, "goto", goToLabel.label);
     }
 
     @Override

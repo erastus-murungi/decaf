@@ -11,16 +11,12 @@ import java.util.List;
 public class ArrayBoundsCheck extends ThreeAddressCode{
     public Label indexIsLessThanArraySize;
     public Label indexIsGTEZero;
-    public ConstantName arraySize;
-    public AbstractName arrayIndex;
     public ArrayAccess arrayAccess;
 
-    public ArrayBoundsCheck(AST source, ArrayAccess arrayAccess,String comment, AbstractName arrayIndex, ConstantName arraySize, Label indexIsLessThanArraySize, Label indexIsGTEZero) {
+    public ArrayBoundsCheck(AST source, ArrayAccess arrayAccess,String comment, Label indexIsLessThanArraySize, Label indexIsGTEZero) {
         super(source, comment);
-        this.arraySize = arraySize;
         this.indexIsLessThanArraySize = indexIsLessThanArraySize;
         this.indexIsGTEZero = indexIsGTEZero;
-        this.arrayIndex = arrayIndex;
         this.arrayAccess = arrayAccess;
     }
 
@@ -36,6 +32,6 @@ public class ArrayBoundsCheck extends ThreeAddressCode{
 
     @Override
     public String toString() {
-        return String.format("%sCheckBounds", DOUBLE_INDENT);
+        return String.format("%scheck bounds %s[%s] ", DOUBLE_INDENT, arrayAccess.arrayName, arrayAccess.accessIndex);
     }
 }

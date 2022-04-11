@@ -4,6 +4,7 @@ import edu.mit.compilers.ast.*;
 import edu.mit.compilers.ast.ConditionalOperator;
 import edu.mit.compilers.ast.UnaryOperator;
 
+import static edu.mit.compilers.cfg.iCFGVisitor.rotateBinaryOpExpression;
 import static edu.mit.compilers.grammar.DecafScanner.*;
 
 public class ShortCircuitProcessor {
@@ -11,7 +12,7 @@ public class ShortCircuitProcessor {
     private ShortCircuitProcessor() {
     }
 
-    public static CFGConditional shortCircuit(CFGConditional conditionalBlock) {
+    public static BasicBlockWithBranch shortCircuit(BasicBlockWithBranch conditionalBlock) {
         return shortCircuitImpl(conditionalBlock);
     }
 
@@ -63,44 +64,44 @@ public class ShortCircuitProcessor {
         return expression;
     }
 
-    private static CFGConditional shortCircuitImpl(CFGConditional cfgConditional) {
-        Expression expression = simplify((Expression) cfgConditional.condition.ast);
+    private static BasicBlockWithBranch shortCircuitImpl(BasicBlockWithBranch basicBlockWithBranch) {
+        final Expression expression = simplify(basicBlockWithBranch.condition);
 
         if (expression instanceof BinaryOpExpression) {
             BinaryOpExpression conditional = (BinaryOpExpression) expression;
             if (conditional.op instanceof ConditionalOperator) {
                 ConditionalOperator operator = (ConditionalOperator) conditional.op;
 
-                cfgConditional.falseChild.parents.remove(cfgConditional);
-                cfgConditional.trueChild.parents.remove(cfgConditional);
+                basicBlockWithBranch.falseChild.removePredecessor(basicBlockWithBranch);
+                basicBlockWithBranch.trueChild.removePredecessor(basicBlockWithBranch);
 
-                CFGExpression c1 = new CFGExpression(conditional.lhs);
-                CFGExpression c2 = new CFGExpression(conditional.rhs);
+                final Expression c1 = rotateBinaryOpExpression(conditional.lhs);
+                final Expression c2 = rotateBinaryOpExpression(conditional.rhs);
 
-                CFGConditional b1, b2;
+                BasicBlockWithBranch b1, b2;
 
                 if (operator.op.equals(CONDITIONAL_AND)) {
-                    b2 = shortCircuitImpl(new CFGConditional(c2, cfgConditional.trueChild, cfgConditional.falseChild));
-                    b1 = shortCircuitImpl(new CFGConditional(c1, b2, cfgConditional.falseChild));
+                    b2 = shortCircuitImpl(new BasicBlockWithBranch(c2, basicBlockWithBranch.trueChild, basicBlockWithBranch.falseChild));
+                    b1 = shortCircuitImpl(new BasicBlockWithBranch(c1, b2, basicBlockWithBranch.falseChild));
                 } else {
-                    b2 = shortCircuitImpl(new CFGConditional(c2, cfgConditional.trueChild, cfgConditional.falseChild));
-                    b1 = shortCircuitImpl(new CFGConditional(c1, cfgConditional.trueChild, b2));
+                    b2 = shortCircuitImpl(new BasicBlockWithBranch(c2, basicBlockWithBranch.trueChild, basicBlockWithBranch.falseChild));
+                    b1 = shortCircuitImpl(new BasicBlockWithBranch(c1, basicBlockWithBranch.trueChild, b2));
                 }
 
                 // TODO: improve the parent pointer logic here by removing checks
-                if (!cfgConditional.trueChild.parents.contains(b1) && b1.trueChild == cfgConditional.trueChild)
-                    cfgConditional.trueChild.parents.add(b1);
-                if (!cfgConditional.falseChild.parents.contains(b1) && b1.falseChild == cfgConditional.falseChild)
-                    cfgConditional.falseChild.parents.add(b1);
-                if (!cfgConditional.trueChild.parents.contains(b2) && b2.trueChild == cfgConditional.trueChild)
-                    cfgConditional.trueChild.parents.add(b2);
-                if (!cfgConditional.falseChild.parents.contains(b2) && b2.falseChild == cfgConditional.falseChild)
-                    cfgConditional.falseChild.parents.add(b2);
-                if (!b2.parents.contains(b1) && (b1.falseChild == b2 || b1.trueChild == b2))
-                    b2.parents.add(b1);
+                if (basicBlockWithBranch.trueChild.doesNotContainPredecessor(b1) && b1.trueChild == basicBlockWithBranch.trueChild)
+                    basicBlockWithBranch.trueChild.addPredecessor(b1);
+                if (basicBlockWithBranch.falseChild.doesNotContainPredecessor(b1) && b1.falseChild == basicBlockWithBranch.falseChild)
+                    basicBlockWithBranch.falseChild.addPredecessor(b1);
+                if (basicBlockWithBranch.trueChild.doesNotContainPredecessor(b2) && b2.trueChild == basicBlockWithBranch.trueChild)
+                    basicBlockWithBranch.trueChild.addPredecessor(b2);
+                if (basicBlockWithBranch.falseChild.doesNotContainPredecessor(b2) && b2.falseChild == basicBlockWithBranch.falseChild)
+                    basicBlockWithBranch.falseChild.addPredecessor(b2);
+                if (b2.doesNotContainPredecessor(b1) && (b1.falseChild == b2 || b1.trueChild == b2))
+                    b2.addPredecessor(b1);
                 return b1;
             }
         }
-        return cfgConditional;
+        return basicBlockWithBranch;
     }
 }

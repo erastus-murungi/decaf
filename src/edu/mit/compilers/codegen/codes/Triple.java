@@ -4,14 +4,15 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.grammar.DecafScanner;
 
 import java.util.List;
 
-public class OneOperandAssign extends AbstractAssignment {
+public class Triple extends Assignment {
     public AbstractName operand;
     public String operator;
 
-    public OneOperandAssign(AST source, AssignableName result, AbstractName operand, String operator) {
+    public Triple(AssignableName result, String operator, AbstractName operand, AST source) {
         super(result, source);
         this.operand = operand;
         this.operator = operator;
@@ -19,7 +20,9 @@ public class OneOperandAssign extends AbstractAssignment {
 
     @Override
     public String toString() {
-        return String.format("%s%s \t= %s %s", DOUBLE_INDENT, dst, operator, operand);
+        if (operator.equals(DecafScanner.ASSIGN))
+            return String.format("%s%s %s %s %s # %s", DOUBLE_INDENT, dst, operator, operand, DOUBLE_INDENT, getComment().orElse(""));
+        return String.format("%s%s = %s %s %s # %s", DOUBLE_INDENT, dst, operator, operand, DOUBLE_INDENT, getComment().orElse(""));
     }
 
     @Override

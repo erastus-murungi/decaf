@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class ExpressionParameter extends MethodCallParameter {
-    public final Expression expression;
+    public Expression expression;
 
     @Override
     public List<Pair<String, AST>> getChildren() {

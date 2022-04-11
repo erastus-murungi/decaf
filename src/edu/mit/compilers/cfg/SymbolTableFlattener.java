@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.Stack;
 import java.util.TreeSet;
 
-public class CFGSymbolTableConverter {
+public class SymbolTableFlattener {
     SymbolTable fields;
     SymbolTable methods;
     TreeSet<String> imports;
@@ -20,7 +20,7 @@ public class CFGSymbolTableConverter {
     HashMap<String, SymbolTable> cfgMethods = new HashMap<>();
     int uniqueIndex;
 
-    public CFGSymbolTableConverter(GlobalDescriptor globalDescriptor) {
+    public SymbolTableFlattener(GlobalDescriptor globalDescriptor) {
         this.fields = globalDescriptor.globalVariablesSymbolTable;
         this.methods = globalDescriptor.methodsSymbolTable;
         this.imports = globalDescriptor.imports;

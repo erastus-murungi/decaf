@@ -19,7 +19,7 @@ public class PopParameter extends ThreeAddressCode {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s%s%s", DOUBLE_INDENT, "PopParameter", parameterName, DOUBLE_INDENT, getComment().orElse(""));
+        return String.format("%s%s %s%s%s", DOUBLE_INDENT, "pop", parameterName, DOUBLE_INDENT, getComment().orElse(""));
     }
 
     @Override

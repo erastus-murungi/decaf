@@ -43,7 +43,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
         return x64Builder;
     }
 
-    public X64Builder visit(JumpIfFalse jumpIfFalse, X64Builder x64builder) {
+    public X64Builder visit(ConditionalJump jumpIfFalse, X64Builder x64builder) {
         if (lastComparisonOperator == null) {
             return x64builder
                     .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, resolveLoadLocation(jumpIfFalse.condition)))
@@ -59,7 +59,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     @Override
     public X64Builder visit(ArrayBoundsCheck arrayBoundsCheck, X64Builder x64builder) {
         return x64builder
-                .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(arrayBoundsCheck.arrayIndex), X64Register.R13))
+                .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(arrayBoundsCheck.arrayAccess.accessIndex), X64Register.R13))
                 .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, X64Register.R13))
                 .addLine(x64InstructionLine(X64Instruction.jge, x64Label(arrayBoundsCheck.indexIsGTEZero)))
                 .addLine(x64InstructionLine(X64Instruction.movl, ONE, "%edi"))
@@ -67,7 +67,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
                 .addLine(new X64Code("." + arrayBoundsCheck.indexIsGTEZero.label + ":"))
 
-                .addLine(x64InstructionLine(X64Instruction.cmp, arrayBoundsCheck.arraySize, X64Register.R13))
+                .addLine(x64InstructionLine(X64Instruction.cmp, arrayBoundsCheck.arrayAccess.arrayLength, X64Register.R13))
                 .addLine(x64InstructionLine(X64Instruction.jl, x64Label(arrayBoundsCheck.indexIsLessThanArraySize)))
 
                 .addLine(x64InstructionLine(X64Instruction.movl, ONE, "%edi"))
@@ -226,7 +226,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     }
 
     @Override
-    public X64Builder visit(MethodCall methodCall, X64Builder x64builder) {
+    public X64Builder visit(MethodCallSetResult methodCall, X64Builder x64builder) {
         if (methodCall
                 .getResultLocation()
                 .isPresent())
@@ -254,7 +254,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     }
 
     @Override
-    public X64Builder visit(OneOperandAssign oneOperandAssign, X64Builder x64builder) {
+    public X64Builder visit(Triple oneOperandAssign, X64Builder x64builder) {
         String sourceStackLocation = resolveLoadLocation(oneOperandAssign.operand);
         String destStackLocation = resolveLoadLocation(oneOperandAssign.dst);
 
@@ -392,72 +392,72 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     }
 
     @Override
-    public X64Builder visit(TwoOperandAssign twoOperandAssign, X64Builder x64builder) {
-        switch (twoOperandAssign.operator) {
+    public X64Builder visit(Quadruple quadruple, X64Builder x64builder) {
+        switch (quadruple.operator) {
             case "+":
             case "-":
                 return x64builder
-                        .addLine(x64InstructionLine(X64Instruction.mov, resolveLoadLocation(twoOperandAssign.fstOperand), X64Register.RAX))
-                        .addLine(x64InstructionLine(X64Instruction.getX64OperatorCode(twoOperandAssign.operator), resolveLoadLocation(twoOperandAssign.sndOperand), X64Register.RAX))
-                        .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", twoOperandAssign.dst, twoOperandAssign.fstOperand, twoOperandAssign.operator, twoOperandAssign.sndOperand), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(twoOperandAssign.dst)));
+                        .addLine(x64InstructionLine(X64Instruction.mov, resolveLoadLocation(quadruple.fstOperand), X64Register.RAX))
+                        .addLine(x64InstructionLine(X64Instruction.getX64OperatorCode(quadruple.operator), resolveLoadLocation(quadruple.sndOperand), X64Register.RAX))
+                        .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", quadruple.dst, quadruple.fstOperand, quadruple.operator, quadruple.sndOperand), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(quadruple.dst)));
             case "*":
                 return x64builder
-                        .addLine(x64InstructionLine(X64Instruction.mov, resolveLoadLocation(twoOperandAssign.fstOperand), X64Register.RAX))
-                        .addLine(x64InstructionLine(X64Instruction.imulq, resolveLoadLocation(twoOperandAssign.sndOperand), X64Register.RAX))
-                        .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", twoOperandAssign.dst, twoOperandAssign.fstOperand, twoOperandAssign.operator, twoOperandAssign.sndOperand), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(twoOperandAssign.dst)));
+                        .addLine(x64InstructionLine(X64Instruction.mov, resolveLoadLocation(quadruple.fstOperand), X64Register.RAX))
+                        .addLine(x64InstructionLine(X64Instruction.imulq, resolveLoadLocation(quadruple.sndOperand), X64Register.RAX))
+                        .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", quadruple.dst, quadruple.fstOperand, quadruple.operator, quadruple.sndOperand), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(quadruple.dst)));
             // TODO: cheatsheet says that %rdx:%rax is divided by S (source) but we are going to assume just %rax for now
             case "/":
-                if (twoOperandAssign.sndOperand instanceof ConstantName) {
+                if (quadruple.sndOperand instanceof ConstantName) {
                     return x64builder
-                            .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(twoOperandAssign.fstOperand), X64Register.RAX))
+                            .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(quadruple.fstOperand), X64Register.RAX))
                             .addLine(x64InstructionLine(X64Instruction.cqto))
-                            .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(twoOperandAssign.sndOperand), X64Register.R9))
+                            .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(quadruple.sndOperand), X64Register.R9))
                             .addLine(x64InstructionLine(X64Instruction.idivq, X64Register.R9))
-                            .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", twoOperandAssign.dst, twoOperandAssign.fstOperand, twoOperandAssign.operator, twoOperandAssign.sndOperand), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(twoOperandAssign.dst)));
+                            .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", quadruple.dst, quadruple.fstOperand, quadruple.operator, quadruple.sndOperand), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(quadruple.dst)));
                 }
                 return x64builder
-                        .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(twoOperandAssign.fstOperand), X64Register.RAX))
+                        .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(quadruple.fstOperand), X64Register.RAX))
                         .addLine(x64InstructionLine(X64Instruction.cqto))
-                        .addLine(x64InstructionLine(X64Instruction.idivq, resolveLoadLocation(twoOperandAssign.sndOperand)))
-                        .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", twoOperandAssign.dst, twoOperandAssign.fstOperand, twoOperandAssign.operator, twoOperandAssign.sndOperand), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(twoOperandAssign.dst)));
+                        .addLine(x64InstructionLine(X64Instruction.idivq, resolveLoadLocation(quadruple.sndOperand)))
+                        .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", quadruple.dst, quadruple.fstOperand, quadruple.operator, quadruple.sndOperand), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(quadruple.dst)));
             // TODO: cheatsheet says that %rdx:%rax is divided by S (source) but we are going to assume just %rax for now
             case "%":
-                if (twoOperandAssign.sndOperand instanceof ConstantName) {
+                if (quadruple.sndOperand instanceof ConstantName) {
                     return x64builder
-                            .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(twoOperandAssign.fstOperand), X64Register.RAX))
+                            .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(quadruple.fstOperand), X64Register.RAX))
                             .addLine(x64InstructionLine(X64Instruction.cqto))
-                            .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(twoOperandAssign.sndOperand), X64Register.R9))
+                            .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(quadruple.sndOperand), X64Register.R9))
                             .addLine(x64InstructionLine(X64Instruction.idivq, X64Register.R9))
-                            .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", twoOperandAssign.dst, twoOperandAssign.fstOperand, twoOperandAssign.operator, twoOperandAssign.sndOperand), X64Instruction.movq, X64Register.RDX, resolveLoadLocation(twoOperandAssign.dst)));
+                            .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", quadruple.dst, quadruple.fstOperand, quadruple.operator, quadruple.sndOperand), X64Instruction.movq, X64Register.RDX, resolveLoadLocation(quadruple.dst)));
                 }
                 return x64builder
-                        .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(twoOperandAssign.fstOperand), X64Register.RAX))
+                        .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(quadruple.fstOperand), X64Register.RAX))
                         .addLine(x64InstructionLine(X64Instruction.cqto))
-                        .addLine(x64InstructionLine(X64Instruction.idivq, resolveLoadLocation(twoOperandAssign.sndOperand)))
-                        .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", twoOperandAssign.dst, twoOperandAssign.fstOperand, twoOperandAssign.operator, twoOperandAssign.sndOperand), X64Instruction.movq, X64Register.RDX, resolveLoadLocation(twoOperandAssign.dst)));
+                        .addLine(x64InstructionLine(X64Instruction.idivq, resolveLoadLocation(quadruple.sndOperand)))
+                        .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", quadruple.dst, quadruple.fstOperand, quadruple.operator, quadruple.sndOperand), X64Instruction.movq, X64Register.RDX, resolveLoadLocation(quadruple.dst)));
             case "||":
                 return x64builder
-                        .addLine(x64InstructionLine(X64Instruction.mov, resolveLoadLocation(twoOperandAssign.fstOperand), X64Register.RAX))
-                        .addLine(x64InstructionLine(X64Instruction.or, resolveLoadLocation(twoOperandAssign.sndOperand), X64Register.RAX))
-                        .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", twoOperandAssign.dst, twoOperandAssign.fstOperand, twoOperandAssign.operator, twoOperandAssign.sndOperand), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(twoOperandAssign.dst)));
+                        .addLine(x64InstructionLine(X64Instruction.mov, resolveLoadLocation(quadruple.fstOperand), X64Register.RAX))
+                        .addLine(x64InstructionLine(X64Instruction.or, resolveLoadLocation(quadruple.sndOperand), X64Register.RAX))
+                        .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", quadruple.dst, quadruple.fstOperand, quadruple.operator, quadruple.sndOperand), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(quadruple.dst)));
             case "&&":
                 return x64builder
-                        .addLine(x64InstructionLine(X64Instruction.mov, resolveLoadLocation(twoOperandAssign.fstOperand), X64Register.RAX))
-                        .addLine(x64InstructionLine(X64Instruction.and, resolveLoadLocation(twoOperandAssign.sndOperand), X64Register.RAX))
-                        .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", twoOperandAssign.dst, twoOperandAssign.fstOperand, twoOperandAssign.operator, twoOperandAssign.sndOperand), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(twoOperandAssign.dst)));
+                        .addLine(x64InstructionLine(X64Instruction.mov, resolveLoadLocation(quadruple.fstOperand), X64Register.RAX))
+                        .addLine(x64InstructionLine(X64Instruction.and, resolveLoadLocation(quadruple.sndOperand), X64Register.RAX))
+                        .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", quadruple.dst, quadruple.fstOperand, quadruple.operator, quadruple.sndOperand), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(quadruple.dst)));
             case "==":
             case "!=":
             case "<":
             case ">":
             case "<=":
             case ">=":
-                lastComparisonOperator = twoOperandAssign.operator;
+                lastComparisonOperator = quadruple.operator;
                 return x64builder
-                        .addLine(x64InstructionLine(X64Instruction.mov, resolveLoadLocation(twoOperandAssign.fstOperand), X64Register.RAX))
-                        .addLine(x64InstructionLine(X64Instruction.cmp, resolveLoadLocation(twoOperandAssign.sndOperand), X64Register.RAX))
-                        .addLine(x64InstructionLine(X64Instruction.getCorrectComparisonSetInstruction(twoOperandAssign.operator), X64Register.al))
+                        .addLine(x64InstructionLine(X64Instruction.mov, resolveLoadLocation(quadruple.fstOperand), X64Register.RAX))
+                        .addLine(x64InstructionLine(X64Instruction.cmp, resolveLoadLocation(quadruple.sndOperand), X64Register.RAX))
+                        .addLine(x64InstructionLine(X64Instruction.getCorrectComparisonSetInstruction(quadruple.operator), X64Register.al))
                         .addLine(x64InstructionLine(X64Instruction.movzbq, X64Register.al, X64Register.RAX))
-                        .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", twoOperandAssign.dst, twoOperandAssign.fstOperand, twoOperandAssign.operator, twoOperandAssign.sndOperand), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(twoOperandAssign.dst)));
+                        .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", quadruple.dst, quadruple.fstOperand, quadruple.operator, quadruple.sndOperand), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(quadruple.dst)));
             default:
                 return null;
         }
@@ -469,11 +469,11 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     }
 
     @Override
-    public X64Builder visit(DataSectionAllocation dataSectionAllocation, X64Builder x64Builder) {
-        globals.add(dataSectionAllocation.variableName);
+    public X64Builder visit(GlobalAllocation globalAllocation, X64Builder x64Builder) {
+        globals.add(globalAllocation.variableName);
         return x64Builder.addLine(x64InstructionLine(String.format("%s:\n\t\t.zero %s",
-                dataSectionAllocation.variableName,
-                dataSectionAllocation.variableName.size)));
+                globalAllocation.variableName,
+                globalAllocation.variableName.size)));
     }
 }
 

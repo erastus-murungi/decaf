@@ -9,7 +9,7 @@ import edu.mit.compilers.codegen.names.VariableName;
 import java.util.Collections;
 import java.util.List;
 
-public class DataSectionAllocation extends ThreeAddressCode {
+public class GlobalAllocation extends ThreeAddressCode {
     public static final int DEFAULT_ALIGNMENT = 8;
 
     public final VariableName variableName;
@@ -17,7 +17,7 @@ public class DataSectionAllocation extends ThreeAddressCode {
     public final int alignment;
     public final BuiltinType type;
 
-    public DataSectionAllocation(AST source, String comment, VariableName variableName, long size, BuiltinType builtinType) {
+    public GlobalAllocation(AST source, String comment, VariableName variableName, long size, BuiltinType builtinType) {
         super(source, comment);
         this.variableName = variableName;
         this.size = size;

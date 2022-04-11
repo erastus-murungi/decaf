@@ -28,19 +28,19 @@ public class CFGGenerator {
         if (methodDescriptor.type == BuiltinType.Void)
             return;
 
-        exitNop.parents.removeIf(block -> !(block
+        exitNop.getPredecessors().removeIf(block -> !(block
                 .getSuccessors()
                 .contains(exitNop)));
 
-        final List<CFGBlock> allExecutionPathsReturn = exitNop.parents
-                .stream()
-                .filter(cfgBlock -> (!cfgBlock.lines.isEmpty() && (cfgBlock.lastASTLine() instanceof Return)))
-                .collect(Collectors.toList());
+        final List<BasicBlock> allExecutionPathsReturn = exitNop.getPredecessors()
+                                                                .stream()
+                                                                .filter(cfgBlock -> (!cfgBlock.lines.isEmpty() && (cfgBlock.lastASTLine() instanceof Return)))
+                                                                .collect(Collectors.toList());
 
-        final List<CFGBlock> allExecutionsPathsThatDontReturn = exitNop.parents
-                .stream()
-                .filter(cfgBlock -> (cfgBlock.lines.isEmpty() || (!(cfgBlock.lastASTLine() instanceof Return))))
-                .collect(Collectors.toList());
+        final List<BasicBlock> allExecutionsPathsThatDontReturn = exitNop.getPredecessors()
+                                                                         .stream()
+                                                                         .filter(cfgBlock -> (cfgBlock.lines.isEmpty() || (!(cfgBlock.lastASTLine() instanceof Return))))
+                                                                         .collect(Collectors.toList());
 
         if (allExecutionPathsReturn.size() != allExecutionsPathsThatDontReturn.size()) {
             errors.addAll(allExecutionsPathsThatDontReturn
@@ -69,7 +69,7 @@ public class CFGGenerator {
 
         visitor.methodCFGBlocks.forEach((k, v) -> {
             nopVisitor.exit = visitor.methodToExitNOP.get(k);
-            ((CFGNonConditional) v).autoChild.accept(nopVisitor, theSymbolWeCareAbout);
+            ((BasicBlockBranchLess) v).autoChild.accept(nopVisitor, theSymbolWeCareAbout);
         });
 
         visitor.methodCFGBlocks.forEach((k, v) -> {
@@ -79,21 +79,15 @@ public class CFGGenerator {
                     .getDescriptorFromValidScopes(k)
                     .orElseThrow());
         });
-
-//        if (errors.size() > 0) {
-//            for (DecafException decafException : errors)
-//                decafException.printStackTrace();
-//            System.exit(-2);
-//        }
         visitor.initialGlobalBlock.accept(nopVisitor, theSymbolWeCareAbout);
-        HashMap<String, CFGBlock> methodBlocksCFG = new HashMap<>();
+        HashMap<String, BasicBlock> methodBlocksCFG = new HashMap<>();
         visitor.methodCFGBlocks.forEach((k, v) -> {
             if (v
                     .getLabel()
-                    .equals("∅")) {
-                if (((CFGNonConditional) v).autoChild != null) {
-                    ((CFGNonConditional) v).autoChild.parents.remove(v);
-                    v = ((CFGNonConditional) v).autoChild;
+                    .isBlank()) {
+                if (((BasicBlockBranchLess) v).autoChild != null) {
+                    ((BasicBlockBranchLess) v).autoChild.removePredecessor(v);
+                    v = ((BasicBlockBranchLess) v).autoChild;
                 }
             }
             methodBlocksCFG.put(k, v);
@@ -105,10 +99,10 @@ public class CFGGenerator {
         return visitor;
     }
 
-    public static void printAllParents(CFGBlock block) {
-        Stack<CFGBlock> toVisit = new Stack<>();
+    public static void printAllParents(BasicBlock block) {
+        Stack<BasicBlock> toVisit = new Stack<>();
         toVisit.add(block);
-        Set<CFGBlock> seen = new HashSet<>();
+        Set<BasicBlock> seen = new HashSet<>();
         while (!toVisit.isEmpty()) {
             block = toVisit.pop();
             if (seen.contains(block) || block == null) {
@@ -116,23 +110,23 @@ public class CFGGenerator {
             }
             seen.add(block);
             System.out.println(Utils.coloredPrint(block.getLabel(), Utils.ANSIColorConstants.ANSI_PURPLE) + "  >>>>   ");
-            for (CFGBlock parent : block.parents) {
+            for (BasicBlock parent : block.getPredecessors()) {
                 System.out.println(Utils.indentBlock(parent.getLabel()));
                 System.out.println();
             }
-            if (block instanceof CFGConditional) {
-                toVisit.add(((CFGConditional) block).falseChild);
-                toVisit.add(((CFGConditional) block).trueChild);
+            if (block instanceof BasicBlockWithBranch) {
+                toVisit.add(((BasicBlockWithBranch) block).falseChild);
+                toVisit.add(((BasicBlockWithBranch) block).trueChild);
             } else {
-                toVisit.add(((CFGNonConditional) block).autoChild);
+                toVisit.add(((BasicBlockBranchLess) block).autoChild);
             }
         }
     }
 
-    public static void printAllChildren(CFGBlock block) {
-        Stack<CFGBlock> toVisit = new Stack<>();
+    public static void printAllChildren(BasicBlock block) {
+        Stack<BasicBlock> toVisit = new Stack<>();
         toVisit.add(block);
-        Set<CFGBlock> seen = new HashSet<>();
+        Set<BasicBlock> seen = new HashSet<>();
         while (!toVisit.isEmpty()) {
             block = toVisit.pop();
             if (seen.contains(block) || block == null) {
@@ -141,9 +135,9 @@ public class CFGGenerator {
             seen.add(block);
             System.out.println(Utils.coloredPrint(block.getLabel(), Utils.ANSIColorConstants.ANSI_BLUE) + "  <<<<   ");
 
-            if (block instanceof CFGConditional) {
-                CFGBlock falseChild = ((CFGConditional) block).falseChild;
-                CFGBlock trueChild = ((CFGConditional) block).trueChild;
+            if (block instanceof BasicBlockWithBranch) {
+                BasicBlock falseChild = ((BasicBlockWithBranch) block).falseChild;
+                BasicBlock trueChild = ((BasicBlockWithBranch) block).trueChild;
                 toVisit.add(falseChild);
                 toVisit.add(trueChild);
                 if (trueChild != null) {
@@ -158,7 +152,7 @@ public class CFGGenerator {
                 System.out.println();
 
             } else {
-                CFGBlock autoChild = ((CFGNonConditional) block).autoChild;
+                BasicBlock autoChild = ((BasicBlockBranchLess) block).autoChild;
                 toVisit.add(autoChild);
                 if (autoChild != null) {
                     System.out.print("A ---- ");

@@ -6,11 +6,11 @@ import edu.mit.compilers.codegen.names.AbstractName;
 
 import java.util.List;
 
-public class JumpIfFalse extends ThreeAddressCode {
+public class ConditionalJump extends ThreeAddressCode {
     public final AbstractName condition;
     public final Label trueLabel;
 
-    public JumpIfFalse(AST source, AbstractName condition, Label trueLabel, String comment) {
+    public ConditionalJump(AST source, AbstractName condition, Label trueLabel, String comment) {
         super(source, comment);
         this.condition = condition;
         this.trueLabel = trueLabel;
@@ -18,7 +18,7 @@ public class JumpIfFalse extends ThreeAddressCode {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, "IfFalse", condition, "GoTo", trueLabel.label, DOUBLE_INDENT + "<<<<", getComment().isPresent() ? getComment().get() : "");
+        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, "if not", condition, "goto", trueLabel.label, DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
     }
 
     @Override

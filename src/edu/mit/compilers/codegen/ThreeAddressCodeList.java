@@ -10,6 +10,7 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode> {
     public AbstractName place;
     private final List<ThreeAddressCode> codes;
     public static final AbstractName UNDEFINED = new VariableName(null);
+    private static ThreeAddressCodeList EMPTY = new ThreeAddressCodeList(UNDEFINED);
 
     private ThreeAddressCodeList next;
 
@@ -75,6 +76,10 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode> {
     public ThreeAddressCodeList(AbstractName place, List<ThreeAddressCode> codes) {
         this.place = place;
         this.codes = codes;
+    }
+
+    public static ThreeAddressCodeList empty() {
+        return new ThreeAddressCodeList(UNDEFINED);
     }
 
     public ThreeAddressCodeList(AbstractName place) {
