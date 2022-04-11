@@ -36,6 +36,7 @@ import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.io.*;
 import java.util.*;
+import java.util.function.Function;
 
 /**
  * <dl>
@@ -432,7 +433,7 @@ public class GraphVizPrinter {
         return String.join("\n", subGraphs);
     }
 
-    public static String writeCFG(String name, BasicBlock cfg) {
+    public static String writeCFG(String name, BasicBlock cfg, Function<BasicBlock, String> labelFunction) {
         List<String> subGraphs = new ArrayList<>();
         subGraphs.add(String.format("subgraph cluster_%s { \n label = %s", escape(name), escape(name)));
         // add this node
@@ -445,10 +446,10 @@ public class GraphVizPrinter {
         while (!stack.isEmpty()) {
             BasicBlock cfgBlock = stack.pop();
             if (cfgBlock instanceof NOP) {
-                nodes.add(String.format("   %s [shape=record, style=filled, fillcolor=gray, label=%s];", cfgBlock.hashCode(), "\"<from_node>" + escape(cfgBlock.getLabel()) + "\""));
+                nodes.add(String.format("   %s [shape=record, style=filled, fillcolor=gray, label=%s];", cfgBlock.hashCode(), "\"<from_node>" + escape(labelFunction.apply(cfgBlock)) + "\""));
                 BasicBlock autoChild = ((NOP) cfgBlock).autoChild;
                 if (autoChild != null) {
-                    edges.add(String.format("   %s -> %s;", cfgBlock.hashCode()+ ":from_node", autoChild.hashCode()+ ":from_node"));
+                    edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_node", autoChild.hashCode()+ ":from_node"));
                     if (!seen.contains(autoChild)) {
                         stack.push(autoChild);
                         seen.add(autoChild);
@@ -456,7 +457,7 @@ public class GraphVizPrinter {
                 }
             }
             else if (cfgBlock instanceof BasicBlockBranchLess) {
-                nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"<from_node>" + escape(cfgBlock.getLabel()) + "\""));
+                nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"<from_node>" + escape(labelFunction.apply(cfgBlock)) + "\""));
                 BasicBlock autoChild = ((BasicBlockBranchLess) cfgBlock).autoChild;
                 if (autoChild != null) {
                     edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_node", autoChild.hashCode() + ":from_node"));
@@ -466,7 +467,7 @@ public class GraphVizPrinter {
                     }
                 }
             } else if (cfgBlock instanceof BasicBlockWithBranch) {
-                nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"{<from_node>" + escape(cfgBlock.getLabel()) + "|{<from_true> T|<from_false>F}" + "}\""));
+                nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"{<from_node>" + escape(labelFunction.apply(cfgBlock)) + "|{<from_true> T|<from_false>F}" + "}\""));
                 BasicBlock falseChild = ((BasicBlockWithBranch) cfgBlock).falseChild;
                 BasicBlock trueChild = ((BasicBlockWithBranch) cfgBlock).trueChild;
                 if (falseChild != null) {
@@ -492,14 +493,18 @@ public class GraphVizPrinter {
         return String.join("\n", subGraphs);
     }
 
-    public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks) {
-        printGraph(methodCFGBlocks, "cfg");
+    public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks, Function<BasicBlock, String> labelFunction) {
+        printGraph(methodCFGBlocks, labelFunction, "cfg");
     }
 
-    public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks, String graphFilename) {
+    public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks) {
+        printGraph(methodCFGBlocks, (BasicBlock::getLabel), "cfg");
+    }
+
+    public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks, Function<BasicBlock, String> labelFunction, String graphFilename) {
         final String[] graph = new String[methodCFGBlocks.size()];
         final Integer[] index = {0};
-        methodCFGBlocks.forEach((k, v) -> graph[index[0]++] = writeCFG(k, v));
+        methodCFGBlocks.forEach((k, v) -> graph[index[0]++] = writeCFG(k, v, labelFunction));
         GraphVizPrinter.createDotGraph(String.join("\n", graph), graphFilename);
 //        if (!osName.equals("windows")) {
 //            try {

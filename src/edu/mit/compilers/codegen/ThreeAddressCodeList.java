@@ -79,7 +79,7 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode> {
     }
 
     public static ThreeAddressCodeList empty() {
-        return EMPTY;
+        return new ThreeAddressCodeList(UNDEFINED);
     }
 
     public ThreeAddressCodeList(AbstractName place) {

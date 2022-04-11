@@ -1,6 +1,7 @@
 package edu.mit.compilers.cfg;
 
 import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.ArrayList;
@@ -10,6 +11,8 @@ import java.util.stream.Collectors;
 
 public abstract class BasicBlock {
     private final ArrayList<BasicBlock> predecessors;
+    // to be set by the threeAddressCodeList
+    public ThreeAddressCodeList threeAddressCodeList;
 
     public ArrayList<AST> lines;
 
@@ -46,6 +49,7 @@ public abstract class BasicBlock {
     public BasicBlock() {
         predecessors = new ArrayList<>();
         lines = new ArrayList<>();
+        threeAddressCodeList = ThreeAddressCodeList.empty();
     }
 
     public abstract <T> T  accept(BasicBlockVisitor<T> visitor, SymbolTable symbolTable);

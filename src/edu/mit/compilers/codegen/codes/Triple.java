@@ -4,6 +4,7 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.grammar.DecafScanner;
 
 import java.util.List;
 
@@ -19,7 +20,9 @@ public class Triple extends Assignment {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s %s", DOUBLE_INDENT, dst, operator, operand);
+        if (operator.equals(DecafScanner.ASSIGN))
+            return String.format("%s%s %s %s %s # %s", DOUBLE_INDENT, dst, operator, operand, DOUBLE_INDENT, getComment().orElse(""));
+        return String.format("%s%s = %s %s %s # %s", DOUBLE_INDENT, dst, operator, operand, DOUBLE_INDENT, getComment().orElse(""));
     }
 
     @Override

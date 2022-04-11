@@ -1,6 +1,7 @@
 package edu.mit.compilers.cfg;
 
 import edu.mit.compilers.ast.Expression;
+import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.List;
