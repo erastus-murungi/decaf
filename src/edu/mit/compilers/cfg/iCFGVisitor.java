@@ -332,7 +332,7 @@ public class iCFGVisitor implements Visitor<BasicBlocksPair> {
     public BasicBlocksPair visit(Return returnStatement, SymbolTable symbolTable) {
         BasicBlockBranchLess returnBlock = new BasicBlockBranchLess();
         returnStatement.retExpression = rotateBinaryOpExpression(returnStatement.retExpression);
-        returnBlock.lines.add(rotateBinaryOpExpression(returnStatement.retExpression));
+        returnBlock.lines.add(returnStatement);
         returnBlock.autoChild = exitNOP;
         return new BasicBlocksPair(returnBlock, exitNOP);
     }
@@ -355,10 +355,12 @@ public class iCFGVisitor implements Visitor<BasicBlocksPair> {
         for (int i = 0; i < methodCallStatement.methodCall.methodCallParameterList.size(); i++) {
             MethodCallParameter param = methodCallStatement.methodCall.methodCallParameterList.get(i);
             if (param instanceof ExpressionParameter) {
-                methodCallStatement.methodCall.methodCallParameterList.set(i, new ExpressionParameter(rotateBinaryOpExpression(((ExpressionParameter) param).expression)));
+                ExpressionParameter expressionParameter = ((ExpressionParameter) param);
+                expressionParameter.expression = rotateBinaryOpExpression(expressionParameter.expression);
+                methodCallStatement.methodCall.methodCallParameterList.set(i, param);
             }
         }
-        methodCallExpr.lines.add(rotateBinaryOpExpression(methodCallStatement.methodCall));
+        methodCallExpr.lines.add(methodCallStatement);
         return new BasicBlocksPair(methodCallExpr, methodCallExpr);
     }
 
@@ -375,10 +377,8 @@ public class iCFGVisitor implements Visitor<BasicBlocksPair> {
             final CompoundAssignOpExpr assignOpExpr = (CompoundAssignOpExpr) locationAssignExpr.assignExpr;
             op = assignOpExpr.compoundAssignOp.op;
         } else if (locationAssignExpr.assignExpr instanceof Decrement) {
-            final Decrement decrement = (Decrement) locationAssignExpr.assignExpr;
             op = DecafScanner.DECREMENT;
         } else if (locationAssignExpr.assignExpr instanceof Increment) {
-            final Increment increment = (Increment) locationAssignExpr.assignExpr;
             op = DecafScanner.INCREMENT;
         } else {
             throw new IllegalStateException("unrecognized AST node " + locationAssignExpr.assignExpr);
