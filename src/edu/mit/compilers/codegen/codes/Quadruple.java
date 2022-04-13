@@ -14,7 +14,7 @@ import java.util.Objects;
  * For instance, the three address instruction x = y + z is represented by placing + in op, y in arg1, z in arg2 and x in result.
  */
 
-public class Quadruple extends Assignment {
+public class Quadruple extends HasResult {
     public AbstractName fstOperand;
     public String operator;
     public AbstractName sndOperand;

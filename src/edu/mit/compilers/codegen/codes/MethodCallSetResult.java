@@ -7,9 +7,8 @@ import edu.mit.compilers.codegen.names.AssignableName;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
-public class MethodCallSetResult extends Assignment {
+public class MethodCallSetResult extends HasResult {
     public MethodCallSetResult(MethodCall methodCall, AssignableName resultLocation, String comment) {
         super(resultLocation, methodCall, comment);
     }

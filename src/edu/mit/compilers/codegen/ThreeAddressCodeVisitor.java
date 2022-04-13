@@ -38,4 +38,6 @@ public interface ThreeAddressCodeVisitor<ReturnType, ExtraInfoType> {
     ReturnType visit(ArrayAccess arrayAccess, ExtraInfoType extra);
 
     ReturnType visit(RuntimeException runtimeException, ExtraInfoType extraInfo);
+
+    ReturnType visit(Assign assignment, ExtraInfoType extraInfo);
 }

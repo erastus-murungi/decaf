@@ -95,6 +95,53 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     }
 
     @Override
+    public X64Builder visit(Assign assign, X64Builder x64Builder) {
+        String sourceStackLocation = resolveLoadLocation(assign.operand);
+        String destStackLocation = resolveLoadLocation(assign.dst);
+
+        switch (assign.assignmentOperator) {
+            case "--":
+                return x64Builder
+                        .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
+                        .addLine(x64InstructionLine(X64Instruction.dec, X64Register.RAX))
+                        .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, destStackLocation));
+            case "++":
+                return x64Builder
+                        .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
+                        .addLine(x64InstructionLine(X64Instruction.inc, X64Register.RAX))
+                        .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, destStackLocation));
+            case "+=":
+                return x64Builder
+                        .addLine(x64InstructionLineWithComment("move " + assign.operand + " to temp register",
+                                X64Instruction.movq, sourceStackLocation, X64Register.RAX)
+                        )
+                        .addLine(x64InstructionLineWithComment(String.format("%s += %s", assign.dst, assign.operand), X64Instruction.addq, X64Register.RAX, destStackLocation));
+            case "-=":
+                return x64Builder
+                        .addLine(x64InstructionLineWithComment("move " + assign.operand + " to temp register",
+                                X64Instruction.movq, sourceStackLocation, X64Register.RAX)
+                        )
+                        .addLine(x64InstructionLineWithComment(String.format("%s -= %s", assign.dst, assign.operand), X64Instruction.subq, X64Register.RAX, destStackLocation));
+
+            case "*=":
+                return x64Builder
+                        .addLine(x64InstructionLineWithComment("move " + assign.operand + " to temp register",
+                                X64Instruction.movq, sourceStackLocation, X64Register.RAX)
+                        )
+                        .addLine(x64InstructionLineWithComment(String.format("%s *= %s", assign.dst, assign.operand), X64Instruction.imulq, X64Register.RAX, destStackLocation));
+            case "=":
+                return (assign.operand instanceof ConstantName) ? (
+                        x64Builder
+                                .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, destStackLocation)))
+                        : x64Builder
+                        .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
+                        .addLine(x64InstructionLineWithComment(String.format("%s = %s", assign.dst, assign.operand), X64Instruction.movq, X64Register.RAX, destStackLocation));
+            default:
+                return null;
+        }
+    }
+
+    @Override
     public X64Builder visit(Label label, X64Builder x64builder) {
         return x64builder.addLine(new X64Code("." + label.label + ":"));
     }
@@ -254,60 +301,22 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     }
 
     @Override
-    public X64Builder visit(Triple oneOperandAssign, X64Builder x64builder) {
+    public X64Builder visit(Triple oneOperandAssign, X64Builder x64Builder) {
         String sourceStackLocation = resolveLoadLocation(oneOperandAssign.operand);
         String destStackLocation = resolveLoadLocation(oneOperandAssign.dst);
 
         switch (oneOperandAssign.operator) {
             case "!":
                 lastComparisonOperator = null;
-                return x64builder
+                return x64Builder
                         .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
                         .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, destStackLocation))
                         .addLine(x64InstructionLine(X64Instruction.xorb, ONE, destStackLocation));
             case "-":
-                return x64builder
+                return x64Builder
                         .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
                         .addLine(x64InstructionLine(X64Instruction.neg, X64Register.RAX))
                         .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, destStackLocation));
-            case "--":
-                return x64builder
-                        .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
-                        .addLine(x64InstructionLine(X64Instruction.dec, X64Register.RAX))
-                        .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, destStackLocation));
-            case "++":
-                return x64builder
-                        .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
-                        .addLine(x64InstructionLine(X64Instruction.inc, X64Register.RAX))
-                        .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, destStackLocation));
-            case "+=":
-                return x64builder
-                        .addLine(x64InstructionLineWithComment("move " + oneOperandAssign.operand + " to temp register",
-                                X64Instruction.movq, sourceStackLocation, X64Register.RAX)
-                        )
-                        .addLine(x64InstructionLineWithComment(String.format("%s += %s", oneOperandAssign.dst, oneOperandAssign.operand), X64Instruction.addq, X64Register.RAX, destStackLocation));
-            case "-=":
-                return x64builder
-                        .addLine(x64InstructionLineWithComment("move " + oneOperandAssign.operand + " to temp register",
-                                X64Instruction.movq, sourceStackLocation, X64Register.RAX)
-                        )
-                        .addLine(x64InstructionLineWithComment(String.format("%s -= %s", oneOperandAssign.dst, oneOperandAssign.operand), X64Instruction.subq, X64Register.RAX, destStackLocation));
-
-            case "*=":
-                return x64builder
-                        .addLine(x64InstructionLineWithComment("move " + oneOperandAssign.operand + " to temp register",
-                                X64Instruction.movq, sourceStackLocation, X64Register.RAX)
-                        )
-                        .addLine(x64InstructionLineWithComment(String.format("%s *= %s", oneOperandAssign.dst, oneOperandAssign.operand), X64Instruction.imulq, X64Register.RAX, destStackLocation));
-            case "=":
-                return (oneOperandAssign.operand instanceof ConstantName) ? (
-                        x64builder
-                                .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, destStackLocation)))
-                        : x64builder
-                        .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
-                        .addLine(x64InstructionLineWithComment(String.format("%s = %s", oneOperandAssign.dst, oneOperandAssign.operand), X64Instruction.movq, X64Register.RAX, destStackLocation));
-
-
             default:
                 return null;
         }

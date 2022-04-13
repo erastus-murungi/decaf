@@ -1,7 +1,7 @@
 package edu.mit.compilers.dataflow;
 
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.codes.Assignment;
+import edu.mit.compilers.codegen.codes.HasResult;
 import edu.mit.compilers.codegen.codes.Quadruple;
 import edu.mit.compilers.codegen.codes.Triple;
 import edu.mit.compilers.grammar.DecafScanner;
@@ -11,10 +11,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-public class AvailableExpressions extends DataFlowAnalysis<Assignment> {
-    HashMap<Assignment, Integer> assignmentToId;
-    HashMap<Integer, Assignment> idToAssignment;
-    HashMap<Assignment, BasicBlock> assignmentToBasicBlock;
+public class AvailableExpressions extends DataFlowAnalysis<HasResult> {
+    HashMap<HasResult, Integer> assignmentToId;
+    HashMap<Integer, HasResult> idToAssignment;
+    HashMap<HasResult, BasicBlock> assignmentToBasicBlock;
 
     public AvailableExpressions(BasicBlock entry) {
         List<BasicBlock> basicBlocks = DataFlowAnalysis.getReversePostOrder(entry);
@@ -27,8 +27,8 @@ public class AvailableExpressions extends DataFlowAnalysis<Assignment> {
         assignmentToBasicBlock = new HashMap<>();
         int id = 0;
         for (BasicBlock basicBlock : basicBlocks) {
-            for (Iterator<Assignment> it = basicBlock.assignmentIterator(); it.hasNext(); ) {
-                final Assignment assignment = it.next();
+            for (Iterator<HasResult> it = basicBlock.assignmentIterator(); it.hasNext(); ) {
+                final HasResult assignment = it.next();
                 if (!assignmentToId.containsKey(assignment)) {
                     assignmentToId.putIfAbsent(assignment, id);
                     idToAssignment.putIfAbsent(id, assignment);
@@ -46,12 +46,12 @@ public class AvailableExpressions extends DataFlowAnalysis<Assignment> {
     }
 
     @Override
-    public Assignment meet(Collection<Assignment> domainElements) {
+    public HasResult meet(Collection<HasResult> domainElements) {
         return null;
     }
 
     @Override
-    public Assignment transferFunction(Assignment domainElement) {
+    public HasResult transferFunction(HasResult domainElement) {
         return null;
     }
 
@@ -61,12 +61,12 @@ public class AvailableExpressions extends DataFlowAnalysis<Assignment> {
     }
 
     @Override
-    public Assignment initializer() {
+    public HasResult initializer() {
         return null;
     }
 
     @Override
-    public Iterator<Assignment> order() {
+    public Iterator<HasResult> order() {
         return null;
     }
 
@@ -87,7 +87,7 @@ public class AvailableExpressions extends DataFlowAnalysis<Assignment> {
      *
      * @throws IllegalArgumentException if any of the arguments is null
      */
-    public static boolean expressionsAreIsomorphic(Assignment a, Assignment b) {
+    public static boolean expressionsAreIsomorphic(HasResult a, HasResult b) {
         if (a == null) {
             throw new IllegalArgumentException("first assignment is a null pointer");
         } else if (b == null) {
