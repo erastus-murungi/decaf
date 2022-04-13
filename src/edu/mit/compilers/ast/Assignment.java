@@ -37,4 +37,12 @@ public class Assignment extends AST {
         return String.format("%s %s", location.getSourceCode(), assignExpr.getSourceCode());
     }
 
+    @Override
+    public String toString() {
+        return "Assignment{" +
+                "location=" + location +
+                ", assignExpr=" + assignExpr +
+                ", assignOperator=" + assignOperator +
+                '}';
+    }
 }

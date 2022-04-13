@@ -227,15 +227,15 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(MethodCallSetResult methodCall, X64Builder x64builder) {
-        if (methodCall
-                .getResultLocation()
-                .isPresent())
-            return x64builder
-                    .addLine((x64InstructionLine(X64Instruction.xor, X64Register.RAX, X64Register.RAX)))
-                    .addLine(x64InstructionLine(X64Instruction.call, methodCall.getMethodName()))
-                    .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, resolveLoadLocation(methodCall
-                            .getResultLocation()
-                            .get())));
+        return x64builder
+                .addLine((x64InstructionLine(X64Instruction.xor, X64Register.RAX, X64Register.RAX)))
+                .addLine(x64InstructionLine(X64Instruction.call, methodCall.getMethodName()))
+                .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, resolveLoadLocation(methodCall
+                        .getResultLocation())));
+    }
+
+    @Override
+    public X64Builder visit(MethodCallNoResult methodCall, X64Builder x64builder) {
         return x64builder
                 .addLine(x64InstructionLine(X64Instruction.xor, X64Register.RAX, X64Register.RAX))
                 .addLine(x64InstructionLine(X64Instruction.call,

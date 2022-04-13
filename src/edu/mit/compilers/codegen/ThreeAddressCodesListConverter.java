@@ -254,9 +254,9 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
 
         @Override
         public ThreeAddressCodeList visit(MethodCallStatement methodCallStatement, SymbolTable symbolTable) {
-            ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
+            ThreeAddressCodeList threeAddressCodeList = ThreeAddressCodeList.empty();
             flattenMethodCallArguments(threeAddressCodeList, methodCallStatement.methodCall.methodCallParameterList, symbolTable);
-            threeAddressCodeList.addCode(new MethodCallSetResult(methodCallStatement.methodCall, methodCallStatement.getSourceCode()));
+            threeAddressCodeList.addCode(new MethodCallNoResult(methodCallStatement.methodCall, methodCallStatement.getSourceCode()));
             return threeAddressCodeList;
         }
 
@@ -413,15 +413,13 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
                                                          SymbolTable symbolTable) {
 
         TemporaryNameGenerator.reset();
-        endLabelGlobal = new Label("Exit_" + methodDefinition.methodName.id, methodStart);
+        endLabelGlobal = new Label("exit_" + methodDefinition.methodName.id, methodStart);
 
         ThreeAddressCodeList threeAddressCodeList = ThreeAddressCodeList.empty();
         MethodBegin methodBegin = new MethodBegin(methodDefinition);
         threeAddressCodeList.addCode(methodBegin);
         if (!this.errors.isEmpty()) {
-            for (DecafException error : errors) {
-                threeAddressCodeList.addCode(new RuntimeException(error.getMessage(), -2, error));
-            }
+            threeAddressCodeList.add(errors.stream().map(error -> new RuntimeException(error.getMessage(), -2, error)).collect(Collectors.toList()));
         }
 
         flattenMethodDefinitionArguments(threeAddressCodeList, methodDefinition.methodDefinitionParameterList);
@@ -625,9 +623,7 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         visited.add(basicBlockWithBranch);
 
         final Expression condition = basicBlockWithBranch.condition;
-
-        ThreeAddressCodeList testConditionThreeAddressList = getConditionTACList(condition, symbolTable);
-
+        final ThreeAddressCodeList testConditionThreeAddressList = getConditionTACList(condition, symbolTable);
         final Label conditionLabel = getLabel(basicBlockWithBranch, null);
 
         final ThreeAddressCodeList conditionLabelTACList = ThreeAddressCodeList.of(conditionLabel);
@@ -638,8 +634,8 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         final ThreeAddressCodeList trueBlock = getConditionalChildBlock(basicBlockWithBranch.trueChild, conditionLabel, symbolTable);
         final ThreeAddressCodeList falseBlock = getConditionalChildBlock(basicBlockWithBranch.falseChild, conditionLabel, symbolTable);
 
-        Label falseLabel = getLabel(basicBlockWithBranch.falseChild, conditionLabel);
-        Label endLabel = new Label(conditionLabel.label + "end", null);
+        final Label falseLabel = getLabel(basicBlockWithBranch.falseChild, conditionLabel);
+        final Label endLabel = new Label(conditionLabel.label + "end", null);
 
         ConditionalJump jumpIfFalse =
                 new ConditionalJump(condition,
@@ -654,9 +650,8 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             UnconditionalJump unconditionalJump = (UnconditionalJump) falseBlock.first();
             if (!unconditionalJump.goToLabel.label.equals(falseLabel.label))
                 falseBlock.prepend(falseLabel);
-        } else {
+        } else if (!falseBlock.first().equals(falseLabel))
             falseBlock.prepend(falseLabel);
-        }
         if (!(falseBlock.last() instanceof UnconditionalJump) && !(trueBlock.last() instanceof UnconditionalJump))
             falseBlock.setNext(ThreeAddressCodeList.of(new UnconditionalJump(endLabel)));
         if (falseBlock.flattenedSize() == 1 && falseBlock.first() instanceof UnconditionalJump) {

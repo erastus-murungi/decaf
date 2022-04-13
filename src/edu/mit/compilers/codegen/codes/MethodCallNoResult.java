@@ -9,23 +9,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public class MethodCallSetResult extends Assignment {
-    public MethodCallSetResult(MethodCall methodCall, AssignableName resultLocation, String comment) {
-        super(resultLocation, methodCall, comment);
+public class MethodCallNoResult extends ThreeAddressCode {
+    public MethodCallNoResult(MethodCall methodCall, String comment) {
+        super(methodCall, comment);
     }
 
     public String getMethodName() {
         return ((MethodCall) source).nameId.id;
     }
 
-    public String getMethodReturnType() {
-        return ((MethodCall) source).builtinType.getSourceCode();
-    }
-
-
     @Override
     public String toString() {
-        return String.format("%s%s = %s %s %s %s%s", DOUBLE_INDENT, getResultLocation(), "call", getMethodReturnType(), getMethodName() , DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
+        return String.format("%s%s %s %s%s", DOUBLE_INDENT, "call", getMethodName(), DOUBLE_INDENT, getComment().isPresent() ? " #  " + getComment().get() : "");
     }
 
     @Override
@@ -35,6 +30,6 @@ public class MethodCallSetResult extends Assignment {
 
     @Override
     public List<AbstractName> getNames() {
-        return dst == null ? Collections.emptyList() : List.of(dst);
+        return Collections.emptyList();
     }
 }

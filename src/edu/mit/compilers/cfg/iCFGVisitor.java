@@ -124,7 +124,6 @@ public class iCFGVisitor implements Visitor<BasicBlocksPair> {
         incrementBlock.autoChild = evaluateBlock;
         evaluateBlock.addPredecessor(incrementBlock);
 
-
         handleBreaksInLoops(falseBlock);
         continueBlocks.pop();
         return new BasicBlocksPair(initializeBlock, exit, false);

@@ -108,6 +108,10 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode> {
         this.codes.addAll(threeAddressCodeList.codes);
     }
 
+    public void add(Collection<ThreeAddressCode> codes) {
+        this.codes.addAll(codes);
+    }
+
     public void addCode(ThreeAddressCode threeAddressCode) {
             this.codes.add(threeAddressCode);
     }
