@@ -2,6 +2,8 @@ package edu.mit.compilers.cfg;
 
 import edu.mit.compilers.symbolTable.SymbolTable;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 public class NOP extends BasicBlockBranchLess {
@@ -21,7 +23,14 @@ public class NOP extends BasicBlockBranchLess {
 
     public<T> T accept(BasicBlockVisitor<T> visitor, SymbolTable symbolTable) {
         return visitor.visit(this, symbolTable);
-    };
+    }
+
+    @Override
+    public List<BasicBlock> getSuccessors() {
+        if (autoChild == null)
+            return Collections.emptyList();
+        return List.of(autoChild);
+    }
 
     @Override
     public String getLabel() {

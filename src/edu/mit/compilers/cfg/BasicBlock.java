@@ -2,12 +2,15 @@ package edu.mit.compilers.cfg;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
+import edu.mit.compilers.codegen.codes.Assignment;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public abstract class BasicBlock {
     private final ArrayList<BasicBlock> predecessors;
@@ -29,7 +32,7 @@ public abstract class BasicBlock {
     }
 
     public boolean isRoot() {
-        return predecessors.size() == 0;
+        return predecessors.isEmpty();
     }
 
     public boolean doesNotContainPredecessor(BasicBlock predecessor) {
@@ -52,14 +55,29 @@ public abstract class BasicBlock {
         threeAddressCodeList = ThreeAddressCodeList.empty();
     }
 
-    public abstract <T> T  accept(BasicBlockVisitor<T> visitor, SymbolTable symbolTable);
+    public abstract <T> T accept(BasicBlockVisitor<T> visitor, SymbolTable symbolTable);
 
     public String getLabel() {
-        return lines.stream().map(AST::getSourceCode).collect(Collectors.joining("\n"));
+        return lines
+                .stream()
+                .map(AST::getSourceCode)
+                .collect(Collectors.joining("\n"));
     }
 
     @Override
     public String toString() {
         return getLabel();
+    }
+
+    /**
+     * get only TACs which change values of variables
+     * @return Iterator of Assignment TACS
+     */
+    public Iterator<Assignment> assignmentIterator() {
+        return StreamSupport
+                .stream(threeAddressCodeList.spliterator(), false)
+                .filter(tac -> tac instanceof Assignment)
+                .map(tac -> (Assignment) tac)
+                .iterator();
     }
 }

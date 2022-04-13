@@ -35,4 +35,12 @@ public class Initialization extends Statement {
     public String getSourceCode() {
         return String.format("%s = %s", initId.getSourceCode(), initExpression.getSourceCode());
     }
+
+    @Override
+    public String toString() {
+        return "Initialization{" +
+                "initId=" + initId +
+                ", initExpression=" + initExpression +
+                '}';
+    }
 }

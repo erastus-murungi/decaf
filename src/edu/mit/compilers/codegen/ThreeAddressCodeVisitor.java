@@ -11,7 +11,9 @@ public interface ThreeAddressCodeVisitor<ReturnType, ExtraInfoType> {
 
     ReturnType visit(MethodBegin methodBegin, ExtraInfoType extraInfo);
 
-    ReturnType visit(MethodCallSetResult methodCall, ExtraInfoType extraInfo);
+    ReturnType visit(MethodCallSetResult methodCallSetResult, ExtraInfoType extraInfo);
+
+    ReturnType visit(MethodCallNoResult methodCallNoResult, ExtraInfoType extraInfo);
 
     ReturnType visit(MethodEnd methodEnd, ExtraInfoType extraInfo);
 
