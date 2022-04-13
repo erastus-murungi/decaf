@@ -41,7 +41,7 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             final TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
             return new ThreeAddressCodeList(
                     temporaryVariable,
-                    Collections.singletonList(new Triple(temporaryVariable, "=", ConstantName.fromBooleanLiteral(booleanLiteral), booleanLiteral)));
+                    Collections.singletonList(new Assign(temporaryVariable, "=", ConstantName.fromBooleanLiteral(booleanLiteral), booleanLiteral, temporaryVariable + " = " + booleanLiteral)));
         }
 
         @Override
@@ -49,7 +49,7 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             final TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
             return new ThreeAddressCodeList(
                     temporaryVariable,
-                    Collections.singletonList(new Triple(temporaryVariable, "=", ConstantName.fromIntLiteral(decimalLiteral), decimalLiteral)));
+                    Collections.singletonList(new Assign(temporaryVariable, "=", ConstantName.fromIntLiteral(decimalLiteral), decimalLiteral, temporaryVariable + " = " + decimalLiteral)));
         }
 
         @Override
@@ -57,7 +57,7 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             final TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
             return new ThreeAddressCodeList(
                     temporaryVariable,
-                    Collections.singletonList(new Triple(temporaryVariable, "=", ConstantName.fromIntLiteral(hexLiteral), hexLiteral)));
+                    Collections.singletonList(new Assign(temporaryVariable, "=", ConstantName.fromIntLiteral(hexLiteral), hexLiteral, temporaryVariable + " = " + hexLiteral)));
         }
 
         @Override
@@ -185,7 +185,7 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
                 TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
                 ThreeAddressCodeList expressionTACList = expressionParameter.expression.accept(this, symbolTable);
                 expressionParameterTACList.add(expressionTACList);
-                expressionParameterTACList.addCode(new Triple(temporaryVariable, "=", expressionTACList.place, expressionParameter));
+                expressionParameterTACList.addCode(new Assign(temporaryVariable, "=", expressionTACList.place, expressionParameter, temporaryVariable + " = " + expressionTACList.place));
                 expressionParameterTACList.place = temporaryVariable;
             }
             return expressionParameterTACList;
@@ -267,7 +267,7 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             final ThreeAddressCodeList rhs = locationAssignExpr.assignExpr.accept(this, symbolTable);
             AbstractName valueVariable = rhs.place;
             lhs.add(rhs);
-            lhs.addCode(new Triple(locationVariable, locationAssignExpr.getSourceCode(), valueVariable, locationAssignExpr));
+            lhs.addCode(new Assign(locationVariable, locationAssignExpr.getSourceCode(), valueVariable, locationAssignExpr, locationAssignExpr.assignExpr.getSourceCode()));
             return lhs;
         }
 
@@ -330,7 +330,7 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         public ThreeAddressCodeList visit(Initialization initialization, SymbolTable symbolTable) {
             ThreeAddressCodeList initIdThreeAddressList = initialization.initId.accept(this, symbolTable);
             ThreeAddressCodeList initExpressionThreeAddressList = initialization.initExpression.accept(this, symbolTable);
-            Triple copyInstruction = new Triple((AssignableName) initIdThreeAddressList.place, "=", initExpressionThreeAddressList.place, initialization);
+            Assign copyInstruction = new Assign((AssignableName) initIdThreeAddressList.place, "=", initExpressionThreeAddressList.place, initialization, initialization.getSourceCode());
 
             ThreeAddressCodeList initializationThreeAddressCodeList = new ThreeAddressCodeList(initIdThreeAddressList.place);
             initializationThreeAddressCodeList.add(initIdThreeAddressList);
@@ -353,13 +353,13 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             returnTACList.add(lhs);
 
             if (assignment.assignExpr instanceof AssignOpExpr) {
-                returnTACList.addCode(new Triple((AssignableName) lhs.place, ((AssignOpExpr) assignment.assignExpr).assignOp.getSourceCode(), rhs.place, assignment));
+                returnTACList.addCode(new Assign((AssignableName) lhs.place, ((AssignOpExpr) assignment.assignExpr).assignOp.getSourceCode(), rhs.place, assignment, assignment.getSourceCode()));
             } else if (assignment.assignExpr instanceof CompoundAssignOpExpr) {
-                returnTACList.addCode(new Triple((AssignableName) lhs.place, ((CompoundAssignOpExpr) assignment.assignExpr).compoundAssignOp.getSourceCode(), rhs.place, assignment));
+                returnTACList.addCode(new Assign((AssignableName) lhs.place, ((CompoundAssignOpExpr) assignment.assignExpr).compoundAssignOp.getSourceCode(), rhs.place, assignment, assignment.getSourceCode()));
             } else if (assignment.assignExpr instanceof Decrement || assignment.assignExpr instanceof Increment) {
-                returnTACList.addCode(new Triple((AssignableName) lhs.place, assignment.assignExpr.getSourceCode(), lhs.place, assignment.assignExpr));
+                returnTACList.addCode(new Assign((AssignableName) lhs.place, assignment.assignExpr.getSourceCode(), lhs.place, assignment.assignExpr, assignment.getSourceCode()));
             } else {
-                returnTACList.addCode(new Triple((AssignableName) lhs.place, "=", rhs.place, assignment));
+                returnTACList.addCode(new Assign((AssignableName) lhs.place, "=", rhs.place, assignment, assignment.getSourceCode()));
             }
             returnTACList.place = lhs.place;
             return returnTACList;

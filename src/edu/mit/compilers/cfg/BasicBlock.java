@@ -2,7 +2,7 @@ package edu.mit.compilers.cfg;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
-import edu.mit.compilers.codegen.codes.Assignment;
+import edu.mit.compilers.codegen.codes.HasResult;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.ArrayList;
@@ -73,11 +73,11 @@ public abstract class BasicBlock {
      * get only TACs which change values of variables
      * @return Iterator of Assignment TACS
      */
-    public Iterator<Assignment> assignmentIterator() {
+    public Iterator<HasResult> assignmentIterator() {
         return StreamSupport
                 .stream(threeAddressCodeList.spliterator(), false)
-                .filter(tac -> tac instanceof Assignment)
-                .map(tac -> (Assignment) tac)
+                .filter(tac -> tac instanceof HasResult)
+                .map(tac -> (HasResult) tac)
                 .iterator();
     }
 }

@@ -8,7 +8,7 @@ import edu.mit.compilers.grammar.DecafScanner;
 
 import java.util.List;
 
-public class Triple extends Assignment {
+public class Triple extends HasResult {
     public AbstractName operand;
     public String operator;
 
@@ -18,11 +18,18 @@ public class Triple extends Assignment {
         this.operator = operator;
     }
 
+    public Triple(AssignableName result, String operator, AbstractName operand, AST source, String comment) {
+        super(result, source);
+        this.operand = operand;
+        this.operator = operator;
+        setComment(comment);
+    }
+
     @Override
     public String toString() {
-        if (operator.equals(DecafScanner.ASSIGN))
-            return String.format("%s%s %s %s %s # %s", DOUBLE_INDENT, dst, operator, operand, DOUBLE_INDENT, getComment().orElse(""));
-        return String.format("%s%s = %s %s %s # %s", DOUBLE_INDENT, dst, operator, operand, DOUBLE_INDENT, getComment().orElse(""));
+        if (getComment().isPresent())
+            return String.format("%s%s = %s %s %s %s", DOUBLE_INDENT, dst, operator, operand, DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s = %s %s", DOUBLE_INDENT, dst, operator, operand);
     }
 
     @Override
