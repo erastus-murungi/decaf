@@ -1,6 +1,8 @@
 package edu.mit.compilers.dataflow;
 
 import edu.mit.compilers.cfg.BasicBlock;
+import edu.mit.compilers.codegen.ThreeAddressCodeList;
+import edu.mit.compilers.codegen.codes.ThreeAddressCode;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -80,6 +82,15 @@ public abstract class DataFlowAnalysis<Value> {
             strongConnectedComponentsList.add(stronglyConnectedComponent);
         }
         return index;
+    }
 
+    public static Map<ThreeAddressCode, Integer> getTacToPosMapping(ThreeAddressCodeList threeAddressCodeList) {
+        var tacToPositionInList = new LinkedHashMap<ThreeAddressCode, Integer>();
+        var index = 0;
+        for (ThreeAddressCode tac: threeAddressCodeList) {
+            tacToPositionInList.put(tac, index);
+            ++index;
+        }
+        return tacToPositionInList;
     }
 }

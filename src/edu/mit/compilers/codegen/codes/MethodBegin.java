@@ -35,6 +35,11 @@ public class MethodBegin extends ThreeAddressCode {
         return Collections.emptyList();
     }
 
+    @Override
+    public void swapOut(AbstractName oldName, AbstractName newName) {
+
+    }
+
     private void reorderLocals() {
         List<AbstractName> methodParametersNames = new ArrayList<>();
 

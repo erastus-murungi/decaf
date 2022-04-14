@@ -42,4 +42,7 @@ public class MethodReturn extends ThreeAddressCode {
             return Collections.emptyList();
         return List.of(returnAddress);
     }
+
+    @Override
+    public void swapOut(AbstractName oldName, AbstractName newName) {}
 }

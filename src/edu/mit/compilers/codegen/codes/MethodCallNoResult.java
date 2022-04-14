@@ -32,4 +32,9 @@ public class MethodCallNoResult extends ThreeAddressCode {
     public List<AbstractName> getNames() {
         return Collections.emptyList();
     }
+
+    @Override
+    public void swapOut(AbstractName oldName, AbstractName newName) {
+
+    }
 }

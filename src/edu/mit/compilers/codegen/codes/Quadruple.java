@@ -7,6 +7,7 @@ import edu.mit.compilers.codegen.names.AssignableName;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * A quad has four fields which we call op arg1, arg2, and result.
@@ -45,17 +46,17 @@ public class Quadruple extends HasResult {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Quadruple quadruple = (Quadruple) o;
-        return fstOperand.equals(quadruple.fstOperand)
-                && operator.equals(quadruple.operator)
-                && sndOperand.equals(quadruple.sndOperand);
+    public void swapOut(AbstractName oldName, AbstractName newName) {
+        if (fstOperand.equals(oldName)) {
+            fstOperand = newName;
+        }
+        if (sndOperand.equals(oldName)) {
+            sndOperand = newName;
+        }
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(fstOperand, operator, sndOperand);
+    public Set<AbstractName> getComputationVariables() {
+        return Set.of(fstOperand, sndOperand);
     }
 }

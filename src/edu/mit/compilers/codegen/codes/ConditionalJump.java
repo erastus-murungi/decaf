@@ -7,7 +7,7 @@ import edu.mit.compilers.codegen.names.AbstractName;
 import java.util.List;
 
 public class ConditionalJump extends ThreeAddressCode {
-    public final AbstractName condition;
+    public AbstractName condition;
     public final Label trueLabel;
 
     public ConditionalJump(AST source, AbstractName condition, Label trueLabel, String comment) {
@@ -29,6 +29,13 @@ public class ConditionalJump extends ThreeAddressCode {
     @Override
     public List<AbstractName> getNames() {
         return List.of(condition);
+    }
+
+    @Override
+    public void swapOut(AbstractName oldName, AbstractName newName) {
+        if (condition.equals(oldName)) {
+            condition = newName;
+        }
     }
 
 }

@@ -6,11 +6,12 @@ import edu.mit.compilers.codegen.names.*;
 import java.util.*;
 import java.util.function.Consumer;
 
-public class ThreeAddressCodeList implements Iterable<ThreeAddressCode> {
-    public AbstractName place;
-    private final List<ThreeAddressCode> codes;
+public class ThreeAddressCodeList implements Iterable<ThreeAddressCode>, Cloneable {
     public static final AbstractName UNDEFINED = new VariableName(null);
-    private static ThreeAddressCodeList EMPTY = new ThreeAddressCodeList(UNDEFINED);
+
+    public AbstractName place;
+
+    private List<ThreeAddressCode> codes;
 
     private ThreeAddressCodeList next;
 
@@ -29,13 +30,23 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode> {
     public ThreeAddressCodeList flatten() {
         ThreeAddressCodeList flattenTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
         ThreeAddressCodeList tacList = this;
-        while (tacList.getNext().isPresent()) {
+        while (tacList
+                .getNext()
+                .isPresent()) {
             flattenTACList.add(tacList);
-            tacList = tacList.getNext()
-                             .get();
+            tacList = tacList
+                    .getNext()
+                    .get();
         }
         flattenTACList.add(tacList);
         return flattenTACList;
+    }
+
+    public void replaceIfContainsOldCodeAtIndex(int indexOfOldCode, ThreeAddressCode oldCode, ThreeAddressCode newCode) {
+        if (codes.get(indexOfOldCode) != oldCode) {
+            throw new IllegalArgumentException(oldCode + "not found in TAC");
+        }
+        codes.set(indexOfOldCode, newCode);
     }
 
 
@@ -62,8 +73,12 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode> {
 
     public ThreeAddressCodeList setNext(ThreeAddressCodeList next) {
         ThreeAddressCodeList head = this;
-        while (head.getNext().isPresent())
-            head = head.getNext().get();
+        while (head
+                .getNext()
+                .isPresent())
+            head = head
+                    .getNext()
+                    .get();
         head.next = next;
         return next;
     }
@@ -113,7 +128,7 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode> {
     }
 
     public void addCode(ThreeAddressCode threeAddressCode) {
-            this.codes.add(threeAddressCode);
+        this.codes.add(threeAddressCode);
     }
 
     public boolean isEmpty() {
@@ -133,5 +148,27 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode> {
     @Override
     public Spliterator<ThreeAddressCode> spliterator() {
         return codes.spliterator();
+    }
+
+    @Override
+    public ThreeAddressCodeList clone() {
+        try {
+            ThreeAddressCodeList clone = (ThreeAddressCodeList) super.clone();
+            // TODO: copy mutable state here, so the clone can't change the internals of the original
+            clone.codes = new ArrayList<>(codes);
+            clone.place = place;
+            clone.next = next;
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
+    }
+
+    public List<ThreeAddressCode> getCodes() {
+        return codes;
+    }
+
+    public void prependAll(ThreeAddressCodeList threeAddressCodeList) {
+        codes.addAll(0, threeAddressCodeList.codes);
     }
 }

@@ -1,16 +1,14 @@
 package edu.mit.compilers.codegen.names;
 
-public class VariableName extends AssignableName {
-    String label;
+import edu.mit.compilers.utils.Utils;
 
+public class VariableName extends AssignableName {
     public VariableName(String label) {
-        super();
-        this.label = label;
+        super(label, Utils.WORD_SIZE);
     }
 
     public VariableName(String label, long size) {
-        super(size);
-        this.label = label;
+        super(label, size);
     }
 
     @Override

@@ -36,6 +36,9 @@ public class ArrayAccess extends ThreeAddressCode {
         return Collections.emptyList();
     }
 
+    @Override
+    public void swapOut(AbstractName oldName, AbstractName newName) {}
+
 
     @Override
     public String toString() {

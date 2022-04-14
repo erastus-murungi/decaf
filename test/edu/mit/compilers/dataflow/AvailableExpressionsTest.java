@@ -31,7 +31,7 @@ public class AvailableExpressionsTest {
     private Triple aEqualsMinusB;
     private Triple cEqualsMinusB;
 
-    private final String[] allDecafOperators = {
+    private static final String[] allDecafOperators = {
             DecafScanner.PLUS,
             DecafScanner.MULTIPLY,
             DecafScanner.MINUS,
@@ -43,7 +43,7 @@ public class AvailableExpressionsTest {
             DecafScanner.LT
     };
 
-    private final String[] commutativeOperators = {
+    private static final String[] commutativeOperators = {
             DecafScanner.PLUS,
             DecafScanner.MULTIPLY,
     };

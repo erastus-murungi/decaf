@@ -12,12 +12,12 @@ import java.util.List;
 public class GlobalAllocation extends ThreeAddressCode {
     public static final int DEFAULT_ALIGNMENT = 8;
 
-    public final VariableName variableName;
+    public final AbstractName variableName;
     public final long size;
     public final int alignment;
     public final BuiltinType type;
 
-    public GlobalAllocation(AST source, String comment, VariableName variableName, long size, BuiltinType builtinType) {
+    public GlobalAllocation(AST source, String comment, AbstractName variableName, long size, BuiltinType builtinType) {
         super(source, comment);
         this.variableName = variableName;
         this.size = size;
@@ -33,6 +33,11 @@ public class GlobalAllocation extends ThreeAddressCode {
     @Override
     public List<AbstractName> getNames() {
         return Collections.singletonList(variableName);
+    }
+
+    @Override
+    public void swapOut(AbstractName oldName, AbstractName newName) {
+
     }
 
     @Override

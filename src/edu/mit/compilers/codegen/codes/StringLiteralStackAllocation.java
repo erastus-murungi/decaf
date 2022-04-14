@@ -39,6 +39,11 @@ public class StringLiteralStackAllocation extends ThreeAddressCode {
         return Collections.emptyList();
     }
 
+    @Override
+    public void swapOut(AbstractName oldName, AbstractName newName) {
+
+    }
+
     public String getASM() {
         return String.format("%s:\n%s%s.%s   %s", label, INDENT, INDENT, "string", stringConstant);
     }

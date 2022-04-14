@@ -31,4 +31,11 @@ public class PopParameter extends ThreeAddressCode {
     public List<AbstractName> getNames() {
         return List.of(parameterName);
     }
+
+    @Override
+    public void swapOut(AbstractName oldName, AbstractName newName) {
+        if (parameterName.equals(oldName)) {
+            parameterName = (AssignableName) newName;
+        }
+    }
 }

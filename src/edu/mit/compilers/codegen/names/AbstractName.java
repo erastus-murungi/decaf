@@ -24,9 +24,4 @@ public class AbstractName {
         AbstractName that = (AbstractName) o;
         return toString().equals(that.toString());
     }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(size);
-    }
 }

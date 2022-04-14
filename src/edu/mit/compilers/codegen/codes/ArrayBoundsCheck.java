@@ -27,8 +27,11 @@ public class ArrayBoundsCheck extends ThreeAddressCode{
 
     @Override
     public List<AbstractName> getNames() {
-        return Collections.emptyList();
+        return List.of(arrayAccess.accessIndex, arrayAccess.arrayName);
     }
+
+    @Override
+    public void swapOut(AbstractName oldName, AbstractName newName) {}
 
     @Override
     public String toString() {

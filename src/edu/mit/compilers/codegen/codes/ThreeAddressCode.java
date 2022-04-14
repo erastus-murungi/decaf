@@ -33,4 +33,6 @@ public abstract class ThreeAddressCode {
     public abstract <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, E extra);
 
     public abstract List<AbstractName> getNames();
+
+    public abstract void swapOut(AbstractName oldName, AbstractName newName);
 }

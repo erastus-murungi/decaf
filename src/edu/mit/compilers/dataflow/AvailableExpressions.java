@@ -2,56 +2,92 @@ package edu.mit.compilers.dataflow;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.HasResult;
+import edu.mit.compilers.cfg.NOP;
+import edu.mit.compilers.codegen.codes.MethodCallSetResult;
 import edu.mit.compilers.codegen.codes.Quadruple;
 import edu.mit.compilers.codegen.codes.Triple;
+import edu.mit.compilers.codegen.names.TemporaryName;
+import edu.mit.compilers.codegen.names.VariableName;
+import edu.mit.compilers.dataflow.computation.BinaryComputation;
+import edu.mit.compilers.dataflow.computation.Computation;
+import edu.mit.compilers.dataflow.computation.UnaryComputation;
 import edu.mit.compilers.grammar.DecafScanner;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class AvailableExpressions extends DataFlowAnalysis<HasResult> {
-    HashMap<HasResult, Integer> assignmentToId;
-    HashMap<Integer, HasResult> idToAssignment;
-    HashMap<HasResult, BasicBlock> assignmentToBasicBlock;
+public class AvailableExpressions extends DataFlowAnalysis<Computation> {
+    // the set of all assignments in the program
+    HashSet<Computation> allComputations;
+    // the list of all basic blocks
+    List<BasicBlock> basicBlocks;
+
+    HashMap<BasicBlock, HashSet<Computation>> out;
+    HashMap<BasicBlock, HashSet<Computation>> in;
+    HashMap<BasicBlock, HashSet<Computation>> gen;
+    HashMap<BasicBlock, HashSet<Computation>> kill;
+
+    NOP entryBlock;
+
+    public String getResultForPrint() {
+        return Stream
+                .of(basicBlocks)
+                .flatMap(Collection::stream)
+                .map(basicBlock -> in.get(basicBlock))
+                .flatMap(Collection::stream)
+                .sorted(Comparator.comparing(Computation::getIndex))
+                .map(Computation::toString)
+                .collect(Collectors.joining("\n"));
+    }
 
     public AvailableExpressions(BasicBlock entry) {
-        List<BasicBlock> basicBlocks = DataFlowAnalysis.getReversePostOrder(entry);
-        assignDefinitionsToIds(basicBlocks);
+        attachEntryNode(entry);
+        findAllBasicBlocksInReversePostOrder();
+        findUniversalSetOfAssignments();
+        initializeWorkSets();
+        runWorkList();
     }
 
-    private void assignDefinitionsToIds(List<BasicBlock> basicBlocks) {
-        assignmentToId = new HashMap<>();
-        idToAssignment = new HashMap<>();
-        assignmentToBasicBlock = new HashMap<>();
-        int id = 0;
+    private void findAllBasicBlocksInReversePostOrder() {
+        basicBlocks = DataFlowAnalysis.getReversePostOrder(entryBlock);
+    }
+
+    private void attachEntryNode(BasicBlock basicBlock) {
+        entryBlock = new NOP("Entry");
+        entryBlock.autoChild = basicBlock;
+        basicBlock.addPredecessor(entryBlock);
+    }
+
+    private void findUniversalSetOfAssignments() {
+        allComputations = new HashSet<>();
         for (BasicBlock basicBlock : basicBlocks) {
-            for (Iterator<HasResult> it = basicBlock.assignmentIterator(); it.hasNext(); ) {
-                final HasResult assignment = it.next();
-                if (!assignmentToId.containsKey(assignment)) {
-                    assignmentToId.putIfAbsent(assignment, id);
-                    idToAssignment.putIfAbsent(id, assignment);
-                    assignmentToBasicBlock.putIfAbsent(assignment, basicBlock);
-                }
-                id += 1;
-            }
+            allComputations.addAll(gen(basicBlock));
         }
-        idToAssignment.forEach((k, v) -> System.out.format("%10s : %s\n", k, v));
-        System.out.println(assignmentToId.entrySet());
     }
 
-    private void computeBitSets(BasicBlock basicBlock) {
+    private void initializeWorkSets() {
+        out = new HashMap<>();
+        in = new HashMap<>();
+        gen = new HashMap<>();
+        kill = new HashMap<>();
 
+        for (BasicBlock basicBlock : basicBlocks) {
+            out.put(basicBlock, allComputations); // all expressions are available at initialization time
+            in.put(basicBlock, new HashSet<>());
+            gen.put(basicBlock, new HashSet<>());
+            kill.put(basicBlock, new HashSet<>());
+        }
+
+        out.put(entryBlock, new HashSet<>());
     }
 
-    @Override
-    public HasResult meet(Collection<HasResult> domainElements) {
+    public Computation meet(Collection<Computation> domainElements) {
         return null;
     }
 
     @Override
-    public HasResult transferFunction(HasResult domainElement) {
+    public Computation transferFunction(Computation domainElement) {
         return null;
     }
 
@@ -61,30 +97,144 @@ public class AvailableExpressions extends DataFlowAnalysis<HasResult> {
     }
 
     @Override
-    public HasResult initializer() {
+    public Computation initializer() {
         return null;
     }
 
     @Override
-    public Iterator<HasResult> order() {
+    public Iterator<Computation> order() {
         return null;
+    }
+
+    public HashSet<Computation> intersection(Collection<BasicBlock> blocks) {
+        if (blocks.isEmpty()) {
+            return new HashSet<>();
+        }
+        HashSet<Computation> in = new HashSet<>(allComputations);
+        for (BasicBlock block : blocks) {
+            in.retainAll(out.get(block));
+        }
+        return in;
+    }
+
+    public HashSet<Computation> difference(HashSet<Computation> first, HashSet<Computation> second) {
+        var firstCopy = new HashSet<>(first);
+        firstCopy.removeAll(second);
+        return firstCopy;
+    }
+
+    public HashSet<Computation> union(HashSet<Computation> first, HashSet<Computation> second) {
+        var firstCopy = new HashSet<>(first);
+        firstCopy.addAll(second);
+        return firstCopy;
     }
 
     @Override
     public void runWorkList() {
+        var workList = new ArrayList<>(basicBlocks);
 
+        workList.remove(entryBlock);
+
+        // IN[entry] = ∅
+        in.put(entryBlock, new HashSet<>());
+
+        out.put(entryBlock, gen(entryBlock));
+
+        while (!workList.isEmpty()) {
+            final BasicBlock B = workList.remove(0);
+            var oldOut = out.get(B);
+
+            var inSet = intersection(B.getPredecessors());
+            var killSet = kill(B, new HashSet<>(allComputations));
+
+            // IN[B] = intersect OUT[p] for all p in predecessors
+            in.put(B, inSet);
+
+            // OUT[B] = gen[B] ∪ IN[B] - KILL[B]
+            out.put(B, union(gen(B), difference(inSet, killSet)));
+
+            if (!out
+                    .get(B)
+                    .equals(oldOut)) {
+                workList.addAll(B.getSuccessors());
+            }
+        }
+    }
+
+
+    private HashSet<Computation> kill(BasicBlock basicBlock, HashSet<Computation> superSet) {
+        HashSet<Computation> killedExpressions = new HashSet<>();
+
+        for (HasResult assignment: basicBlock.assignments()) {
+            // add all the computations that contain operands
+            // that get re-assigned by the current stmt to
+            // killedExpressions
+            if (assignment instanceof Triple) {
+                Triple triple = (Triple) assignment;
+                if (operatorAssigns(triple.operator)) {
+                    for (Computation comp : superSet) {
+                        if (comp.contains(triple.getResultLocation())) {
+                            killedExpressions.add(comp);
+                        }
+                    }
+                }
+            }
+        }
+        return killedExpressions;
+    }
+
+    private boolean operatorAssigns(String operator) {
+        return operator.contains(DecafScanner.ASSIGN);
+    }
+
+    private HashSet<Computation> gen(BasicBlock basicBlock) {
+        var validComputations = new HashSet<Computation>();
+        for (HasResult assignment: basicBlock.assignments()) {
+            // add this unary computation to the list of valid expressions
+            if (assignment instanceof Triple) {
+                Triple triple = (Triple) assignment;
+                if (triple.operand instanceof VariableName || triple.operand instanceof TemporaryName) {
+                    validComputations.add(new UnaryComputation(triple));
+                }
+            }
+            // add this binary computation to the list of valid expressions
+            else if (assignment instanceof Quadruple) {
+                Quadruple quadruple = (Quadruple) assignment;
+                if (quadruple.fstOperand instanceof VariableName && quadruple.sndOperand instanceof VariableName) {
+                    validComputations.add(new BinaryComputation(quadruple));
+                }
+            }
+
+            // remove all expressions invalidated by this assignment
+            if (assignment instanceof Triple || assignment instanceof MethodCallSetResult) {
+                String operator;
+                if (assignment instanceof Triple) {
+                    operator = ((Triple) assignment).operator;
+                } else {
+                    operator = "=";
+                }
+                if (operatorAssigns(operator)) {
+                    for (Computation computation : new HashSet<>(validComputations)) {
+                        if (computation.contains(assignment.getResultLocation())) {
+                            validComputations.remove(computation);
+                        }
+                    }
+                }
+            }
+        }
+        return validComputations;
     }
 
     public static boolean operatorIsCommutative(String operator) {
         return operator.equals(DecafScanner.PLUS) || operator.equals(DecafScanner.MULTIPLY);
     }
 
-    /** Checks whether two assignment expressions are equivalent
+    /**
+     * Checks whether two assignment expressions are equivalent
      *
      * @param a An assignment such as a = b + c
      * @param b Another assignment such as b = c * d
      * @return true if the two assignments are equivalent and false otherwise
-     *
      * @throws IllegalArgumentException if any of the arguments is null
      */
     public static boolean expressionsAreIsomorphic(HasResult a, HasResult b) {

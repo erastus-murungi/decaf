@@ -7,6 +7,7 @@ import edu.mit.compilers.codegen.names.AssignableName;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 public class MethodCallSetResult extends HasResult {
     public MethodCallSetResult(MethodCall methodCall, AssignableName resultLocation, String comment) {
@@ -34,6 +35,14 @@ public class MethodCallSetResult extends HasResult {
 
     @Override
     public List<AbstractName> getNames() {
-        return dst == null ? Collections.emptyList() : List.of(dst);
+        return List.of(dst);
+    }
+
+    @Override
+    public void swapOut(AbstractName oldName, AbstractName newName) {}
+
+    @Override
+    public Set<AbstractName> getComputationVariables() {
+        return Collections.emptySet();
     }
 }
