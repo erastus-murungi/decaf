@@ -434,8 +434,8 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         firstBasicBlockTacList.setNext(ThreeAddressCodeList.of(endLabelGlobal));
 
         firstBasicBlockTacList.setNext(ThreeAddressCodeList.of(new MethodEnd(methodDefinition)));
-        methodBegin.setLocals(getLocals(firstBasicBlockTacList));
         methodStart.threeAddressCodeList = firstBasicBlockTacList;
+        methodBegin.setLocals(getLocals(firstBasicBlockTacList.flatten()));
         return firstBasicBlockTacList.flatten();
     }
 
