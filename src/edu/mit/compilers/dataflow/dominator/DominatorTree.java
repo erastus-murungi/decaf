@@ -1,7 +1,8 @@
-package edu.mit.compilers.dataflow;
+package edu.mit.compilers.dataflow.dominator;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.NOP;
+import edu.mit.compilers.dataflow.Utils;
 
 import java.util.*;
 
@@ -10,11 +11,16 @@ public class DominatorTree {
     public DominatorTree() {
     }
 
+
+    private static BasicBlock preprocess(BasicBlock entryBlock) {
+        var entry = new NOP("Entry");
+        entry.autoChild = entryBlock;
+        Utils.correctPredecessors(entry);
+        return entry;
+    }
+
     public static HashMap<BasicBlock, BasicBlock> immediateDominators(BasicBlock entryBlock) {
-        final NOP dummyEntry = new NOP("Entry");
-        dummyEntry.autoChild = entryBlock;
-        Utils.correctPredecessors(dummyEntry);
-        return immediateDominatorsImpl(dummyEntry);
+        return immediateDominatorsImpl(preprocess(entryBlock));
     }
 
     private static HashMap<BasicBlock, BasicBlock> immediateDominatorsImpl(BasicBlock entryBlock) {
@@ -73,10 +79,10 @@ public class DominatorTree {
 
 
     public static HashMap<BasicBlock, List<BasicBlock>> dominatorTree(BasicBlock entryPoint) {
-        HashMap<BasicBlock, BasicBlock> iDom = immediateDominators(entryPoint);
-        HashMap<BasicBlock, List<BasicBlock>> dominatorTree = new HashMap<>();
-        for (Map.Entry<BasicBlock, BasicBlock> edge: iDom.entrySet()) {
-            final BasicBlock block = edge.getKey();
+        var iDom = immediateDominators(entryPoint);
+        var dominatorTree = new HashMap<BasicBlock, List<BasicBlock>>();
+        for (var edge: iDom.entrySet()) {
+            var block = edge.getKey();
             BasicBlock dominatorBlock = edge.getValue();
             BasicBlock currentBlock;
 
@@ -95,8 +101,40 @@ public class DominatorTree {
 
 
 
-    public HashMap<BasicBlock, List<BasicBlock>> dominanceFrontier(BasicBlock basicBlock) {
+    public Map<BasicBlock, Set<BasicBlock>> dominanceFrontier(BasicBlock entryBlock) {
+        entryBlock = preprocess(entryBlock);
+        var basicBlocks = reversePostOrder(entryBlock);
+        var iDom = immediateDominatorsImpl(entryBlock);
+        var dominanceFrontier = new HashMap<BasicBlock, Set<BasicBlock>>();
+
+        for (var basicBlock: basicBlocks) {
+            var frontier = new HashSet<BasicBlock>();
+            if (basicBlock.getPredecessors().size() >= 2) {
+                for (var predecessor: basicBlock.getPredecessors()) {
+                    var runner = predecessor;
+                    while (runner != iDom.get(basicBlock)) {
+                        // TODO: finish
+                    }
+                }
+            }
+        }
         return null;
+    }
+
+
+    public Set<BasicBlock> dominanceFrontier(BasicBlock basicBlock, Map<BasicBlock, Set<BasicBlock>> dominanceFrontier, Map<BasicBlock, BasicBlock> iDom) {
+        if (dominanceFrontier.get(basicBlock) == null)
+            return dominanceFrontier.get(basicBlock);
+
+        var frontier = new HashSet<BasicBlock>();
+
+        for (var successor: basicBlock.getSuccessors()) {
+            for (var node: dominanceFrontier.get(successor)) {
+                // TODO: finish
+            }
+        }
+
+        return frontier;
     }
 
     private static List<BasicBlock> reversePostOrder(BasicBlock entryBlock) {

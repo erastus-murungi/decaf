@@ -1,30 +1,95 @@
 package edu.mit.compilers.dataflow;
 
 import edu.mit.compilers.cfg.BasicBlock;
+import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.codes.ThreeAddressCode;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class DataFlowAnalysis<Value> {
+    Set<Value> allValues;
+    // the list of all basic blocks
+    List<BasicBlock> basicBlocks;
 
-    public abstract Value meet(Collection<Value> domainElements);
+    public Map<BasicBlock, Set<Value>> out;
+    public Map<BasicBlock, Set<Value>> in;
 
-    public abstract Value transferFunction(Value domainElement);
+    NOP entryBlock;
+    NOP exitBlock;
+
+    Set<Value> in(BasicBlock basicBlock) {
+        return in.get(basicBlock);
+    }
+
+    Set<Value> out(BasicBlock basicBlock) {
+        return out.get(basicBlock);
+    }
+
+    private void attachEntryNode(BasicBlock basicBlock) {
+        entryBlock = new NOP("Entry");
+        entryBlock.autoChild = basicBlock;
+        basicBlock.addPredecessor(entryBlock);
+    }
+
+    public abstract void computeUniversalSetsOfValues();
+
+    private void findAllBasicBlocksInReversePostOrder() {
+        basicBlocks = DataFlowAnalysis.getReversePostOrder(entryBlock);
+    }
+
+    public DataFlowAnalysis(BasicBlock basicBlock) {
+        attachEntryNode(basicBlock);
+        findAllBasicBlocksInReversePostOrder();
+        findExitBlock();
+        computeUniversalSetsOfValues();
+        initializeWorkSets();
+        runWorkList();
+    }
+
+    private void findExitBlock() {
+        List<NOP> exitBlockList = basicBlocks
+                .stream()
+                .filter(basicBlock -> basicBlock instanceof NOP)
+                .map(basicBlock -> (NOP) basicBlock)
+                .filter(nop -> nop != entryBlock)
+                .collect(Collectors.toList());
+        if (exitBlockList.size() != 1)
+            throw new IllegalStateException("expected 1 exit node, found " + exitBlockList.size());
+        exitBlock = exitBlockList.get(0);
+    }
+
+    public abstract Set<Value> meet(BasicBlock basicBlock);
+
+    public abstract Set<Value> transferFunction(Value domainElement);
 
     public abstract Direction direction();
 
-    public abstract Value initializer();
-
-    public abstract Iterator<Value> order();
+    public abstract void initializeWorkSets();
 
     public abstract void runWorkList();
+
+    public HashSet<Value> difference(Set<Value> first, Set<Value> second) {
+        var firstCopy = new HashSet<>(first);
+        firstCopy.removeAll(second);
+        return firstCopy;
+    }
+
+    public HashSet<Value> union(Set<Value> first, Set<Value> second) {
+        var firstCopy = new HashSet<>(first);
+        firstCopy.addAll(second);
+        return firstCopy;
+    }
 
     public static List<BasicBlock> getReversePostOrder(BasicBlock entryPoint) {
         List<List<BasicBlock>> stronglyConnectedComponents = findStronglyConnectedComponents(entryPoint);
         Collections.reverse(stronglyConnectedComponents);
-        return stronglyConnectedComponents.stream().flatMap(Collection::stream).collect(Collectors.toList());
+        return stronglyConnectedComponents
+                .stream()
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
     }
 
     public static List<List<BasicBlock>> findStronglyConnectedComponents(BasicBlock entryPoint) {
@@ -41,7 +106,7 @@ public abstract class DataFlowAnalysis<Value> {
 
         var index = 0;
         var blocksToExplore = new Stack<BasicBlock>();
-        for (BasicBlock block: blocks) {
+        for (BasicBlock block : blocks) {
             if (!blockToIndex.containsKey(block)) {
                 index = strongConnect(block, blockToIndex, blockOnStack, blockToLowLinkValue, blocksToExplore, stronglyConnectedComponents, index);
             }
@@ -63,7 +128,7 @@ public abstract class DataFlowAnalysis<Value> {
         blocksToExplore.push(block);
         blockOnStack.put(block, true);
 
-        for (BasicBlock successor: block.getSuccessors()) {
+        for (BasicBlock successor : block.getSuccessors()) {
             if (!blockToIndex.containsKey(successor)) {
                 index = strongConnect(successor, blockToIndex, blockOnStack, blockToLowLinkValue, blocksToExplore, strongConnectedComponentsList, index);
                 blockToLowLinkValue.put(block, Math.min(blockToLowLinkValue.get(block), blockToLowLinkValue.get(successor)));
@@ -71,7 +136,9 @@ public abstract class DataFlowAnalysis<Value> {
                 blockToLowLinkValue.put(block, Math.min(blockToLowLinkValue.get(block), blockToIndex.get(successor)));
             }
         }
-        if (blockToLowLinkValue.get(block).equals(blockToIndex.get(block))) {
+        if (blockToLowLinkValue
+                .get(block)
+                .equals(blockToIndex.get(block))) {
             var stronglyConnectedComponent = new ArrayList<BasicBlock>();
             BasicBlock toAdd;
             do {
@@ -87,10 +154,20 @@ public abstract class DataFlowAnalysis<Value> {
     public static Map<ThreeAddressCode, Integer> getTacToPosMapping(ThreeAddressCodeList threeAddressCodeList) {
         var tacToPositionInList = new LinkedHashMap<ThreeAddressCode, Integer>();
         var index = 0;
-        for (ThreeAddressCode tac: threeAddressCodeList) {
+        for (ThreeAddressCode tac : threeAddressCodeList) {
             tacToPositionInList.put(tac, index);
             ++index;
         }
         return tacToPositionInList;
+    }
+
+    public String getResultForPrint() {
+        return Stream
+                .of(basicBlocks)
+                .flatMap(Collection::stream)
+                .map(basicBlock -> in.get(basicBlock))
+                .flatMap(Collection::stream)
+                .map(Value::toString)
+                .collect(Collectors.joining("\n"));
     }
 }

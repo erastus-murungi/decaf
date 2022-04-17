@@ -9,8 +9,7 @@ import java.util.Stack;
 
 
 public class Utils {
-
-     static void correctPredecessors(BasicBlock block) {
+     public static void correctPredecessors(BasicBlock block) {
          List<BasicBlock> basicBlocks = allNodes(block);
 
          for (BasicBlock basicBlock : basicBlocks)

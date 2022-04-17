@@ -3,16 +3,15 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.AssignableName;
-import edu.mit.compilers.codegen.names.VariableName;
-import edu.mit.compilers.grammar.DecafScanner;
+import edu.mit.compilers.dataflow.operand.Operand;
+import edu.mit.compilers.dataflow.operand.UnaryOperand;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Optional;
 
-public class Triple extends HasResult implements Cloneable {
+public class Triple extends HasResult implements Cloneable, HasOperand {
     public AbstractName operand;
     public String operator;
 
@@ -20,13 +19,6 @@ public class Triple extends HasResult implements Cloneable {
         super(result, source);
         this.operand = operand;
         this.operator = operator;
-    }
-
-    public Triple(AssignableName result, String operator, AbstractName operand, AST source, String comment) {
-        super(result, source);
-        this.operand = operand;
-        this.operator = operator;
-        setComment(comment);
     }
 
     @Override
@@ -47,14 +39,10 @@ public class Triple extends HasResult implements Cloneable {
     }
 
     @Override
-    public void swapOut(AbstractName oldName, AbstractName newName) {
-        if (operand.equals(oldName))
-            operand = newName;
-    }
-
-    @Override
-    public Set<AbstractName> getComputationVariables() {
-        return Set.of(operand);
+    public Optional<Operand> getComputationNoArray() {
+        if (operand instanceof ArrayName || dst instanceof ArrayName)
+            return Optional.empty();
+        return Optional.of(new UnaryOperand(this));
     }
 
     @Override
@@ -68,4 +56,29 @@ public class Triple extends HasResult implements Cloneable {
         clone.source = source;
         return clone;
     }
+
+    @Override
+    public Operand getOperand() {
+        return new UnaryOperand(this);
+    }
+
+    public boolean replace(AbstractName oldVariable, AbstractName replacer) {
+        var replaced = false;
+        if (operand.equals(oldVariable)) {
+            operand = replacer;
+            replaced = true;
+        }
+        return replaced;
+    }
+
+    @Override
+    public boolean hasUnModifiedOperand() {
+        return false;
+    }
+
+    @Override
+    public List<AbstractName> getOperandNames() {
+        return List.of(operand);
+    }
+
 }

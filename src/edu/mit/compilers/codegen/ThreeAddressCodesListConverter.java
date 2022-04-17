@@ -177,19 +177,11 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         @Override
         public ThreeAddressCodeList visit(ExpressionParameter expressionParameter, SymbolTable symbolTable) {
             ThreeAddressCodeList expressionParameterTACList = ThreeAddressCodeList.empty();
-
-            if (expressionParameter.expression instanceof LocationVariable) {
-                // no need for temporaries
-                expressionParameterTACList.place = new VariableName(((Location) expressionParameter.expression).name.id);
-            } else if (expressionParameter.expression instanceof IntLiteral) {
-                expressionParameterTACList.place = new ConstantName(((IntLiteral) expressionParameter.expression).convertToLong());
-            } else {
-                TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
-                ThreeAddressCodeList expressionTACList = expressionParameter.expression.accept(this, symbolTable);
-                expressionParameterTACList.add(expressionTACList);
-                expressionParameterTACList.addCode(new Assign(temporaryVariable, "=", expressionTACList.place, expressionParameter, temporaryVariable + " = " + expressionTACList.place));
-                expressionParameterTACList.place = temporaryVariable;
-            }
+            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
+            ThreeAddressCodeList expressionTACList = expressionParameter.expression.accept(this, symbolTable);
+            expressionParameterTACList.add(expressionTACList);
+            expressionParameterTACList.addCode(new Assign(temporaryVariable, "=", expressionTACList.place, expressionParameter, temporaryVariable + " = " + expressionTACList.place));
+            expressionParameterTACList.place = temporaryVariable;
             return expressionParameterTACList;
         }
 
@@ -423,8 +415,8 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         if (!this.errors.isEmpty())
             threeAddressCodeList.add(
                     errors.stream()
-                          .map(error -> new RuntimeException(error.getMessage(), -2, error))
-                          .collect(Collectors.toList()));
+                            .map(error -> new RuntimeException(error.getMessage(), -2, error))
+                            .collect(Collectors.toList()));
 
         flattenMethodDefinitionArguments(threeAddressCodeList, methodDefinition.methodDefinitionParameterList);
 
@@ -499,7 +491,7 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             for (AbstractName name : threeAddressCode.getNames()) {
                 if (name instanceof VariableName || name instanceof ArrayName)
                     set.add(name.toString());
-                    globalNames.add(name);
+                globalNames.add(name);
             }
         }
         return set;

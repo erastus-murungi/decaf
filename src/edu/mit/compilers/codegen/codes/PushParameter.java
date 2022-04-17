@@ -3,11 +3,12 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.dataflow.operand.Operand;
+import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 
 import java.util.List;
 
-public class PushParameter extends ThreeAddressCode {
+public class PushParameter extends ThreeAddressCode implements HasOperand {
     public AbstractName parameterName;
     public final int parameterIndex;
 
@@ -33,9 +34,27 @@ public class PushParameter extends ThreeAddressCode {
     }
 
     @Override
-    public void swapOut(AbstractName oldName, AbstractName newName) {
-        if (parameterName.equals(newName)) {
-            parameterName = newName;
-        }
+    public Operand getOperand() {
+        return new UnmodifiedOperand(parameterName);
     }
+
+    @Override
+    public List<AbstractName> getOperandNames() {
+        return List.of(parameterName);
+    }
+
+    public boolean replace(AbstractName oldVariable, AbstractName replacer) {
+        var replaced = false;
+        if (parameterName.equals(oldVariable)) {
+            parameterName = replacer;
+            replaced = true;
+        }
+        return replaced;
+    }
+
+    @Override
+    public boolean hasUnModifiedOperand() {
+        return true;
+    }
+
 }

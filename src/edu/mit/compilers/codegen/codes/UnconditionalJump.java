@@ -29,8 +29,4 @@ public class UnconditionalJump extends ThreeAddressCode {
         return Collections.emptyList();
     }
 
-    @Override
-    public void swapOut(AbstractName oldName, AbstractName newName) {
-
-    }
 }

@@ -30,8 +30,4 @@ public class MethodEnd extends ThreeAddressCode {
         return Collections.emptyList();
     }
 
-    @Override
-    public void swapOut(AbstractName oldName, AbstractName newName) {
-
-    }
 }

@@ -30,11 +30,6 @@ public class RuntimeException extends ThreeAddressCode {
     }
 
     @Override
-    public void swapOut(AbstractName oldName, AbstractName newName) {
-
-    }
-
-    @Override
     public String toString() {
         return String.format("%s%s(%s)", DOUBLE_INDENT, "raise RuntimeException", decafException.getMessage());
     }

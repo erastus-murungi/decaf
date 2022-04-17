@@ -5,9 +5,9 @@ import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.codes.*;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.ArrayName;
-import edu.mit.compilers.dataflow.computation.BinaryComputation;
-import edu.mit.compilers.dataflow.computation.Computation;
-import edu.mit.compilers.dataflow.computation.UnaryComputation;
+import edu.mit.compilers.dataflow.operand.BinaryOperand;
+import edu.mit.compilers.dataflow.operand.Operand;
+import edu.mit.compilers.dataflow.operand.UnaryOperand;
 import edu.mit.compilers.grammar.DecafScanner;
 
 import java.util.ArrayList;
@@ -22,31 +22,31 @@ public class LocalCSE {
     public LocalCSE() {}
 
     private static void performCSE(HasResult hasResult,
-                            Computation computation,
+                            Operand operand,
                             ThreeAddressCodeList tacList,
                             ThreeAddressCode oldCode,
                             Set<AbstractName> globalVariables,
-                            HashMap<Computation, AbstractName> expressionToVariable,
+                            HashMap<Operand, AbstractName> expressionToVariable,
                             HashMap<ThreeAddressCode, Integer> tacToPositionInList
     ) {
 
-        if (expressionToVariable.containsKey(computation)) {
+        if (expressionToVariable.containsKey(operand)) {
             // this computation has been made before, so swap it with the variable that already stores the value
-            final var replacer = new Assign(hasResult.getResultLocation(), DecafScanner.ASSIGN, expressionToVariable.get(computation), hasResult.source, hasResult.getResultLocation() + " = " + expressionToVariable.get(computation));
-            final var indexOfOldCode = tacToPositionInList.get(oldCode);
+            var replacer = new Assign(hasResult.getResultLocation(), DecafScanner.ASSIGN, expressionToVariable.get(operand), hasResult.source, hasResult.getResultLocation() + " = " + expressionToVariable.get(operand));
+            var indexOfOldCode = tacToPositionInList.get(oldCode);
             tacList.replaceIfContainsOldCodeAtIndex(indexOfOldCode, oldCode, replacer);
             tacToPositionInList.put(replacer, indexOfOldCode);
-        } else if (!computation.containsAny(globalVariables)) {
-            expressionToVariable.put(computation, hasResult.getResultLocation());
+        } else if (!operand.containsAny(globalVariables)) {
+            expressionToVariable.put(operand, hasResult.getResultLocation());
         }
     }
 
     private static void discardKilledExpressions(HasResult hasResult,
-                                          HashMap<Computation, AbstractName> expressionToVariable) {
+                                          HashMap<Operand, AbstractName> expressionToVariable) {
         // we iterate through a copy of the keys to prevent a ConcurrentCoModificationException
-        for (Computation computation : new ArrayList<>(expressionToVariable.keySet())) {
-            if (computation.contains(hasResult.getResultLocation())) {
-                expressionToVariable.remove(computation);
+        for (Operand operand : new ArrayList<>(expressionToVariable.keySet())) {
+            if (operand.contains(hasResult.getResultLocation())) {
+                expressionToVariable.remove(operand);
             }
         }
     }
@@ -68,7 +68,7 @@ public class LocalCSE {
     public static void performLocalCSE(BasicBlock basicBlock, Set<AbstractName> globalVariables) {
         // this maps each expression to its variable, for instance "a + b" -> c
         // while "a" and "b" have not been re-assigned, all occurrences of "a + b" are replaced with c
-        HashMap<Computation, AbstractName> expressionToVariable = new HashMap<>();
+        HashMap<Operand, AbstractName> expressionToVariable = new HashMap<>();
         // this maps each three address code to it's position in its corresponding TAC list
         // it is helpful when swapping out expressions with their replacements
         HashMap<ThreeAddressCode, Integer> tacToPositionInList = getTacToPosMapping(basicBlock.threeAddressCodeList);
@@ -77,28 +77,28 @@ public class LocalCSE {
 
         for (ThreeAddressCode tac : tacList) {
             if (tac instanceof Quadruple) {
-                final Quadruple quadruple = (Quadruple) tac;
+                var quadruple = (Quadruple) tac;
                 // we don't cache expressions involving array variables
                 if (!(quadruple.getResultLocation() instanceof ArrayName)
                         && !(quadruple.fstOperand instanceof ArrayName)
                         && !(quadruple.sndOperand instanceof ArrayName)) {
-                    final var binaryComputation = new BinaryComputation(quadruple);
+                    final var binaryComputation = new BinaryOperand(quadruple);
                     performCSE(quadruple, binaryComputation, tacList, tac, globalVariables, expressionToVariable, tacToPositionInList);
                     // remove all expressions which have been killed
                     discardKilledExpressions(quadruple, expressionToVariable);
                 }
             } else if (tac instanceof Triple) {
-                final Triple triple = (Triple) tac;
+                var triple = (Triple) tac;
                 // we don't cache expressions involving array variables
                 if (!(triple.getResultLocation() instanceof ArrayName) && !(triple.operand instanceof ArrayName)) {
-                    final var unaryComputation = new UnaryComputation(triple);
+                    final var unaryComputation = new UnaryOperand(triple);
                     performCSE(triple, unaryComputation, tacList, tac, globalVariables, expressionToVariable, tacToPositionInList);
                     // discard all expressions which have been killed
                     discardKilledExpressions(triple, expressionToVariable);
                 }
             } else if (tac instanceof HasResult) {
                 // every other assignment kills available expressions
-                HasResult hasResult = (HasResult) tac;
+                var hasResult = (HasResult) tac;
                 if (!(hasResult.getResultLocation() instanceof ArrayName))
                     discardKilledExpressions(hasResult, expressionToVariable);
             }

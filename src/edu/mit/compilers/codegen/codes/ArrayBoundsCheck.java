@@ -3,12 +3,10 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.ConstantName;
 
-import java.util.Collections;
 import java.util.List;
 
-public class ArrayBoundsCheck extends ThreeAddressCode{
+public class ArrayBoundsCheck extends ThreeAddressCode {
     public Label indexIsLessThanArraySize;
     public Label indexIsGTEZero;
     public ArrayAccess arrayAccess;
@@ -29,9 +27,6 @@ public class ArrayBoundsCheck extends ThreeAddressCode{
     public List<AbstractName> getNames() {
         return List.of(arrayAccess.accessIndex, arrayAccess.arrayName);
     }
-
-    @Override
-    public void swapOut(AbstractName oldName, AbstractName newName) {}
 
     @Override
     public String toString() {

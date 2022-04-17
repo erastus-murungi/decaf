@@ -1,12 +1,11 @@
 package edu.mit.compilers.dataflow;
 
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.TemporaryNameGenerator;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.codes.*;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
-import edu.mit.compilers.dataflow.computation.Computation;
+import edu.mit.compilers.dataflow.operand.Operand;
 
 import java.util.*;
 
@@ -24,7 +23,6 @@ public class GlobalCSE {
     public static void performGlobalCSE(BasicBlock root, Set<AbstractName> globalVariables) {
         var basicBlocks = DataFlowAnalysis.getReversePostOrder(root);
         var availableExpressions = new AvailableExpressions(root);
-        TemporaryNameGenerator.setTempVariableIndexToHighestValue();
 
         // we first perform local CSE for each basic block
         for (BasicBlock basicBlock : basicBlocks)
@@ -40,7 +38,7 @@ public class GlobalCSE {
 
             Objects.requireNonNull(availableExpressions, () -> "In[B] for basicBlock " + basicBlock + " not found");
 
-            for (Computation computation : availableExpressionsForBlock) {
+            for (Operand computation : availableExpressionsForBlock) {
                 for (HasResult hasResult : basicBlock.assignments()) {
                     if (hasResult instanceof Triple || hasResult instanceof Quadruple) {
                         if (computation.isContainedIn(hasResult)) {
@@ -59,7 +57,7 @@ public class GlobalCSE {
     }
 
     private static AbstractName backPropagateToEliminateCommonExpressionFromCFG(BasicBlock basicBlock,
-                                                                                Computation computation) {
+                                                                                Operand operand) {
         AssignableName uniqueName = null;
         final var queue = new ArrayDeque<>(basicBlock.getPredecessors());
         final var visited = new HashSet<>();
@@ -80,7 +78,7 @@ public class GlobalCSE {
                 if (!computationFound) {
                     if (threeAddressCode instanceof Triple || threeAddressCode instanceof Quadruple) {
                         final var hasResult = (HasResult) threeAddressCode;
-                        if (computation.isContainedIn(hasResult)) {
+                        if (operand.isContainedIn(hasResult)) {
                             uniqueName = hasResult.getResultLocation();
                             computationFound = true;
                         }

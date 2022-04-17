@@ -3,13 +3,17 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.dataflow.operand.Operand;
+import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 import edu.mit.compilers.grammar.DecafScanner;
 
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
+import java.util.Optional;
 
-public class Assign extends HasResult implements Cloneable {
+public class Assign extends HasResult implements Cloneable, HasOperand {
     public String assignmentOperator;
     public AbstractName operand;
 
@@ -34,20 +38,23 @@ public class Assign extends HasResult implements Cloneable {
     }
 
     @Override
-    public void swapOut(AbstractName oldName, AbstractName newName) {
-        if (operand.equals(oldName)) {
-            operand = newName;
-        }
-    }
-
-    @Override
     public String toString() {
         return String.format("%s%s %s %s", DOUBLE_INDENT, dst, assignmentOperator, operand);
     }
 
     @Override
-    public Set<AbstractName> getComputationVariables() {
-        return Set.of(operand);
+    public Optional<Operand> getComputationNoArray() {
+        if (operand instanceof ArrayName || dst instanceof ArrayName)
+            return Optional.empty();
+        return Optional.of(new UnmodifiedOperand(operand, assignmentOperator));
+    }
+
+    public boolean contains(AbstractName name) {
+        return dst.equals(name) || operand.equals(name);
+    }
+
+    public boolean containsAny(Collection<AbstractName> names) {
+        return names.stream().anyMatch(this::contains);
     }
 
     @Override
@@ -61,4 +68,29 @@ public class Assign extends HasResult implements Cloneable {
         clone.source = source;
         return clone;
     }
+
+    @Override
+    public Operand getOperand() {
+        return new UnmodifiedOperand(operand);
+    }
+
+    @Override
+    public List<AbstractName> getOperandNames() {
+        return List.of(operand);
+    }
+
+    public boolean replace(AbstractName oldVariable, AbstractName replacer) {
+        var replaced = false;
+        if (operand.equals(oldVariable)) {
+            operand = replacer;
+            replaced = true;
+        }
+        return replaced;
+    }
+
+    @Override
+    public boolean hasUnModifiedOperand() {
+        return true;
+    }
+
 }

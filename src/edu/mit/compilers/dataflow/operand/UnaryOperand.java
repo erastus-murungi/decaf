@@ -1,17 +1,17 @@
-package edu.mit.compilers.dataflow.computation;
+package edu.mit.compilers.dataflow.operand;
 
 import edu.mit.compilers.codegen.codes.HasResult;
-import edu.mit.compilers.codegen.codes.Quadruple;
 import edu.mit.compilers.codegen.codes.Triple;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.AssignableName;
 
 import java.util.Objects;
 
-public class UnaryComputation extends Computation {
+public class UnaryOperand extends Operand {
     public final AbstractName operand;
     public final String operator;
 
-    public UnaryComputation(Triple triple) {
+    public UnaryOperand(Triple triple) {
         this.operand = triple.operand;
         this.operator = triple.operator;
     }
@@ -24,16 +24,21 @@ public class UnaryComputation extends Computation {
     public boolean isContainedIn(HasResult hasResult) {
         if (hasResult instanceof Triple) {
             Triple triple = (Triple) hasResult;
-            return new UnaryComputation(triple).equals(this);
+            return new UnaryOperand(triple).equals(this);
         }
         return false;
+    }
+
+    @Override
+    public HasResult fromOperand(AssignableName resultLocation) {
+        return new Triple(resultLocation, operator, operand, null);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        UnaryComputation that = (UnaryComputation) o;
+        UnaryOperand that = (UnaryOperand) o;
         return Objects.equals(operand, that.operand) && Objects.equals(operator, that.operator);
     }
 

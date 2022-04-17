@@ -2,92 +2,48 @@ package edu.mit.compilers.dataflow;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.HasResult;
-import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.codegen.codes.MethodCallSetResult;
 import edu.mit.compilers.codegen.codes.Quadruple;
 import edu.mit.compilers.codegen.codes.Triple;
 import edu.mit.compilers.codegen.names.TemporaryName;
 import edu.mit.compilers.codegen.names.VariableName;
-import edu.mit.compilers.dataflow.computation.BinaryComputation;
-import edu.mit.compilers.dataflow.computation.Computation;
-import edu.mit.compilers.dataflow.computation.UnaryComputation;
+import edu.mit.compilers.dataflow.operand.BinaryOperand;
+import edu.mit.compilers.dataflow.operand.Operand;
+import edu.mit.compilers.dataflow.operand.UnaryOperand;
 import edu.mit.compilers.grammar.DecafScanner;
 
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-public class AvailableExpressions extends DataFlowAnalysis<Computation> {
-    // the set of all assignments in the program
-    HashSet<Computation> allComputations;
-    // the list of all basic blocks
-    List<BasicBlock> basicBlocks;
-
-    HashMap<BasicBlock, HashSet<Computation>> out;
-    HashMap<BasicBlock, HashSet<Computation>> in;
-    HashMap<BasicBlock, HashSet<Computation>> gen;
-    HashMap<BasicBlock, HashSet<Computation>> kill;
-
-    NOP entryBlock;
-
-    public String getResultForPrint() {
-        return Stream
-                .of(basicBlocks)
-                .flatMap(Collection::stream)
-                .map(basicBlock -> in.get(basicBlock))
-                .flatMap(Collection::stream)
-                .sorted(Comparator.comparing(Computation::getIndex))
-                .map(Computation::toString)
-                .collect(Collectors.joining("\n"));
-    }
-
+public class AvailableExpressions extends DataFlowAnalysis<Operand> {
     public AvailableExpressions(BasicBlock entry) {
-        attachEntryNode(entry);
-        findAllBasicBlocksInReversePostOrder();
-        findUniversalSetOfAssignments();
-        initializeWorkSets();
-        runWorkList();
-    }
-
-    private void findAllBasicBlocksInReversePostOrder() {
-        basicBlocks = DataFlowAnalysis.getReversePostOrder(entryBlock);
-    }
-
-    private void attachEntryNode(BasicBlock basicBlock) {
-        entryBlock = new NOP("Entry");
-        entryBlock.autoChild = basicBlock;
-        basicBlock.addPredecessor(entryBlock);
-    }
-
-    private void findUniversalSetOfAssignments() {
-        allComputations = new HashSet<>();
-        for (BasicBlock basicBlock : basicBlocks) {
-            allComputations.addAll(gen(basicBlock));
-        }
-    }
-
-    private void initializeWorkSets() {
-        out = new HashMap<>();
-        in = new HashMap<>();
-        gen = new HashMap<>();
-        kill = new HashMap<>();
-
-        for (BasicBlock basicBlock : basicBlocks) {
-            out.put(basicBlock, allComputations); // all expressions are available at initialization time
-            in.put(basicBlock, new HashSet<>());
-            gen.put(basicBlock, new HashSet<>());
-            kill.put(basicBlock, new HashSet<>());
-        }
-
-        out.put(entryBlock, new HashSet<>());
-    }
-
-    public Computation meet(Collection<Computation> domainElements) {
-        return null;
+        super(entry);
     }
 
     @Override
-    public Computation transferFunction(Computation domainElement) {
+    public void computeUniversalSetsOfValues() {
+        allValues = new HashSet<>();
+        for (BasicBlock basicBlock : basicBlocks)
+            allValues.addAll(gen(basicBlock));
+    }
+
+    @Override
+    public void initializeWorkSets() {
+        out = new HashMap<>();
+        in = new HashMap<>();
+
+        for (BasicBlock basicBlock : basicBlocks) {
+            out.put(basicBlock, allValues); // all expressions are available at initialization time
+            in.put(basicBlock, new HashSet<>());
+        }
+
+        // IN[entry] = ∅
+        in.put(entryBlock, new HashSet<>());
+        out.put(entryBlock, gen(entryBlock));
+    }
+
+
+    @Override
+    public Set<Operand> transferFunction(Operand domainElement) {
         return null;
     }
 
@@ -97,73 +53,43 @@ public class AvailableExpressions extends DataFlowAnalysis<Computation> {
     }
 
     @Override
-    public Computation initializer() {
-        return null;
-    }
-
-    @Override
-    public Iterator<Computation> order() {
-        return null;
-    }
-
-    public HashSet<Computation> intersection(Collection<BasicBlock> blocks) {
-        if (blocks.isEmpty()) {
-            return new HashSet<>();
-        }
-        HashSet<Computation> in = new HashSet<>(allComputations);
-        for (BasicBlock block : blocks) {
-            in.retainAll(out.get(block));
-        }
-        return in;
-    }
-
-    public HashSet<Computation> difference(HashSet<Computation> first, HashSet<Computation> second) {
-        var firstCopy = new HashSet<>(first);
-        firstCopy.removeAll(second);
-        return firstCopy;
-    }
-
-    public HashSet<Computation> union(HashSet<Computation> first, HashSet<Computation> second) {
-        var firstCopy = new HashSet<>(first);
-        firstCopy.addAll(second);
-        return firstCopy;
-    }
-
-    @Override
     public void runWorkList() {
-        var workList = new ArrayList<>(basicBlocks);
-
+        var workList = new ArrayDeque<>(basicBlocks);
         workList.remove(entryBlock);
 
-        // IN[entry] = ∅
-        in.put(entryBlock, new HashSet<>());
-
-        out.put(entryBlock, gen(entryBlock));
-
         while (!workList.isEmpty()) {
-            final BasicBlock B = workList.remove(0);
-            var oldOut = out.get(B);
+            final BasicBlock B = workList.pop();
+            var oldOut = out(B);
 
-            var inSet = intersection(B.getPredecessors());
-            var killSet = kill(B, new HashSet<>(allComputations));
 
             // IN[B] = intersect OUT[p] for all p in predecessors
-            in.put(B, inSet);
+            in.put(B, meet(B));
 
             // OUT[B] = gen[B] ∪ IN[B] - KILL[B]
-            out.put(B, union(gen(B), difference(inSet, killSet)));
+            out.put(B, union(gen(B), difference(in(B), kill(B))));
 
-            if (!out
-                    .get(B)
-                    .equals(oldOut)) {
+            if (!out(B).equals(oldOut)) {
                 workList.addAll(B.getSuccessors());
             }
         }
     }
 
+    @Override
+    public Set<Operand> meet(BasicBlock basicBlock) {
+        if (basicBlock.getPredecessors().isEmpty())
+            return Collections.emptySet();
 
-    private HashSet<Computation> kill(BasicBlock basicBlock, HashSet<Computation> superSet) {
-        HashSet<Computation> killedExpressions = new HashSet<>();
+        var inSet = new HashSet<>(allValues);
+
+        for (BasicBlock block : basicBlock.getPredecessors())
+            inSet.retainAll(out.get(block));
+        return inSet;
+    }
+
+
+    private HashSet<Operand> kill(BasicBlock basicBlock) {
+        var superSet = new ArrayList<>(allValues);
+        var killedExpressions = new HashSet<Operand>();
 
         for (HasResult assignment: basicBlock.assignments()) {
             // add all the computations that contain operands
@@ -172,7 +98,7 @@ public class AvailableExpressions extends DataFlowAnalysis<Computation> {
             if (assignment instanceof Triple) {
                 Triple triple = (Triple) assignment;
                 if (operatorAssigns(triple.operator)) {
-                    for (Computation comp : superSet) {
+                    for (Operand comp : superSet) {
                         if (comp.contains(triple.getResultLocation())) {
                             killedExpressions.add(comp);
                         }
@@ -187,21 +113,21 @@ public class AvailableExpressions extends DataFlowAnalysis<Computation> {
         return operator.contains(DecafScanner.ASSIGN);
     }
 
-    private HashSet<Computation> gen(BasicBlock basicBlock) {
-        var validComputations = new HashSet<Computation>();
+    private HashSet<Operand> gen(BasicBlock basicBlock) {
+        var validComputations = new HashSet<Operand>();
         for (HasResult assignment: basicBlock.assignments()) {
             // add this unary computation to the list of valid expressions
             if (assignment instanceof Triple) {
                 Triple triple = (Triple) assignment;
                 if (triple.operand instanceof VariableName || triple.operand instanceof TemporaryName) {
-                    validComputations.add(new UnaryComputation(triple));
+                    validComputations.add(new UnaryOperand(triple));
                 }
             }
             // add this binary computation to the list of valid expressions
             else if (assignment instanceof Quadruple) {
                 Quadruple quadruple = (Quadruple) assignment;
                 if (quadruple.fstOperand instanceof VariableName && quadruple.sndOperand instanceof VariableName) {
-                    validComputations.add(new BinaryComputation(quadruple));
+                    validComputations.add(new BinaryOperand(quadruple));
                 }
             }
 
@@ -214,9 +140,9 @@ public class AvailableExpressions extends DataFlowAnalysis<Computation> {
                     operator = "=";
                 }
                 if (operatorAssigns(operator)) {
-                    for (Computation computation : new HashSet<>(validComputations)) {
-                        if (computation.contains(assignment.getResultLocation())) {
-                            validComputations.remove(computation);
+                    for (Operand operand : new HashSet<>(validComputations)) {
+                        if (operand.contains(assignment.getResultLocation())) {
+                            validComputations.remove(operand);
                         }
                     }
                 }

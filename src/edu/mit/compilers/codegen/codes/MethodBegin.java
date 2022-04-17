@@ -3,8 +3,6 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.*;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.ConstantName;
-import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -33,11 +31,6 @@ public class MethodBegin extends ThreeAddressCode {
     @Override
     public List<AbstractName> getNames() {
         return Collections.emptyList();
-    }
-
-    @Override
-    public void swapOut(AbstractName oldName, AbstractName newName) {
-
     }
 
     private void reorderLocals() {

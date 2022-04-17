@@ -1,12 +1,10 @@
 package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.ast.DecimalLiteral;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +41,4 @@ public class MethodReturn extends ThreeAddressCode {
         return List.of(returnAddress);
     }
 
-    @Override
-    public void swapOut(AbstractName oldName, AbstractName newName) {}
 }

@@ -3,10 +3,12 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.dataflow.operand.Operand;
+import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 
 import java.util.List;
 
-public class ConditionalJump extends ThreeAddressCode {
+public class ConditionalJump extends ThreeAddressCode implements HasOperand {
     public AbstractName condition;
     public final Label trueLabel;
 
@@ -32,10 +34,27 @@ public class ConditionalJump extends ThreeAddressCode {
     }
 
     @Override
-    public void swapOut(AbstractName oldName, AbstractName newName) {
-        if (condition.equals(oldName)) {
-            condition = newName;
+    public Operand getOperand() {
+        return new UnmodifiedOperand(condition);
+    }
+
+    @Override
+    public List<AbstractName> getOperandNames() {
+        return List.of(condition);
+    }
+
+    public boolean replace(AbstractName oldVariable, AbstractName replacer) {
+        var replaced = false;
+        if (condition.equals(oldVariable)) {
+            condition = replacer;
+            replaced = true;
         }
+        return replaced;
+    }
+
+    @Override
+    public boolean hasUnModifiedOperand() {
+        return true;
     }
 
 }

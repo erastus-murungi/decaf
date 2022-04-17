@@ -3,11 +3,9 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 public class MethodCallNoResult extends ThreeAddressCode {
     public MethodCallNoResult(MethodCall methodCall, String comment) {
@@ -33,8 +31,4 @@ public class MethodCallNoResult extends ThreeAddressCode {
         return Collections.emptyList();
     }
 
-    @Override
-    public void swapOut(AbstractName oldName, AbstractName newName) {
-
-    }
 }

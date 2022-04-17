@@ -3,11 +3,13 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.dataflow.operand.Operand;
+import edu.mit.compilers.dataflow.operand.MethodCallOperand;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
+import java.util.Optional;
 
 public class MethodCallSetResult extends HasResult {
     public MethodCallSetResult(MethodCall methodCall, AssignableName resultLocation, String comment) {
@@ -39,10 +41,9 @@ public class MethodCallSetResult extends HasResult {
     }
 
     @Override
-    public void swapOut(AbstractName oldName, AbstractName newName) {}
-
-    @Override
-    public Set<AbstractName> getComputationVariables() {
-        return Collections.emptySet();
+    public Optional<Operand> getComputationNoArray() {
+        if (dst instanceof ArrayName)
+            return Optional.empty();
+        return Optional.of(new MethodCallOperand(this));
     }
 }

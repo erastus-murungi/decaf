@@ -34,5 +34,4 @@ public abstract class ThreeAddressCode {
 
     public abstract List<AbstractName> getNames();
 
-    public abstract void swapOut(AbstractName oldName, AbstractName newName);
 }
