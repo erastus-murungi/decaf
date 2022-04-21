@@ -1,4 +1,4 @@
-package edu.mit.compilers.dataflow;
+package edu.mit.compilers.dataflow.analyses;
 
 import java.util.ArrayDeque;
 import java.util.Collections;
@@ -8,6 +8,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import edu.mit.compilers.cfg.BasicBlock;
+import edu.mit.compilers.dataflow.Direction;
+import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.usedef.Def;
 
 public class ReachingDefinitions extends DataFlowAnalysis<Def> {

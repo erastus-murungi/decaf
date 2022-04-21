@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 
 public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAddressCodeList> {
     private final List<DecafException> errors;
-    private Set<String> globals;
     public Set<AbstractName> globalNames;
 
     private static class ThreeAddressCodesConverter implements Visitor<ThreeAddressCodeList> {
@@ -167,7 +166,13 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             final ArrayDescriptor arrayDescriptor = (ArrayDescriptor) descriptorFromValidScopes.orElseThrow(
                     () -> new IllegalStateException("expected to find array " + locationArray.name.id + " in scope")
             );
-            final ArrayAccess arrayAccess = new ArrayAccess(locationArray, locationArray.getSourceCode(), new ArrayName(locationArray.name.id, arrayDescriptor.size * Utils.WORD_SIZE), new ConstantName(arrayDescriptor.size), locationThreeAddressCodeList.place);
+
+            final var arrayName = new ArrayName(locationArray.name.id, arrayDescriptor.size * Utils.WORD_SIZE);
+            final ArrayAccess arrayAccess = new ArrayAccess(
+                    locationArray, locationArray.getSourceCode(),
+                    arrayName,
+                    new ConstantName(arrayDescriptor.size),
+                    locationThreeAddressCodeList.place);
             addArrayAccessBoundsCheck(threeAddressCodeList, arrayAccess);
             threeAddressCodeList.addCode(arrayAccess);
             threeAddressCodeList.place = arrayAccess.arrayName;
@@ -238,10 +243,9 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         public ThreeAddressCodeList visit(MethodCall methodCall, SymbolTable symbolTable) {
             final ThreeAddressCodeList threeAddressCodeList = ThreeAddressCodeList.empty();
             flattenMethodCallArguments(threeAddressCodeList, methodCall.methodCallParameterList, symbolTable);
-            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
-
-            threeAddressCodeList.addCode(new MethodCallSetResult(methodCall, temporaryVariable, methodCall.getSourceCode()));
-            threeAddressCodeList.place = temporaryVariable;
+            AssignableName place = Objects.requireNonNullElseGet(methodSetResultLocation, TemporaryName::generateTemporaryName);
+            threeAddressCodeList.addCode(new MethodCallSetResult(methodCall, place, methodCall.getSourceCode()));
+            threeAddressCodeList.place = place;
             return threeAddressCodeList;
         }
 
@@ -339,6 +343,7 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             ThreeAddressCodeList lhs = assignment.location.accept(this, symbolTable);
             ThreeAddressCodeList rhs;
             if (assignment.assignExpr.expression != null) {
+                methodSetResultLocation = (AssignableName) lhs.place;
                 rhs = assignment.assignExpr.expression.accept(this, symbolTable);
             } else {
                 rhs = ThreeAddressCodeList.empty();
@@ -360,14 +365,16 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         }
     }
 
+    final private static HashMap<String, StringLiteralStackAllocation> literalStackAllocationHashMap = new HashMap<>();
 
     ThreeAddressCodesConverter visitor;
     Label endLabelGlobal;
     Set<BasicBlock> visited = new HashSet<>();
     HashMap<BasicBlock, Label> blockToLabelHashMap = new HashMap<>();
     HashMap<BasicBlock, ThreeAddressCodeList> blockToCodeHashMap = new HashMap<>();
+    static AssignableName methodSetResultLocation;
     public HashMap<String, SymbolTable> cfgSymbolTables;
-    final private static HashMap<String, StringLiteralStackAllocation> literalStackAllocationHashMap = new HashMap<>();
+
 
     public ThreeAddressCodeList dispatch(BasicBlock basicBlock, SymbolTable symbolTable) {
         if (basicBlock instanceof BasicBlockWithBranch)
@@ -376,42 +383,18 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             return visit((BasicBlockBranchLess) basicBlock, symbolTable);
     }
 
-    private List<AbstractName> getLocals(ThreeAddressCodeList threeAddressCodeList) {
-        Set<AbstractName> uniqueNames = new HashSet<>();
 
-        for (ThreeAddressCode threeAddressCode : threeAddressCodeList) {
-            for (AbstractName name : threeAddressCode.getNames()) {
-                if (name instanceof ArrayName && !globals.contains(name.toString())) {
-                    uniqueNames.add(name);
-                }
-            }
-        }
-
-        for (ThreeAddressCode threeAddressCode : threeAddressCodeList) {
-            for (AbstractName name : threeAddressCode.getNames()) {
-                if (!(name instanceof ArrayName) && !globals.contains(name.toString())) {
-                    uniqueNames.add(name);
-                }
-            }
-        }
-        return uniqueNames
-                .stream()
-                .filter((name -> ((name instanceof AssignableName))))
-                .distinct()
-                .sorted(Comparator.comparing(Object::toString))
-                .collect(Collectors.toList());
-    }
-
-    private ThreeAddressCodeList convertMethodDefinition(MethodDefinition methodDefinition,
-                                                         BasicBlock methodStart,
-                                                         SymbolTable symbolTable) {
+    private MethodBegin convertMethodDefinition(MethodDefinition methodDefinition,
+                                                BasicBlock methodStart,
+                                                SymbolTable symbolTable) {
 
         TemporaryNameGenerator.reset();
         endLabelGlobal = new Label("exit_" + methodDefinition.methodName.id, methodStart);
 
-        ThreeAddressCodeList threeAddressCodeList = ThreeAddressCodeList.empty();
-        MethodBegin methodBegin = new MethodBegin(methodDefinition);
+        var threeAddressCodeList = ThreeAddressCodeList.empty();
+        var methodBegin = new MethodBegin(methodDefinition);
         threeAddressCodeList.addCode(methodBegin);
+
         if (!this.errors.isEmpty())
             threeAddressCodeList.add(
                     errors.stream()
@@ -420,15 +403,16 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
 
         flattenMethodDefinitionArguments(threeAddressCodeList, methodDefinition.methodDefinitionParameterList);
 
-        final ThreeAddressCodeList firstBasicBlockTacList = dispatch(methodStart, symbolTable);
+        final var firstBasicBlockTacList = dispatch(methodStart, symbolTable);
         firstBasicBlockTacList.prependAll(threeAddressCodeList);
 
         firstBasicBlockTacList.setNext(ThreeAddressCodeList.of(endLabelGlobal));
 
         firstBasicBlockTacList.setNext(ThreeAddressCodeList.of(new MethodEnd(methodDefinition)));
         methodStart.threeAddressCodeList = firstBasicBlockTacList;
-        methodBegin.setLocals(getLocals(firstBasicBlockTacList.flatten()));
-        return firstBasicBlockTacList.flatten();
+        methodBegin.unoptimized = firstBasicBlockTacList.flatten();
+        methodBegin.entryBlock = methodStart;
+        return methodBegin;
     }
 
 
@@ -468,13 +452,13 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
                                 size), size, fieldDeclaration.builtinType));
             }
         }
+        getGlobals(threeAddressCodeList);
         return threeAddressCodeList;
     }
 
 
     private ThreeAddressCodeList initProgram(Program program) {
         ThreeAddressCodeList threeAddressCodeList = fillOutGlobals(program.fieldDeclarationList);
-        this.globals = getGlobals(threeAddressCodeList);
         Set<String> stringLiteralList = findAllStringLiterals(program);
         for (String stringLiteral : stringLiteralList) {
             final StringLiteralStackAllocation literalStackAllocation = new StringLiteralStackAllocation(stringLiteral);
@@ -484,17 +468,14 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         return threeAddressCodeList;
     }
 
-    private Set<String> getGlobals(ThreeAddressCodeList threeAddressCodeList) {
-        HashSet<String> set = new HashSet<>();
+    private void getGlobals(ThreeAddressCodeList threeAddressCodeList) {
         globalNames = new HashSet<>();
         for (ThreeAddressCode threeAddressCode : threeAddressCodeList) {
             for (AbstractName name : threeAddressCode.getNames()) {
                 if (name instanceof VariableName || name instanceof ArrayName)
-                    set.add(name.toString());
-                globalNames.add(name);
+                    globalNames.add(name);
             }
         }
-        return set;
     }
 
     private Set<String> findAllStringLiterals(Program program) {
@@ -514,21 +495,24 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         return literalList;
     }
 
-    public ThreeAddressCodeList fill(iCFGVisitor visitor,
-                                     Program program) {
-        ThreeAddressCodeList threeAddressCodeList = initProgram(program);
-        threeAddressCodeList.add(
+    public Pair<ThreeAddressCodeList, List<MethodBegin>> fill(iCFGVisitor visitor,
+                                                              Program program) {
+        var programStartTacList = initProgram(program);
+
+        var methodsTacLists = new ArrayList<MethodBegin>();
+        methodsTacLists.add(
                 convertMethodDefinition(
                         getMethodDefinitionFromProgram("main", program),
                         visitor.methodCFGBlocks.get("main"),
-                        cfgSymbolTables.get("main"))
-        );
+                        cfgSymbolTables.get("main")
+                ));
+
         visitor.methodCFGBlocks.forEach((k, v) -> {
             if (!k.equals("main")) {
-                threeAddressCodeList.add(convertMethodDefinition(getMethodDefinitionFromProgram(k, program), v, cfgSymbolTables.get(k)));
+                methodsTacLists.add(convertMethodDefinition(getMethodDefinitionFromProgram(k, program), v, cfgSymbolTables.get(k)));
             }
         });
-        return threeAddressCodeList;
+        return new Pair<>(programStartTacList, methodsTacLists);
     }
 
     public ThreeAddressCodesListConverter(CFGGenerator cfgGenerator) {
@@ -648,7 +632,8 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             UnconditionalJump unconditionalJump = (UnconditionalJump) falseBlock.first();
             if (!unconditionalJump.goToLabel.label.equals(falseLabel.label))
                 falseBlock.prepend(falseLabel);
-        } else if (!falseBlock.first().equals(falseLabel))
+        } else if (!falseBlock.first()
+                .equals(falseLabel))
             falseBlock.prepend(falseLabel);
         if (!(falseBlock.last() instanceof UnconditionalJump) && !(trueBlock.last() instanceof UnconditionalJump))
             falseBlock.setNext(ThreeAddressCodeList.of(new UnconditionalJump(endLabel)));

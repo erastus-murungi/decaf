@@ -3,6 +3,7 @@ package edu.mit.compilers.dataflow;
 import edu.mit.compilers.codegen.codes.Quadruple;
 import edu.mit.compilers.codegen.codes.Triple;
 import edu.mit.compilers.codegen.names.VariableName;
+import edu.mit.compilers.dataflow.analyses.AvailableExpressions;
 import edu.mit.compilers.grammar.DecafScanner;
 import org.junit.After;
 import org.junit.Before;

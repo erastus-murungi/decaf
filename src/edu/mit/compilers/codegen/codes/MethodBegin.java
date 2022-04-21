@@ -1,15 +1,28 @@
 package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.*;
+import edu.mit.compilers.cfg.BasicBlock;
+import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class MethodBegin extends ThreeAddressCode {
     public final MethodDefinition methodDefinition;
-    private List<AbstractName> locals;
+    /**
+     * @implNote instead of storing the set of locals, we now store a method's tac list.
+     * Because of optimizations, the set of locals could be re-computed;
+     *
+     * This is the unoptimized threeAddressCodeList of a method
+     */
+    public ThreeAddressCodeList unoptimized;
+
+    /**
+     * We use this for optimization
+     */
+    public BasicBlock entryBlock;
+
     // to be filled in later by the X64Converter
     public HashMap<String, Integer> nameToStackOffset = new HashMap<>();
 
@@ -31,43 +44,5 @@ public class MethodBegin extends ThreeAddressCode {
     @Override
     public List<AbstractName> getNames() {
         return Collections.emptyList();
-    }
-
-    private void reorderLocals() {
-        List<AbstractName> methodParametersNames = new ArrayList<>();
-
-        Set<String> methodParameters = methodDefinition.methodDefinitionParameterList
-                .stream()
-                .map(methodDefinitionParameter -> methodDefinitionParameter.id.id)
-                .collect(Collectors.toSet());
-
-        List<AbstractName> methodParamNamesList = new ArrayList<>();
-        for (AbstractName name : locals) {
-            if (methodParameters.contains(name.toString())) {
-                methodParamNamesList.add(name);
-            }
-        }
-        for (AbstractName local : locals) {
-            if (methodParameters.contains(local.toString())) {
-                methodParametersNames.add(local);
-            }
-        }
-        for (AbstractName name : methodParametersNames) {
-            locals.remove(name);
-        }
-        locals.addAll(0, methodParamNamesList
-                .stream()
-                .sorted(Comparator.comparing(AbstractName::toString))
-                .collect(Collectors.toList()));
-    }
-
-
-    public void setLocals(List<AbstractName> locals) {
-        this.locals = locals;
-        reorderLocals();
-    }
-
-    public List<AbstractName> getLocals() {
-        return locals;
     }
 }

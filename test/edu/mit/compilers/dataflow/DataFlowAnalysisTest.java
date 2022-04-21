@@ -4,6 +4,7 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.CFGGenerator;
 import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.cfg.iCFGVisitor;
+import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.ir.DecafSemanticChecker;

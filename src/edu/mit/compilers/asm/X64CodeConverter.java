@@ -1,5 +1,6 @@
 package edu.mit.compilers.asm;
 
+import edu.mit.compilers.ast.MethodDefinition;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.codes.*;
@@ -24,6 +25,64 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
     private long stackSpace;
     public String lastComparisonOperator = null;
     private int arrayAccessCount = 0;
+
+
+
+    private List<AbstractName> getLocals(ThreeAddressCodeList threeAddressCodeList) {
+        Set<AbstractName> uniqueNames = new HashSet<>();
+        var flattened = threeAddressCodeList.flatten();
+
+        for (ThreeAddressCode threeAddressCode : flattened) {
+            for (AbstractName name : threeAddressCode.getNames()) {
+                if (name instanceof ArrayName && !globals.contains(name)) {
+                    uniqueNames.add(name);
+                }
+            }
+        }
+
+        for (ThreeAddressCode threeAddressCode : flattened) {
+            for (AbstractName name : threeAddressCode.getNames()) {
+                if (!(name instanceof ArrayName) && !globals.contains(name)) {
+                    uniqueNames.add(name);
+                }
+            }
+        }
+        return uniqueNames
+                .stream()
+                .filter((name -> ((name instanceof AssignableName))))
+                .distinct()
+                .sorted(Comparator.comparing(Object::toString))
+                .collect(Collectors.toList());
+    }
+
+
+    private void reorderLocals(List<AbstractName> locals, MethodDefinition methodDefinition) {
+        List<AbstractName> methodParametersNames = new ArrayList<>();
+
+        Set<String> methodParameters = methodDefinition.methodDefinitionParameterList
+                .stream()
+                .map(methodDefinitionParameter -> methodDefinitionParameter.id.id)
+                .collect(Collectors.toSet());
+
+        List<AbstractName> methodParamNamesList = new ArrayList<>();
+        for (AbstractName name : locals) {
+            if (methodParameters.contains(name.toString())) {
+                methodParamNamesList.add(name);
+            }
+        }
+        for (AbstractName local : locals) {
+            if (methodParameters.contains(local.toString())) {
+                methodParametersNames.add(local);
+            }
+        }
+        for (AbstractName name : methodParametersNames) {
+            locals.remove(name);
+        }
+        locals.addAll(0, methodParamNamesList
+                .stream()
+                .sorted(Comparator.comparing(AbstractName::toString))
+                .collect(Collectors.toList()));
+    }
 
 
     public X64Program convert(ThreeAddressCodeList threeAddressCodeList) {
@@ -193,8 +252,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
                 .addLine(x64InstructionLine(X64Instruction.addq, "$" + stackSpace, X64Register.RSP))
                 .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RBP, X64Register.RSP))
                 .addLine(x64InstructionLine(X64Instruction.popq, X64Register.RBP))
-                .addLine(x64InstructionLine(X64Instruction.ret))
-                .addLine(x64BlankLine());
+                .addLine(x64InstructionLine(X64Instruction.ret));
     }
 
     @Override
@@ -219,9 +277,13 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
         saveBaseAndStackPointer(x64builder);
 
 
-        int stackOffsetIndex = 8;
+        int stackOffsetIndex = 0;
         List<X64Code> codes = new ArrayList<>();
-        for (final AbstractName variableName : methodBegin.getLocals()) {
+
+        List<AbstractName> locals = getLocals(methodBegin.entryBlock.threeAddressCodeList);
+        reorderLocals(locals, methodBegin.methodDefinition);
+
+        for (var variableName : locals) {
             if (!globals.contains(variableName)) {
                 if (variableName.size > 8) {
                     // we have an array
@@ -254,12 +316,9 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
             }
         }
 
-        if (roundUp16(stackOffsetIndex - 8) == stackOffsetIndex - 8) {
-            stackOffsetIndex -= 8;
-        }
         stackSpace = roundUp16(stackOffsetIndex);
         x64builder
-                .addLine(x64InstructionLine(X64Instruction.subq, "$" + stackOffsetIndex, X64Register.RSP))
+                .addLine(x64InstructionLine(X64Instruction.subq, "$" + stackSpace, X64Register.RSP))
                 .addLines(codes);
 
         return x64builder;

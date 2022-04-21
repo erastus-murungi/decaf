@@ -1,4 +1,4 @@
-package edu.mit.compilers.dataflow;
+package edu.mit.compilers.dataflow.analyses;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.HasResult;
@@ -7,6 +7,8 @@ import edu.mit.compilers.codegen.codes.Quadruple;
 import edu.mit.compilers.codegen.codes.Triple;
 import edu.mit.compilers.codegen.names.TemporaryName;
 import edu.mit.compilers.codegen.names.VariableName;
+import edu.mit.compilers.dataflow.Direction;
+import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.operand.BinaryOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnaryOperand;

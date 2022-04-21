@@ -42,6 +42,11 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode>, Cloneab
         return flattenTACList;
     }
 
+    public void reset(Collection<ThreeAddressCode> newCodes) {
+        codes.clear();
+        codes.addAll(newCodes);
+    }
+
     public void replaceIfContainsOldCodeAtIndex(int indexOfOldCode, ThreeAddressCode oldCode, ThreeAddressCode newCode) {
         if (codes.get(indexOfOldCode) != oldCode) {
             throw new IllegalArgumentException(oldCode + "not found in TAC");

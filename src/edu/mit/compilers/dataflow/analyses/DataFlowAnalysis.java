@@ -1,9 +1,10 @@
-package edu.mit.compilers.dataflow;
+package edu.mit.compilers.dataflow.analyses;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.codes.ThreeAddressCode;
+import edu.mit.compilers.dataflow.Direction;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -92,9 +93,36 @@ public abstract class DataFlowAnalysis<Value> {
                 .collect(Collectors.toList());
     }
 
+    public static void correctPredecessors(BasicBlock block) {
+        List<BasicBlock> basicBlocks = allNodes(block);
+
+        for (BasicBlock basicBlock : basicBlocks)
+            basicBlock.getPredecessors().clear();
+
+        for (BasicBlock basicBlock : basicBlocks) {
+            for (BasicBlock successor: basicBlock.getSuccessors()) {
+                successor.addPredecessor(basicBlock);
+            }
+        }
+    }
+
+    public static List<BasicBlock> allNodes(BasicBlock entryPoint) {
+        HashSet<BasicBlock> seen = new HashSet<>();
+        Stack<BasicBlock> toExplore = new Stack<>();
+        toExplore.add(entryPoint);
+        while (!toExplore.isEmpty()) {
+            BasicBlock block = toExplore.pop();
+            if (seen.contains(block))
+                continue;
+            seen.add(block);
+            toExplore.addAll(block.getSuccessors());
+        }
+        return new ArrayList<>(seen);
+    }
+
     public static List<List<BasicBlock>> findStronglyConnectedComponents(BasicBlock entryPoint) {
-        var basicBlocks = Utils.allNodes(entryPoint);
-        Utils.correctPredecessors(entryPoint);
+        var basicBlocks = allNodes(entryPoint);
+        correctPredecessors(entryPoint);
         return tarjan(basicBlocks);
     }
 

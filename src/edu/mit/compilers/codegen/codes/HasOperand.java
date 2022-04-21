@@ -6,6 +6,8 @@ import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.dataflow.operand.Operand;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public interface HasOperand {
@@ -21,6 +23,13 @@ public interface HasOperand {
         return getOperandNames()
                 .stream()
                 .filter(abstractName -> !(abstractName instanceof ArrayName))
+                .collect(Collectors.toList());
+    }
+
+    default List<AbstractName> getOperandNamesNoArrayNoConstants() {
+        return getOperandNamesNoArray()
+                .stream()
+                .filter(abstractName -> (abstractName instanceof AssignableName))
                 .collect(Collectors.toList());
     }
 }

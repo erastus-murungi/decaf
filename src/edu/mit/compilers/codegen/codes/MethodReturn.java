@@ -4,13 +4,15 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.dataflow.operand.Operand;
+import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public class MethodReturn extends ThreeAddressCode {
-    private AssignableName returnAddress;
+public class MethodReturn extends ThreeAddressCode implements HasOperand {
+    private AbstractName returnAddress;
     public MethodReturn(AST source) {
         super(source);
     }
@@ -20,7 +22,7 @@ public class MethodReturn extends ThreeAddressCode {
         this.returnAddress = returnAddress;
     }
 
-    public Optional<AssignableName> getReturnAddress() {
+    public Optional<AbstractName> getReturnAddress() {
         return Optional.ofNullable(returnAddress);
     }
 
@@ -41,4 +43,27 @@ public class MethodReturn extends ThreeAddressCode {
         return List.of(returnAddress);
     }
 
+    @Override
+    public boolean hasUnModifiedOperand() {
+        return true;
+    }
+
+    @Override
+    public Operand getOperand() {
+        return new UnmodifiedOperand(returnAddress);
+    }
+
+    @Override
+    public List<AbstractName> getOperandNames() {
+        return List.of(returnAddress);
+    }
+
+    @Override
+    public boolean replace(AbstractName oldName, AbstractName newName) {
+        if (oldName.equals(returnAddress)) {
+            returnAddress = newName;
+            return true;
+        }
+        return false;
+    }
 }

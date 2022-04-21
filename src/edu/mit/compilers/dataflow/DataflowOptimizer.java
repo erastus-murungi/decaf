@@ -1,35 +1,95 @@
 package edu.mit.compilers.dataflow;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import edu.mit.compilers.cfg.BasicBlock;
+import edu.mit.compilers.codegen.ThreeAddressCodeList;
+import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.dataflow.passes.CommonSubExpressionEliminationPass;
+import edu.mit.compilers.dataflow.passes.CopyPropagationPass;
+import edu.mit.compilers.dataflow.passes.DeadCodeEliminationPass;
+import edu.mit.compilers.dataflow.passes.OptimizationPass;
 
 public class DataflowOptimizer {
-    Set<AbstractName> globalNames;
-
-    public DataflowOptimizer(Set<AbstractName> globalNames) {
-        this.globalNames = globalNames;
-    }
-
     private static final int MAX_RUNS = 20;
 
-    public void optimize(Map<String, BasicBlock> methodToEntryBlock) {
-        methodToEntryBlock.forEach((methodName, entryBlock) -> optimize(entryBlock));
+    Integer numberOfRuns = MAX_RUNS;
+    Set<AbstractName> globalNames;
+    List<MethodBegin> methodBeginTacLists;
+    List<OptimizationPass> optimizationPassList = new ArrayList<>();
+
+    Factory optimizationPassesFactory = new Factory();
+
+    public enum OptimizationPassType {
+        CommonSubExpression,
+        CopyPropagation,
+        DeadCodeElimination
     }
 
-    public void optimize(BasicBlock entryBlock) {
-        for (int run = 0; run < MAX_RUNS; run++) {
-            GlobalCSE.performGlobalCSE(entryBlock, globalNames);
-            System.out.println("Common SubExpression done");
-            System.out.println(entryBlock.threeAddressCodeList);
-            CopyPropagation.performGlobalCopyPropagation(entryBlock, globalNames);
-            System.out.println("Copy Propagation done");
-            System.out.println(entryBlock.threeAddressCodeList);
-            GlobalDCE.performGlobalDeadCodeElimination(entryBlock);
-            System.out.println("Dead Code Elimination done");
-            System.out.println(entryBlock.threeAddressCodeList);
+    public class Factory {
+        public List<OptimizationPass> getPass(OptimizationPassType optimizationPassType) {
+            final var optimizationPassesList = new ArrayList<OptimizationPass>();
+            switch (optimizationPassType) {
+                case CopyPropagation: {
+                    methodBeginTacLists.forEach(methodBegin ->
+                            optimizationPassesList.add(new CopyPropagationPass(globalNames, methodBegin.entryBlock)));
+                    break;
+                }
+                case DeadCodeElimination: {
+                    methodBeginTacLists.forEach(methodBegin ->
+                            optimizationPassesList.add(new DeadCodeEliminationPass(globalNames, methodBegin.entryBlock)));
+                    break;
+                }
+                case CommonSubExpression: {
+                    methodBeginTacLists.forEach(methodBegin ->
+                            optimizationPassesList.add(new CommonSubExpressionEliminationPass(globalNames, methodBegin.entryBlock)));
+                    break;
+                }
+                default: {
+                    throw new IllegalArgumentException();
+                }
+            }
+            return optimizationPassesList;
         }
+    }
+
+    public void addPass(OptimizationPassType optimizationPassType) {
+        optimizationPassList.addAll(optimizationPassesFactory.getPass(optimizationPassType));
+
+    }
+
+    public void initialize() {
+        addPass(OptimizationPassType.CommonSubExpression);
+        addPass(OptimizationPassType.CopyPropagation);
+        addPass(OptimizationPassType.DeadCodeElimination);
+    }
+
+    public DataflowOptimizer(List<MethodBegin> methodBeginTacLists, Set<AbstractName> globalNames) {
+        this.globalNames = globalNames;
+        this.methodBeginTacLists = methodBeginTacLists;
+    }
+
+    public Collection<ThreeAddressCodeList> getOptimizedTacLists() {
+        return methodBeginTacLists.stream().map(methodBegin -> methodBegin.entryBlock.threeAddressCodeList.flatten()).collect(Collectors.toList());
+    }
+
+    public void optimize() {
+        for (int run = 0; run < numberOfRuns; run++) {
+            boolean changesHappened = false;
+            for (var optimizationPass: optimizationPassList) {
+                changesHappened = changesHappened | !optimizationPass.run();
+//                    System.out.println(optimizationPass.getClass()
+//                            .getSimpleName() + " #run = " + run);
+//                    System.out.println(getOptimizedTacLists());
+            }
+            if (!changesHappened)
+                break;
+        }
+        System.out.println("OPTIMIZED");
+        System.out.println(getOptimizedTacLists());
     }
 }

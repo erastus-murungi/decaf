@@ -1,4 +1,4 @@
-package edu.mit.compilers.dataflow;
+package edu.mit.compilers.dataflow.analyses;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.Assign;
@@ -6,6 +6,7 @@ import edu.mit.compilers.codegen.codes.HasResult;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.copy.CopyQuadruple;
 import edu.mit.compilers.grammar.DecafScanner;
@@ -14,7 +15,7 @@ import java.util.*;
 
 public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
     // each basicBlock maps to another map of (u -> v) pairs
-    HashMap<BasicBlock, HashMap<AbstractName, Operand>> availableCopies;
+    public HashMap<BasicBlock, HashMap<AbstractName, Operand>> availableCopies;
 
     @Override
     public void computeUniversalSetsOfValues() {

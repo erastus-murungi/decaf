@@ -12,11 +12,6 @@ public class UnmodifiedOperand extends Operand {
     public AbstractName abstractName;
     public String operator;
 
-    public UnmodifiedOperand(AbstractName abstractName, String operator) {
-        this.abstractName = abstractName;
-        this.operator = operator;
-    }
-
     public UnmodifiedOperand(AbstractName abstractName) {
         this.abstractName = abstractName;
         this.operator = DecafScanner.ASSIGN;
