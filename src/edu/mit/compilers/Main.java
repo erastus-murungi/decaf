@@ -11,6 +11,8 @@ import edu.mit.compilers.ast.Program;
 import edu.mit.compilers.cfg.*;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.ThreeAddressCodesListConverter;
+import edu.mit.compilers.codegen.codes.ThreeAddressCode;
+import edu.mit.compilers.dataflow.DataflowOptimizer;
 import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.Token;
@@ -125,12 +127,21 @@ class Main {
                 }
 
                 ThreeAddressCodesListConverter threeAddressCodesListConverter = new ThreeAddressCodesListConverter(cfgGenerator);
-                ThreeAddressCodeList threeAddressCodeList = threeAddressCodesListConverter.fill(visitor, programNode);
-                if (CLI.debug) {
-                    System.out.println(programNode.getSourceCode());
-                    System.out.println(threeAddressCodeList);
-                    GraphVizPrinter.printSymbolTables(programNode, threeAddressCodesListConverter.cfgSymbolTables);
-                }
+                var filled = threeAddressCodesListConverter.fill(visitor, programNode);
+                filled.second()
+                        .forEach(methodBegin -> System.out.println(methodBegin.unoptimized));
+
+//                DataflowOptimizer dataflowOptimizer = new DataflowOptimizer(filled.second(), threeAddressCodesListConverter.globalNames);
+//                dataflowOptimizer.initialize();
+//                dataflowOptimizer.optimize();
+//
+//                ThreeAddressCodeList threeAddressCodeList = filled.first();
+//                for (ThreeAddressCodeList tacList : dataflowOptimizer.getOptimizedTacLists())
+//                    threeAddressCodeList.add(tacList);
+
+                ThreeAddressCodeList threeAddressCodeList = filled.first();
+                for (var methodBegin : filled.second())
+                    threeAddressCodeList.add(methodBegin.unoptimized);
 
                 X64CodeConverter x64CodeConverter = new X64CodeConverter();
                 X64Program x64Program = x64CodeConverter.convert(threeAddressCodeList);
