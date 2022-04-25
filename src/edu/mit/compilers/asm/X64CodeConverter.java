@@ -287,7 +287,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
             if (!globals.contains(variableName)) {
                 if (variableName.size > 8) {
                     // we have an array
-                    stackOffsetIndex += variableName.size;
+                    stackOffsetIndex += variableName.size + 8;
                     methodBegin.nameToStackOffset.put(variableName.toString(), stackOffsetIndex);
                     long offset = methodBegin.nameToStackOffset.get(variableName.toString());
                     long localSize = 0;
