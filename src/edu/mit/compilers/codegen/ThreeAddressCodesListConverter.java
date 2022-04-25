@@ -352,7 +352,8 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             ThreeAddressCodeList lhs = assignment.location.accept(this, symbolTable);
             ThreeAddressCodeList rhs;
             if (assignment.assignExpr.expression != null) {
-                methodSetResultLocation = (AssignableName) lhs.place;
+                if (assignment.getOperator().equals("="))
+                    methodSetResultLocation = (AssignableName) lhs.place;
                 rhs = assignment.assignExpr.expression.accept(this, symbolTable);
             } else {
                 rhs = ThreeAddressCodeList.empty();

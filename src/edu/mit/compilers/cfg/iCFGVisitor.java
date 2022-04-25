@@ -383,8 +383,7 @@ public class iCFGVisitor implements Visitor<BasicBlocksPair> {
             throw new IllegalStateException("unrecognized AST node " + locationAssignExpr.assignExpr);
         }
 
-        AssignOperator assignOperator = new AssignOperator(locationAssignExpr.tokenPosition, op);
-        assignment.lines.add(new Assignment(locationAssignExpr.location, locationAssignExpr.assignExpr, assignOperator));
+        assignment.lines.add(new Assignment(locationAssignExpr.location, locationAssignExpr.assignExpr, op));
         return new BasicBlocksPair(assignment, assignment);
     }
 

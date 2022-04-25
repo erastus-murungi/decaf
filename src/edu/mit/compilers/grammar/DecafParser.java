@@ -673,7 +673,7 @@ public class DecafParser {
 
         final Location updateLocation = parseLocation(consumeToken(ID, DecafScanner.IDENTIFIER));
         final AssignExpr updateAssignExpr = parseCompoundAssignExpr();
-        final Assignment update = new Assignment(updateLocation, updateAssignExpr, new AssignOperator(assignOp.tokenPosition, assignOp.lexeme()));
+        final Assignment update = new Assignment(updateLocation, updateAssignExpr, updateAssignExpr.getOperator());
 
         consumeToken(RIGHT_PARENTHESIS, DecafScanner.RIGHT_PARENTHESIS);
 

@@ -39,4 +39,9 @@ public class Decrement extends AssignExpr {
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
     }
+
+    @Override
+    public String getOperator() {
+        return "--";
+    }
 }
