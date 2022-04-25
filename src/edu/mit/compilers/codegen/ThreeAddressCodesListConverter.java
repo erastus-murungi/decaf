@@ -106,8 +106,8 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
 
         @Override
         public ThreeAddressCodeList visit(UnaryOpExpression unaryOpExpression, SymbolTable symbolTable) {
-            final ThreeAddressCodeList operandTACList = unaryOpExpression.operand.accept(this, symbolTable);
-            final ThreeAddressCodeList retTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
+            final var operandTACList = unaryOpExpression.operand.accept(this, symbolTable);
+            final var retTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
             retTACList.add(operandTACList);
             var place = resolveStoreLocation();
             resetStoreLocation();
@@ -118,10 +118,10 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
 
         @Override
         public ThreeAddressCodeList visit(BinaryOpExpression binaryOpExpression, SymbolTable symbolTable) {
-            final ThreeAddressCodeList leftTACList = binaryOpExpression.lhs.accept(this, symbolTable);
-            final ThreeAddressCodeList rightTACList = binaryOpExpression.rhs.accept(this, symbolTable);
+            final var leftTACList = binaryOpExpression.lhs.accept(this, symbolTable);
+            final var rightTACList = binaryOpExpression.rhs.accept(this, symbolTable);
 
-            final ThreeAddressCodeList binOpExpressionTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
+            final var binOpExpressionTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
             binOpExpressionTACList.add(leftTACList);
             binOpExpressionTACList.add(rightTACList);
             var place = resolveStoreLocation();
@@ -163,17 +163,17 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
 
         @Override
         public ThreeAddressCodeList visit(LocationArray locationArray, SymbolTable symbolTable) {
-            final ThreeAddressCodeList locationThreeAddressCodeList = locationArray.expression.accept(this, symbolTable);
-            final ThreeAddressCodeList threeAddressCodeList = ThreeAddressCodeList.empty();
+            final var locationThreeAddressCodeList = locationArray.expression.accept(this, symbolTable);
+            final var threeAddressCodeList = ThreeAddressCodeList.empty();
             threeAddressCodeList.add(locationThreeAddressCodeList);
 
-            final Optional<Descriptor> descriptorFromValidScopes = symbolTable.getDescriptorFromValidScopes(locationArray.name.id);
-            final ArrayDescriptor arrayDescriptor = (ArrayDescriptor) descriptorFromValidScopes.orElseThrow(
+            final var descriptorFromValidScopes = symbolTable.getDescriptorFromValidScopes(locationArray.name.id);
+            final var arrayDescriptor = (ArrayDescriptor) descriptorFromValidScopes.orElseThrow(
                     () -> new IllegalStateException("expected to find array " + locationArray.name.id + " in scope")
             );
 
             final var arrayName = new ArrayName(locationArray.name.id, arrayDescriptor.size * Utils.WORD_SIZE);
-            final ArrayAccess arrayAccess = new ArrayAccess(
+            final var arrayAccess = new ArrayAccess(
                     locationArray, locationArray.getSourceCode(),
                     arrayName,
                     new ConstantName(arrayDescriptor.size),
@@ -232,14 +232,14 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         private void flattenMethodCallArguments(ThreeAddressCodeList threeAddressCodeList,
                                                 List<MethodCallParameter> methodCallParameterList,
                                                 SymbolTable symbolTable) {
-            var newParamNames = new ArrayList<AbstractName>();
+            var paramNames = new ArrayList<AbstractName>();
             for (MethodCallParameter methodCallParameter : methodCallParameterList) {
                 var paramTACList = methodCallParameter.accept(this, symbolTable);
                 threeAddressCodeList.add(paramTACList);
-                newParamNames.add((paramTACList.place));
+                paramNames.add((paramTACList.place));
             }
 
-            getPushParameterCode(threeAddressCodeList, newParamNames, methodCallParameterList);
+            getPushParameterCode(threeAddressCodeList, paramNames, methodCallParameterList);
         }
 
         private void getPushParameterCode(ThreeAddressCodeList threeAddressCodeList,
@@ -262,7 +262,8 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         }
 
         private void setStoreLocation(AssignableName place) {
-            methodSetResultLocation = place;
+            if (place != null && (!(place instanceof ArrayName)))
+                methodSetResultLocation = place;
         }
 
         @Override
