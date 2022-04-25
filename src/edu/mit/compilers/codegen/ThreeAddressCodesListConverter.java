@@ -118,19 +118,31 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
 
         @Override
         public ThreeAddressCodeList visit(BinaryOpExpression binaryOpExpression, SymbolTable symbolTable) {
+            final var cachedPlace = methodSetResultLocation;
+            resetStoreLocation();
+
             final var leftTACList = binaryOpExpression.lhs.accept(this, symbolTable);
             final var rightTACList = binaryOpExpression.rhs.accept(this, symbolTable);
 
             final var binOpExpressionTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
             binOpExpressionTACList.add(leftTACList);
             binOpExpressionTACList.add(rightTACList);
+
             var place = resolveStoreLocation();
             resetStoreLocation();
+
             binOpExpressionTACList.addCode(
                     new Quadruple(
-                            place, leftTACList.place, binaryOpExpression.op.getSourceCode(), rightTACList.place, binaryOpExpression.getSourceCode(), binaryOpExpression
+                            place,
+                            leftTACList.place,
+                            binaryOpExpression.op.getSourceCode(),
+                            rightTACList.place,
+                            binaryOpExpression.getSourceCode(),
+                            binaryOpExpression
                     ));
             binOpExpressionTACList.place = place;
+
+            methodSetResultLocation = cachedPlace;
             return binOpExpressionTACList;
         }
 
@@ -363,6 +375,7 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             initializationThreeAddressCodeList.add(initIdThreeAddressList);
             initializationThreeAddressCodeList.add(initExpressionThreeAddressList);
             initializationThreeAddressCodeList.addCode(copyInstruction);
+            resetStoreLocation();
             return initializationThreeAddressCodeList;
         }
 
@@ -390,6 +403,7 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             } else {
                 returnTACList.addCode(new Assign((AssignableName) lhs.place, DecafScanner.ASSIGN, rhs.place, assignment, assignment.getSourceCode()));
             }
+            resetStoreLocation();
             returnTACList.place = lhs.place;
             return returnTACList;
         }
