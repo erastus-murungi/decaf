@@ -182,11 +182,19 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         @Override
         public ThreeAddressCodeList visit(ExpressionParameter expressionParameter, SymbolTable symbolTable) {
             ThreeAddressCodeList expressionParameterTACList = ThreeAddressCodeList.empty();
-            TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
-            ThreeAddressCodeList expressionTACList = expressionParameter.expression.accept(this, symbolTable);
-            expressionParameterTACList.add(expressionTACList);
-            expressionParameterTACList.addCode(new Assign(temporaryVariable, "=", expressionTACList.place, expressionParameter, temporaryVariable + " = " + expressionTACList.place));
-            expressionParameterTACList.place = temporaryVariable;
+
+            if (expressionParameter.expression instanceof LocationVariable) {
+                // no need for temporaries
+                expressionParameterTACList.place = new VariableName(((Location) expressionParameter.expression).name.id);
+            } else if (expressionParameter.expression instanceof IntLiteral) {
+                expressionParameterTACList.place = new ConstantName(((IntLiteral) expressionParameter.expression).convertToLong());
+            } else {
+                TemporaryName temporaryVariable = TemporaryName.generateTemporaryName();
+                ThreeAddressCodeList expressionTACList = expressionParameter.expression.accept(this, symbolTable);
+                expressionParameterTACList.add(expressionTACList);
+                expressionParameterTACList.addCode(new Assign(temporaryVariable, "=", expressionTACList.place, expressionParameter, temporaryVariable + " = " + expressionTACList.place));
+                expressionParameterTACList.place = temporaryVariable;
+            }
             return expressionParameterTACList;
         }
 
@@ -244,6 +252,7 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             final ThreeAddressCodeList threeAddressCodeList = ThreeAddressCodeList.empty();
             flattenMethodCallArguments(threeAddressCodeList, methodCall.methodCallParameterList, symbolTable);
             AssignableName place = Objects.requireNonNullElseGet(methodSetResultLocation, TemporaryName::generateTemporaryName);
+            methodSetResultLocation = null;
             threeAddressCodeList.addCode(new MethodCallSetResult(methodCall, place, methodCall.getSourceCode()));
             threeAddressCodeList.place = place;
             return threeAddressCodeList;
@@ -376,14 +385,6 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
     public HashMap<String, SymbolTable> cfgSymbolTables;
 
 
-    public ThreeAddressCodeList dispatch(BasicBlock basicBlock, SymbolTable symbolTable) {
-        if (basicBlock instanceof BasicBlockWithBranch)
-            return visit((BasicBlockWithBranch) basicBlock, symbolTable);
-        else
-            return visit((BasicBlockBranchLess) basicBlock, symbolTable);
-    }
-
-
     private MethodBegin convertMethodDefinition(MethodDefinition methodDefinition,
                                                 BasicBlock methodStart,
                                                 SymbolTable symbolTable) {
@@ -395,15 +396,14 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         var methodBegin = new MethodBegin(methodDefinition);
         threeAddressCodeList.addCode(methodBegin);
 
-        if (!this.errors.isEmpty())
-            threeAddressCodeList.add(
-                    errors.stream()
-                            .map(error -> new RuntimeException(error.getMessage(), -2, error))
-                            .collect(Collectors.toList()));
+        threeAddressCodeList.add(
+                errors.stream()
+                        .map(error -> new RuntimeException(error.getMessage(), -2, error))
+                        .collect(Collectors.toList()));
 
         flattenMethodDefinitionArguments(threeAddressCodeList, methodDefinition.methodDefinitionParameterList);
 
-        final var firstBasicBlockTacList = dispatch(methodStart, symbolTable);
+        final var firstBasicBlockTacList = methodStart.accept(this, symbolTable);
         firstBasicBlockTacList.prependAll(threeAddressCodeList);
 
         firstBasicBlockTacList.setNext(ThreeAddressCodeList.of(endLabelGlobal));

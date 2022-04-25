@@ -3,6 +3,7 @@ package edu.mit.compilers;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 
 import edu.mit.compilers.asm.X64CodeConverter;
 import edu.mit.compilers.asm.X64Program;
@@ -11,6 +12,7 @@ import edu.mit.compilers.ast.Program;
 import edu.mit.compilers.cfg.*;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.ThreeAddressCodesListConverter;
+import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.codes.ThreeAddressCode;
 import edu.mit.compilers.dataflow.DataflowOptimizer;
 import edu.mit.compilers.grammar.DecafParser;
@@ -20,6 +22,7 @@ import edu.mit.compilers.ir.DecafSemanticChecker;
 import edu.mit.compilers.tools.CLI;
 import edu.mit.compilers.utils.DecafExceptionProcessor;
 import edu.mit.compilers.utils.GraphVizPrinter;
+import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.Utils;
 
 class Main {
@@ -69,7 +72,8 @@ class Main {
                                     break;
                                 }
                             }
-                            outputStream.println(token.tokenPosition().line() + 1 + " " + text);
+                            outputStream.println(token.tokenPosition()
+                                    .line() + 1 + " " + text);
                         }
                         done = true;
                     } catch (Exception e) {
@@ -121,15 +125,18 @@ class Main {
                 //     System.exit(-2);
                 // }
                 if (CLI.debug) {
-                    HashMap<String, BasicBlock> copy = (HashMap<String, BasicBlock>) visitor.methodCFGBlocks.clone();
+                    var copy = new HashMap<>(visitor.methodCFGBlocks);
                     copy.put("global", visitor.initialGlobalBlock);
                     GraphVizPrinter.printGraph(copy);
                 }
 
                 ThreeAddressCodesListConverter threeAddressCodesListConverter = new ThreeAddressCodesListConverter(cfgGenerator);
-                var filled = threeAddressCodesListConverter.fill(visitor, programNode);
-                filled.second()
-                        .forEach(methodBegin -> System.out.println(methodBegin.unoptimized));
+                Pair<ThreeAddressCodeList, List<MethodBegin>> filled = threeAddressCodesListConverter.fill(visitor, programNode);
+
+                ThreeAddressCodeList threeAddressCodeList = filled.first();
+                for (MethodBegin methodBegin : filled.second()) {
+                    threeAddressCodeList.add(methodBegin.entryBlock.threeAddressCodeList.flatten());
+                }
 
 //                DataflowOptimizer dataflowOptimizer = new DataflowOptimizer(filled.second(), threeAddressCodesListConverter.globalNames);
 //                dataflowOptimizer.initialize();
@@ -138,10 +145,6 @@ class Main {
 //                ThreeAddressCodeList threeAddressCodeList = filled.first();
 //                for (ThreeAddressCodeList tacList : dataflowOptimizer.getOptimizedTacLists())
 //                    threeAddressCodeList.add(tacList);
-
-                ThreeAddressCodeList threeAddressCodeList = filled.first();
-                for (var methodBegin : filled.second())
-                    threeAddressCodeList.add(methodBegin.unoptimized);
 
                 X64CodeConverter x64CodeConverter = new X64CodeConverter();
                 X64Program x64Program = x64CodeConverter.convert(threeAddressCodeList);
