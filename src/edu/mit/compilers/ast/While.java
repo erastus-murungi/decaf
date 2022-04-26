@@ -11,8 +11,8 @@ import java.util.List;
 
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_WHILE;
 
-public class While extends Statement {
-    public final Expression test;
+public class While extends Statement implements HasExpression  {
+    public Expression test;
     public final Block body;
 
     public While(TokenPosition tokenPosition, Expression test, Block body) {
@@ -44,5 +44,16 @@ public class While extends Statement {
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
+    }
+
+    @Override
+    public List<Expression> getExpression() {
+        return List.of(test);
+    }
+
+    @Override
+    public void compareAndSwapExpression(Expression oldExpr, Expression newExpr) {
+        if (test == oldExpr)
+            test = newExpr;
     }
 }

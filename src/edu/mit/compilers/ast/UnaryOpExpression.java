@@ -6,7 +6,7 @@ import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
 
-public class UnaryOpExpression extends Expression {
+public class UnaryOpExpression extends Expression implements HasExpression  {
     final public UnaryOperator op;
     public Expression operand;
 
@@ -39,5 +39,16 @@ public class UnaryOpExpression extends Expression {
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
+    }
+
+    @Override
+    public List<Expression> getExpression() {
+        return List.of(operand);
+    }
+
+    @Override
+    public void compareAndSwapExpression(Expression oldExpr, Expression newExpr) {
+        if (operand == oldExpr)
+            operand = newExpr;
     }
 }

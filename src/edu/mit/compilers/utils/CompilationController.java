@@ -8,12 +8,14 @@ import java.util.List;
 
 import edu.mit.compilers.asm.X64CodeConverter;
 import edu.mit.compilers.asm.X64Program;
+import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.cfg.CFGGenerator;
 import edu.mit.compilers.cfg.iCFGVisitor;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.ThreeAddressCodesListConverter;
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.dataflow.DataflowOptimizer;
+import edu.mit.compilers.dataflow.passes.InstructionSimplifyPass;
 import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.Token;
@@ -34,6 +36,10 @@ public class CompilationController {
     private DecafExceptionProcessor decafExceptionProcessor;
     private PrintStream outputStream;
     private CompilationState compilationState;
+
+    public AST getAstRoot() {
+        return parser.getRoot();
+    }
 
     enum CompilationState {
         INITIALIZED,
@@ -76,20 +82,37 @@ public class CompilationController {
         }
     }
 
+    public void cleanup() {
+        InstructionSimplifyPass.cleanup();
+    }
+
     public void run() throws FileNotFoundException {
-        initialize();
         runScanner();
         while (compilationState != CompilationState.COMPLETED && compilationState != CompilationState.ASSEMBLED) {
             runNextStep();
         }
     }
 
+    public CompilationController(String sourceCode) throws FileNotFoundException {
+        this.sourceCode = sourceCode;
+        initialize();
+    }
+
+    public CompilationController() throws FileNotFoundException {
+        defaultInitialize();
+        initialize();
+    }
+
+    private void defaultInitialize() throws FileNotFoundException {
+//        CLI.infile = "tests/dataflow/input/cp-01.dcf";
+//        CLI.opts = new boolean[1];
+//        CLI.target = CLI.Action.ASSEMBLY;
+        InputStream inputStream = CLI.infile == null ? System.in : new java.io.FileInputStream(CLI.infile);
+        sourceCode = Utils.getStringFromInputStream(inputStream);
+    }
 
     private void initialize() throws FileNotFoundException {
-        // CLI.infile = "tests/dataflow/input/cp-02.dcf";
-        InputStream inputStream = CLI.infile == null ? System.in : new java.io.FileInputStream(CLI.infile);
         outputStream = CLI.outfile == null ? System.out : new java.io.PrintStream(new java.io.FileOutputStream(CLI.outfile));
-        sourceCode = Utils.getStringFromInputStream(inputStream);
         decafExceptionProcessor = new DecafExceptionProcessor(sourceCode);
         compilationState = CompilationState.INITIALIZED;
     }
@@ -113,6 +136,7 @@ public class CompilationController {
         parser.program();
 
         if (parser.hasError()) {
+            parser.errors.forEach(Throwable::printStackTrace);
             System.exit(1);
         }
         if (CLI.target == CLI.Action.PARSE) {
@@ -143,12 +167,20 @@ public class CompilationController {
         GraphVizPrinter.printGraph(copy);
     }
 
+    private boolean shouldOptimize() {
+//        return true;
+        return CLI.opts != null;
+    }
+
     private void generateSymbolTablePdfs() {
         GraphVizPrinter.printSymbolTables(parser.getRoot(), threeAddressCodesListConverter.cfgSymbolTables);
     }
 
     private void generateCFGs() {
         assert compilationState == CompilationState.SEM_CHECKED;
+        if (shouldOptimize()) {
+            InstructionSimplifyPass.run(parser.getRoot());
+        }
 
         cfgGenerator = new CFGGenerator(parser.getRoot(), semanticChecker.globalDescriptor);
         iCFGVisitor = cfgGenerator.buildiCFG();
@@ -179,10 +211,11 @@ public class CompilationController {
 
     private void runDataflowOptimizationPasses() {
         assert compilationState == CompilationState.IR_GENERATED;
-        if (CLI.opts != null) {
+        if (shouldOptimize()) {
             var dataflowOptimizer = new DataflowOptimizer(programIr.second, threeAddressCodesListConverter.globalNames);
             dataflowOptimizer.initialize();
             dataflowOptimizer.optimize();
+            System.out.println(mergeProgram());
             if (CLI.debug) {
                 System.out.println(mergeProgram());
             }

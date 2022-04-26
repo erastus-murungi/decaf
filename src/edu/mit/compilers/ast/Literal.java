@@ -5,6 +5,7 @@ import edu.mit.compilers.utils.Pair;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public abstract class Literal extends Expression {
     public String literal;

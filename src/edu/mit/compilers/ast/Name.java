@@ -13,7 +13,7 @@ import java.util.List;
 public class Name extends AST {
     public String id;
     public final TokenPosition tokenPosition;
-    final ExprContext context;
+    public final ExprContext context;
 
     public Name(String id, TokenPosition tokenPosition, ExprContext context) {
         this.id = id;

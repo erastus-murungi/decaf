@@ -12,9 +12,9 @@ import java.util.List;
 
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_FOR;
 
-public class For extends Statement {
+public class For extends Statement implements HasExpression  {
     public final Initialization initialization;
-    final public Expression terminatingCondition;
+    public Expression terminatingCondition;
     public final Assignment update;
     public final Block block;
 
@@ -66,5 +66,14 @@ public class For extends Statement {
     }
 
 
+    @Override
+    public List<Expression> getExpression() {
+        return List.of(terminatingCondition);
+    }
 
+    @Override
+    public void compareAndSwapExpression(Expression oldExpr, Expression newExpr) {
+        if (terminatingCondition == oldExpr)
+            terminatingCondition = newExpr;
+    }
 }

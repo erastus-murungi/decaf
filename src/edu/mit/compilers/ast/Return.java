@@ -10,7 +10,7 @@ import java.util.List;
 
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_RETURN;
 
-public class Return extends Statement {
+public class Return extends Statement implements HasExpression {
   public Expression retExpression;
 
   public Return(TokenPosition tokenPosition, Expression expression) {
@@ -41,5 +41,16 @@ public class Return extends Statement {
   @Override
   public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
     return visitor.visit(this, curSymbolTable);
+  }
+
+  @Override
+  public List<Expression> getExpression() {
+    return List.of(retExpression);
+  }
+
+  @Override
+  public void compareAndSwapExpression(Expression oldExpr, Expression newExpr) {
+    if (retExpression == oldExpr)
+      retExpression = newExpr;
   }
 }

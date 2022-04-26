@@ -6,9 +6,9 @@ import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
 
-public class Initialization extends Statement {
+public class Initialization extends Statement implements HasExpression  {
     public final Name initId;
-    public final Expression initExpression;
+    public Expression initExpression;
 
     public Initialization(Name initId, Expression initExpression) {
         super(initId.tokenPosition);
@@ -42,5 +42,16 @@ public class Initialization extends Statement {
                 "initId=" + initId +
                 ", initExpression=" + initExpression +
                 '}';
+    }
+
+    @Override
+    public List<Expression> getExpression() {
+        return List.of(initExpression);
+    }
+
+    @Override
+    public void compareAndSwapExpression(Expression oldExpr, Expression newExpr) {
+        if (initExpression == oldExpr)
+            initExpression = newExpr;
     }
 }

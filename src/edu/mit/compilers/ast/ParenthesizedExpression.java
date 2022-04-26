@@ -7,7 +7,7 @@ import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
 
-public class ParenthesizedExpression extends Expression {
+public class ParenthesizedExpression extends Expression implements HasExpression {
     public Expression expression;
 
     public ParenthesizedExpression(TokenPosition tokenPosition, Expression expression) {
@@ -38,5 +38,16 @@ public class ParenthesizedExpression extends Expression {
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
+    }
+
+    @Override
+    public List<Expression> getExpression() {
+        return List.of(expression);
+    }
+
+    @Override
+    public void compareAndSwapExpression(Expression oldExpr, Expression newExpr) {
+        if (expression == oldExpr)
+            expression = newExpr;
     }
 }

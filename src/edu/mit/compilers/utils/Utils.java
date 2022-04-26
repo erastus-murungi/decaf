@@ -1,13 +1,19 @@
 package edu.mit.compilers.utils;
 
+import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.Block;
+import edu.mit.compilers.ast.Program;
+import edu.mit.compilers.ast.StringLiteral;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -104,6 +110,23 @@ public class Utils {
             str = "";
         }
         return str;
+    }
+
+    public static <T> Set<T> findAllOfType(AST root, Class<T> tClass) {
+        Set<T> results = new HashSet<>();
+        Stack<AST> toExplore = new Stack<>();
+        toExplore.add(root);
+        while (!toExplore.isEmpty()) {
+            final AST node = toExplore.pop();
+            if (tClass.isAssignableFrom(node.getClass()))
+                results.add((T) node);
+            else {
+                for (Pair<String, AST> astPair : node.getChildren()) {
+                    toExplore.add(astPair.second());
+                }
+            }
+        }
+        return results;
     }
 
     // Adapted from

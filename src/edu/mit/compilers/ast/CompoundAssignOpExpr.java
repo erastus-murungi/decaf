@@ -7,13 +7,12 @@ import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
 
-public class CompoundAssignOpExpr extends AssignExpr {
+public class CompoundAssignOpExpr extends AssignExpr implements HasExpression {
     public final CompoundAssignOperator compoundAssignOp;
 
     public CompoundAssignOpExpr(TokenPosition tokenPosition, CompoundAssignOperator compoundAssignOp, Expression expression) {
         super(tokenPosition, expression);
         this.compoundAssignOp = compoundAssignOp;
-        this.expression = expression;
     }
 
     @Override
@@ -45,5 +44,16 @@ public class CompoundAssignOpExpr extends AssignExpr {
     @Override
     public String getOperator() {
         return compoundAssignOp.op;
+    }
+
+    @Override
+    public List<Expression> getExpression() {
+        return List.of(expression);
+    }
+
+    @Override
+    public void compareAndSwapExpression(Expression oldExpr, Expression newExpr) {
+        if (expression == oldExpr)
+            expression = newExpr;
     }
 }
