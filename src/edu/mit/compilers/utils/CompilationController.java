@@ -102,9 +102,9 @@ public class CompilationController {
     }
 
     private void defaultInitialize() throws FileNotFoundException {
-        CLI.infile = "tests/codegen/input/06-control-flow.dcf";
+//        CLI.infile = "tests/codegen/input/06-control-flow.dcf";
 //        CLI.opts = new boolean[1];
-        CLI.target = CLI.Action.ASSEMBLY;
+//        CLI.target = CLI.Action.ASSEMBLY;
         InputStream inputStream = CLI.infile == null ? System.in : new java.io.FileInputStream(CLI.infile);
         sourceCode = Utils.getStringFromInputStream(inputStream);
     }
