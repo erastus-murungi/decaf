@@ -215,7 +215,6 @@ public class CompilationController {
             var dataflowOptimizer = new DataflowOptimizer(programIr.second, threeAddressCodesListConverter.globalNames);
             dataflowOptimizer.initialize();
             dataflowOptimizer.optimize();
-            System.out.println(mergeProgram());
             if (CLI.debug) {
                 System.out.println(mergeProgram());
             }
