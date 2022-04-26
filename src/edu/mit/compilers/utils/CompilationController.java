@@ -167,7 +167,7 @@ public class CompilationController {
 
     private boolean shouldOptimize() {
 //        return true;
-        return CLI.opts != null && CLI.opts.length != 0;
+        return CLI.opts != null;
     }
 
     private void generateSymbolTablePdfs() {

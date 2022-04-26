@@ -2,14 +2,8 @@
 
 package edu.mit.compilers.grammar;
 
-import edu.mit.compilers.exceptions.DecafException;
-import edu.mit.compilers.exceptions.DecafScannerException;
-import edu.mit.compilers.utils.DecafExceptionProcessor;
-import edu.mit.compilers.utils.StringDef;
-import edu.mit.compilers.utils.Utils;
+import static java.lang.annotation.RetentionPolicy.SOURCE;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.annotation.Retention;
 import java.util.ArrayList;
@@ -18,8 +12,11 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.lang.annotation.RetentionPolicy.SOURCE;
-import static java.nio.charset.StandardCharsets.UTF_8;
+import edu.mit.compilers.exceptions.DecafException;
+import edu.mit.compilers.exceptions.DecafScannerException;
+import edu.mit.compilers.utils.DecafExceptionProcessor;
+import edu.mit.compilers.utils.StringDef;
+import edu.mit.compilers.utils.Utils;
 
 public class DecafScanner {
     public static final String LEFT_CURLY = "{";
@@ -175,8 +172,6 @@ public class DecafScanner {
             }
         } while (isSkipAble(token));
         decafExceptionProcessor.syntaxHighlightedSourceCode = String.join("", syntaxLines);
-        if (shouldTrace)
-            syntaxHighlight(System.out);
         return token;
     }
 
@@ -305,7 +300,7 @@ public class DecafScanner {
                         state = waitingForStar;
                         break;
                     }
-                };
+                }
             }
             consumeCharacterNoCheck();
             ++i;
@@ -449,7 +444,7 @@ public class DecafScanner {
                 tokenType = TokenType.ID;
                 break;
             } 
-        };
+        }
 
         consumeMultipleCharactersNoCheck(i - stringIndex);
         return makeToken(tokenPosition, tokenType, idLexeme);
@@ -533,10 +528,6 @@ public class DecafScanner {
         this.shouldTrace = shouldTrace;
     }
 
-    public String getInputString() {
-        return inputString;
-    }
-
     private void updateHighlighter(Token token) {
         switch (token.tokenType()) {
             case EOF : {
@@ -610,10 +601,5 @@ public class DecafScanner {
     @Retention(SOURCE)
     @StringDef({ADD_ASSIGN, MINUS_ASSIGN, MULTIPLY_ASSIGN})
     public @interface CompoundAssignOperator {
-    }
-
-    @Retention(SOURCE)
-    @StringDef({RESERVED_INT, RESERVED_BOOL, RESERVED_VOID})
-    public @interface BuiltinTypes {
     }
 }
