@@ -3,6 +3,7 @@ package edu.mit.compilers.utils;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -167,7 +168,7 @@ public class CompilationController {
 
     private boolean shouldOptimize() {
 //        return true;
-        return CLI.opts != null;
+        return CLI.opts.length != 0;
     }
 
     private void generateSymbolTablePdfs() {
@@ -180,7 +181,7 @@ public class CompilationController {
             InstructionSimplifyPass.run(parser.getRoot());
             if (CLI.debug) {
                 System.out.println("after InstructionSimplifyPass");
-                System.out.println(parser.getRoot());
+                System.out.println(parser.getRoot().getSourceCode());
             }
         }
 
