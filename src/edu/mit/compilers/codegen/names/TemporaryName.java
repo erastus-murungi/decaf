@@ -1,17 +1,24 @@
 package edu.mit.compilers.codegen.names;
 
+import edu.mit.compilers.ast.BuiltinType;
 import edu.mit.compilers.codegen.TemporaryNameGenerator;
+import edu.mit.compilers.utils.Utils;
 
 public class TemporaryName extends AssignableName {
     final long index;
 
-    public TemporaryName(long index) {
-        super();
+    public TemporaryName(long index, long size, BuiltinType builtinType) {
+        super(String.valueOf(index), size, builtinType);
         this.index = index;
     }
 
-    public static TemporaryName generateTemporaryName() {
-        return new TemporaryName(TemporaryNameGenerator.getNextTemporaryVariable());
+    @Override
+    public String repr() {
+        return String.format("%%%s", index);
+    }
+
+    public static TemporaryName generateTemporaryName(BuiltinType builtinType) {
+        return new TemporaryName(TemporaryNameGenerator.getNextTemporaryVariable(), Utils.WORD_SIZE, builtinType);
     }
 
     @Override

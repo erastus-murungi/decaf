@@ -30,4 +30,9 @@ public class MethodEnd extends ThreeAddressCode {
         return Collections.emptyList();
     }
 
+    @Override
+    public String repr() {
+        return String.format("%s}", INDENT);
+    }
+
 }

@@ -40,6 +40,11 @@ public class Assign extends HasResult implements Cloneable, HasOperand {
     }
 
     @Override
+    public String repr() {
+        return String.format("%s%s: %s %s %s", DOUBLE_INDENT, dst.repr(), dst.builtinType.getSourceCode(), assignmentOperator, operand.repr());
+    }
+
+    @Override
     public String toString() {
         return String.format("%s%s %s %s", DOUBLE_INDENT, dst, assignmentOperator, operand);
     }

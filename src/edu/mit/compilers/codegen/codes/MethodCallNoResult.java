@@ -1,5 +1,6 @@
 package edu.mit.compilers.codegen.codes;
 
+import edu.mit.compilers.ast.BuiltinType;
 import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
@@ -16,6 +17,10 @@ public class MethodCallNoResult extends ThreeAddressCode {
         return ((MethodCall) source).nameId.id;
     }
 
+    public String getMethodReturnType() {
+        return ((MethodCall) source).builtinType.getSourceCode();
+    }
+
     @Override
     public String toString() {
         return String.format("%s%s %s %s%s", DOUBLE_INDENT, "call", getMethodName(), DOUBLE_INDENT, getComment().isPresent() ? " #  " + getComment().get() : "");
@@ -29,6 +34,11 @@ public class MethodCallNoResult extends ThreeAddressCode {
     @Override
     public List<AbstractName> getNames() {
         return Collections.emptyList();
+    }
+
+    @Override
+    public String repr() {
+        return String.format("%s%s %s @%s %s%s", DOUBLE_INDENT, "call", getMethodReturnType(), getMethodName(), DOUBLE_INDENT, getComment().isPresent() ? " #  " + getComment().get() : "");
     }
 
 }

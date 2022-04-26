@@ -1,10 +1,13 @@
 package edu.mit.compilers.dataflow;
 
+import edu.mit.compilers.ast.BuiltinType;
 import edu.mit.compilers.codegen.codes.Quadruple;
 import edu.mit.compilers.codegen.codes.Triple;
 import edu.mit.compilers.codegen.names.VariableName;
 import edu.mit.compilers.dataflow.analyses.AvailableExpressions;
 import edu.mit.compilers.grammar.DecafScanner;
+import edu.mit.compilers.utils.Utils;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -14,10 +17,10 @@ import org.junit.rules.ExpectedException;
 import static org.junit.Assert.*;
 
 public class AvailableExpressionsTest {
-    private final VariableName a = new VariableName("a");
-    private final VariableName b = new VariableName("b");
-    private final VariableName c = new VariableName("c");
-    private final VariableName d = new VariableName("d");
+    private final VariableName a = new VariableName("a", Utils.WORD_SIZE, BuiltinType.Int);
+    private final VariableName b = new VariableName("b", Utils.WORD_SIZE, BuiltinType.Int);
+    private final VariableName c = new VariableName("c", Utils.WORD_SIZE, BuiltinType.Int);
+    private final VariableName d = new VariableName("d", Utils.WORD_SIZE, BuiltinType.Int);
 
     private Quadruple aEqualsBPlusC;
     private Quadruple dEqualsCPlusB;

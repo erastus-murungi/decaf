@@ -3,10 +3,8 @@ package edu.mit.compilers.utils;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Stream;
 
 import edu.mit.compilers.asm.X64CodeConverter;
 import edu.mit.compilers.asm.X64Program;
@@ -168,7 +166,6 @@ public class CompilationController {
     }
 
     private boolean shouldOptimize() {
-//        return true;
         for (boolean opt: CLI.opts)
             if (opt)
                 return true;

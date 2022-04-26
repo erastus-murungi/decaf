@@ -38,6 +38,11 @@ public class StringLiteralStackAllocation extends ThreeAddressCode {
         return Collections.emptyList();
     }
 
+    @Override
+    public String repr() {
+        return String.format("@.%s = %s%s%s", label, stringConstant, DOUBLE_INDENT, "# " + size() + " bytes");
+    }
+
     public String getASM() {
         return String.format("%s:\n%s%s.%s   %s", label, INDENT, INDENT, "string", stringConstant);
     }

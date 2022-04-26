@@ -39,6 +39,13 @@ public class Triple extends HasResult implements Cloneable, HasOperand {
     }
 
     @Override
+    public String repr() {
+        if (getComment().isPresent())
+            return String.format("%s%s: %s = %s %s %s %s", DOUBLE_INDENT, dst.repr(), dst.builtinType.getSourceCode(), operator, operand.repr(), DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s: %s = %s %s", DOUBLE_INDENT, dst.repr(), operator, dst.builtinType.getSourceCode(), operand.repr());
+    }
+
+    @Override
     public Optional<Operand> getComputationNoArray() {
         if (operand instanceof ArrayName || dst instanceof ArrayName)
             return Optional.empty();

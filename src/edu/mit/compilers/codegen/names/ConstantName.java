@@ -9,17 +9,17 @@ import java.util.Objects;
 public class ConstantName extends AbstractName {
     String value;
 
-    public ConstantName(Long value) {
-        super();
+    public ConstantName(Long value, BuiltinType builtinType) {
+        super(builtinType);
         this.value = String.valueOf(value);
     }
 
     public static ConstantName fromIntLiteral(IntLiteral intLiteral) {
-        return new ConstantName(intLiteral.convertToLong());
+        return new ConstantName(intLiteral.convertToLong(), BuiltinType.Int);
     }
 
     public static ConstantName fromBooleanLiteral(BooleanLiteral booleanLiteral) {
-        return new ConstantName(booleanLiteral.convertToLong());
+        return new ConstantName(booleanLiteral.convertToLong(), BuiltinType.Bool);
     }
 
     @Override
@@ -34,6 +34,11 @@ public class ConstantName extends AbstractName {
         if (!super.equals(o)) return false;
         ConstantName that = (ConstantName) o;
         return Objects.equals(value, that.value);
+    }
+
+    @Override
+    public String repr() {
+        return String.format("const %s", value);
     }
 
     @Override

@@ -35,6 +35,11 @@ public class GlobalAllocation extends ThreeAddressCode {
     }
 
     @Override
+    public String repr() {
+        return String.format("global %s %s", variableName.builtinType.getSourceCode(), variableName.repr());
+    }
+
+    @Override
     public String toString() {
         return String.format("%s.comm %s,%s,%s %s %s", INDENT, variableName, size, alignment, DOUBLE_INDENT, getComment().orElse(" ") + " " + type.getSourceCode());
     }

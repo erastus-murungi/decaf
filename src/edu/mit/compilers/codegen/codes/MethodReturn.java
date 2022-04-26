@@ -44,6 +44,11 @@ public class MethodReturn extends ThreeAddressCode implements HasOperand {
     }
 
     @Override
+    public String repr() {
+        return toString();
+    }
+
+    @Override
     public boolean hasUnModifiedOperand() {
         return true;
     }

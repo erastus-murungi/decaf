@@ -1,13 +1,15 @@
 package edu.mit.compilers.codegen;
 
+import edu.mit.compilers.codegen.codes.ArrayAccess;
 import edu.mit.compilers.codegen.codes.ThreeAddressCode;
 import edu.mit.compilers.codegen.names.*;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class ThreeAddressCodeList implements Iterable<ThreeAddressCode>, Cloneable {
-    public static final AbstractName UNDEFINED = new VariableName(null);
+    public static final AbstractName UNDEFINED = new VariableName(null, -1, null);
 
     public AbstractName place;
 
@@ -116,12 +118,7 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode>, Cloneab
 
     @Override
     public String toString() {
-        List<String> list = new ArrayList<>();
-        for (ThreeAddressCode code : flatten()) {
-            String toString = code.toString();
-            list.add(toString);
-        }
-        return String.join("\n", list);
+        return flatten().getCodes().stream().filter(code -> !(code instanceof ArrayAccess)).map(ThreeAddressCode::repr).collect(Collectors.joining("\n"));
     }
 
     public void add(ThreeAddressCodeList threeAddressCodeList) {

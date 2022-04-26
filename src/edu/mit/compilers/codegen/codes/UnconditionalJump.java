@@ -29,4 +29,9 @@ public class UnconditionalJump extends ThreeAddressCode {
         return Collections.emptyList();
     }
 
+    @Override
+    public String repr() {
+        return toString();
+    }
+
 }
