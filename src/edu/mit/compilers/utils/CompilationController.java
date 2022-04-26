@@ -82,10 +82,6 @@ public class CompilationController {
         }
     }
 
-    public void cleanup() {
-        InstructionSimplifyPass.cleanup();
-    }
-
     public void run() throws FileNotFoundException {
         runScanner();
         while (compilationState != CompilationState.COMPLETED && compilationState != CompilationState.ASSEMBLED) {
@@ -96,6 +92,8 @@ public class CompilationController {
     public CompilationController(String sourceCode) throws FileNotFoundException {
         this.sourceCode = sourceCode;
         initialize();
+        CLI.target = CLI.Action.ASSEMBLY;
+
     }
 
     public CompilationController() throws FileNotFoundException {
@@ -104,7 +102,7 @@ public class CompilationController {
     }
 
     private void defaultInitialize() throws FileNotFoundException {
-//        CLI.infile = "tests/dataflow/input/cp-01.dcf";
+//        CLI.infile = "tests/codegen/input/x-25-index.dcf";
 //        CLI.opts = new boolean[1];
 //        CLI.target = CLI.Action.ASSEMBLY;
         InputStream inputStream = CLI.infile == null ? System.in : new java.io.FileInputStream(CLI.infile);
@@ -211,6 +209,7 @@ public class CompilationController {
 
     private void runDataflowOptimizationPasses() {
         assert compilationState == CompilationState.IR_GENERATED;
+//        System.out.println(mergeProgram());
         if (shouldOptimize()) {
             var dataflowOptimizer = new DataflowOptimizer(programIr.second, threeAddressCodesListConverter.globalNames);
             dataflowOptimizer.initialize();

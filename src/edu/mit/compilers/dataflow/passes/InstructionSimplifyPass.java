@@ -1,7 +1,7 @@
 package edu.mit.compilers.dataflow.passes;
 
+
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
@@ -10,7 +10,6 @@ import edu.mit.compilers.ast.LocationArray;
 import edu.mit.compilers.ast.UnaryOpExpression;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
-import jdk.jshell.JShell;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.BinaryOpExpression;
@@ -18,7 +17,6 @@ import edu.mit.compilers.ast.DecimalLiteral;
 import edu.mit.compilers.ast.Expression;
 import edu.mit.compilers.ast.HasExpression;
 import edu.mit.compilers.ast.IntLiteral;
-import jdk.jshell.SnippetEvent;
 
 // This file implements routines for folding instructions into simpler forms
 // that do not require creating new instructions.  This does constant folding
@@ -50,22 +48,22 @@ public class InstructionSimplifyPass {
         return new BooleanLiteral(tokenPosition, DecafScanner.RESERVED_FALSE);
     }
 
-    private static final JShell js = JShell.create();
-
-    public static void simplifyExpression(HasExpression hasExpression) {
+    public static boolean simplifyExpression(HasExpression hasExpression) {
         for (var expression : hasExpression.getExpression()) {
             var newExpr = expression;
             newExpr = tryFoldConstantExpression(newExpr);
             newExpr = trySimplifyAddInstruction(newExpr);
-            newExpr = trySimplifyMultiplyInstruction(newExpr);
-            newExpr = trySimplifySubInstructionInstruction(newExpr);
+            newExpr = trySimplifyMulInstruction(newExpr);
+            newExpr = trySimplifySubInstruction(newExpr);
             newExpr = trySimplifyDivInstruction(newExpr);
             newExpr = trySimplifyModInstruction(newExpr);
             newExpr = trySimplifyNeqInstruction(newExpr);
             newExpr = trySimplifyEqInstruction(newExpr);
             newExpr = tryCollapseUnaryExpression(newExpr);
             hasExpression.compareAndSwapExpression(expression, newExpr);
+            return expression != newExpr;
         }
+        return false;
     }
 
 
@@ -170,14 +168,11 @@ public class InstructionSimplifyPass {
     }
 
     private static Long symbolicallyEvaluate(String string) {
-        List<SnippetEvent> snippetEventList = js.eval(js.sourceCodeAnalysis()
-                .analyzeCompletion(string)
-                .source());
-        assert snippetEventList.size() == 1;
-        var snippetEvent = snippetEventList.get(0);
+        var expression = new com.udojava.evalex.Expression(string);
         try {
-            return Long.parseLong(snippetEvent.value());
-        } catch (NumberFormatException e) {
+            var res = expression.eval();
+            return res.longValue();
+        } catch (Exception e) {
             return null;
         }
     }
@@ -195,7 +190,7 @@ public class InstructionSimplifyPass {
         return expression;
     }
 
-    private static Expression trySimplifyMultiplyInstruction(Expression expression) {
+    private static Expression trySimplifyMulInstruction(Expression expression) {
         if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.op.equals(DecafScanner.MULTIPLY)) {
             var multiplyInstruction = (BinaryOpExpression) expression;
             // 0 * X -> 0
@@ -213,7 +208,7 @@ public class InstructionSimplifyPass {
         return expression;
     }
 
-    private static Expression trySimplifySubInstructionInstruction(Expression expression) {
+    private static Expression trySimplifySubInstruction(Expression expression) {
         if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.op.equals(DecafScanner.MINUS)) {
             var subInstruction = (BinaryOpExpression) expression;
             // X - X -> 0
@@ -290,9 +285,5 @@ public class InstructionSimplifyPass {
 
     public static void run(AST root) {
         getAllHasExpressionNodes(root).forEach(InstructionSimplifyPass::simplifyExpression);
-    }
-
-    public static void cleanup() {
-        js.close();
     }
 }
