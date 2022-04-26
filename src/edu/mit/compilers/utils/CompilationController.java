@@ -86,7 +86,7 @@ public class CompilationController {
 
 
     private void initialize() throws FileNotFoundException {
-//        CLI.infile = "tests/codegen/input/09-global.dcf";
+        // CLI.infile = "tests/dataflow/input/cp-02.dcf";
         InputStream inputStream = CLI.infile == null ? System.in : new java.io.FileInputStream(CLI.infile);
         outputStream = CLI.outfile == null ? System.out : new java.io.PrintStream(new java.io.FileOutputStream(CLI.outfile));
         sourceCode = Utils.getStringFromInputStream(inputStream);
@@ -183,6 +183,10 @@ public class CompilationController {
             var dataflowOptimizer = new DataflowOptimizer(programIr.second, threeAddressCodesListConverter.globalNames);
             dataflowOptimizer.initialize();
             dataflowOptimizer.optimize();
+            if (CLI.debug) {
+                System.out.println(mergeProgram());
+            }
+
         }
         compilationState = CompilationState.DATAFLOW_OPTIMIZED;
     }

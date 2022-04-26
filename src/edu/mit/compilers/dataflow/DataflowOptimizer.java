@@ -73,23 +73,14 @@ public class DataflowOptimizer {
         this.methodBeginTacLists = methodBeginTacLists;
     }
 
-    public Collection<ThreeAddressCodeList> getOptimizedTacLists() {
-        return methodBeginTacLists.stream().map(methodBegin -> methodBegin.entryBlock.threeAddressCodeList.flatten()).collect(Collectors.toList());
-    }
-
     public void optimize() {
         for (int run = 0; run < numberOfRuns; run++) {
             boolean changesHappened = false;
             for (var optimizationPass: optimizationPassList) {
                 changesHappened = changesHappened | !optimizationPass.run();
-//                    System.out.println(optimizationPass.getClass()
-//                            .getSimpleName() + " #run = " + run);
-//                    System.out.println(getOptimizedTacLists());
             }
             if (!changesHappened)
                 break;
         }
-        System.out.println("OPTIMIZED");
-        System.out.println(getOptimizedTacLists());
     }
 }
