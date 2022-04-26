@@ -22,7 +22,7 @@ public class DecafParser {
     private int currentTokenIndex;
     private Program root;
     private final DecafExceptionProcessor decafExceptionProcessor;
-    private final List<DecafParserException> errors = new ArrayList<>();
+    public final List<DecafParserException> errors = new ArrayList<>();
 
     public Program getRoot() {
         return root;
