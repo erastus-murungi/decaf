@@ -571,9 +571,12 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         blockToCodeHashMap.put(basicBlockBranchLess, universalThreeAddressCodeList);
         if (!(basicBlockBranchLess instanceof NOP) && !(basicBlockBranchLess.autoChild instanceof NOP)) {
             if (visited.contains(basicBlockBranchLess.autoChild)) {
-                assert blockToLabelHashMap.containsKey(basicBlockBranchLess.autoChild);
-                universalThreeAddressCodeList.setNext(ThreeAddressCodeList.of(new UnconditionalJump(blockToLabelHashMap.get(basicBlockBranchLess.autoChild))));
-            } else {
+		var label = blockToLabelHashMap.get(basicBlockBranchLess.autoChild);
+                if (label == null) {
+                    label = getLabel(basicBlockBranchLess.autoChild, null);
+                }
+                universalThreeAddressCodeList.setNext(ThreeAddressCodeList.of(new UnconditionalJump(label)));
+             } else {
                 universalThreeAddressCodeList.setNext(basicBlockBranchLess.autoChild.accept(this, symbolTable));
             }
         } else {
