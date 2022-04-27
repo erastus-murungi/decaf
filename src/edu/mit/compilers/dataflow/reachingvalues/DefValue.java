@@ -2,8 +2,10 @@ package edu.mit.compilers.dataflow.reachingvalues;
 
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.HasResult;
+import edu.mit.compilers.codegen.codes.MethodCallSetResult;
 import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.codegen.names.ConstantName;
+import edu.mit.compilers.dataflow.operand.MethodCallOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnaryOperand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
