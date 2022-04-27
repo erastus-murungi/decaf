@@ -4,6 +4,10 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.HasResult;
+import edu.mit.compilers.codegen.codes.MethodBegin;
+import edu.mit.compilers.codegen.codes.MethodCallNoResult;
+import edu.mit.compilers.codegen.codes.MethodCallSetResult;
+import edu.mit.compilers.codegen.codes.PushParameter;
 import edu.mit.compilers.codegen.codes.ThreeAddressCode;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.ConstantName;
@@ -12,13 +16,14 @@ import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
 import edu.mit.compilers.dataflow.operand.AugmentedOperand;
 import edu.mit.compilers.grammar.DecafScanner;
 
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class DeadCodeEliminationPass extends OptimizationPass {
-    public DeadCodeEliminationPass(Set<AbstractName> globalVariables, BasicBlock entryBlock) {
-        super(globalVariables, entryBlock);
+    public DeadCodeEliminationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
+        super(globalVariables, methodBegin);
     }
 
     // return whether an instruction of the form x = x
@@ -32,7 +37,7 @@ public class DeadCodeEliminationPass extends OptimizationPass {
         return false;
     }
 
-    private boolean augmentedAssignVariablesNeeded(Set<AbstractName> neededSet, ThreeAddressCode tac) {
+    private boolean augmentedAssignVariablesNeeded(ThreeAddressCode tac) {
         if (tac instanceof HasOperand) {
             var hasOperand = (HasOperand) tac;
             var operand = hasOperand.getOperand();
@@ -60,7 +65,62 @@ public class DeadCodeEliminationPass extends OptimizationPass {
         var allOperandsAreConstants = tac.getNames()
                 .stream()
                 .allMatch(this::allConstants);
-        return resultVariableIsGlobal(tac) || augmentedAssignVariablesNeeded(neededSet, tac) || allOperandsAreConstants || neededSet.containsAll(tac.getNamesNoArrayNoGlobals(globalVariables));
+        return resultVariableIsGlobal(tac) || augmentedAssignVariablesNeeded(tac) || allOperandsAreConstants || neededSet.containsAll(tac.getNamesNoArrayNoGlobals(globalVariables));
+    }
+
+    /**
+     * removes push's which are more than needed for function call
+     */
+    private boolean removePushParametersExcessPushes(BasicBlock basicBlock) {
+        // remove all push parameters which don't have a method call afterwards
+        var indicesToRemove = new ArrayList<Integer>();
+        boolean changed = false;
+        for (int indexOfCode = 0; indexOfCode < basicBlock.threeAddressCodeList.size(); indexOfCode++) {
+            var tac = basicBlock.threeAddressCodeList.get(indexOfCode);
+            if (tac instanceof MethodCallSetResult || tac instanceof MethodCallNoResult) {
+                int numberOfArguments = (tac instanceof MethodCallNoResult) ? ((MethodCallNoResult) tac).numberOfArguments() : ((MethodCallSetResult) tac).numberOfArguments();
+                int indexToStartCheck = indexOfCode - numberOfArguments - 1;
+                while (indexToStartCheck >= 0 && basicBlock.threeAddressCodeList.get(indexToStartCheck) instanceof PushParameter) {
+                    indicesToRemove.add(indexToStartCheck);
+                    indexToStartCheck--;
+                    changed = true;
+                }
+            }
+        }
+        for (var index : indicesToRemove) {
+            basicBlock.threeAddressCodeList.getCodes()
+                    .set(index, null);
+        }
+        basicBlock.threeAddressCodeList.reset(basicBlock.codes()
+                .stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList()));
+        return changed;
+    }
+
+    // remove pushes which do not follow a function call
+    private void removeDanglingPushes(BasicBlock basicBlock, boolean changed) {
+        var indicesToRemove = new ArrayList<Integer>();
+        for (int indexOfCode = 0; indexOfCode < basicBlock.threeAddressCodeList.size(); indexOfCode++) {
+            var tac = basicBlock.threeAddressCodeList.get(indexOfCode);
+            if (changed && tac instanceof PushParameter) {
+                var prevCode = basicBlock.threeAddressCodeList.get(indexOfCode - 1);
+                var nextCode = basicBlock.threeAddressCodeList.get(indexOfCode + 1);
+                boolean firstCondition = prevCode instanceof MethodBegin || prevCode instanceof PushParameter || prevCode instanceof MethodCallSetResult || prevCode instanceof MethodCallNoResult;
+                boolean secondCondition = nextCode instanceof PushParameter || nextCode instanceof MethodCallSetResult || nextCode instanceof MethodCallNoResult;
+                if (!(firstCondition && secondCondition)) {
+                    indicesToRemove.add(indexOfCode);
+                }
+            }
+        }
+        for (var index : indicesToRemove) {
+            basicBlock.threeAddressCodeList.getCodes()
+                    .set(index, null);
+        }
+        basicBlock.threeAddressCodeList.reset(basicBlock.codes()
+                .stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList()));
     }
 
     public void performGlobalDeadCodeElimination() {
@@ -84,6 +144,9 @@ public class DeadCodeEliminationPass extends OptimizationPass {
                     .stream()
                     .filter(tac -> allVariablesInNeededSet(neededSet, tac) && !isTrivialAssignment(tac))
                     .collect(Collectors.toList()));
+
+            boolean changed = removePushParametersExcessPushes(basicBlock);
+            removeDanglingPushes(basicBlock, changed);
         }
     }
 

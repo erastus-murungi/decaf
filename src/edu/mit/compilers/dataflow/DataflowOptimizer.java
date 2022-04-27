@@ -13,6 +13,7 @@ import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.dataflow.passes.CommonSubExpressionEliminationPass;
 import edu.mit.compilers.dataflow.passes.CopyPropagationPass;
 import edu.mit.compilers.dataflow.passes.DeadCodeEliminationPass;
+import edu.mit.compilers.dataflow.passes.DeadStoreEliminationPass;
 import edu.mit.compilers.dataflow.passes.OptimizationPass;
 
 public class DataflowOptimizer {
@@ -28,7 +29,8 @@ public class DataflowOptimizer {
     public enum OptimizationPassType {
         CommonSubExpression,
         CopyPropagation,
-        DeadCodeElimination
+        DeadCodeElimination,
+        DeadStoreElimination
     }
 
     public class Factory {
@@ -37,17 +39,22 @@ public class DataflowOptimizer {
             switch (optimizationPassType) {
                 case CopyPropagation: {
                     methodBeginTacLists.forEach(methodBegin ->
-                            optimizationPassesList.add(new CopyPropagationPass(globalNames, methodBegin.entryBlock)));
+                            optimizationPassesList.add(new CopyPropagationPass(globalNames, methodBegin)));
                     break;
                 }
                 case DeadCodeElimination: {
                     methodBeginTacLists.forEach(methodBegin ->
-                            optimizationPassesList.add(new DeadCodeEliminationPass(globalNames, methodBegin.entryBlock)));
+                            optimizationPassesList.add(new DeadCodeEliminationPass(globalNames, methodBegin)));
                     break;
                 }
                 case CommonSubExpression: {
                     methodBeginTacLists.forEach(methodBegin ->
-                            optimizationPassesList.add(new CommonSubExpressionEliminationPass(globalNames, methodBegin.entryBlock)));
+                            optimizationPassesList.add(new CommonSubExpressionEliminationPass(globalNames, methodBegin)));
+                    break;
+                }
+                case DeadStoreElimination: {
+                    methodBeginTacLists.forEach(methodBegin ->
+                            optimizationPassesList.add(new DeadStoreEliminationPass(globalNames, methodBegin)));
                     break;
                 }
                 default: {
@@ -67,6 +74,7 @@ public class DataflowOptimizer {
         addPass(OptimizationPassType.CommonSubExpression);
         addPass(OptimizationPassType.CopyPropagation);
         addPass(OptimizationPassType.DeadCodeElimination);
+        addPass(OptimizationPassType.DeadStoreElimination);
     }
 
     public DataflowOptimizer(List<MethodBegin> methodBeginTacLists, Set<AbstractName> globalNames) {
@@ -77,7 +85,7 @@ public class DataflowOptimizer {
     public void optimize() {
         for (int run = 0; run < numberOfRuns; run++) {
             boolean changesHappened = false;
-            for (var optimizationPass: optimizationPassList) {
+            for (var optimizationPass : optimizationPassList) {
                 changesHappened = changesHappened | !optimizationPass.run();
             }
             if (!changesHappened)

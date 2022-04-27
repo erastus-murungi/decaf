@@ -1,6 +1,7 @@
 package edu.mit.compilers.dataflow.analyses;
 
 import edu.mit.compilers.cfg.BasicBlock;
+import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.HasResult;
 import edu.mit.compilers.codegen.codes.MethodCallSetResult;
 import edu.mit.compilers.codegen.codes.Quadruple;
@@ -78,7 +79,8 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
 
     @Override
     public Set<Operand> meet(BasicBlock basicBlock) {
-        if (basicBlock.getPredecessors().isEmpty())
+        if (basicBlock.getPredecessors()
+                .isEmpty())
             return Collections.emptySet();
 
         var inSet = new HashSet<>(allValues);
@@ -90,65 +92,30 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
 
 
     private HashSet<Operand> kill(BasicBlock basicBlock) {
-        var superSet = new ArrayList<>(allValues);
+        var superSet = new HashSet<>(allValues);
         var killedExpressions = new HashSet<Operand>();
 
-        for (HasResult assignment: basicBlock.assignments()) {
+        for (HasResult assignment : basicBlock.assignments()) {
             // add all the computations that contain operands
             // that get re-assigned by the current stmt to
             // killedExpressions
-            if (assignment instanceof Triple) {
-                Triple triple = (Triple) assignment;
-                if (operatorAssigns(triple.operator)) {
-                    for (Operand comp : superSet) {
-                        if (comp.contains(triple.getResultLocation())) {
-                            killedExpressions.add(comp);
-                        }
-                    }
+            for (Operand comp : superSet) {
+                if (comp.contains(assignment.getResultLocation())) {
+                    killedExpressions.add(comp);
                 }
             }
         }
         return killedExpressions;
     }
 
-    private boolean operatorAssigns(String operator) {
-        return operator.contains(DecafScanner.ASSIGN);
-    }
-
     private HashSet<Operand> gen(BasicBlock basicBlock) {
         var validComputations = new HashSet<Operand>();
-        for (HasResult assignment: basicBlock.assignments()) {
-            // add this unary computation to the list of valid expressions
-            if (assignment instanceof Triple) {
-                Triple triple = (Triple) assignment;
-                if (triple.operand instanceof VariableName || triple.operand instanceof TemporaryName) {
-                    validComputations.add(new UnaryOperand(triple));
-                }
+        for (HasResult assignment : basicBlock.assignments()) {
+            if (assignment instanceof Triple || assignment instanceof Quadruple) {
+                assignment.getComputationNoArray()
+                        .ifPresent(validComputations::add);
             }
-            // add this binary computation to the list of valid expressions
-            else if (assignment instanceof Quadruple) {
-                Quadruple quadruple = (Quadruple) assignment;
-                if (quadruple.fstOperand instanceof VariableName && quadruple.sndOperand instanceof VariableName) {
-                    validComputations.add(new BinaryOperand(quadruple));
-                }
-            }
-
-            // remove all expressions invalidated by this assignment
-            if (assignment instanceof Triple || assignment instanceof MethodCallSetResult) {
-                String operator;
-                if (assignment instanceof Triple) {
-                    operator = ((Triple) assignment).operator;
-                } else {
-                    operator = "=";
-                }
-                if (operatorAssigns(operator)) {
-                    for (Operand operand : new HashSet<>(validComputations)) {
-                        if (operand.contains(assignment.getResultLocation())) {
-                            validComputations.remove(operand);
-                        }
-                    }
-                }
-            }
+            validComputations.removeIf((operand -> operand.contains(assignment.getResultLocation())));
         }
         return validComputations;
     }
