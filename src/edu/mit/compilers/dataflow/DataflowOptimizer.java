@@ -11,6 +11,7 @@ import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.dataflow.passes.CommonSubExpressionEliminationPass;
+import edu.mit.compilers.dataflow.passes.ConstantPropagationPass;
 import edu.mit.compilers.dataflow.passes.CopyPropagationPass;
 import edu.mit.compilers.dataflow.passes.DeadCodeEliminationPass;
 import edu.mit.compilers.dataflow.passes.OptimizationPass;
@@ -28,7 +29,8 @@ public class DataflowOptimizer {
     public enum OptimizationPassType {
         CommonSubExpression,
         CopyPropagation,
-        DeadCodeElimination
+        DeadCodeElimination,
+        ConstantPropagation
     }
 
     public class Factory {
@@ -50,6 +52,11 @@ public class DataflowOptimizer {
                             optimizationPassesList.add(new CommonSubExpressionEliminationPass(globalNames, methodBegin.entryBlock)));
                     break;
                 }
+                case ConstantPropagation: {
+                    methodBeginTacLists.forEach(methodBegin ->
+                        optimizationPassesList.add(new ConstantPropagationPass(globalNames, methodBegin.entryBlock)));
+                    break;
+                }
                 default: {
                     throw new IllegalArgumentException();
                 }
@@ -64,9 +71,10 @@ public class DataflowOptimizer {
     }
 
     public void initialize() {
-        addPass(OptimizationPassType.CommonSubExpression);
-        addPass(OptimizationPassType.CopyPropagation);
-        addPass(OptimizationPassType.DeadCodeElimination);
+         addPass(OptimizationPassType.CommonSubExpression);
+         addPass(OptimizationPassType.CopyPropagation);
+         addPass(OptimizationPassType.DeadCodeElimination);
+        addPass(OptimizationPassType.ConstantPropagation);
     }
 
     public DataflowOptimizer(List<MethodBegin> methodBeginTacLists, Set<AbstractName> globalNames) {
