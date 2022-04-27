@@ -141,7 +141,6 @@ public class InstructionSimplifyPass {
         return string.matches(".*[a-zA-Z]+.*");
     }
 
-
     private static Expression tryFoldConstantExpression(Expression expression) {
         // this check is necessary because the evaluator evaluates variables like 'e' and 'pi'
         if (containsAlphabeticCharacters(expression.getSourceCode())) {

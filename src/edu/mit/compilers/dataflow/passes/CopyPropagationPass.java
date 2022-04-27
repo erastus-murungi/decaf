@@ -18,13 +18,13 @@ public class CopyPropagationPass extends OptimizationPass {
     }
 
     private static void propagateCopy(HasOperand hasOperand, HashMap<AbstractName, Operand> copies) {
-        boolean converged = true;
-        while (converged) {
+        boolean notConverged = true;
+        while (notConverged) {
             // we have to do this in a while loop because of how copy replacements propagate
             // for instance, lets imagine we have a = k
             // it possible that our copies map has y `replaces` k, and x `replaces` y and $0 `replaces` x
             // we want to eventually propagate so that a = $0
-            converged = false;
+            notConverged = false;
             for (var toBeReplaced : hasOperand.getOperandNamesNoArray()) {
                 if (copies.get(toBeReplaced) instanceof UnmodifiedOperand) {
                     var replacer = ((UnmodifiedOperand) copies.get(toBeReplaced)).abstractName;
@@ -34,23 +34,11 @@ public class CopyPropagationPass extends OptimizationPass {
                     // because our copies map sometimes contains entries like "x `replaces` x"
                     // without this check, we sometimes enter an infinite loop
                     if (!replacer.equals(toBeReplaced)) {
-                        converged = true;
+                        notConverged = true;
                     }
                 }
             }
         }
-    }
-
-    private static ThreeAddressCode maybeReplaceWithBinaryOperand(HashMap<AbstractName, Operand> copies,
-                                                  ThreeAddressCode threeAddressCode) {
-        if (threeAddressCode instanceof Assign) {
-            var assign = (Assign) threeAddressCode;
-            var replacer = copies.get(assign.operand);
-            if (replacer instanceof BinaryOperand) {
-                return replacer.fromOperand(assign.dst);
-            }
-        }
-        return threeAddressCode;
     }
 
     private boolean performLocalCopyPropagation(BasicBlock basicBlock, HashMap<AbstractName, Operand> copies) {
@@ -65,7 +53,6 @@ public class CopyPropagationPass extends OptimizationPass {
             // we only perform copy propagation on instructions with variables
             if (threeAddressCode instanceof HasOperand) {
                 propagateCopy((HasOperand) threeAddressCode, copies);
-                threeAddressCode = maybeReplaceWithBinaryOperand(copies, threeAddressCode);
             }
 
             if (threeAddressCode instanceof HasResult) {
