@@ -28,4 +28,9 @@ public class AugmentedOperand extends Operand {
     public HasResult fromOperand(AssignableName resultLocation) {
         return new Assign(resultLocation, operator, operand, null, null);
     }
+
+    @Override
+    public String toString() {
+        return  operator + operand;
+    }
 }
