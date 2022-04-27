@@ -6,7 +6,9 @@ import java.util.Set;
 import java.util.Stack;
 
 import edu.mit.compilers.ast.BooleanLiteral;
+import edu.mit.compilers.ast.Location;
 import edu.mit.compilers.ast.LocationArray;
+import edu.mit.compilers.ast.LocationVariable;
 import edu.mit.compilers.ast.UnaryOpExpression;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
@@ -135,8 +137,15 @@ public class InstructionSimplifyPass {
         return expression;
     }
 
+    private static boolean containsAlphabeticCharacters(String string) {
+        return string.matches(".*[a-zA-Z]+.*");
+    }
 
     private static Expression tryFoldConstantExpression(Expression expression) {
+        // this check is necessary because the evaluator evaluates variables like 'e' and 'pi'
+        if (containsAlphabeticCharacters(expression.getSourceCode())) {
+            return expression;
+        }
         var maybeEvaluatedLong = symbolicallyEvaluate(expression.getSourceCode());
         if (maybeEvaluatedLong != null)
             return new DecimalLiteral(expression.tokenPosition, maybeEvaluatedLong.toString());

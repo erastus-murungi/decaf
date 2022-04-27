@@ -102,9 +102,10 @@ public class CompilationController {
     }
 
     private void defaultInitialize() throws FileNotFoundException {
-//        CLI.infile = "tests/codegen/input/06-control-flow.dcf";
-//        CLI.opts = new boolean[1];
+//        CLI.infile = "tests/dataflow/input/cp-13.dcf";
+//        CLI.opts = new boolean[] {true};
 //        CLI.target = CLI.Action.ASSEMBLY;
+//        CLI.debug = true;
         InputStream inputStream = CLI.infile == null ? System.in : new java.io.FileInputStream(CLI.infile);
         sourceCode = Utils.getStringFromInputStream(inputStream);
     }
@@ -179,6 +180,10 @@ public class CompilationController {
     private void generateCFGs() {
         assert compilationState == CompilationState.SEM_CHECKED;
         if (shouldOptimize()) {
+            if (CLI.debug) {
+                System.out.println("before InstructionSimplifyPass");
+                System.out.println(parser.getRoot().getSourceCode());
+            }
             InstructionSimplifyPass.run(parser.getRoot());
             if (CLI.debug) {
                 System.out.println("after InstructionSimplifyPass");
@@ -213,8 +218,13 @@ public class CompilationController {
         compilationState = CompilationState.IR_GENERATED;
     }
 
+    private int countLinesOfCode() {
+        return mergeProgram().getCodes().size();
+    }
+
     private void runDataflowOptimizationPasses() {
         assert compilationState == CompilationState.IR_GENERATED;
+        int oldNLinesOfCode = countLinesOfCode();;
         if (shouldOptimize()) {
             if (CLI.debug) {
                 System.out.println("Before optimization");
@@ -226,6 +236,7 @@ public class CompilationController {
             if (CLI.debug) {
                 System.out.println("After optimization");
                 System.out.println(mergeProgram());
+                System.err.format("lines of code reduced by a factor of: %f\n", ((double)oldNLinesOfCode - countLinesOfCode()) / (double)oldNLinesOfCode);
             }
 
         }

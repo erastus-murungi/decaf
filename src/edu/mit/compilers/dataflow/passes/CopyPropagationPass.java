@@ -9,48 +9,52 @@ import edu.mit.compilers.dataflow.analyses.AvailableCopies;
 import edu.mit.compilers.dataflow.operand.BinaryOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
+import edu.mit.compilers.grammar.DecafScanner;
 
 import java.util.*;
 
 public class CopyPropagationPass extends OptimizationPass {
-    public CopyPropagationPass(Set<AbstractName> globalVariables, BasicBlock entryBlock) {
-        super(globalVariables, entryBlock);
+    public CopyPropagationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
+        super(globalVariables, methodBegin);
+    }
+
+    // return whether an instruction of the form x = x
+    private static boolean isTrivialAssignment(ThreeAddressCode threeAddressCode) {
+        if (threeAddressCode instanceof Assign) {
+            var assign = (Assign) threeAddressCode;
+            if (assign.assignmentOperator.equals(DecafScanner.ASSIGN)) {
+                return assign.dst.equals(assign.operand);
+            }
+        }
+        return false;
     }
 
     private static void propagateCopy(HasOperand hasOperand, HashMap<AbstractName, Operand> copies) {
-        boolean converged = true;
-        while (converged) {
+        boolean notConverged = true;
+        while (notConverged) {
             // we have to do this in a while loop because of how copy replacements propagate
             // for instance, lets imagine we have a = k
             // it possible that our copies map has y `replaces` k, and x `replaces` y and $0 `replaces` x
             // we want to eventually propagate so that a = $0
-            converged = false;
+            notConverged = false;
             for (var toBeReplaced : hasOperand.getOperandNamesNoArray()) {
                 if (copies.get(toBeReplaced) instanceof UnmodifiedOperand) {
                     var replacer = ((UnmodifiedOperand) copies.get(toBeReplaced)).abstractName;
-                    hasOperand.replace(toBeReplaced, replacer);
+                    if (!isTrivialAssignment((ThreeAddressCode) hasOperand)) {
+                        hasOperand.replace(toBeReplaced, replacer);
+                    } else {
+                        continue;
+                    }
                     // it is not enough to set `converged` to true if we have found our replacer
                     // we do this extra check, i.e the check : "!replacerName.equals(abstractName)"
                     // because our copies map sometimes contains entries like "x `replaces` x"
                     // without this check, we sometimes enter an infinite loop
                     if (!replacer.equals(toBeReplaced)) {
-                        converged = true;
+                        notConverged = true;
                     }
                 }
             }
         }
-    }
-
-    private static ThreeAddressCode maybeReplaceWithBinaryOperand(HashMap<AbstractName, Operand> copies,
-                                                  ThreeAddressCode threeAddressCode) {
-        if (threeAddressCode instanceof Assign) {
-            var assign = (Assign) threeAddressCode;
-            var replacer = copies.get(assign.operand);
-            if (replacer instanceof BinaryOperand) {
-                return replacer.fromOperand(assign.dst);
-            }
-        }
-        return threeAddressCode;
     }
 
     private boolean performLocalCopyPropagation(BasicBlock basicBlock, HashMap<AbstractName, Operand> copies) {
@@ -65,7 +69,6 @@ public class CopyPropagationPass extends OptimizationPass {
             // we only perform copy propagation on instructions with variables
             if (threeAddressCode instanceof HasOperand) {
                 propagateCopy((HasOperand) threeAddressCode, copies);
-                threeAddressCode = maybeReplaceWithBinaryOperand(copies, threeAddressCode);
             }
 
             if (threeAddressCode instanceof HasResult) {

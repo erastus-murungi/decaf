@@ -1,6 +1,5 @@
 package edu.mit.compilers.codegen.codes;
 
-import edu.mit.compilers.ast.BuiltinType;
 import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
@@ -11,6 +10,10 @@ import java.util.List;
 public class MethodCallNoResult extends ThreeAddressCode {
     public MethodCallNoResult(MethodCall methodCall, String comment) {
         super(methodCall, comment);
+    }
+
+    public int numberOfArguments() {
+        return ((MethodCall) source).methodCallParameterList.size();
     }
 
     public String getMethodName() {

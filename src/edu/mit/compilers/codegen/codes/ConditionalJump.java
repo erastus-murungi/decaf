@@ -20,7 +20,7 @@ public class ConditionalJump extends ThreeAddressCode implements HasOperand {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, "if", condition, "is false goto", trueLabel.label, DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
+        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, "if", condition.repr(), "is false goto", trueLabel.label, DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
     }
 
     @Override
