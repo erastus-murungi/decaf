@@ -23,6 +23,10 @@ public class MethodBegin extends ThreeAddressCode {
      */
     public BasicBlock entryBlock;
 
+    public boolean isMain() {
+        return methodDefinition.methodName.id.equals("main");
+    }
+
     // to be filled in later by the X64Converter
     public HashMap<String, Integer> nameToStackOffset = new HashMap<>();
 

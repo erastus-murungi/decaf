@@ -13,6 +13,7 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.HasResult;
+import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.codes.Quadruple;
 import edu.mit.compilers.codegen.codes.ThreeAddressCode;
 import edu.mit.compilers.codegen.codes.Triple;
@@ -22,10 +23,11 @@ import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.dataflow.analyses.AvailableExpressions;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.operand.Operand;
+import edu.mit.compilers.grammar.DecafScanner;
 
 public class CommonSubExpressionEliminationPass extends OptimizationPass {
-    public CommonSubExpressionEliminationPass(Set<AbstractName> globalVariables, BasicBlock entryBlock) {
-        super(globalVariables, entryBlock);
+    public CommonSubExpressionEliminationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
+        super(globalVariables, methodBegin);
     }
 
     private static void swapOut(ThreeAddressCodeList tacList,
@@ -104,10 +106,9 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
                 hasResult.getComputationNoArray()
                         .ifPresent(
                                 operand -> performCSE(hasResult, operand, tacList, globalVariables, expressionToVariable, tacToPositionInList));
-                // remove all expressions which have been killed by this assignment
-                if (!(hasResult.getResultLocation() instanceof ArrayName))
-                    discardKilledExpressions(hasResult, expressionToVariable);
             }
+            // remove all expressions which have been killed by this assignment
+            discardKilledExpressions(hasResult, expressionToVariable);
         }
     }
 
@@ -132,8 +133,8 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
             for (Operand computation : availableExpressionsForBlock) {
                 for (HasResult hasResult : basicBlock.assignments()) {
                     if (hasResult instanceof Triple || hasResult instanceof Quadruple) {
-                        if (computation.isContainedIn(hasResult)) {
-                            final var operand = backPropagateToEliminateCSEFromCFG(basicBlock, computation);
+                        if (computation.isContainedIn(hasResult) && !isReassignedBeforeUse(basicBlock, computation, hasResult)) {
+                            final var operand = backPropagateToEliminateCSEFromCFG(basicBlock, computation, hasResult);
                             final var assign = Assign.ofRegularAssign(hasResult.getResultLocation(), operand);
                             swapOut(tacList, tacToPositionInList, hasResult, assign);
                             break;
@@ -147,8 +148,42 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
         }
     }
 
+    /*
+    Search backward from the first occurrence to determine whether any of the operands of exp have been previously assigned to in the block.
+    If so, this occurrence of `exp` is not a global common sub-expression;
+    proceed to another expression or another block as appropriate.
+    */
+
+    private static boolean isReassignedBeforeUse(BasicBlock basicBlock, Operand operand, HasResult original) {
+        var indexOfOriginal = basicBlock.threeAddressCodeList.getCodes().indexOf(original);
+        assert indexOfOriginal != -1;
+        if (indexOfOriginal == 0)
+            return false;
+        for (int indexOfCode = indexOfOriginal - 1;  indexOfCode >= 0; indexOfCode--) {
+            ThreeAddressCode threeAddressCode = basicBlock.threeAddressCodeList.get(indexOfCode);
+            if (threeAddressCode instanceof HasResult) {
+                if (operand.contains(((HasResult) threeAddressCode).getResultLocation()) && !isTrivialAssignment(threeAddressCode)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // return whether an instruction of the form x = x
+    private static boolean isTrivialAssignment(ThreeAddressCode threeAddressCode) {
+        if (threeAddressCode instanceof Assign) {
+            var assign = (Assign) threeAddressCode;
+            if (assign.assignmentOperator.equals(DecafScanner.ASSIGN)) {
+                return assign.dst.equals(assign.operand);
+            }
+        }
+        return false;
+    }
+
     private static AbstractName backPropagateToEliminateCSEFromCFG(BasicBlock basicBlock,
-                                                                   Operand operand) {
+                                                                   Operand operand,
+                                                                   HasResult original) {
         // perform a breadth first search to perform the replacement
         AssignableName uniqueName = null;
         final var queue = new ArrayDeque<>(basicBlock.getPredecessors());

@@ -4,6 +4,7 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.HasResult;
 import edu.mit.compilers.codegen.codes.ThreeAddressCode;
+import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
@@ -12,10 +13,29 @@ import edu.mit.compilers.dataflow.usedef.Use;
 import edu.mit.compilers.dataflow.usedef.UseDef;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
     public LiveVariableAnalysis(BasicBlock basicBlock) {
         super(basicBlock);
+    }
+
+    public Set<AbstractName> neededVariables(BasicBlock basicBlock) {
+        // the set of variables actually needed later in the program
+        return in
+        .get(basicBlock)
+        .stream()
+        .map(useDef -> useDef.variable)
+        .collect(Collectors.toSet());
+    }
+
+    public Set<AbstractName> usedLater(BasicBlock basicBlock) {
+        // the set of variables actually needed later in the program
+        return out
+                .get(basicBlock)
+                .stream()
+                .map(useDef -> useDef.variable)
+                .collect(Collectors.toSet());
     }
 
     @Override

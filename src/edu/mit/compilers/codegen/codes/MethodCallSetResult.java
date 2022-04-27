@@ -16,6 +16,10 @@ public class MethodCallSetResult extends HasResult {
         super(resultLocation, methodCall, comment);
     }
 
+    public int numberOfArguments() {
+        return ((MethodCall) source).methodCallParameterList.size();
+    }
+
     public String getMethodName() {
         return ((MethodCall) source).nameId.id;
     }

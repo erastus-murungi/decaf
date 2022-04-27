@@ -9,12 +9,24 @@ import edu.mit.compilers.dataflow.analyses.AvailableCopies;
 import edu.mit.compilers.dataflow.operand.BinaryOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
+import edu.mit.compilers.grammar.DecafScanner;
 
 import java.util.*;
 
 public class CopyPropagationPass extends OptimizationPass {
-    public CopyPropagationPass(Set<AbstractName> globalVariables, BasicBlock entryBlock) {
-        super(globalVariables, entryBlock);
+    public CopyPropagationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
+        super(globalVariables, methodBegin);
+    }
+
+    // return whether an instruction of the form x = x
+    private static boolean isTrivialAssignment(ThreeAddressCode threeAddressCode) {
+        if (threeAddressCode instanceof Assign) {
+            var assign = (Assign) threeAddressCode;
+            if (assign.assignmentOperator.equals(DecafScanner.ASSIGN)) {
+                return assign.dst.equals(assign.operand);
+            }
+        }
+        return false;
     }
 
     private static void propagateCopy(HasOperand hasOperand, HashMap<AbstractName, Operand> copies) {
@@ -28,7 +40,11 @@ public class CopyPropagationPass extends OptimizationPass {
             for (var toBeReplaced : hasOperand.getOperandNamesNoArray()) {
                 if (copies.get(toBeReplaced) instanceof UnmodifiedOperand) {
                     var replacer = ((UnmodifiedOperand) copies.get(toBeReplaced)).abstractName;
-                    hasOperand.replace(toBeReplaced, replacer);
+                    if (!isTrivialAssignment((ThreeAddressCode) hasOperand)) {
+                        hasOperand.replace(toBeReplaced, replacer);
+                    } else {
+                        continue;
+                    }
                     // it is not enough to set `converged` to true if we have found our replacer
                     // we do this extra check, i.e the check : "!replacerName.equals(abstractName)"
                     // because our copies map sometimes contains entries like "x `replaces` x"
