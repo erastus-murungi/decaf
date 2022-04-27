@@ -7,7 +7,7 @@ import edu.mit.compilers.utils.Pair;
 import java.util.HashMap;
 import java.util.List;
 
-public class BinaryOpExpression extends Expression {
+public class BinaryOpExpression extends Expression implements HasExpression {
     public static HashMap<String, Integer> operatorPrecedence = new HashMap<>();
     static {
         operatorPrecedence.put("*", 13);
@@ -76,5 +76,19 @@ public class BinaryOpExpression extends Expression {
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
+    }
+
+
+    @Override
+    public List<Expression> getExpression() {
+        return List.of(rhs, lhs);
+    }
+
+    @Override
+    public void compareAndSwapExpression(Expression oldExpr, Expression newExpr) {
+        if (oldExpr == rhs)
+            rhs = newExpr;
+        if (oldExpr == lhs)
+            lhs = newExpr;
     }
 }

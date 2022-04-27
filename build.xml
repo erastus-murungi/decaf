@@ -63,11 +63,11 @@
         <path refid="classpath.base"/>
     </path>
 
-
     <target name="compile" depends="init">
         <javac srcdir="${src}" destdir="${classes.main}"
-               debug="on" includeantruntime="false">
+               debug="on" includeantruntime="true">
             <classpath>
+                <pathelement path="${lib}/EvalEx-2.7.jar"/>
                 <fileset dir="${lib}/">
                     <include name="**/*.jar"/>
                     <include name="**/*.zip"/>
@@ -89,10 +89,17 @@
     </javac>
   </target>
 
+    <manifestclasspath property="jar.classpath" jarfile="${dist.main}/Compiler.jar">
+        <classpath>
+            <fileset dir="${lib}" includes="*.jar"/>
+        </classpath>
+    </manifestclasspath>
+
     <target name="jar" depends="compile">
         <jar destfile="${dist.main}/Compiler.jar" basedir="${classes.main}">
             <manifest>
                 <attribute name="Main-Class" value="${base_package_name}.Main"/>
+                <attribute name="Class-Path" value="${jar.classpath}" />
             </manifest>
         </jar>
     </target>

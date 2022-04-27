@@ -7,7 +7,7 @@ import edu.mit.compilers.utils.Pair;
 import java.util.Collections;
 import java.util.List;
 
-public class ExpressionParameter extends MethodCallParameter {
+public class ExpressionParameter extends MethodCallParameter implements HasExpression {
     public Expression expression;
 
     @Override
@@ -37,5 +37,16 @@ public class ExpressionParameter extends MethodCallParameter {
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
+    }
+
+    @Override
+    public List<Expression> getExpression() {
+        return List.of(expression);
+    }
+
+    @Override
+    public void compareAndSwapExpression(Expression oldExpr, Expression newExpr) {
+        if (expression == oldExpr)
+            expression = newExpr;
     }
 }

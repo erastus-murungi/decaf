@@ -3,7 +3,6 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.codegen.TemporaryNameGenerator;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Utils;
 
 import java.util.Collections;
@@ -40,8 +39,8 @@ public class StringLiteralStackAllocation extends ThreeAddressCode {
     }
 
     @Override
-    public void swapOut(AbstractName oldName, AbstractName newName) {
-
+    public String repr() {
+        return String.format("@.%s = %s%s%s", label, stringConstant, DOUBLE_INDENT, "# " + size() + " bytes");
     }
 
     public String getASM() {

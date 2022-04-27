@@ -14,8 +14,8 @@ import java.util.List;
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_ELSE;
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_IF;
 
-public class If extends Statement {
-    public final Expression test;
+public class If extends Statement implements HasExpression {
+    public Expression test;
     public final Block ifBlock;
     public final Block elseBlock; // maybe null
 
@@ -61,5 +61,16 @@ public class If extends Statement {
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
+    }
+
+    @Override
+    public List<Expression> getExpression() {
+        return List.of(test);
+    }
+
+    @Override
+    public void compareAndSwapExpression(Expression oldExpr, Expression newExpr) {
+        if (test == oldExpr)
+            test = newExpr;
     }
 }

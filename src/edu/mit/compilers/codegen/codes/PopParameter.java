@@ -4,11 +4,13 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.dataflow.operand.Operand;
+import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 
 import java.util.List;
 
-public class PopParameter extends ThreeAddressCode {
-    public AssignableName parameterName;
+public class PopParameter extends ThreeAddressCode implements HasOperand {
+    public AbstractName parameterName;
     public int parameterIndex;
 
     public PopParameter(AssignableName parameterName, AST source,  int parameterIndex, String comment) {
@@ -33,9 +35,32 @@ public class PopParameter extends ThreeAddressCode {
     }
 
     @Override
-    public void swapOut(AbstractName oldName, AbstractName newName) {
-        if (parameterName.equals(oldName)) {
-            parameterName = (AssignableName) newName;
-        }
+    public String repr() {
+        return String.format("%s%s %s%s%s", DOUBLE_INDENT, "pop", parameterName.repr(), DOUBLE_INDENT, getComment().orElse(""));
     }
+
+    @Override
+    public Operand getOperand() {
+        return new UnmodifiedOperand(parameterName);
+    }
+
+    @Override
+    public List<AbstractName> getOperandNames() {
+        return List.of(parameterName);
+    }
+
+    public boolean replace(AbstractName oldVariable, AbstractName replacer) {
+        var replaced = false;
+        if (parameterName.equals(oldVariable)) {
+            parameterName = replacer;
+            replaced = true;
+        }
+        return replaced;
+    }
+
+    @Override
+    public boolean hasUnModifiedOperand() {
+        return true;
+    }
+
 }

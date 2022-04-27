@@ -4,7 +4,6 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.BuiltinType;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.VariableName;
 
 import java.util.Collections;
 import java.util.List;
@@ -36,8 +35,8 @@ public class GlobalAllocation extends ThreeAddressCode {
     }
 
     @Override
-    public void swapOut(AbstractName oldName, AbstractName newName) {
-
+    public String repr() {
+        return String.format("global %s %s", variableName.builtinType.getSourceCode(), variableName.repr());
     }
 
     @Override

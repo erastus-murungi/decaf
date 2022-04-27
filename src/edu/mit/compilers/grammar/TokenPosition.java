@@ -1,10 +1,9 @@
 package edu.mit.compilers.grammar;
 
-public class TokenPosition{ 
-
-    int line;
-    int column;
-    int offset;
+public class TokenPosition{
+    final int line;
+    final int column;
+    final int offset;
 
     public TokenPosition(int line, int column, int offset) {
         this.line = line;
@@ -23,5 +22,14 @@ public class TokenPosition{
 
     public int offset() {
         return offset;
+    }
+
+    @Override
+    public String toString() {
+        return "TokenPosition{" +
+                "line=" + line +
+                ", column=" + column +
+                ", offset=" + offset +
+                '}';
     }
 }

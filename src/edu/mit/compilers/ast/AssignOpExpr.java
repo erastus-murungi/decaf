@@ -7,7 +7,7 @@ import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
 
-public class AssignOpExpr extends AssignExpr {
+public class AssignOpExpr extends AssignExpr implements HasExpression {
     final public AssignOperator assignOp;
     public Expression expression;
 
@@ -40,5 +40,21 @@ public class AssignOpExpr extends AssignExpr {
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
+    }
+
+    @Override
+    public String getOperator() {
+        return assignOp.op;
+    }
+
+    @Override
+    public List<Expression> getExpression() {
+        return List.of(expression);
+    }
+
+    @Override
+    public void compareAndSwapExpression(Expression oldExpr, Expression newExpr) {
+        if (expression == oldExpr)
+            expression = newExpr;
     }
 }

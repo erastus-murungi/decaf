@@ -6,8 +6,8 @@ import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
 
-public class LocationArray extends Location {
-    public final Expression expression;
+public class LocationArray extends Location implements HasExpression  {
+    public Expression expression;
     public LocationArray(Name name, Expression expression) {
         super(name);
         this.expression = expression;
@@ -36,5 +36,16 @@ public class LocationArray extends Location {
     @Override
     public String getSourceCode() {
         return String.format("%s[%s]", name.getSourceCode(), expression.getSourceCode());
+    }
+
+    @Override
+    public List<Expression> getExpression() {
+        return List.of(expression);
+    }
+
+    @Override
+    public void compareAndSwapExpression(Expression oldExpr, Expression newExpr) {
+        if (expression == oldExpr)
+            expression = newExpr;
     }
 }

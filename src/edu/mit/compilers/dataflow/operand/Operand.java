@@ -1,16 +1,17 @@
-package edu.mit.compilers.dataflow.computation;
+package edu.mit.compilers.dataflow.operand;
 
 import edu.mit.compilers.codegen.codes.HasResult;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.grammar.DecafScanner;
 
 import java.util.Collection;
 
-public abstract class Computation {
+public abstract class Operand {
     private final int index;
     private static int indexCounter;
 
-    public Computation() {
+    public Operand() {
         this.index = indexCounter++;
     }
 
@@ -29,4 +30,6 @@ public abstract class Computation {
     }
 
     public abstract boolean isContainedIn(HasResult hasResult);
+
+    public abstract HasResult fromOperand(AssignableName resultLocation);
 }

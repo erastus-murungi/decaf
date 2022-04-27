@@ -3,11 +3,13 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.dataflow.operand.BinaryOperand;
+import edu.mit.compilers.dataflow.operand.Operand;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.Optional;
 
 /**
  * A quad has four fields which we call op arg1, arg2, and result.
@@ -15,7 +17,7 @@ import java.util.Set;
  * For instance, the three address instruction x = y + z is represented by placing + in op, y in arg1, z in arg2 and x in result.
  */
 
-public class Quadruple extends HasResult {
+public class Quadruple extends HasResult implements HasOperand {
     public AbstractName fstOperand;
     public String operator;
     public AbstractName sndOperand;
@@ -46,17 +48,45 @@ public class Quadruple extends HasResult {
     }
 
     @Override
-    public void swapOut(AbstractName oldName, AbstractName newName) {
-        if (fstOperand.equals(oldName)) {
-            fstOperand = newName;
-        }
-        if (sndOperand.equals(oldName)) {
-            sndOperand = newName;
-        }
+    public String repr() {
+        if (getComment().isPresent())
+            return String.format("%s%s: %s = %s %s %s %s%s", DOUBLE_INDENT, dst.repr(), dst.builtinType.getSourceCode(), fstOperand.repr(), operator, sndOperand.repr(), DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s: %s = %s %s %s", DOUBLE_INDENT, dst.repr(), dst.builtinType.getSourceCode(), fstOperand.repr(), operator, sndOperand.repr());
     }
 
     @Override
-    public Set<AbstractName> getComputationVariables() {
-        return Set.of(fstOperand, sndOperand);
+    public Optional<Operand> getComputationNoArray() {
+        if (dst instanceof ArrayName || fstOperand instanceof ArrayName || sndOperand instanceof ArrayName)
+            return Optional.empty();
+        return Optional.of(new BinaryOperand(this));
     }
+
+    public boolean replace(AbstractName oldVariable, AbstractName replacer) {
+        var replaced = false;
+        if (fstOperand.equals(oldVariable)) {
+            fstOperand = replacer;
+            replaced = true;
+        }
+        if (sndOperand.equals(oldVariable)) {
+            sndOperand = replacer;
+            replaced = true;
+        }
+        return replaced;
+    }
+
+    @Override
+    public boolean hasUnModifiedOperand() {
+        return false;
+    }
+
+    @Override
+    public Operand getOperand() {
+        return new BinaryOperand(this);
+    }
+
+    @Override
+    public List<AbstractName> getOperandNames() {
+        return List.of(fstOperand, sndOperand);
+    }
+
 }

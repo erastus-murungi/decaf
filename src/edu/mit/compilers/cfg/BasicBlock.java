@@ -20,6 +20,14 @@ public abstract class BasicBlock {
 
     public ArrayList<AST> lines;
 
+    public String getLeader() {
+        if (lines.isEmpty()) {
+            return "None";
+        } else {
+            return lines.get(0).getSourceCode();
+        }
+    }
+
     public void addPredecessor(BasicBlock predecessor) {
         predecessors.add(predecessor);
     }
@@ -72,7 +80,7 @@ public abstract class BasicBlock {
 
     /**
      * get only TACs which change values of variables
-     * @return Iterator of Assignment TACS
+     * @return Iterator of Assignment TACs
      */
     public List<HasResult> assignments() {
         return StreamSupport

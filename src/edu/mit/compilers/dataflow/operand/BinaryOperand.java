@@ -1,19 +1,17 @@
-package edu.mit.compilers.dataflow.computation;
+package edu.mit.compilers.dataflow.operand;
 
 import edu.mit.compilers.codegen.codes.HasResult;
 import edu.mit.compilers.codegen.codes.Quadruple;
 import edu.mit.compilers.codegen.names.AbstractName;
-
-import java.util.Collection;
-import java.util.Objects;
+import edu.mit.compilers.codegen.names.AssignableName;
 
 
-public class BinaryComputation extends Computation {
+public class BinaryOperand extends Operand {
     public final AbstractName fstOperand;
     public final String operator;
     public final AbstractName sndOperand;
 
-    public BinaryComputation(Quadruple quadruple) {
+    public BinaryOperand(Quadruple quadruple) {
         this.fstOperand = quadruple.fstOperand;
         this.operator = quadruple.operator;
         this.sndOperand = quadruple.sndOperand;
@@ -28,16 +26,21 @@ public class BinaryComputation extends Computation {
     public boolean isContainedIn(HasResult hasResult) {
         if (hasResult instanceof Quadruple) {
             Quadruple quadruple = (Quadruple) hasResult;
-            return new BinaryComputation(quadruple).equals(this);
+            return new BinaryOperand(quadruple).equals(this);
         }
         return false;
+    }
+
+    @Override
+    public HasResult fromOperand(AssignableName resultLocation) {
+        return new Quadruple(resultLocation, fstOperand, operator, sndOperand, null, null);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        BinaryComputation that = (BinaryComputation) o;
+        BinaryOperand that = (BinaryOperand) o;
 
         if (operator.equals(that.operator)) {
             final String operator = that.operator;

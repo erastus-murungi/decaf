@@ -31,7 +31,8 @@ public class MethodEnd extends ThreeAddressCode {
     }
 
     @Override
-    public void swapOut(AbstractName oldName, AbstractName newName) {
-
+    public String repr() {
+        return String.format("%s}", INDENT);
     }
+
 }

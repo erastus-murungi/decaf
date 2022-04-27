@@ -3,6 +3,9 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.dataflow.operand.Operand;
+
+import java.util.Optional;
 import java.util.Set;
 
 public abstract class HasResult extends ThreeAddressCode implements Cloneable {
@@ -26,8 +29,19 @@ public abstract class HasResult extends ThreeAddressCode implements Cloneable {
         this.dst = dst;
     }
 
-    public abstract Set<AbstractName> getComputationVariables();
+    public abstract Optional<Operand> getComputationNoArray();
 
+    public Optional<Operand> getComputationNoArrayNoGlobals(Set<AbstractName> globals) {
+        Optional<Operand> computationNoArray = getComputationNoArray();
+        if (computationNoArray.isPresent()) {
+            if (computationNoArray.get().containsAny(globals)) {
+                return Optional.empty();
+            } else {
+                return computationNoArray;
+            }
+        }
+        return computationNoArray;
+    }
     @Override
     public HasResult clone() {
         try {

@@ -9,17 +9,21 @@ import edu.mit.compilers.utils.Pair;
 public class Assignment extends AST {
     public Location location;
     public AssignExpr assignExpr;
-    public AssignOperator assignOperator;
+    private final String operator;
 
-    public Assignment (Location location, AssignExpr assignmentExpr, AssignOperator assignOperator){
+    public Assignment (Location location, AssignExpr assignmentExpr, String operator){
         this.location = location;
         this.assignExpr = assignmentExpr;
-        this.assignOperator = assignOperator;
+        this.operator = operator;
+    }
+
+    public String getOperator() {
+        return operator;
     }
 
     @Override
     public List<Pair<String, AST>> getChildren() {
-        return List.of(new Pair<>("location", location), new Pair<>("assignExpr", assignExpr), new Pair<>("assignOperator", assignOperator));
+        return List.of(new Pair<>("location", location), new Pair<>("assignExpr", assignExpr));
     }
 
     @Override
@@ -42,7 +46,6 @@ public class Assignment extends AST {
         return "Assignment{" +
                 "location=" + location +
                 ", assignExpr=" + assignExpr +
-                ", assignOperator=" + assignOperator +
                 '}';
     }
 }

@@ -1,12 +1,12 @@
 package edu.mit.compilers.grammar;
 
 
-public class Token{
+public class Token {
     public TokenPosition tokenPosition;
     public TokenType tokenType;
     public String lexeme;
 
-    public Token (TokenPosition tokenPosition, TokenType tokenType, String lexeme) {
+    public Token(TokenPosition tokenPosition, TokenType tokenType, String lexeme) {
         this.tokenPosition = tokenPosition;
         this.tokenType = tokenType;
         this.lexeme = lexeme;
@@ -16,15 +16,23 @@ public class Token{
         return lexeme;
     }
 
-    public TokenType tokenType(){
+    public TokenType tokenType() {
         return tokenType;
     }
 
-    public TokenPosition tokenPosition(){
+    public TokenPosition tokenPosition() {
         return tokenPosition;
     }
-        
+
     public boolean isNotEOF() {
         return tokenType != TokenType.EOF;
+    }
+
+    @Override
+    public String toString() {
+        return "Token{" +
+                ", tokenType=" + tokenType +
+                ", lexeme='" + lexeme + '\'' +
+                '}';
     }
 }
