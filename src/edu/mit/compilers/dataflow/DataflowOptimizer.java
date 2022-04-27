@@ -11,6 +11,7 @@ import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.dataflow.passes.CommonSubExpressionEliminationPass;
+import edu.mit.compilers.dataflow.passes.ConstantPropagationPass;
 import edu.mit.compilers.dataflow.passes.CopyPropagationPass;
 import edu.mit.compilers.dataflow.passes.DeadCodeEliminationPass;
 import edu.mit.compilers.dataflow.passes.DeadStoreEliminationPass;
@@ -32,7 +33,8 @@ public class DataflowOptimizer {
         CopyPropagation,
         DeadCodeElimination,
         DeadStoreElimination,
-        PeepHoleOptimization
+        PeepHoleOptimization,
+        ConstantPropagation
     }
 
     public class Factory {
@@ -64,6 +66,11 @@ public class DataflowOptimizer {
                             optimizationPassesList.add(new PeepHoleOptimizationPass(globalNames, methodBegin)));
                     break;
                 }
+                case ConstantPropagation: {
+                    methodBeginTacLists.forEach(methodBegin ->
+                        optimizationPassesList.add(new ConstantPropagationPass(globalNames, methodBegin.entryBlock)));
+                    break;
+                }
                 default: {
                     throw new IllegalArgumentException();
                 }
@@ -83,6 +90,7 @@ public class DataflowOptimizer {
         addPass(OptimizationPassType.CopyPropagation);
         addPass(OptimizationPassType.DeadCodeElimination);
         addPass(OptimizationPassType.DeadStoreElimination);
+        addPass(OptimizationPassType.ConstantPropagation);
     }
 
     public DataflowOptimizer(List<MethodBegin> methodBeginTacLists, Set<AbstractName> globalNames) {
