@@ -388,7 +388,8 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             ThreeAddressCodeList lhs = assignment.location.accept(this, symbolTable);
             ThreeAddressCodeList rhs;
             if (assignment.assignExpr.expression != null) {
-                if (assignment.getOperator().equals("="))
+                if (assignment.getOperator()
+                        .equals("="))
                     setStoreLocation((AssignableName) lhs.place);
                 rhs = assignment.assignExpr.expression.accept(this, symbolTable);
             } else {
@@ -571,8 +572,8 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         blockToCodeHashMap.put(basicBlockBranchLess, universalThreeAddressCodeList);
         if (!(basicBlockBranchLess instanceof NOP) && !(basicBlockBranchLess.autoChild instanceof NOP)) {
             if (visited.contains(basicBlockBranchLess.autoChild)) {
-                assert blockToLabelHashMap.containsKey(basicBlockBranchLess.autoChild);
-                universalThreeAddressCodeList.setNext(ThreeAddressCodeList.of(new UnconditionalJump(blockToLabelHashMap.get(basicBlockBranchLess.autoChild))));
+                var label = blockToLabelHashMap.computeIfAbsent(basicBlockBranchLess.autoChild, (key) -> getLabel(basicBlockBranchLess.autoChild, null));
+                universalThreeAddressCodeList.setNext(ThreeAddressCodeList.of(new UnconditionalJump(label)));
             } else {
                 universalThreeAddressCodeList.setNext(basicBlockBranchLess.autoChild.accept(this, symbolTable));
             }
