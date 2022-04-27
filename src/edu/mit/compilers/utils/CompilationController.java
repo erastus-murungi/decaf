@@ -102,10 +102,10 @@ public class CompilationController {
     }
 
     private void defaultInitialize() throws FileNotFoundException {
-        CLI.infile = "tests/dataflow/input/cp-13.dcf";
-        CLI.opts = new boolean[] {true};
-        CLI.target = CLI.Action.ASSEMBLY;
-        CLI.debug = true;
+//        CLI.infile = "tests/dataflow/input/cp-13.dcf";
+//        CLI.opts = new boolean[] {true};
+//        CLI.target = CLI.Action.ASSEMBLY;
+//        CLI.debug = true;
         InputStream inputStream = CLI.infile == null ? System.in : new java.io.FileInputStream(CLI.infile);
         sourceCode = Utils.getStringFromInputStream(inputStream);
     }
