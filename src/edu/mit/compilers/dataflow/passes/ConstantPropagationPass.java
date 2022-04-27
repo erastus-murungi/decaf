@@ -4,6 +4,7 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.HasResult;
+import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.codes.ThreeAddressCode;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.ConstantName;
@@ -18,8 +19,8 @@ import java.util.Set;
 
 public class ConstantPropagationPass extends OptimizationPass {
 
-    public ConstantPropagationPass(Set<AbstractName> globalVariables, BasicBlock entryBlock) {
-        super(globalVariables, entryBlock);
+    public ConstantPropagationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
+        super(globalVariables, methodBegin);
     }
 
     public void runGlobalConstantPropagation() {
@@ -41,14 +42,20 @@ public class ConstantPropagationPass extends OptimizationPass {
             var inSet = organize(reachingDefinitions.in.get(basicBlock));
             HashMap<AbstractName, DefValue> freshlyGen = new HashMap<>();
             for (ThreeAddressCode line : tacList){
+                // if line is new definition of a variable, we update the map which keeps track of the latest definition
+                // of a variable in our current block
                 if (line instanceof HasResult){
                     DefValue defValue = new DefValue((HasResult) line);
                     freshlyGen.put(defValue.variableName, defValue);
                 }
 
+                // if the line is a definition of a variable with variables in its righthand side, we will attempt to replace
+                // the variables with constants
                 if (line instanceof HasOperand){
                     var newLine = (HasOperand) line;
+                    // for each variable name
                     for (AbstractName oldName : newLine.getOperandNames()){
+                        // check if that variable has only one reaching definition and it hasn't been redefined in the block
                         if (inSet.containsKey(oldName) && inSet.get(oldName).size() == 1 && !freshlyGen.containsKey(oldName)){
                             DefValue defValue = (DefValue) inSet.get(oldName).toArray()[0];
                             if (defValue.operand instanceof UnmodifiedOperand) {
@@ -58,7 +65,9 @@ public class ConstantPropagationPass extends OptimizationPass {
                                     ((HasOperand) line).replace(oldName, constant);
                                 }
                             }
-                        } if (freshlyGen.containsKey(oldName)){
+                        }
+                        // check if the variable was freshly redefined
+                        if (freshlyGen.containsKey(oldName)){
                             DefValue defValue = freshlyGen.get(oldName);
                             if (defValue.operand instanceof UnmodifiedOperand) {
                                 var unmodified = (UnmodifiedOperand) defValue.operand;
@@ -72,6 +81,8 @@ public class ConstantPropagationPass extends OptimizationPass {
                 }
                 newtaclist.addCode(line);
             }
+            System.out.println("Block after");
+            System.out.println(basicBlock.threeAddressCodeList.getCodes());
         }
     }
 

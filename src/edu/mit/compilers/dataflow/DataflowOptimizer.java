@@ -68,7 +68,7 @@ public class DataflowOptimizer {
                 }
                 case ConstantPropagation: {
                     methodBeginTacLists.forEach(methodBegin ->
-                        optimizationPassesList.add(new ConstantPropagationPass(globalNames, methodBegin.entryBlock)));
+                        optimizationPassesList.add(new ConstantPropagationPass(globalNames, methodBegin)));
                     break;
                 }
                 default: {
