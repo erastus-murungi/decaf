@@ -41,6 +41,11 @@ public class MethodCallSetResult extends HasResult {
     }
 
     @Override
+    public String repr() {
+        return String.format("%s%s: %s = %s @%s %s%s", DOUBLE_INDENT, getResultLocation().repr(), getMethodReturnType(), "call", getMethodName() , DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
+    }
+
+    @Override
     public Optional<Operand> getComputationNoArray() {
         if (dst instanceof ArrayName)
             return Optional.empty();

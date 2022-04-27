@@ -166,8 +166,10 @@ public class CompilationController {
     }
 
     private boolean shouldOptimize() {
-//        return true;
-        return CLI.opts != null && CLI.opts.length != 0;
+        for (boolean opt: CLI.opts)
+            if (opt)
+                return true;
+        return false;
     }
 
     private void generateSymbolTablePdfs() {
@@ -178,6 +180,10 @@ public class CompilationController {
         assert compilationState == CompilationState.SEM_CHECKED;
         if (shouldOptimize()) {
             InstructionSimplifyPass.run(parser.getRoot());
+            if (CLI.debug) {
+                System.out.println("after InstructionSimplifyPass");
+                System.out.println(parser.getRoot().getSourceCode());
+            }
         }
 
         cfgGenerator = new CFGGenerator(parser.getRoot(), semanticChecker.globalDescriptor);
@@ -209,12 +215,16 @@ public class CompilationController {
 
     private void runDataflowOptimizationPasses() {
         assert compilationState == CompilationState.IR_GENERATED;
-//        System.out.println(mergeProgram());
         if (shouldOptimize()) {
+            if (CLI.debug) {
+                System.out.println("Before optimization");
+                System.out.println(mergeProgram());
+            }
             var dataflowOptimizer = new DataflowOptimizer(programIr.second, threeAddressCodesListConverter.globalNames);
             dataflowOptimizer.initialize();
             dataflowOptimizer.optimize();
             if (CLI.debug) {
+                System.out.println("After optimization");
                 System.out.println(mergeProgram());
             }
 

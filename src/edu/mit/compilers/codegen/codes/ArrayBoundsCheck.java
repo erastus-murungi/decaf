@@ -29,7 +29,12 @@ public class ArrayBoundsCheck extends ThreeAddressCode {
     }
 
     @Override
+    public String repr() {
+        return toString();
+    }
+
+    @Override
     public String toString() {
-        return String.format("%scheck bounds %s[%s] ", DOUBLE_INDENT, arrayAccess.arrayName, arrayAccess.accessIndex);
+        return String.format("%scheck bounds %s ", DOUBLE_INDENT, arrayAccess.arrayName.repr());
     }
 }

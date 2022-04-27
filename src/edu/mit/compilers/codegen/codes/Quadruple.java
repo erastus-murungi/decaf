@@ -48,6 +48,13 @@ public class Quadruple extends HasResult implements HasOperand {
     }
 
     @Override
+    public String repr() {
+        if (getComment().isPresent())
+            return String.format("%s%s: %s = %s %s %s %s%s", DOUBLE_INDENT, dst.repr(), dst.builtinType.getSourceCode(), fstOperand.repr(), operator, sndOperand.repr(), DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s: %s = %s %s %s", DOUBLE_INDENT, dst.repr(), dst.builtinType.getSourceCode(), fstOperand.repr(), operator, sndOperand.repr());
+    }
+
+    @Override
     public Optional<Operand> getComputationNoArray() {
         if (dst instanceof ArrayName || fstOperand instanceof ArrayName || sndOperand instanceof ArrayName)
             return Optional.empty();

@@ -45,4 +45,9 @@ public class MethodBegin extends ThreeAddressCode {
     public List<AbstractName> getNames() {
         return Collections.emptyList();
     }
+
+    @Override
+    public String repr() {
+        return String.format("\n%s: {%s", methodDefinition.methodName.id, DOUBLE_INDENT);
+    }
 }

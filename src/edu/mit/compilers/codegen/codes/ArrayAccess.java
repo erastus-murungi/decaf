@@ -38,10 +38,14 @@ public class ArrayAccess extends ThreeAddressCode implements HasOperand {
         return Collections.emptyList();
     }
 
+    @Override
+    public String repr() {
+        return String.format("%sload %s[%s]", DOUBLE_INDENT, arrayName, accessIndex.repr());
+    }
 
     @Override
     public String toString() {
-        return String.format("%sload %s[%s]", DOUBLE_INDENT, arrayName, accessIndex);
+        return String.format("%sload %s[%s]", DOUBLE_INDENT, arrayName, accessIndex.repr());
     }
 
     @Override

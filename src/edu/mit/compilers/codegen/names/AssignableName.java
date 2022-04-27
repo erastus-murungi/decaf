@@ -2,15 +2,13 @@ package edu.mit.compilers.codegen.names;
 
 import java.util.Objects;
 
+import edu.mit.compilers.ast.BuiltinType;
+
 public abstract class AssignableName extends AbstractName {
     public String label;
 
-    public AssignableName() {
-        super();
-    }
-
-    public AssignableName(String label, long size) {
-        super(size);
+    public AssignableName(String label, long size, BuiltinType builtinType) {
+        super(size, builtinType);
         this.label = label;
     }
 

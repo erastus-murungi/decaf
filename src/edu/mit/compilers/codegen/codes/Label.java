@@ -35,4 +35,9 @@ public class Label extends ThreeAddressCode {
         return Collections.emptyList();
     }
 
+    @Override
+    public String repr() {
+        return toString();
+    }
+
 }

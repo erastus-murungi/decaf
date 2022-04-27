@@ -56,4 +56,6 @@ public abstract class ThreeAddressCode {
                 .filter(abstractName -> !(globalVariables.contains(abstractName)))
                 .collect(Collectors.toList());
     }
+
+    public abstract String repr();
 }

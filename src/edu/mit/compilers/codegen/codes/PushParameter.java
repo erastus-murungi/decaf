@@ -34,6 +34,12 @@ public class PushParameter extends ThreeAddressCode implements HasOperand {
     }
 
     @Override
+    public String repr() {
+        String comment = "# " + getComment().orElse("");
+        return String.format("%s%s %s%s%20s", DOUBLE_INDENT, "push", parameterName.repr(), DOUBLE_INDENT, comment);
+    }
+
+    @Override
     public Operand getOperand() {
         return new UnmodifiedOperand(parameterName);
     }

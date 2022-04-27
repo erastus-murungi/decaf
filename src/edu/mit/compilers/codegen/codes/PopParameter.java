@@ -35,6 +35,11 @@ public class PopParameter extends ThreeAddressCode implements HasOperand {
     }
 
     @Override
+    public String repr() {
+        return String.format("%s%s %s%s%s", DOUBLE_INDENT, "pop", parameterName.repr(), DOUBLE_INDENT, getComment().orElse(""));
+    }
+
+    @Override
     public Operand getOperand() {
         return new UnmodifiedOperand(parameterName);
     }
