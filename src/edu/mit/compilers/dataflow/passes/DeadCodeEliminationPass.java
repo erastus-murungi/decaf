@@ -30,17 +30,6 @@ public class DeadCodeEliminationPass extends OptimizationPass {
         super(globalVariables, methodBegin);
     }
 
-    // return whether an instruction of the form x = x
-    private boolean isTrivialAssignment(ThreeAddressCode threeAddressCode) {
-        if (threeAddressCode instanceof Assign) {
-            var assign = (Assign) threeAddressCode;
-            if (assign.assignmentOperator.equals(DecafScanner.ASSIGN)) {
-                return assign.dst.equals(assign.operand);
-            }
-        }
-        return false;
-    }
-
     private boolean augmentedAssignVariablesNeeded(ThreeAddressCode tac) {
         if (tac instanceof HasOperand) {
             var hasOperand = (HasOperand) tac;

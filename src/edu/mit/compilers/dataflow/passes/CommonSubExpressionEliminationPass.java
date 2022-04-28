@@ -170,17 +170,6 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
         return false;
     }
 
-    // return whether an instruction of the form x = x
-    private static boolean isTrivialAssignment(ThreeAddressCode threeAddressCode) {
-        if (threeAddressCode instanceof Assign) {
-            var assign = (Assign) threeAddressCode;
-            if (assign.assignmentOperator.equals(DecafScanner.ASSIGN)) {
-                return assign.dst.equals(assign.operand);
-            }
-        }
-        return false;
-    }
-
     private static AbstractName backPropagateToEliminateCSEFromCFG(BasicBlock basicBlock,
                                                                    Operand operand,
                                                                    HasResult original) {

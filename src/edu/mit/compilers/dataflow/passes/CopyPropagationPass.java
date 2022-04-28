@@ -18,16 +18,6 @@ public class CopyPropagationPass extends OptimizationPass {
         super(globalVariables, methodBegin);
     }
 
-    // return whether an instruction of the form x = x
-    private static boolean isTrivialAssignment(ThreeAddressCode threeAddressCode) {
-        if (threeAddressCode instanceof Assign) {
-            var assign = (Assign) threeAddressCode;
-            if (assign.assignmentOperator.equals(DecafScanner.ASSIGN)) {
-                return assign.dst.equals(assign.operand);
-            }
-        }
-        return false;
-    }
 
     private static void propagateCopy(HasOperand hasOperand, HashMap<AbstractName, Operand> copies) {
         boolean notConverged = true;

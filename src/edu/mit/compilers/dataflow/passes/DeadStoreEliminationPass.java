@@ -1,13 +1,9 @@
 package edu.mit.compilers.dataflow.passes;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import edu.mit.compilers.ast.Array;
-import edu.mit.compilers.codegen.codes.ArrayAccess;
-import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.HasResult;
 import edu.mit.compilers.codegen.codes.MethodBegin;
@@ -34,6 +30,8 @@ public class DeadStoreEliminationPass extends OptimizationPass {
             final var usedInBlock = new HashSet<AbstractName>();
             // we iterate in reverse
             for (var tac: tacList) {
+                if (isTrivialAssignment(tac))
+                    continue;
                 if (tac instanceof HasResult) {
                     // this is a store
                     // check if it is in uses
