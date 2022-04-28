@@ -31,7 +31,6 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
                         if (nextTac instanceof Label) {
                             var label = (Label) nextTac;
                             if (unconditionalJump.goToLabel.equals(label)) {
-                                indicesToRemove.add(indexOfCode + 1);
                                 indicesToRemove.add(indexOfCode);
                             }
                         }
