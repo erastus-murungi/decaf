@@ -73,8 +73,8 @@ public class DataflowOptimizer {
     public void initialize() {
         addPass(OptimizationPassType.CommonSubExpression);
         addPass(OptimizationPassType.CopyPropagation);
-        addPass(OptimizationPassType.DeadCodeElimination);
         addPass(OptimizationPassType.DeadStoreElimination);
+        addPass(OptimizationPassType.DeadCodeElimination);
     }
 
     public DataflowOptimizer(List<MethodBegin> methodBeginTacLists, Set<AbstractName> globalNames) {

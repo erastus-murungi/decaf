@@ -183,12 +183,13 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
                     () -> new IllegalStateException("expected to find array " + locationArray.name.id + " in scope")
             );
 
-            final var arrayName = new ArrayName(locationArray.name.id, arrayDescriptor.size * Utils.WORD_SIZE, arrayDescriptor.type, locationThreeAddressCodeList.place);
+            final var arrayName = new ArrayName(locationArray.name.id, arrayDescriptor.size * Utils.WORD_SIZE, arrayDescriptor.type, null);
             final var arrayAccess = new ArrayAccess(
                     locationArray, locationArray.getSourceCode(),
                     arrayName,
                     new ConstantName(arrayDescriptor.size, arrayDescriptor.type),
                     locationThreeAddressCodeList.place);
+            arrayName.arrayAccess = arrayAccess;
             addArrayAccessBoundsCheck(threeAddressCodeList, arrayAccess);
             threeAddressCodeList.addCode(arrayAccess);
             threeAddressCodeList.place = arrayAccess.arrayName;

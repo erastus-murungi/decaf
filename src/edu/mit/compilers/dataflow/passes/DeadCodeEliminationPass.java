@@ -1,6 +1,7 @@
 package edu.mit.compilers.dataflow.passes;
 
 import edu.mit.compilers.cfg.BasicBlock;
+import edu.mit.compilers.codegen.codes.ArrayAccess;
 import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.HasResult;
@@ -10,6 +11,7 @@ import edu.mit.compilers.codegen.codes.MethodCallSetResult;
 import edu.mit.compilers.codegen.codes.PushParameter;
 import edu.mit.compilers.codegen.codes.ThreeAddressCode;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.ConstantName;
 import edu.mit.compilers.codegen.names.StringConstantName;
 import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
@@ -17,6 +19,8 @@ import edu.mit.compilers.dataflow.operand.AugmentedOperand;
 import edu.mit.compilers.grammar.DecafScanner;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -61,11 +65,22 @@ public class DeadCodeEliminationPass extends OptimizationPass {
         return false;
     }
 
+    private boolean eachNameIsArrayOrGlobalOrInNeededSet(ThreeAddressCode threeAddressCode, Set<AbstractName> neededSet) {
+        for (AbstractName abstractName: threeAddressCode.getNames()) {
+            if (!globalVariables.contains(abstractName) || !(abstractName instanceof ArrayName) || !neededSet.contains(abstractName)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private boolean allVariablesInNeededSet(Set<AbstractName> neededSet, ThreeAddressCode tac) {
         var allOperandsAreConstants = tac.getNames()
                 .stream()
                 .allMatch(this::allConstants);
-        return resultVariableIsGlobal(tac) || augmentedAssignVariablesNeeded(tac) || allOperandsAreConstants || neededSet.containsAll(tac.getNamesNoArrayNoGlobals(globalVariables));
+        return eachNameIsArrayOrGlobalOrInNeededSet(tac, neededSet) ||
+                augmentedAssignVariablesNeeded(tac) ||
+                allOperandsAreConstants;
     }
 
     /**
@@ -128,22 +143,36 @@ public class DeadCodeEliminationPass extends OptimizationPass {
 
         for (var basicBlock : basicBlocks) {
 
-            // the set of variables actually needed later in the program
-            final var neededSet = liveVariableAnalysis
-                    .in
-                    .get(basicBlock)
-                    .stream()
-                    .map(useDef -> useDef.variable)
-                    .collect(Collectors.toSet());
+            final var usedLaterGlobal = Collections.unmodifiableSet(liveVariableAnalysis.usedLater(basicBlock));
+            final var neededSet = new HashSet<>(usedLaterGlobal);
 
             // if all the variables used in this instruction are not in the needed set, then ignore
             // this instruction while reconstructing this basicBlocks TAC list
             // note that we ignore global variables and array names here
             // remove useless assignments like x = x
-            basicBlock.threeAddressCodeList.reset(basicBlock.codes()
-                    .stream()
-                    .filter(tac -> allVariablesInNeededSet(neededSet, tac) && !isTrivialAssignment(tac))
-                    .collect(Collectors.toList()));
+            var newTacList = new ArrayList<ThreeAddressCode>();
+            var reversedTacList = basicBlock.codes();
+            Collections.reverse(reversedTacList);
+            for (var tac: reversedTacList) {
+                if (tac instanceof HasOperand) {
+                    // add operands to neededSet
+                    var hasOperand = ((HasOperand) tac);
+                    neededSet.addAll(hasOperand.getOperandNamesNoArray());
+                }
+                if (tac instanceof HasResult) {
+                    var hasResult = ((HasResult) tac);
+                    var location = hasResult.getResultLocation();
+                    if (!(location instanceof ArrayName) && !(neededSet.contains(location))) {
+                        continue;
+                    }
+                }
+                if (isTrivialAssignment(tac))
+                    continue;
+
+                newTacList.add(tac);
+            }
+            Collections.reverse(newTacList);
+            basicBlock.threeAddressCodeList.reset(newTacList);
 
             boolean changed = removePushParametersExcessPushes(basicBlock);
             removeDanglingPushes(basicBlock, changed);

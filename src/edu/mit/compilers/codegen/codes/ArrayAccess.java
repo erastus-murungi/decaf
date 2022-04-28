@@ -10,6 +10,7 @@ import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class ArrayAccess extends ThreeAddressCode implements HasOperand {
@@ -29,23 +30,36 @@ public class ArrayAccess extends ThreeAddressCode implements HasOperand {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ArrayAccess that = (ArrayAccess) o;
+        return Objects.equals(arrayName, that.arrayName) && Objects.equals(arrayLength, that.arrayLength) && Objects.equals(accessIndex, that.accessIndex);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(arrayName, arrayLength, accessIndex);
+    }
+
+    @Override
     public <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, E extra) {
         return visitor.visit(this, extra);
     }
 
     @Override
     public List<AbstractName> getNames() {
-        return Collections.emptyList();
+        return List.of(accessIndex);
     }
 
     @Override
     public String repr() {
-        return String.format("%sload %s[%s]", DOUBLE_INDENT, arrayName, accessIndex.repr());
+        return String.format("%s[%s]", arrayName, accessIndex.repr());
     }
 
     @Override
     public String toString() {
-        return String.format("%sload %s[%s]", DOUBLE_INDENT, arrayName, accessIndex.repr());
+        return String.format("%s[%s]", arrayName, accessIndex.repr());
     }
 
     @Override

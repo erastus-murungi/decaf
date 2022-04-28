@@ -1,13 +1,18 @@
 package edu.mit.compilers.dataflow.passes;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import edu.mit.compilers.ast.Array;
+import edu.mit.compilers.codegen.codes.ArrayAccess;
+import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.HasResult;
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
 
 public class DeadStoreEliminationPass extends OptimizationPass {
@@ -35,18 +40,21 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                     // if it is not used afterwards, remove it
                     var store = ((HasResult) tac).getResultLocation();
 
-                    // if this store is not used
-                    if (!usedLaterGlobal.contains(store) && !usedInBlock.contains(store) && (methodBegin.isMain() || (!globalVariables.contains(store))))
-                        continue;
-                    if (!usedBeforeGlobal.contains(store) && (methodBegin.isMain() || (!globalVariables.contains(store))))
-                        continue;
+                    if (!(store instanceof ArrayName)) {
+
+                        // if this store is not used
+                        if (!usedLaterGlobal.contains(store) && !usedInBlock.contains(store) && (methodBegin.isMain() || (!globalVariables.contains(store))))
+                            continue;
+                        if (!usedBeforeGlobal.contains(store) && (methodBegin.isMain() || (!globalVariables.contains(store))))
+                            continue;
+                    }
                 }
                 if (tac instanceof HasOperand)
                     usedInBlock.addAll(tac.getNames());
 
                 newTacList.addCode(tac);
             }
-            Collections.reverse(basicBlock.threeAddressCodeList.getCodes());
+            Collections.reverse(newTacList.getCodes());
         }
     }
 
