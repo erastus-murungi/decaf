@@ -39,6 +39,11 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                     var store = ((HasResult) tac).getResultLocation();
 
                     if (!(store instanceof ArrayName)) {
+                        if (globalVariables.contains(store)) {
+                            usedInBlock.addAll(tac.getNames());
+                            newTacList.addCode(tac);
+                            continue;
+                        }
 
                         // if this store is not used
                         if (!usedLaterGlobal.contains(store) && !usedInBlock.contains(store) && (methodBegin.isMain() || (!globalVariables.contains(store))))
