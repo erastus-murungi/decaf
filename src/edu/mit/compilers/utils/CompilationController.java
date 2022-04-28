@@ -185,6 +185,12 @@ public class CompilationController {
                 System.out.println(parser.getRoot().getSourceCode());
             }
             InstructionSimplifyPass.run(parser.getRoot());
+            // this line is preventing the code from failing
+            // getSourceCode() does not modify the AST in any way
+            // it is a very odd bug which we have no clue of how to fix yet
+            /////////////////////////////////
+            parser.getRoot().getSourceCode();
+            ////////////////////////////////
             if (CLI.debug) {
                 System.out.println("after InstructionSimplifyPass");
                 System.out.println(parser.getRoot().getSourceCode());
@@ -224,7 +230,10 @@ public class CompilationController {
 
     private void runDataflowOptimizationPasses() {
         assert compilationState == CompilationState.IR_GENERATED;
-        int oldNLinesOfCode = countLinesOfCode();;
+        int oldNLinesOfCode = 0;
+        if (CLI.debug) {
+            oldNLinesOfCode = countLinesOfCode();;
+        }
         if (shouldOptimize()) {
             if (CLI.debug) {
                 System.out.println("Before optimization");
@@ -301,5 +310,3 @@ public class CompilationController {
         }
     }
 }
-
-
