@@ -7,6 +7,7 @@ import edu.mit.compilers.codegen.names.AbstractName;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class Label extends ThreeAddressCode {
     public final String label;
@@ -40,4 +41,16 @@ public class Label extends ThreeAddressCode {
         return toString();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Label label1 = (Label) o;
+        return Objects.equals(label, label1.label);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(label);
+    }
 }

@@ -127,7 +127,11 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             binOpExpressionTACList.add(leftTACList);
             binOpExpressionTACList.add(rightTACList);
 
-            var place = resolveStoreLocation(binaryOpExpression.builtinType);
+            AssignableName place;
+            if (cachedPlace == null)
+                place = resolveStoreLocation(binaryOpExpression.builtinType);
+            else
+                place = cachedPlace;
             resetStoreLocation();
 
             binOpExpressionTACList.addCode(
@@ -446,9 +450,9 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         final var firstBasicBlockTacList = methodStart.accept(this, symbolTable);
         firstBasicBlockTacList.prependAll(threeAddressCodeList);
 
-        firstBasicBlockTacList.setNext(ThreeAddressCodeList.of(endLabelGlobal));
+        firstBasicBlockTacList.addLast(endLabelGlobal);
 
-        firstBasicBlockTacList.setNext(ThreeAddressCodeList.of(new MethodEnd(methodDefinition)));
+        firstBasicBlockTacList.addLast(new MethodEnd(methodDefinition));
         methodStart.threeAddressCodeList = firstBasicBlockTacList;
         methodBegin.unoptimized = firstBasicBlockTacList.flatten();
         methodBegin.entryBlock = methodStart;
@@ -574,12 +578,12 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         if (!(basicBlockBranchLess instanceof NOP) && !(basicBlockBranchLess.autoChild instanceof NOP)) {
             if (visited.contains(basicBlockBranchLess.autoChild)) {
                 var label = blockToLabelHashMap.computeIfAbsent(basicBlockBranchLess.autoChild, (key) -> getLabel(basicBlockBranchLess.autoChild, null));
-                universalThreeAddressCodeList.setNext(ThreeAddressCodeList.of(new UnconditionalJump(label)));
+                universalThreeAddressCodeList.addLast(new UnconditionalJump(label));
             } else {
                 universalThreeAddressCodeList.setNext(basicBlockBranchLess.autoChild.accept(this, symbolTable));
             }
         } else {
-            universalThreeAddressCodeList.setNext(ThreeAddressCodeList.of(new UnconditionalJump(endLabelGlobal)));
+            universalThreeAddressCodeList.addLast(new UnconditionalJump(endLabelGlobal));
         }
         basicBlockBranchLess.threeAddressCodeList = universalThreeAddressCodeList;
         return universalThreeAddressCodeList;
@@ -666,7 +670,7 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
                         falseLabel, "if !(" + basicBlockWithBranch.condition.getSourceCode() + ")");
         conditionLabelTACList.addCode(jumpIfFalse);
         if (!(trueBlock.last() instanceof UnconditionalJump))
-            trueBlock.setNext(ThreeAddressCodeList.of(new UnconditionalJump(endLabel)));
+            trueBlock.addLast(new UnconditionalJump(endLabel));
 
         // no need for consecutive similar labels
         if (!falseBlock.isEmpty() && falseBlock.first() instanceof UnconditionalJump) {
@@ -677,7 +681,7 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
                 .equals(falseLabel))
             falseBlock.prepend(falseLabel);
         if (!(falseBlock.last() instanceof UnconditionalJump) && !(trueBlock.last() instanceof UnconditionalJump))
-            falseBlock.setNext(ThreeAddressCodeList.of(new UnconditionalJump(endLabel)));
+            falseBlock.addLast(new UnconditionalJump(endLabel));
         if (falseBlock.flattenedSize() == 1 && falseBlock.first() instanceof UnconditionalJump) {
             conditionLabelTACList.setNext(trueBlock);
             basicBlockWithBranch.threeAddressCodeList = conditionLabelTACList;

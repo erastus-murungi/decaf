@@ -15,6 +15,7 @@ import edu.mit.compilers.dataflow.passes.CopyPropagationPass;
 import edu.mit.compilers.dataflow.passes.DeadCodeEliminationPass;
 import edu.mit.compilers.dataflow.passes.DeadStoreEliminationPass;
 import edu.mit.compilers.dataflow.passes.OptimizationPass;
+import edu.mit.compilers.dataflow.passes.PeepHoleOptimizationPass;
 
 public class DataflowOptimizer {
     private static final int MAX_RUNS = 20;
@@ -30,7 +31,8 @@ public class DataflowOptimizer {
         CommonSubExpression,
         CopyPropagation,
         DeadCodeElimination,
-        DeadStoreElimination
+        DeadStoreElimination,
+        PeepHoleOptimization
     }
 
     public class Factory {
@@ -57,6 +59,11 @@ public class DataflowOptimizer {
                             optimizationPassesList.add(new DeadStoreEliminationPass(globalNames, methodBegin)));
                     break;
                 }
+                case PeepHoleOptimization: {
+                    methodBeginTacLists.forEach(methodBegin ->
+                            optimizationPassesList.add(new PeepHoleOptimizationPass(globalNames, methodBegin)));
+                    break;
+                }
                 default: {
                     throw new IllegalArgumentException();
                 }
@@ -71,6 +78,7 @@ public class DataflowOptimizer {
     }
 
     public void initialize() {
+        addPass(OptimizationPassType.PeepHoleOptimization);
         addPass(OptimizationPassType.CommonSubExpression);
         addPass(OptimizationPassType.CopyPropagation);
         addPass(OptimizationPassType.DeadCodeElimination);

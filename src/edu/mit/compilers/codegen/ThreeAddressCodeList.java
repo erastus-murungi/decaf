@@ -90,6 +90,17 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode>, Cloneab
         return next;
     }
 
+    public void addLast(ThreeAddressCode tac) {
+        ThreeAddressCodeList head = this;
+        while (head
+                .getNext()
+                .isPresent())
+            head = head
+                    .getNext()
+                    .get();
+        head.addCode(tac);
+    }
+
 
     public void prepend(ThreeAddressCode code) {
         codes.add(0, code);
