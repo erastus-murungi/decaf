@@ -1,5 +1,7 @@
 package edu.mit.compilers.dataflow.operand;
 
+import java.util.Objects;
+
 import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.HasResult;
 import edu.mit.compilers.codegen.names.AbstractName;
@@ -32,5 +34,18 @@ public class AugmentedOperand extends Operand {
     @Override
     public String toString() {
         return  operator + operand;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AugmentedOperand that = (AugmentedOperand) o;
+        return Objects.equals(operator, that.operator) && Objects.equals(operand, that.operand);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(operator, operand);
     }
 }
