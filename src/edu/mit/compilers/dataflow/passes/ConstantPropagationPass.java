@@ -25,17 +25,7 @@ public class ConstantPropagationPass extends OptimizationPass {
 
     public void runGlobalConstantPropagation() {
         final ReachingDefinitions reachingDefinitions = new ReachingDefinitions(entryBlock);
-        System.out.println("Everything");
-        System.out.println(entryBlock.threeAddressCodeList);
         for (BasicBlock basicBlock : basicBlocks) {
-            System.out.println("Block before");
-            System.out.println(basicBlock.threeAddressCodeList.getCodes());
-            var block = basicBlock.threeAddressCodeList.getCodes();
-            var in = reachingDefinitions.in.get(basicBlock);
-            var gen = reachingDefinitions.gen(basicBlock);
-            var kill = reachingDefinitions.kill(basicBlock);
-            var out = reachingDefinitions.out.get(basicBlock);
-
             var tacList = basicBlock.codes();
             final var newtaclist = basicBlock.threeAddressCodeList;
             newtaclist.getCodes().clear();
@@ -81,8 +71,6 @@ public class ConstantPropagationPass extends OptimizationPass {
                 }
                 newtaclist.addCode(line);
             }
-            System.out.println("Block after");
-            System.out.println(basicBlock.threeAddressCodeList.getCodes());
         }
     }
 

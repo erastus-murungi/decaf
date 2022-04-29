@@ -11,6 +11,7 @@
     <property name="classes.main" location="classes/main"/>
     <!-- Jar directory -->
     <property name="dist.main" location="dist"/>
+    <property name="dist"    location="dist"    />
     <!-- Binaries for tools, etc. -->
     <property name="bin" location="bin"/>
     <!-- Runtime libraries -->
@@ -52,6 +53,7 @@
         <mkdir dir="${classes.main}"/>
         <mkdir dir="${dist.main}"/>
         <mkdir dir="${test.main}"/>
+        <mkdir dir="${dist}"/>
     </target>
 
     <path id="classpath.base"/>
