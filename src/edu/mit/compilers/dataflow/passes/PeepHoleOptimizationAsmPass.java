@@ -81,9 +81,9 @@ public class PeepHoleOptimizationAsmPass {
         while (indexOfX64Code < programSize) {
             var mov = Move.fromX64Code(x64Program.get(indexOfX64Code));
             if (mov.isPresent()) {
+                var movInst = mov.get();
                 var prevMov = Move.fromX64Code(x64Program.get(indexOfX64Code - 1));
                 if (prevMov.isPresent()) {
-                    var movInst = mov.get();
                     var prevMovInst = prevMov.get();
                     if (prevMovInst.dst.equals(movInst.src)) {
                         if (isConstant(prevMovInst.src) || isRegister(prevMovInst.src)) {
@@ -95,13 +95,14 @@ public class PeepHoleOptimizationAsmPass {
                             // we do not need the third instruction
                             // remove `movInst`
                             if (!prevMovInst.src.equals("%al")) {
-                                if (!(prevMovInst.src.endsWith("ax") && movInst.dst.endsWith("ax"))) {
-                                    x64Program.set(indexOfX64Code - 1, X64CodeConverter.x64InstructionLine(X64Instruction.movq, prevMovInst.src, movInst.dst));
+                                x64Program.set(indexOfX64Code, X64CodeConverter.x64InstructionLine(X64Instruction.movq, prevMovInst.src, movInst.dst));
+                                var newSrc = prevMovInst.src;
+                                if (newSrc.equals(movInst.dst)) {
+                                    x64Program.remove(indexOfX64Code);
+                                    programSize = x64Program.size();
+                                    numInstructionsRemoved++;
+                                    continue;
                                 }
-                                x64Program.remove(indexOfX64Code);
-                                programSize = x64Program.size();
-                                numInstructionsRemoved++;
-                                continue;
                             }
                         }
                     }
