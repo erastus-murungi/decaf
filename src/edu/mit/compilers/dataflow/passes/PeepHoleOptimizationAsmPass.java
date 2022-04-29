@@ -94,13 +94,15 @@ public class PeepHoleOptimizationAsmPass {
                             //      3:   mov 	-32(%rbp), %rax     (movInst)
                             // we do not need the third instruction
                             // remove `movInst`
-                            if (!(prevMovInst.src.endsWith("ax") && movInst.dst.endsWith("ax"))) {
-                                x64Program.set(indexOfX64Code - 1, X64CodeConverter.x64InstructionLine(X64Instruction.movq, prevMovInst.src, movInst.dst));
+                            if (!prevMovInst.src.equals("%al")) {
+                                if (!(prevMovInst.src.endsWith("ax") && movInst.dst.endsWith("ax"))) {
+                                    x64Program.set(indexOfX64Code - 1, X64CodeConverter.x64InstructionLine(X64Instruction.movq, prevMovInst.src, movInst.dst));
+                                }
+                                x64Program.remove(indexOfX64Code);
+                                programSize = x64Program.size();
+                                numInstructionsRemoved++;
+                                continue;
                             }
-                            x64Program.remove(indexOfX64Code);
-                            programSize = x64Program.size();
-                            numInstructionsRemoved++;
-                            continue;
                         }
                     }
                 }
