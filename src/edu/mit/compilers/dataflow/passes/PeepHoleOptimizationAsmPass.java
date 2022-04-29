@@ -64,6 +64,7 @@ public class PeepHoleOptimizationAsmPass {
 
     public boolean run() {
         removeRedundantMoves();
+        removeRedundantConsecutiveMoves();
         return numInstructionsRemoved != 0;
     }
 
@@ -106,6 +107,33 @@ public class PeepHoleOptimizationAsmPass {
                             }
                         }
                     }
+                }
+            }
+            indexOfX64Code++;
+        }
+    }
+
+    private void removeRedundantConsecutiveMoves() {
+        int indexOfX64Code = 0;
+        int programSize = x64Program.size();
+        while (indexOfX64Code < programSize) {
+            var mov = Move.fromX64Code(x64Program.get(indexOfX64Code));
+            if (mov.isPresent()) {
+                var movInst = mov.get();
+                var prevMov = Move.fromX64Code(x64Program.get(indexOfX64Code - 1));
+                if (prevMov.isPresent()) {
+                    var prevMovInst = prevMov.get();
+                        if (prevMovInst.dst.equals(movInst.dst)) {
+                            /* Consider the case of:
+                            movq	$0, -8(%rbp)	 # x = 0
+	                        movq	%rdi, -8(%rbp)
+	                        // we remove the first one
+                            */
+                            x64Program.remove(indexOfX64Code - 1);
+                            programSize = x64Program.size();
+                            numInstructionsRemoved++;
+                            continue;
+                        }
                 }
             }
             indexOfX64Code++;
