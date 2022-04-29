@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import edu.mit.compilers.cfg.BasicBlock;
+import edu.mit.compilers.codegen.TemporaryNameGenerator;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.HasResult;
@@ -20,6 +21,7 @@ import edu.mit.compilers.codegen.codes.Triple;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.TemporaryName;
 import edu.mit.compilers.dataflow.analyses.AvailableExpressions;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.operand.Operand;
@@ -28,6 +30,7 @@ import edu.mit.compilers.grammar.DecafScanner;
 public class CommonSubExpressionEliminationPass extends OptimizationPass {
     public CommonSubExpressionEliminationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
         super(globalVariables, methodBegin);
+        TemporaryNameGenerator.setTempVariableIndexToHighestValue();
     }
 
     private static void swapOut(ThreeAddressCodeList tacList,
@@ -195,8 +198,12 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
                     if (threeAddressCode instanceof Triple || threeAddressCode instanceof Quadruple) {
                         final var hasResult = (HasResult) threeAddressCode;
                         if (operand.isContainedIn(hasResult)) {
-                            uniqueName = hasResult.getResultLocation();
+                            // create a new temp
+                            uniqueName = TemporaryName.generateTemporaryName(hasResult.getResultLocation().builtinType);
+                            updateTacList.add(Assign.ofRegularAssign(hasResult.getResultLocation(), uniqueName));
+                            updateTacList.add(operand.fromOperand(uniqueName));
                             computationFound = true;
+                            continue;
                         }
                     }
                 }
