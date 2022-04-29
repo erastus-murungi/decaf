@@ -206,18 +206,18 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
         return x64builder.addLine(new X64Code("." + label.label + ":"));
     }
 
-    public String tabSpaced(Object s) {
+    public static String tabSpaced(Object s) {
         return "\t" + s + "\t";
     }
 
-    public String commaSeparated(Object... s) {
+    public static String commaSeparated(Object... s) {
         return Arrays
                 .stream(s)
                 .map(Object::toString)
                 .collect(Collectors.joining(", "));
     }
 
-    public X64Code x64InstructionLine(Object instruction, Object... args) {
+    public static X64Code x64InstructionLine(Object instruction, Object... args) {
         return new X64Code(tabSpaced(instruction) + commaSeparated(args));
     }
 

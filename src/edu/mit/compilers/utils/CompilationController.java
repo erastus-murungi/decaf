@@ -16,6 +16,7 @@ import edu.mit.compilers.codegen.ThreeAddressCodesListConverter;
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.dataflow.DataflowOptimizer;
 import edu.mit.compilers.dataflow.passes.InstructionSimplifyPass;
+import edu.mit.compilers.dataflow.passes.PeepHoleOptimizationAsmPass;
 import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.Token;
@@ -36,6 +37,17 @@ public class CompilationController {
     private DecafExceptionProcessor decafExceptionProcessor;
     private PrintStream outputStream;
     private CompilationState compilationState;
+
+    private double nLinesOfCodeReductionFactor = 0.0D;
+    private int nLinesRemovedByAssemblyOptimizer = 0;
+
+    public int getNLinesRemovedByAssemblyOptimizer() {
+        return nLinesRemovedByAssemblyOptimizer;
+    }
+
+    public double getNLinesOfCodeReductionFactor() {
+        return nLinesOfCodeReductionFactor;
+    }
 
     public AST getAstRoot() {
         return parser.getRoot();
@@ -102,7 +114,7 @@ public class CompilationController {
     }
 
     private void defaultInitialize() throws FileNotFoundException {
-//        CLI.infile = "tests/dataflow/input/cp-13.dcf";
+//        CLI.infile = "tests/dataflow/input/cse-01.dcf";
 //        CLI.opts = new boolean[] {true};
 //        CLI.target = CLI.Action.ASSEMBLY;
 //        CLI.debug = true;
@@ -230,10 +242,8 @@ public class CompilationController {
 
     private void runDataflowOptimizationPasses() {
         assert compilationState == CompilationState.IR_GENERATED;
-        int oldNLinesOfCode = 0;
-        if (CLI.debug) {
-            oldNLinesOfCode = countLinesOfCode();;
-        }
+        double oldNLinesOfCode;
+        oldNLinesOfCode = countLinesOfCode();
         if (shouldOptimize()) {
             if (CLI.debug) {
                 System.out.println("Before optimization");
@@ -242,10 +252,11 @@ public class CompilationController {
             var dataflowOptimizer = new DataflowOptimizer(programIr.second, threeAddressCodesListConverter.globalNames);
             dataflowOptimizer.initialize();
             dataflowOptimizer.optimize();
+            nLinesOfCodeReductionFactor = (oldNLinesOfCode - countLinesOfCode()) / oldNLinesOfCode;
             if (CLI.debug) {
                 System.out.println("After optimization");
                 System.out.println(mergeProgram());
-                System.err.format("lines of code reduced by a factor of: %f\n", ((double)oldNLinesOfCode - countLinesOfCode()) / (double)oldNLinesOfCode);
+                System.err.format("lines of code reduced by a factor of: %f\n", nLinesOfCodeReductionFactor);
             }
 
         }
@@ -256,6 +267,11 @@ public class CompilationController {
         assert compilationState == CompilationState.DATAFLOW_OPTIMIZED;
         X64CodeConverter x64CodeConverter = new X64CodeConverter();
         X64Program x64program = x64CodeConverter.convert(mergeProgram());
+        if (shouldOptimize()) {
+            var peepHoleOptimizationAsmPass = new PeepHoleOptimizationAsmPass(x64program);
+            peepHoleOptimizationAsmPass.run();
+            nLinesRemovedByAssemblyOptimizer = peepHoleOptimizationAsmPass.getNumInstructionsRemoved();
+        }
         outputStream.println(x64program);
         compilationState = CompilationState.ASSEMBLED;
     }
