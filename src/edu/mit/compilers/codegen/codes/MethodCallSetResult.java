@@ -8,14 +8,18 @@ import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.MethodCallOperand;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public class MethodCallSetResult extends HasResult {
+public class MethodCallSetResult extends HasResult implements HasOperand {
     public MethodCallSetResult(MethodCall methodCall, AssignableName resultLocation, String comment) {
         super(resultLocation, methodCall, comment);
     }
 
+    public MethodCall getSource(){
+        return (MethodCall) source;
+    }
     public int numberOfArguments() {
         return ((MethodCall) source).methodCallParameterList.size();
     }
@@ -54,5 +58,25 @@ public class MethodCallSetResult extends HasResult {
         if (dst instanceof ArrayName)
             return Optional.empty();
         return Optional.of(new MethodCallOperand(this));
+    }
+
+    @Override
+    public boolean hasUnModifiedOperand() {
+        return false;
+    }
+
+    @Override
+    public Operand getOperand() {
+        return new MethodCallOperand(this);
+    }
+
+    @Override
+    public List<AbstractName> getOperandNames() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public boolean replace(AbstractName oldName, AbstractName newName) {
+        return false;
     }
 }
