@@ -55,6 +55,11 @@ public class Quadruple extends HasResult implements HasOperand {
     }
 
     @Override
+    public ThreeAddressCode copy() {
+        return new Quadruple(getResultLocation(), fstOperand, operator, sndOperand, getComment().orElse(null), source);
+    }
+
+    @Override
     public Optional<Operand> getComputationNoArray() {
         if (dst instanceof ArrayName || fstOperand instanceof ArrayName || sndOperand instanceof ArrayName)
             return Optional.empty();

@@ -10,10 +10,10 @@ import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 import java.util.List;
 
 public class PopParameter extends ThreeAddressCode implements HasOperand {
-    public AbstractName parameterName;
+    public AssignableName parameterName;
     public int parameterIndex;
 
-    public PopParameter(AssignableName parameterName, AST source,  int parameterIndex, String comment) {
+    public PopParameter(AssignableName parameterName, AST source, int parameterIndex, String comment) {
         super(source, comment);
         this.parameterName = parameterName;
         this.parameterIndex = parameterIndex;
@@ -40,6 +40,11 @@ public class PopParameter extends ThreeAddressCode implements HasOperand {
     }
 
     @Override
+    public ThreeAddressCode copy() {
+        return new PopParameter(parameterName, source, parameterIndex, getComment().orElse(null));
+    }
+
+    @Override
     public Operand getOperand() {
         return new UnmodifiedOperand(parameterName);
     }
@@ -52,7 +57,7 @@ public class PopParameter extends ThreeAddressCode implements HasOperand {
     public boolean replace(AbstractName oldVariable, AbstractName replacer) {
         var replaced = false;
         if (parameterName.equals(oldVariable)) {
-            parameterName = replacer;
+            parameterName = (AssignableName) replacer;
             replaced = true;
         }
         return replaced;

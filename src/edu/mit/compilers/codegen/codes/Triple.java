@@ -46,6 +46,11 @@ public class Triple extends HasResult implements Cloneable, HasOperand {
     }
 
     @Override
+    public ThreeAddressCode copy() {
+        return new Triple(getResultLocation(), operator, operand, source);
+    }
+
+    @Override
     public Optional<Operand> getComputationNoArray() {
         if (operand instanceof ArrayName || dst instanceof ArrayName)
             return Optional.empty();

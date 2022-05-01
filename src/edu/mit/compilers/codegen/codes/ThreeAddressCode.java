@@ -43,4 +43,6 @@ public abstract class ThreeAddressCode {
     }
 
     public abstract String repr();
+
+    public abstract ThreeAddressCode copy();
 }

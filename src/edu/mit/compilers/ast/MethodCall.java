@@ -11,6 +11,8 @@ public class MethodCall extends Expression {
     final public Name nameId;
     final public List<MethodCallParameter> methodCallParameterList;
 
+    public boolean isImported = false;
+
     public MethodCall(Name nameId, List<MethodCallParameter> methodCallParameterList) {
         super(nameId.tokenPosition);
         this.nameId = nameId;

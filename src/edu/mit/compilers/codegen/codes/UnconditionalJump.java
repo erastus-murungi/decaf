@@ -34,4 +34,9 @@ public class UnconditionalJump extends ThreeAddressCode {
         return toString();
     }
 
+    @Override
+    public ThreeAddressCode copy() {
+        return new UnconditionalJump(goToLabel);
+    }
+
 }

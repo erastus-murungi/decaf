@@ -15,7 +15,7 @@ import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.ThreeAddressCodesListConverter;
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.dataflow.DataflowOptimizer;
-import edu.mit.compilers.dataflow.passes.InstructionSimplifyPass;
+import edu.mit.compilers.dataflow.passes.InstructionSimplifyIrPass;
 import edu.mit.compilers.dataflow.passes.PeepHoleOptimizationAsmPass;
 import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
@@ -23,7 +23,7 @@ import edu.mit.compilers.grammar.Token;
 import edu.mit.compilers.ir.DecafSemanticChecker;
 import edu.mit.compilers.tools.CLI;
 
-public class CompilationController {
+public class Compilation {
     private String sourceCode;
     private DecafScanner scanner;
     private DecafParser parser;
@@ -101,23 +101,33 @@ public class CompilationController {
         }
     }
 
-    public CompilationController(String sourceCode) throws FileNotFoundException {
+    public Compilation(String sourceCode, boolean debug) throws FileNotFoundException {
         this.sourceCode = sourceCode;
         initialize();
+        CLI.debug = debug;
         CLI.target = CLI.Action.ASSEMBLY;
+        CLI.opts = new boolean[] {true};
 
     }
 
-    public CompilationController() throws FileNotFoundException {
+    public Compilation() throws FileNotFoundException {
         defaultInitialize();
         initialize();
     }
 
+    private void specificTestFileInitialize(InputStream inputStream) throws FileNotFoundException {
+        CLI.opts = new boolean[] {true};
+        CLI.target = CLI.Action.ASSEMBLY;
+        CLI.debug = true;
+        sourceCode = Utils.getStringFromInputStream(inputStream);
+    }
+
+    public Compilation(InputStream inputStream) throws FileNotFoundException {
+        specificTestFileInitialize(inputStream);
+        initialize();
+    }
+
     private void defaultInitialize() throws FileNotFoundException {
-//        CLI.infile = "tests/dataflow/input/cse-01.dcf";
-//        CLI.opts = new boolean[] {true};
-//        CLI.target = CLI.Action.ASSEMBLY;
-//        CLI.debug = true;
         InputStream inputStream = CLI.infile == null ? System.in : new java.io.FileInputStream(CLI.infile);
         sourceCode = Utils.getStringFromInputStream(inputStream);
     }
@@ -159,7 +169,7 @@ public class CompilationController {
 
     private void runSemanticsChecker() {
         assert compilationState == CompilationState.PARSED;
-        semanticChecker = new DecafSemanticChecker(parser.getRoot(), decafExceptionProcessor);
+        semanticChecker = new DecafSemanticChecker(parser.getRoot());
         semanticChecker.setTrace(CLI.debug);
         semanticChecker.runChecks(decafExceptionProcessor);
         if (semanticChecker.hasError()) {
@@ -196,7 +206,7 @@ public class CompilationController {
                 System.out.println("before InstructionSimplifyPass");
                 System.out.println(parser.getRoot().getSourceCode());
             }
-            InstructionSimplifyPass.run(parser.getRoot());
+            InstructionSimplifyIrPass.run(parser.getRoot());
             // this line is preventing the code from failing
             // getSourceCode() does not modify the AST in any way
             // it is a very odd bug which we have no clue of how to fix yet
@@ -219,7 +229,7 @@ public class CompilationController {
 
     private ThreeAddressCodeList mergeProgram() {
         var programHeader = programIr.first;
-        ThreeAddressCodeList tacList = programHeader.clone();
+        var tacList = programHeader.clone();
         for (MethodBegin methodBegin : programIr.second()) {
             tacList.add(methodBegin.entryBlock.threeAddressCodeList.flatten());
         }
@@ -252,6 +262,7 @@ public class CompilationController {
             var dataflowOptimizer = new DataflowOptimizer(programIr.second, threeAddressCodesListConverter.globalNames);
             dataflowOptimizer.initialize();
             dataflowOptimizer.optimize();
+            programIr = new Pair<>(programIr.first, dataflowOptimizer.methodBeginTacLists);
             nLinesOfCodeReductionFactor = (oldNLinesOfCode - countLinesOfCode()) / oldNLinesOfCode;
             if (CLI.debug) {
                 System.out.println("After optimization");

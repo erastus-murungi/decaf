@@ -433,7 +433,6 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
                                                 BasicBlock methodStart,
                                                 SymbolTable symbolTable) {
 
-        TemporaryNameGenerator.reset();
         endLabelGlobal = new Label("exit_" + methodDefinition.methodName.id, methodStart);
 
         var threeAddressCodeList = ThreeAddressCodeList.empty();

@@ -332,6 +332,7 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
             // All external functions are treated as if they return int
             methodCall.builtinType = BuiltinType.Int;
             visitMethodCallParameters(methodCall.methodCallParameterList, symbolTable);
+            methodCall.isImported = true;
             return BuiltinType.Int;
         }
         if (optionalMethodDescriptor.isPresent()) {

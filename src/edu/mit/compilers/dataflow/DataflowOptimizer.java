@@ -1,13 +1,9 @@
 package edu.mit.compilers.dataflow;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import edu.mit.compilers.ast.Program;
-import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.dataflow.passes.CommonSubExpressionEliminationPass;
@@ -15,6 +11,8 @@ import edu.mit.compilers.dataflow.passes.ConstantPropagationPass;
 import edu.mit.compilers.dataflow.passes.CopyPropagationPass;
 import edu.mit.compilers.dataflow.passes.DeadCodeEliminationPass;
 import edu.mit.compilers.dataflow.passes.DeadStoreEliminationPass;
+import edu.mit.compilers.dataflow.passes.FunctionInlinePass;
+import edu.mit.compilers.dataflow.passes.InstructionSimplifyPass;
 import edu.mit.compilers.dataflow.passes.OptimizationPass;
 import edu.mit.compilers.dataflow.passes.PeepHoleOptimizationPass;
 
@@ -23,7 +21,7 @@ public class DataflowOptimizer {
 
     Integer numberOfRuns = MAX_RUNS;
     Set<AbstractName> globalNames;
-    List<MethodBegin> methodBeginTacLists;
+    public List<MethodBegin> methodBeginTacLists;
     List<OptimizationPass> optimizationPassList = new ArrayList<>();
 
     Factory optimizationPassesFactory = new Factory();
@@ -34,7 +32,8 @@ public class DataflowOptimizer {
         DeadCodeElimination,
         DeadStoreElimination,
         PeepHoleOptimization,
-        ConstantPropagation
+        ConstantPropagation,
+        InstructionSimplification
     }
 
     public class Factory {
@@ -71,6 +70,11 @@ public class DataflowOptimizer {
                         optimizationPassesList.add(new ConstantPropagationPass(globalNames, methodBegin)));
                     break;
                 }
+                case InstructionSimplification: {
+                    methodBeginTacLists.forEach(methodBegin ->
+                            optimizationPassesList.add(new InstructionSimplifyPass(globalNames, methodBegin)));
+                    break;
+                }
                 default: {
                     throw new IllegalArgumentException();
                 }
@@ -85,12 +89,14 @@ public class DataflowOptimizer {
     }
 
     public void initialize() {
+        runIntraProceduralPasses();
         addPass(OptimizationPassType.PeepHoleOptimization);
         addPass(OptimizationPassType.CommonSubExpression);
         addPass(OptimizationPassType.CopyPropagation);
         addPass(OptimizationPassType.DeadCodeElimination);
         addPass(OptimizationPassType.DeadStoreElimination);
         addPass(OptimizationPassType.ConstantPropagation);
+        addPass(OptimizationPassType.InstructionSimplification);
     }
 
     public DataflowOptimizer(List<MethodBegin> methodBeginTacLists, Set<AbstractName> globalNames) {
@@ -98,6 +104,10 @@ public class DataflowOptimizer {
         this.methodBeginTacLists = methodBeginTacLists;
     }
 
+    private void runIntraProceduralPasses() {
+        FunctionInlinePass functionInlinePass = new FunctionInlinePass(methodBeginTacLists);
+        methodBeginTacLists = functionInlinePass.run();
+    }
     public void optimize() {
         for (int run = 0; run < numberOfRuns; run++) {
             boolean changesHappened = false;

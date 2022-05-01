@@ -24,7 +24,7 @@ public class ReachingDefinitions extends DataFlowAnalysis<DefValue> {
         if (!visitedBlocks.contains(block)){
             visitedBlocks.add(block);
             for (DefValue defValue : gen(block)){
-                String label = defValue.variableName.label;
+                String label = defValue.variableName.value;
                 if (defs.containsKey(label)){
                     defs.get(label).add(defValue);
                 } else {
@@ -120,7 +120,7 @@ public class ReachingDefinitions extends DataFlowAnalysis<DefValue> {
         HashSet<DefValue> kill = new HashSet<>();
         var genSet = gen(basicBlock);
         for (DefValue defValue: genSet){
-            String label = defValue.variableName.label;
+            String label = defValue.variableName.value;
             if (allDefValues.containsKey(label)){
                for (DefValue prevDefValue : allDefValues.get(label)){
                    if (!genSet.contains(prevDefValue)){

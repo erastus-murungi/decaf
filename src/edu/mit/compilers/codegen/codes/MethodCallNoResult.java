@@ -12,6 +12,10 @@ public class MethodCallNoResult extends ThreeAddressCode {
         super(methodCall, comment);
     }
 
+    public boolean isImported() {
+        return ((MethodCall) source).isImported;
+    }
+
     public int numberOfArguments() {
         return ((MethodCall) source).methodCallParameterList.size();
     }
@@ -42,6 +46,11 @@ public class MethodCallNoResult extends ThreeAddressCode {
     @Override
     public String repr() {
         return String.format("%s%s %s @%s %s%s", DOUBLE_INDENT, "call", getMethodReturnType(), getMethodName(), DOUBLE_INDENT, getComment().isPresent() ? " #  " + getComment().get() : "");
+    }
+
+    @Override
+    public ThreeAddressCode copy() {
+        return new MethodCallNoResult((MethodCall) source, getComment().orElse(null));
     }
 
 }

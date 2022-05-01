@@ -10,7 +10,7 @@ public class StringConstantName extends AbstractName {
     StringLiteralStackAllocation stringConstant;
 
     public StringConstantName(StringLiteralStackAllocation stringConstant) {
-        super(Utils.WORD_SIZE, BuiltinType.String);
+        super(Utils.WORD_SIZE, BuiltinType.String, stringConstant.label);
         this.stringConstant = stringConstant;
     }
 

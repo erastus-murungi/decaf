@@ -9,11 +9,11 @@ public class VariableName extends AssignableName {
 
     @Override
     public String toString() {
-        return label;
+        return value;
     }
 
     @Override
     public String repr() {
-        return String.format("%s", label);
+        return String.format("%s", value);
     }
 }

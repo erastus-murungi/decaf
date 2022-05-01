@@ -8,10 +8,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.DoubleSummaryStatistics;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
 
 public class TestRunner {
     public static final String DEFAULT_DATAFLOW_TESTS_ROOT = "tests/dataflow/input";
@@ -63,13 +63,14 @@ public class TestRunner {
             System.out.format("%10d\t%20s\t%10.4f%%\t%10d\n", i, fileNames[i], reductionRatios[i] * 100, nLinesRemoved[i]);
         }
         var doubleSummaryStatistics =  DoubleStream.of(reductionRatios).summaryStatistics();
-        System.out.format("\t%20s\t%10.4f%%\n", "AVERAGE REDUCTION", doubleSummaryStatistics.getAverage());
+        System.out.format("\t%s\t%10.4f%%\n", "AVERAGE REDUCTION", doubleSummaryStatistics.getAverage() * 100);
+        System.out.format("\t%s\t%10d\n", "TOTAL #ASM LINES REMOVED REDUCTION", IntStream.of(nLinesRemoved).summaryStatistics().getSum());
 
     }
 
-    private static CompilationController compileTest(File testFile) throws IOException {
-        var compilationController = new CompilationController(readFile(testFile));
-        compilationController.run();
-        return compilationController;
+    private static Compilation compileTest(File testFile) throws IOException {
+        var compilation = new Compilation(readFile(testFile), false);
+        compilation.run();
+        return compilation;
     }
 }

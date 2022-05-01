@@ -13,17 +13,17 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.ExprContext;
 import edu.mit.compilers.ast.Expression;
 import edu.mit.compilers.ast.LocationVariable;
-import edu.mit.compilers.utils.CompilationController;
+import edu.mit.compilers.utils.Compilation;
 import edu.mit.compilers.utils.Utils;
 
-public class InstructionSimplifyPassTest {
+public class InstructionSimplifyIrPassTest {
     @Test
     public void simplifyExpression() throws FileNotFoundException {
-        CompilationController compilationController = new CompilationController("void main() {int x; x = (1 + 6 * 3 / 2);}");
-        compilationController.run();
-        AST astRoot = compilationController.getAstRoot();
+        Compilation compilation = new Compilation("void main() {int x; x = (1 + 6 * 3 / 2);}", false);
+        compilation.run();
+        AST astRoot = compilation.getAstRoot();
         List<Expression> expressions = new ArrayList<>(Utils.findAllOfType(astRoot, Expression.class));
-        InstructionSimplifyPass.run(astRoot);
+        InstructionSimplifyIrPass.run(astRoot);
         expressions = expressions.stream().filter(expression -> !(expression instanceof LocationVariable &&
                 ((LocationVariable) expression).name.context.equals(ExprContext.STORE))).collect(Collectors.toList());
         assert expressions.size() == 1;

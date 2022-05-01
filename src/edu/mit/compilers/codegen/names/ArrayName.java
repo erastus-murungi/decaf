@@ -16,13 +16,13 @@ public class ArrayName extends AssignableName {
 
     @Override
     public String toString() {
-        return label;
+        return value;
     }
 
     @Override
     public String repr() {
         if (arrayAccess != null)
-            return String.format("*%s[%s]", label, arrayAccess.accessIndex.repr());
-        return String.format("*%s", label);
+            return String.format("*%s[%s]", value, arrayAccess.accessIndex.repr());
+        return String.format("*%s", value);
     }
 }
