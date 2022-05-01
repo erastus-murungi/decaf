@@ -11,13 +11,16 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.HasOperand;
+import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.codes.MethodCallNoResult;
 import edu.mit.compilers.codegen.codes.MethodCallSetResult;
+import edu.mit.compilers.codegen.codes.MethodEnd;
 import edu.mit.compilers.codegen.codes.MethodReturn;
 import edu.mit.compilers.codegen.codes.PopParameter;
 import edu.mit.compilers.codegen.codes.PushParameter;
 import edu.mit.compilers.codegen.codes.ThreeAddressCode;
+import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 
@@ -103,13 +106,13 @@ public class FunctionInlinePass {
         List<ThreeAddressCode> newTacList = new ArrayList<>();
         Map<AbstractName, AbstractName> paramToArg = mapParametersToArguments(functionBody, arguments);
         for (var tac : functionBody) {
-            if (tac instanceof PopParameter)
+            if (tac instanceof PopParameter || tac instanceof MethodEnd || tac instanceof Label || tac instanceof UnconditionalJump || tac instanceof MethodBegin)
                 continue;
             if (tac instanceof HasOperand) {
-                var hasOperand = (HasOperand) tac.copy();
-                paramToArg.forEach(hasOperand::replace);
-                newTacList.add((ThreeAddressCode) hasOperand);
+                tac = tac.copy();
+                paramToArg.forEach(((HasOperand)tac)::replace);
             }
+            newTacList.add(tac);
         }
         return newTacList;
     }
