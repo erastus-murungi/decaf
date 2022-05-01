@@ -85,19 +85,19 @@ public class InstructionSimplifyPass extends OptimizationPass {
         // true == false -> false
         // false == true -> false
         if (matchBinOpOperandsCommutative(eqInstruction, mOne, mZero)) {
-            return Assign.ofRegularAssign(eqInstruction.dst, mZero);
+            return Assign.ofRegularAssign(eqInstruction.dst, getZero());
         }
         return eqInstruction;
     }
 
     private static ThreeAddressCode trySimplifyMulInstruction(Quadruple multiplyInstruction) {
-        assert multiplyInstruction.operator.equals(PLUS);
+        assert multiplyInstruction.operator.equals(MULTIPLY);
 
         // 0 * X -> 0
         // X * 0 -> 0
         final var X = getNonZero(multiplyInstruction);
         if (matchBinOpOperandsCommutative(multiplyInstruction, mZero, X)) {
-            return Assign.ofRegularAssign(multiplyInstruction.dst, mZero);
+            return Assign.ofRegularAssign(multiplyInstruction.dst, getZero());
         }
         // X * 1 -> X
         // 1 * X -> X
