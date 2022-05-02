@@ -6,6 +6,7 @@ import java.util.Set;
 
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.dataflow.passes.BranchSimplificationPass;
 import edu.mit.compilers.dataflow.passes.CommonSubExpressionEliminationPass;
 import edu.mit.compilers.dataflow.passes.ConstantPropagationPass;
 import edu.mit.compilers.dataflow.passes.CopyPropagationPass;
@@ -33,7 +34,8 @@ public class DataflowOptimizer {
         DeadStoreElimination,
         PeepHoleOptimization,
         ConstantPropagation,
-        InstructionSimplification
+        InstructionSimplification,
+        BranchSimplification
     }
 
     public class Factory {
@@ -67,12 +69,17 @@ public class DataflowOptimizer {
                 }
                 case ConstantPropagation: {
                     methodBeginTacLists.forEach(methodBegin ->
-                        optimizationPassesList.add(new ConstantPropagationPass(globalNames, methodBegin)));
+                            optimizationPassesList.add(new ConstantPropagationPass(globalNames, methodBegin)));
                     break;
                 }
                 case InstructionSimplification: {
                     methodBeginTacLists.forEach(methodBegin ->
                             optimizationPassesList.add(new InstructionSimplifyPass(globalNames, methodBegin)));
+                    break;
+                }
+                case BranchSimplification: {
+                    methodBeginTacLists.forEach(methodBegin ->
+                            optimizationPassesList.add(new BranchSimplificationPass(globalNames, methodBegin)));
                     break;
                 }
                 default: {
@@ -97,6 +104,7 @@ public class DataflowOptimizer {
         addPass(OptimizationPassType.DeadStoreElimination);
         addPass(OptimizationPassType.ConstantPropagation);
         addPass(OptimizationPassType.InstructionSimplification);
+        addPass(OptimizationPassType.BranchSimplification);
     }
 
     public DataflowOptimizer(List<MethodBegin> methodBeginTacLists, Set<AbstractName> globalNames) {

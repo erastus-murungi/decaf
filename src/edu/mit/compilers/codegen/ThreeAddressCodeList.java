@@ -15,7 +15,7 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode>, Cloneab
 
     private List<ThreeAddressCode> codes;
 
-    private ThreeAddressCodeList next;
+    public ThreeAddressCodeList next;
 
     public int size() {
         return codes.size();
@@ -88,6 +88,10 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode>, Cloneab
                     .get();
         head.next = next;
         return next;
+    }
+
+    public void resetNext(ThreeAddressCodeList next) {
+        this.next = next;
     }
 
     public void addLast(ThreeAddressCode tac) {

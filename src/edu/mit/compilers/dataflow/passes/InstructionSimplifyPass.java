@@ -18,8 +18,8 @@ import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.ConstantName;
 
 public class InstructionSimplifyPass extends OptimizationPass {
-    private static final ConstantName mZero = new ConstantName(0L, BuiltinType.Int);
-    private static final ConstantName mOne = new ConstantName(1L, BuiltinType.Int);
+    static final ConstantName mZero = new ConstantName(0L, BuiltinType.Int);
+    static final ConstantName mOne = new ConstantName(1L, BuiltinType.Int);
 
     private static ConstantName getZero() {
         return new ConstantName(0L, BuiltinType.Int);

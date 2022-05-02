@@ -77,9 +77,13 @@ public class PeepHoleOptimizationAsmPass {
     }
 
     private void removeRedundantMoves() {
-        int indexOfX64Code = 0;
+        int indexOfX64Code = 1;
         int programSize = x64Program.size();
         while (indexOfX64Code < programSize) {
+            if (x64Program.get(indexOfX64Code).equals(x64Program.get(indexOfX64Code - 1))) {
+                x64Program.remove(indexOfX64Code - 1);
+                programSize = x64Program.size();
+            }
             var mov = Move.fromX64Code(x64Program.get(indexOfX64Code));
             if (mov.isPresent()) {
                 var movInst = mov.get();
@@ -108,6 +112,7 @@ public class PeepHoleOptimizationAsmPass {
                         }
                     }
                 }
+
             }
             indexOfX64Code++;
         }
