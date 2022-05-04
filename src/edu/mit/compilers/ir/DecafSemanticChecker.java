@@ -3,11 +3,8 @@ package edu.mit.compilers.ir;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.BuiltinType;
 import edu.mit.compilers.ast.Program;
-import edu.mit.compilers.descriptors.Descriptor;
 import edu.mit.compilers.descriptors.GlobalDescriptor;
 import edu.mit.compilers.exceptions.DecafSemanticException;
-import edu.mit.compilers.grammar.DecafScanner;
-import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.utils.DecafExceptionProcessor;
 
 
@@ -17,15 +14,11 @@ public class DecafSemanticChecker {
 
     private boolean hasError;
 
-    private AST rootNode;
+    private final AST rootNode;
 
     public GlobalDescriptor globalDescriptor;
 
-    public DecafSemanticChecker(Program rootNode, DecafExceptionProcessor decafExceptionProcessor) {
-        this.rootNode = rootNode;
-    }
-
-    public DecafSemanticChecker(AST rootNode) {
+    public DecafSemanticChecker(Program rootNode) {
         this.rootNode = rootNode;
     }
 

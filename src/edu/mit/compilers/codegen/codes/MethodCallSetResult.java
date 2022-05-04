@@ -17,6 +17,10 @@ public class MethodCallSetResult extends HasResult implements HasOperand {
         super(resultLocation, methodCall, comment);
     }
 
+    public boolean isImported() {
+        return ((MethodCall) source).isImported;
+    }
+
     public MethodCall getSource(){
         return (MethodCall) source;
     }
@@ -51,6 +55,11 @@ public class MethodCallSetResult extends HasResult implements HasOperand {
     @Override
     public String repr() {
         return String.format("%s%s: %s = %s @%s %s%s", DOUBLE_INDENT, getResultLocation().repr(), getMethodReturnType(), "call", getMethodName() , DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
+    }
+
+    @Override
+    public ThreeAddressCode copy() {
+        return new MethodCallSetResult((MethodCall) source, getResultLocation(), getComment().orElse(null));
     }
 
     @Override

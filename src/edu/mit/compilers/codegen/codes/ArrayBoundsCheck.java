@@ -13,7 +13,7 @@ public class ArrayBoundsCheck extends ThreeAddressCode {
     public Label indexIsGTEZero;
     public ArrayAccess arrayAccess;
 
-    public ArrayBoundsCheck(AST source, ArrayAccess arrayAccess,String comment, Label indexIsLessThanArraySize, Label indexIsGTEZero) {
+    public ArrayBoundsCheck(AST source, ArrayAccess arrayAccess, String comment, Label indexIsLessThanArraySize, Label indexIsGTEZero) {
         super(source, comment);
         this.indexIsLessThanArraySize = indexIsLessThanArraySize;
         this.indexIsGTEZero = indexIsGTEZero;
@@ -36,8 +36,13 @@ public class ArrayBoundsCheck extends ThreeAddressCode {
     }
 
     @Override
+    public ThreeAddressCode copy() {
+        return new ArrayBoundsCheck(source, arrayAccess, getComment().orElse(null), indexIsLessThanArraySize, indexIsGTEZero);
+    }
+
+    @Override
     public String toString() {
-        return String.format("%scheck bounds %s ", DOUBLE_INDENT, arrayAccess);
+        return String.format("%scheck bounds *%s ", DOUBLE_INDENT, arrayAccess);
     }
 
 //    @Override

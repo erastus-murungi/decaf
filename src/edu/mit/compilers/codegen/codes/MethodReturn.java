@@ -17,7 +17,7 @@ public class MethodReturn extends ThreeAddressCode implements HasOperand {
         super(source);
     }
 
-    public MethodReturn(AST source, AssignableName returnAddress) {
+    public MethodReturn(AST source, AbstractName returnAddress) {
         super(source);
         this.returnAddress = returnAddress;
     }
@@ -28,7 +28,7 @@ public class MethodReturn extends ThreeAddressCode implements HasOperand {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s", DOUBLE_INDENT, "return", getReturnAddress().isEmpty() ? " " : getReturnAddress().get());
+        return String.format("%s%s %s", DOUBLE_INDENT, "return", getReturnAddress().isEmpty() ? " " : getReturnAddress().get().repr());
     }
 
     @Override
@@ -46,6 +46,11 @@ public class MethodReturn extends ThreeAddressCode implements HasOperand {
     @Override
     public String repr() {
         return toString();
+    }
+
+    @Override
+    public ThreeAddressCode copy() {
+        return new MethodReturn(source, returnAddress);
     }
 
     @Override

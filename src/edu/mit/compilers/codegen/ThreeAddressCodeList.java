@@ -15,7 +15,7 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode>, Cloneab
 
     private List<ThreeAddressCode> codes;
 
-    private ThreeAddressCodeList next;
+    public ThreeAddressCodeList next;
 
     public int size() {
         return codes.size();
@@ -27,6 +27,12 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode>, Cloneab
 
     public Optional<ThreeAddressCodeList> getNext() {
         return Optional.ofNullable(next);
+    }
+
+    public Optional<ThreeAddressCode> lastCode() {
+        if (isEmpty())
+            return Optional.empty();
+        return Optional.of(codes.get(codes.size() - 1));
     }
 
     public ThreeAddressCodeList flatten() {
@@ -74,7 +80,7 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode>, Cloneab
         return flattened.get(flattened.size() - 1);
     }
 
-    public ThreeAddressCode first() {
+    public ThreeAddressCode firstCode() {
         return codes.get(0);
     }
 
@@ -88,6 +94,10 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode>, Cloneab
                     .get();
         head.next = next;
         return next;
+    }
+
+    public void resetNext(ThreeAddressCodeList next) {
+        this.next = next;
     }
 
     public void addLast(ThreeAddressCode tac) {

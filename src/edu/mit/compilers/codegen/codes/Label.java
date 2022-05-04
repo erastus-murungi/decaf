@@ -1,5 +1,6 @@
 package edu.mit.compilers.codegen.codes;
 
+import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
@@ -15,10 +16,14 @@ public class Label extends ThreeAddressCode {
     public List<String> aliasLabels;
 
     public Label(String label, BasicBlock cfgBlock) {
-        super(cfgBlock == null || cfgBlock.lines.isEmpty() ? null : cfgBlock.lines.get(0));
+        this(cfgBlock == null || cfgBlock.lines.isEmpty() ? null : cfgBlock.lines.get(0), label, cfgBlock, new ArrayList<>());
+    }
+
+    public Label(AST source, String label, BasicBlock cfgBlock, List<String> aliasLabels) {
+        super(source);
         this.cfgBlock = cfgBlock;
         this.label = label;
-        this.aliasLabels = new ArrayList<>();
+        this.aliasLabels = aliasLabels;
     }
 
     @Override
@@ -39,6 +44,11 @@ public class Label extends ThreeAddressCode {
     @Override
     public String repr() {
         return toString();
+    }
+
+    @Override
+    public ThreeAddressCode copy() {
+        return new Label(source, label, cfgBlock, aliasLabels);
     }
 
     @Override

@@ -45,6 +45,11 @@ public class Assign extends HasResult implements Cloneable, HasOperand {
     }
 
     @Override
+    public ThreeAddressCode copy() {
+        return new Assign(dst, assignmentOperator, operand, source, getComment().orElse(null));
+    }
+
+    @Override
     public String toString() {
         return String.format("%s%s %s %s", DOUBLE_INDENT, dst, assignmentOperator, operand);
     }
@@ -97,12 +102,6 @@ public class Assign extends HasResult implements Cloneable, HasOperand {
 
     @Override
     public List<AbstractName> getOperandNames() {
-//        var augmentedAssignOps = Set.of(DecafScanner.ADD_ASSIGN, DecafScanner.MINUS_ASSIGN, DecafScanner.MULTIPLY_ASSIGN);
-//        if (augmentedAssignOps.contains(assignmentOperator)) {
-//            // we have a compound assignment operation
-//            return List.of(dst, operand);
-//        }
-        // compound operators
         return List.of(operand);
     }
 

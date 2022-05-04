@@ -8,7 +8,7 @@ public class TemporaryName extends AssignableName {
     final long index;
 
     public TemporaryName(long index, long size, BuiltinType builtinType) {
-        super(String.valueOf(index), size, builtinType);
+        super(String.format("tmp%03d", index), size, builtinType);
         this.index = index;
     }
 

@@ -25,7 +25,7 @@ public class StringLiteralStackAllocation extends ThreeAddressCode {
     }
 
     public String toString() {
-        return String.format("%s%s:\n%s%s%s\n", INDENT, label, DOUBLE_INDENT, stringConstant, DOUBLE_INDENT + "#" + size() + " bytes");
+        return String.format("%s:\n\t.%s   %s", label, "string", stringConstant);
     }
 
     @Override
@@ -43,7 +43,12 @@ public class StringLiteralStackAllocation extends ThreeAddressCode {
         return String.format("@.%s = %s%s%s", label, stringConstant, DOUBLE_INDENT, "# " + size() + " bytes");
     }
 
+    @Override
+    public ThreeAddressCode copy() {
+        return new StringLiteralStackAllocation(stringConstant);
+    }
+
     public String getASM() {
-        return String.format("%s:\n%s%s.%s   %s", label, INDENT, INDENT, "string", stringConstant);
+        return String.format("%s:\n\t.%s   %s", label, "string", stringConstant);
     }
 }

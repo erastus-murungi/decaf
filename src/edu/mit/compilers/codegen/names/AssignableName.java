@@ -5,11 +5,8 @@ import java.util.Objects;
 import edu.mit.compilers.ast.BuiltinType;
 
 public abstract class AssignableName extends AbstractName {
-    public String label;
-
     public AssignableName(String label, long size, BuiltinType builtinType) {
-        super(size, builtinType);
-        this.label = label;
+        super(size, builtinType, label);
     }
 
     @Override
@@ -18,11 +15,11 @@ public abstract class AssignableName extends AbstractName {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         AssignableName that = (AssignableName) o;
-        return Objects.equals(label, that.label);
+        return Objects.equals(value, that.value);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(label);
+        return Objects.hash(value);
     }
 }

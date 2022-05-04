@@ -65,7 +65,15 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
 
         @Override
         public ThreeAddressCodeList visit(FieldDeclaration fieldDeclaration, SymbolTable symbolTable) {
-            return new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
+            ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
+            for (Name name: fieldDeclaration.names) {
+                if (fieldDeclaration.builtinType.equals(BuiltinType.Int) || fieldDeclaration.builtinType.equals(BuiltinType.Bool)) {
+                    threeAddressCodeList.addCode(new Assign(new VariableName(name.id, Utils.WORD_SIZE, BuiltinType.Int), "=", ConstantName.zero(), name, name.id + " = " + 0));
+                }
+
+            }
+            return threeAddressCodeList;
+
         }
 
         @Override
@@ -433,7 +441,6 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
                                                 BasicBlock methodStart,
                                                 SymbolTable symbolTable) {
 
-        TemporaryNameGenerator.reset();
         endLabelGlobal = new Label("exit_" + methodDefinition.methodName.id, methodStart);
 
         var threeAddressCodeList = ThreeAddressCodeList.empty();
@@ -676,16 +683,16 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
             trueBlock.addLast(new UnconditionalJump(endLabel));
 
         // no need for consecutive similar labels
-        if (!falseBlock.isEmpty() && falseBlock.first() instanceof UnconditionalJump) {
-            UnconditionalJump unconditionalJump = (UnconditionalJump) falseBlock.first();
+        if (!falseBlock.isEmpty() && falseBlock.firstCode() instanceof UnconditionalJump) {
+            UnconditionalJump unconditionalJump = (UnconditionalJump) falseBlock.firstCode();
             if (!unconditionalJump.goToLabel.label.equals(falseLabel.label))
                 falseBlock.prepend(falseLabel);
-        } else if (!falseBlock.first()
+        } else if (!falseBlock.firstCode()
                 .equals(falseLabel))
             falseBlock.prepend(falseLabel);
         if (!(falseBlock.last() instanceof UnconditionalJump) && !(trueBlock.last() instanceof UnconditionalJump))
             falseBlock.addLast(new UnconditionalJump(endLabel));
-        if (falseBlock.flattenedSize() == 1 && falseBlock.first() instanceof UnconditionalJump) {
+        if (falseBlock.flattenedSize() == 1 && falseBlock.firstCode() instanceof UnconditionalJump) {
             conditionLabelTACList.setNext(trueBlock);
             basicBlockWithBranch.threeAddressCodeList = conditionLabelTACList;
             return conditionLabelTACList;

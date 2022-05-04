@@ -40,6 +40,11 @@ public class GlobalAllocation extends ThreeAddressCode {
     }
 
     @Override
+    public ThreeAddressCode copy() {
+        return new GlobalAllocation(source, getComment().orElse(null), variableName, size, type);
+    }
+
+    @Override
     public String toString() {
         return String.format("%s.comm %s,%s,%s %s %s", INDENT, variableName, size, alignment, DOUBLE_INDENT, getComment().orElse(" ") + " " + type.getSourceCode());
     }

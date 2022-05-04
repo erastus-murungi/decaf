@@ -35,6 +35,11 @@ public class RuntimeException extends ThreeAddressCode {
     }
 
     @Override
+    public ThreeAddressCode copy() {
+        return new RuntimeException(errorMessage, errorCode, decafException);
+    }
+
+    @Override
     public String toString() {
         return String.format("%s%s(%s)", DOUBLE_INDENT, "raise RuntimeException", decafException.getMessage());
     }

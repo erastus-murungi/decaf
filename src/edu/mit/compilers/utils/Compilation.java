@@ -1,10 +1,13 @@
 package edu.mit.compilers.utils;
 
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import edu.mit.compilers.asm.X64CodeConverter;
 import edu.mit.compilers.asm.X64Program;
@@ -14,15 +17,17 @@ import edu.mit.compilers.cfg.iCFGVisitor;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.ThreeAddressCodesListConverter;
 import edu.mit.compilers.codegen.codes.MethodBegin;
+import edu.mit.compilers.codegen.codes.ThreeAddressCode;
 import edu.mit.compilers.dataflow.DataflowOptimizer;
-import edu.mit.compilers.dataflow.passes.InstructionSimplifyPass;
+import edu.mit.compilers.dataflow.passes.InstructionSimplifyIrPass;
+import edu.mit.compilers.dataflow.passes.PeepHoleOptimizationAsmPass;
 import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.Token;
 import edu.mit.compilers.ir.DecafSemanticChecker;
 import edu.mit.compilers.tools.CLI;
 
-public class CompilationController {
+public class Compilation {
     private String sourceCode;
     private DecafScanner scanner;
     private DecafParser parser;
@@ -36,6 +41,17 @@ public class CompilationController {
     private DecafExceptionProcessor decafExceptionProcessor;
     private PrintStream outputStream;
     private CompilationState compilationState;
+
+    private double nLinesOfCodeReductionFactor = 0.0D;
+    private int nLinesRemovedByAssemblyOptimizer = 0;
+
+    public int getNLinesRemovedByAssemblyOptimizer() {
+        return nLinesRemovedByAssemblyOptimizer;
+    }
+
+    public double getNLinesOfCodeReductionFactor() {
+        return nLinesOfCodeReductionFactor;
+    }
 
     public AST getAstRoot() {
         return parser.getRoot();
@@ -89,29 +105,39 @@ public class CompilationController {
         }
     }
 
-    public CompilationController(String sourceCode) throws FileNotFoundException {
+    public Compilation(String sourceCode, boolean debug) throws FileNotFoundException {
         this.sourceCode = sourceCode;
         initialize();
+        CLI.debug = debug;
         CLI.target = CLI.Action.ASSEMBLY;
+        CLI.opts = new boolean[] {true};
 
     }
 
-    public CompilationController() throws FileNotFoundException {
+    public Compilation() throws FileNotFoundException {
         defaultInitialize();
         initialize();
     }
 
+    private void specificTestFileInitialize(InputStream inputStream) {
+        CLI.opts = new boolean[] {true};
+        CLI.target = CLI.Action.ASSEMBLY;
+        CLI.debug = true;
+        sourceCode = Utils.getStringFromInputStream(inputStream);
+    }
+
+    public Compilation(InputStream inputStream) throws FileNotFoundException {
+        specificTestFileInitialize(inputStream);
+        initialize();
+    }
+
     private void defaultInitialize() throws FileNotFoundException {
-//        CLI.infile = "tests/dataflow/input/cp-13.dcf";
-//        CLI.opts = new boolean[] {true};
-//        CLI.target = CLI.Action.ASSEMBLY;
-//        CLI.debug = true;
-        InputStream inputStream = CLI.infile == null ? System.in : new java.io.FileInputStream(CLI.infile);
+        InputStream inputStream = CLI.infile == null ? System.in : new FileInputStream(CLI.infile);
         sourceCode = Utils.getStringFromInputStream(inputStream);
     }
 
     private void initialize() throws FileNotFoundException {
-        outputStream = CLI.outfile == null ? System.out : new java.io.PrintStream(new java.io.FileOutputStream(CLI.outfile));
+        outputStream = CLI.outfile == null ? System.out : new java.io.PrintStream(new FileOutputStream(CLI.outfile));
         decafExceptionProcessor = new DecafExceptionProcessor(sourceCode);
         compilationState = CompilationState.INITIALIZED;
     }
@@ -147,7 +173,7 @@ public class CompilationController {
 
     private void runSemanticsChecker() {
         assert compilationState == CompilationState.PARSED;
-        semanticChecker = new DecafSemanticChecker(parser.getRoot(), decafExceptionProcessor);
+        semanticChecker = new DecafSemanticChecker(parser.getRoot());
         semanticChecker.setTrace(CLI.debug);
         semanticChecker.runChecks(decafExceptionProcessor);
         if (semanticChecker.hasError()) {
@@ -163,6 +189,7 @@ public class CompilationController {
     private void generateCFGVisualizationPdfs() {
         var copy = new HashMap<>(iCFGVisitor.methodCFGBlocks);
         copy.put("globals", iCFGVisitor.initialGlobalBlock);
+//        GraphVizPrinter.printGraph(copy, (basicBlock -> basicBlock.threeAddressCodeList.getCodes().stream().map(ThreeAddressCode::repr).collect(Collectors.joining("\n"))));
         GraphVizPrinter.printGraph(copy);
     }
 
@@ -184,7 +211,7 @@ public class CompilationController {
                 System.out.println("before InstructionSimplifyPass");
                 System.out.println(parser.getRoot().getSourceCode());
             }
-            InstructionSimplifyPass.run(parser.getRoot());
+            InstructionSimplifyIrPass.run(parser.getRoot());
             // this line is preventing the code from failing
             // getSourceCode() does not modify the AST in any way
             // it is a very odd bug which we have no clue of how to fix yet
@@ -199,15 +226,12 @@ public class CompilationController {
 
         cfgGenerator = new CFGGenerator(parser.getRoot(), semanticChecker.globalDescriptor);
         iCFGVisitor = cfgGenerator.buildiCFG();
-        if (CLI.debug) {
-            generateCFGVisualizationPdfs();
-        }
         compilationState = CompilationState.CFG_GENERATED;
     }
 
     private ThreeAddressCodeList mergeProgram() {
         var programHeader = programIr.first;
-        ThreeAddressCodeList tacList = programHeader.clone();
+        var tacList = programHeader.clone();
         for (MethodBegin methodBegin : programIr.second()) {
             tacList.add(methodBegin.entryBlock.threeAddressCodeList.flatten());
         }
@@ -221,6 +245,9 @@ public class CompilationController {
         if (CLI.debug) {
             generateSymbolTablePdfs();
         }
+        if (CLI.debug) {
+            generateCFGVisualizationPdfs();
+        }
         compilationState = CompilationState.IR_GENERATED;
     }
 
@@ -230,10 +257,8 @@ public class CompilationController {
 
     private void runDataflowOptimizationPasses() {
         assert compilationState == CompilationState.IR_GENERATED;
-        int oldNLinesOfCode = 0;
-        if (CLI.debug) {
-            oldNLinesOfCode = countLinesOfCode();;
-        }
+        double oldNLinesOfCode;
+        oldNLinesOfCode = countLinesOfCode();
         if (shouldOptimize()) {
             if (CLI.debug) {
                 System.out.println("Before optimization");
@@ -242,10 +267,12 @@ public class CompilationController {
             var dataflowOptimizer = new DataflowOptimizer(programIr.second, threeAddressCodesListConverter.globalNames);
             dataflowOptimizer.initialize();
             dataflowOptimizer.optimize();
+            programIr = new Pair<>(programIr.first, dataflowOptimizer.methodBeginTacLists);
+            nLinesOfCodeReductionFactor = (oldNLinesOfCode - countLinesOfCode()) / oldNLinesOfCode;
             if (CLI.debug) {
                 System.out.println("After optimization");
                 System.out.println(mergeProgram());
-                System.err.format("lines of code reduced by a factor of: %f\n", ((double)oldNLinesOfCode - countLinesOfCode()) / (double)oldNLinesOfCode);
+                System.err.format("lines of code reduced by a factor of: %f\n", nLinesOfCodeReductionFactor);
             }
 
         }
@@ -256,6 +283,11 @@ public class CompilationController {
         assert compilationState == CompilationState.DATAFLOW_OPTIMIZED;
         X64CodeConverter x64CodeConverter = new X64CodeConverter();
         X64Program x64program = x64CodeConverter.convert(mergeProgram());
+        if (shouldOptimize()) {
+            var peepHoleOptimizationAsmPass = new PeepHoleOptimizationAsmPass(x64program);
+            peepHoleOptimizationAsmPass.run();
+            nLinesRemovedByAssemblyOptimizer = peepHoleOptimizationAsmPass.getNumInstructionsRemoved();
+        }
         outputStream.println(x64program);
         compilationState = CompilationState.ASSEMBLED;
     }

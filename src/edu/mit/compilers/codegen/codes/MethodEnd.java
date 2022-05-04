@@ -32,7 +32,12 @@ public class MethodEnd extends ThreeAddressCode {
 
     @Override
     public String repr() {
-        return String.format("%s}", INDENT);
+        return "}";
+    }
+
+    @Override
+    public ThreeAddressCode copy() {
+        return new MethodEnd((MethodDefinition) source);
     }
 
 }

@@ -40,6 +40,11 @@ public class PushParameter extends ThreeAddressCode implements HasOperand {
     }
 
     @Override
+    public ThreeAddressCode copy() {
+        return new PushParameter(parameterName, parameterIndex, source);
+    }
+
+    @Override
     public Operand getOperand() {
         return new UnmodifiedOperand(parameterName);
     }

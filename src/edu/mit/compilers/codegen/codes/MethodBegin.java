@@ -27,6 +27,10 @@ public class MethodBegin extends ThreeAddressCode {
         return methodDefinition.methodName.id.equals("main");
     }
 
+    public String methodName() {
+        return methodDefinition.methodName.id;
+    }
+
     // to be filled in later by the X64Converter
     public HashMap<String, Integer> nameToStackOffset = new HashMap<>();
 
@@ -52,6 +56,11 @@ public class MethodBegin extends ThreeAddressCode {
 
     @Override
     public String repr() {
-        return String.format("\n%s: {%s", methodDefinition.methodName.id, DOUBLE_INDENT);
+        return String.format("\n%s: -> %s {%s", methodDefinition.methodName.id, methodDefinition.returnType.getSourceCode(), DOUBLE_INDENT);
+    }
+
+    @Override
+    public ThreeAddressCode copy() {
+        return new MethodBegin(methodDefinition);
     }
 }

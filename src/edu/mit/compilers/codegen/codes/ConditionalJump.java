@@ -39,6 +39,11 @@ public class ConditionalJump extends ThreeAddressCode implements HasOperand {
     }
 
     @Override
+    public ThreeAddressCode copy() {
+        return new ConditionalJump(source, condition, trueLabel, getComment().orElse(null));
+    }
+
+    @Override
     public Operand getOperand() {
         return new UnmodifiedOperand(condition);
     }

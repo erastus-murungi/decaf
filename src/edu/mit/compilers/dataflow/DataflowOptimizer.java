@@ -1,29 +1,29 @@
 package edu.mit.compilers.dataflow;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import edu.mit.compilers.ast.Program;
-import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.dataflow.passes.BranchSimplificationPass;
 import edu.mit.compilers.dataflow.passes.CommonSubExpressionEliminationPass;
 import edu.mit.compilers.dataflow.passes.ConstantPropagationPass;
 import edu.mit.compilers.dataflow.passes.CopyPropagationPass;
 import edu.mit.compilers.dataflow.passes.DeadCodeEliminationPass;
 import edu.mit.compilers.dataflow.passes.DeadStoreEliminationPass;
+import edu.mit.compilers.dataflow.passes.FunctionInlinePass;
+import edu.mit.compilers.dataflow.passes.InstructionSimplifyPass;
 import edu.mit.compilers.dataflow.passes.OptimizationPass;
 import edu.mit.compilers.dataflow.passes.PeepHoleOptimizationPass;
+import edu.mit.compilers.utils.Utils;
 
 public class DataflowOptimizer {
     private static final int MAX_RUNS = 20;
 
     Integer numberOfRuns = MAX_RUNS;
     Set<AbstractName> globalNames;
-    List<MethodBegin> methodBeginTacLists;
+    public List<MethodBegin> methodBeginTacLists;
     List<OptimizationPass> optimizationPassList = new ArrayList<>();
 
     Factory optimizationPassesFactory = new Factory();
@@ -34,7 +34,9 @@ public class DataflowOptimizer {
         DeadCodeElimination,
         DeadStoreElimination,
         PeepHoleOptimization,
-        ConstantPropagation
+        ConstantPropagation,
+        InstructionSimplification,
+        BranchSimplification
     }
 
     public class Factory {
@@ -68,7 +70,17 @@ public class DataflowOptimizer {
                 }
                 case ConstantPropagation: {
                     methodBeginTacLists.forEach(methodBegin ->
-                        optimizationPassesList.add(new ConstantPropagationPass(globalNames, methodBegin)));
+                            optimizationPassesList.add(new ConstantPropagationPass(globalNames, methodBegin)));
+                    break;
+                }
+                case InstructionSimplification: {
+                    methodBeginTacLists.forEach(methodBegin ->
+                            optimizationPassesList.add(new InstructionSimplifyPass(globalNames, methodBegin)));
+                    break;
+                }
+                case BranchSimplification: {
+                    methodBeginTacLists.forEach(methodBegin ->
+                            optimizationPassesList.add(new BranchSimplificationPass(globalNames, methodBegin)));
                     break;
                 }
                 default: {
@@ -85,12 +97,15 @@ public class DataflowOptimizer {
     }
 
     public void initialize() {
+        runIntraProceduralPasses();
         addPass(OptimizationPassType.PeepHoleOptimization);
         addPass(OptimizationPassType.CommonSubExpression);
         addPass(OptimizationPassType.CopyPropagation);
         addPass(OptimizationPassType.DeadCodeElimination);
         addPass(OptimizationPassType.DeadStoreElimination);
         addPass(OptimizationPassType.ConstantPropagation);
+        addPass(OptimizationPassType.InstructionSimplification);
+        addPass(OptimizationPassType.BranchSimplification);
     }
 
     public DataflowOptimizer(List<MethodBegin> methodBeginTacLists, Set<AbstractName> globalNames) {
@@ -98,14 +113,23 @@ public class DataflowOptimizer {
         this.methodBeginTacLists = methodBeginTacLists;
     }
 
+    private void runIntraProceduralPasses() {
+        FunctionInlinePass functionInlinePass = new FunctionInlinePass(methodBeginTacLists);
+        methodBeginTacLists = functionInlinePass.run();
+    }
     public void optimize() {
         for (int run = 0; run < numberOfRuns; run++) {
             boolean changesHappened = false;
             for (var optimizationPass : optimizationPassList) {
-                changesHappened = changesHappened | !optimizationPass.run();
+                var changesHappenedForOpt = optimizationPass.run();
+                changesHappened = changesHappened | !changesHappenedForOpt;
+//                System.out.format("%s<%s> run = %s", optimizationPass.getClass().getSimpleName(), optimizationPass.getMethod().methodName(), run);
+//                System.out.println(optimizationPass.getMethod().entryBlock.threeAddressCodeList.flatten());
+//                System.out.println(Utils.coloredPrint(String.valueOf(changesHappened), Utils.ANSIColorConstants.ANSI_RED));
             }
-            if (!changesHappened)
+            if (!changesHappened) {
                 break;
+            }
         }
     }
 }

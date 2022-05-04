@@ -7,11 +7,8 @@ import edu.mit.compilers.ast.IntLiteral;
 import java.util.Objects;
 
 public class ConstantName extends AbstractName {
-    String value;
-
     public ConstantName(Long value, BuiltinType builtinType) {
-        super(builtinType);
-        this.value = String.valueOf(value);
+        super(builtinType, String.valueOf(value));
     }
 
     public static ConstantName fromIntLiteral(IntLiteral intLiteral) {
@@ -20,6 +17,10 @@ public class ConstantName extends AbstractName {
 
     public static ConstantName fromBooleanLiteral(BooleanLiteral booleanLiteral) {
         return new ConstantName(booleanLiteral.convertToLong(), BuiltinType.Bool);
+    }
+
+    public static ConstantName zero() {
+        return new ConstantName(0L, BuiltinType.Int);
     }
 
     @Override

@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class ArrayAccess extends ThreeAddressCode implements HasOperand {
+public class ArrayAccess extends ThreeAddressCode implements HasOperand  {
     public ArrayName arrayName;
     public ConstantName arrayLength;
     public AbstractName accessIndex;
@@ -55,6 +55,11 @@ public class ArrayAccess extends ThreeAddressCode implements HasOperand {
     @Override
     public String repr() {
         return String.format("%s[%s]", arrayName, accessIndex.repr());
+    }
+
+    @Override
+    public ThreeAddressCode copy() {
+        return new ArrayAccess(source, getComment().orElse(null), arrayName, arrayLength, accessIndex);
     }
 
     @Override
