@@ -19,6 +19,10 @@ public class ConstantName extends AbstractName {
         return new ConstantName(booleanLiteral.convertToLong(), BuiltinType.Bool);
     }
 
+    public static ConstantName zero() {
+        return new ConstantName(0L, BuiltinType.Int);
+    }
+
     @Override
     public String toString() {
         return "$" + value;

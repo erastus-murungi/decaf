@@ -5,6 +5,7 @@ import edu.mit.compilers.codegen.names.AbstractName;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class UnconditionalJump extends ThreeAddressCode {
     public final Label goToLabel;
@@ -39,4 +40,16 @@ public class UnconditionalJump extends ThreeAddressCode {
         return new UnconditionalJump(goToLabel);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        UnconditionalJump that = (UnconditionalJump) o;
+        return Objects.equals(goToLabel, that.goToLabel);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(goToLabel);
+    }
 }

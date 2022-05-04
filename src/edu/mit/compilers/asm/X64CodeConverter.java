@@ -249,7 +249,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
                 .methodName()
                 .equals("main") ?
                 x64builder
-                        .addLine(x64InstructionLine(X64Instruction.xor, X64Register.RAX, X64Register.RAX)) : x64builder);
+                        .addLine(x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX)) : x64builder);
         ((stackSpace == 0) ? x64builder :
                 x64builder.addLine(x64InstructionLine(X64Instruction.addq, "$" + stackSpace, X64Register.RSP))
                         .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RBP, X64Register.RSP))
@@ -313,8 +313,6 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
                 } else {
                     stackOffsetIndex += variableName.size;
                     methodBegin.nameToStackOffset.put(variableName.toString(), stackOffsetIndex);
-                    final String location = resolveLoadLocation(variableName);
-                    codes.add(x64InstructionLineWithComment(String.format("%s = 0", variableName), X64Instruction.movq, ZERO, location));
                 }
             }
         }
@@ -337,7 +335,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(MethodCallSetResult methodCall, X64Builder x64builder) {
-        return (methodCall.isImported() ? x64builder.addLine((x64InstructionLine(X64Instruction.xor, X64Register.RAX, X64Register.RAX))) : x64builder)
+        return (methodCall.isImported() ? x64builder.addLine((x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX))) : x64builder)
                 .addLine(x64InstructionLine(X64Instruction.call, methodCall.getMethodName()))
                 .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, resolveLoadLocation(methodCall
                         .getResultLocation())));
@@ -345,7 +343,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(MethodCallNoResult methodCall, X64Builder x64builder) {
-        return (methodCall.isImported() ? x64builder.addLine((x64InstructionLine(X64Instruction.xor, X64Register.RAX, X64Register.RAX))) : x64builder)
+        return (methodCall.isImported() ? x64builder.addLine((x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX))) : x64builder)
                 .addLine(x64InstructionLine(X64Instruction.call,
                         methodCall.getMethodName()));
     }
@@ -458,7 +456,7 @@ public class X64CodeConverter implements ThreeAddressCodeVisitor<X64Builder, X64
 
     @Override
     public X64Builder visit(StringLiteralStackAllocation stringLiteralStackAllocation, X64Builder x64builder) {
-        return x64builder.addLine(x64InstructionLine(stringLiteralStackAllocation.getASM()));
+        return x64builder.addLine(new X64Code(stringLiteralStackAllocation.getASM()));
     }
 
     @Override

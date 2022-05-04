@@ -83,6 +83,7 @@ public class PeepHoleOptimizationAsmPass {
             if (x64Program.get(indexOfX64Code).equals(x64Program.get(indexOfX64Code - 1))) {
                 x64Program.remove(indexOfX64Code - 1);
                 programSize = x64Program.size();
+                continue;
             }
             var mov = Move.fromX64Code(x64Program.get(indexOfX64Code));
             if (mov.isPresent()) {

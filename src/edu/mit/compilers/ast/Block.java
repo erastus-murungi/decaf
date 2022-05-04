@@ -1,13 +1,11 @@
 package edu.mit.compilers.ast;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
-
-import javax.swing.plaf.nimbus.State;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
 
 public class Block extends AST {
     final public List<FieldDeclaration> fieldDeclarationList;

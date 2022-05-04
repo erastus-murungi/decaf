@@ -17,6 +17,10 @@ public abstract class OptimizationPass {
     MethodBegin methodBegin;
     List<BasicBlock> basicBlocks;
 
+    public MethodBegin getMethod() {
+        return methodBegin;
+    }
+
     public OptimizationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
         this.globalVariables = globalVariables;
         this.methodBegin = methodBegin;

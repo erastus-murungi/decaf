@@ -29,6 +29,12 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode>, Cloneab
         return Optional.ofNullable(next);
     }
 
+    public Optional<ThreeAddressCode> lastCode() {
+        if (isEmpty())
+            return Optional.empty();
+        return Optional.of(codes.get(codes.size() - 1));
+    }
+
     public ThreeAddressCodeList flatten() {
         ThreeAddressCodeList flattenTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
         ThreeAddressCodeList tacList = this;
@@ -74,7 +80,7 @@ public class ThreeAddressCodeList implements Iterable<ThreeAddressCode>, Cloneab
         return flattened.get(flattened.size() - 1);
     }
 
-    public ThreeAddressCode first() {
+    public ThreeAddressCode firstCode() {
         return codes.get(0);
     }
 

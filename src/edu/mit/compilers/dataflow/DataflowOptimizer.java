@@ -16,6 +16,7 @@ import edu.mit.compilers.dataflow.passes.FunctionInlinePass;
 import edu.mit.compilers.dataflow.passes.InstructionSimplifyPass;
 import edu.mit.compilers.dataflow.passes.OptimizationPass;
 import edu.mit.compilers.dataflow.passes.PeepHoleOptimizationPass;
+import edu.mit.compilers.utils.Utils;
 
 public class DataflowOptimizer {
     private static final int MAX_RUNS = 20;
@@ -120,10 +121,15 @@ public class DataflowOptimizer {
         for (int run = 0; run < numberOfRuns; run++) {
             boolean changesHappened = false;
             for (var optimizationPass : optimizationPassList) {
-                changesHappened = changesHappened | !optimizationPass.run();
+                var changesHappenedForOpt = optimizationPass.run();
+                changesHappened = changesHappened | !changesHappenedForOpt;
+//                System.out.format("%s<%s> run = %s", optimizationPass.getClass().getSimpleName(), optimizationPass.getMethod().methodName(), run);
+//                System.out.println(optimizationPass.getMethod().entryBlock.threeAddressCodeList.flatten());
+//                System.out.println(Utils.coloredPrint(String.valueOf(changesHappened), Utils.ANSIColorConstants.ANSI_RED));
             }
-            if (!changesHappened)
+            if (!changesHappened) {
                 break;
+            }
         }
     }
 }

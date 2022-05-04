@@ -37,6 +37,23 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
                     }
                 }
             }
+            if (basicBlock.threeAddressCodeList.lastCode().isPresent()) {
+                var last = basicBlock.threeAddressCodeList.lastCode().get();
+                var nextBlock = basicBlock.threeAddressCodeList.next;
+                while (nextBlock != null && nextBlock.isEmpty())
+                    nextBlock = nextBlock.next;
+                if (nextBlock != null && nextBlock.isEmpty()) {
+                    var first = nextBlock.firstCode();
+                    if (last instanceof UnconditionalJump) {
+                        if (first instanceof Label) {
+                            if (((UnconditionalJump) last).goToLabel.label.equals(((Label) first).label)) {
+                                basicBlock.threeAddressCodeList.getCodes().remove(basicBlock.threeAddressCodeList.size() - 1);
+                                nextBlock.getCodes().remove(0);
+                            }
+                        }
+                    }
+                }
+            }
             for (var index : indicesToRemove) {
                 basicBlock.threeAddressCodeList.getCodes()
                         .set(index, null);
@@ -85,6 +102,8 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
                     .collect(Collectors.toList()));
         }
     }
+
+
 
     @Override
     public boolean run() {

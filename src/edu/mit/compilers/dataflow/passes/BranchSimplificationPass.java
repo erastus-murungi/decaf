@@ -11,17 +11,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.cfg.BasicBlockBranchLess;
 import edu.mit.compilers.cfg.BasicBlockWithBranch;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.codes.ConditionalJump;
 import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.codes.ThreeAddressCode;
+import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.codegen.names.AbstractName;
 
 public class BranchSimplificationPass extends OptimizationPass {
-    HashMap<ThreeAddressCodeList, Set<ThreeAddressCodeList>> predecessors;
+    HashMap<Label, ThreeAddressCodeList> predecessors;
+    boolean noChanges = true;
 
     public BranchSimplificationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
         super(globalVariables, methodBegin);
@@ -40,27 +41,34 @@ public class BranchSimplificationPass extends OptimizationPass {
         predecessors = new HashMap<>();
         for (BasicBlock basicBlock : basicBlocks) {
             var tacList = basicBlock.threeAddressCodeList;
+            if (!tacList.isEmpty()) {
+                ThreeAddressCode tac = tacList.firstCode();
+                if (tac instanceof Label)
+                    predecessors.put(((Label) tac), tacList);
+            }
             var nextTacList = tacList.next;
             while (nextTacList != null) {
-                predecessors.computeIfAbsent(nextTacList, (key) -> new HashSet<>());
-                predecessors.get(nextTacList).add(tacList);
+                if (!nextTacList.isEmpty()) {
+                    ThreeAddressCode tac = nextTacList.firstCode();
+                    if (tac instanceof Label)
+                        predecessors.put(((Label) tac), nextTacList);
+                }
                 tacList = nextTacList;
                 nextTacList = tacList.next;
             }
         }
     }
 
-    private Optional<ConditionalJump> getConditional(BasicBlockWithBranch basicBlockWithBranch) {
-        return basicBlockWithBranch.threeAddressCodeList.getCodes()
+    private Optional<ConditionalJump> getConditional(ThreeAddressCodeList threeAddressCodeList) {
+        return threeAddressCodeList.getCodes()
                 .stream()
                 .dropWhile(threeAddressCode -> !(threeAddressCode instanceof ConditionalJump))
                 .map(threeAddressCode -> (ConditionalJump) threeAddressCode)
                 .findFirst();
-//                .orElseThrow(() -> new IllegalArgumentException("No conditional jump found"));
     }
 
     private Boolean getStateOfBlockCondition(BasicBlockWithBranch basicBlockWithBranch) {
-        Optional<ConditionalJump> conditionalJump = getConditional(basicBlockWithBranch);
+        Optional<ConditionalJump> conditionalJump = getConditional(basicBlockWithBranch.threeAddressCodeList);
         if (conditionalJump.isPresent()) {
             if (isTrue(conditionalJump.get())) {
                 return true;
@@ -73,37 +81,96 @@ public class BranchSimplificationPass extends OptimizationPass {
     private void removeFalseBranch(BasicBlockWithBranch basicBlockWithBranch) {
         // if (true) || if (1)
         // just reduce this to the true branch
-
         var trueChild = basicBlockWithBranch.trueChild;
         var falseChild = basicBlockWithBranch.falseChild;
+        basicBlockWithBranch.threeAddressCodeList.reset(Collections.emptyList());
+        Label label = (Label) falseChild.threeAddressCodeList.get(0);
+        if (label.aliasLabels.isEmpty()) {
+            var collect = falseChild.threeAddressCodeList.getCodes()
+                    .stream()
+                    .dropWhile(BranchSimplificationPass::isNotExitLabel)
+                    .collect(Collectors.toList());
+            trueChild.threeAddressCodeList.getCodes()
+                    .addAll(collect);
+            falseChild.threeAddressCodeList.reset(Collections.emptyList());
+        } else {
+            label.aliasLabels.remove(0);
+        }
+        noChanges = false;
+    }
 
-        for (BasicBlock predecessor : basicBlockWithBranch.getPredecessors()) {
-            if (predecessor instanceof BasicBlockWithBranch) {
-                var branchPredecessor = (BasicBlockWithBranch) predecessor;
-                if (branchPredecessor.falseChild == basicBlockWithBranch) {
-                    branchPredecessor.falseChild = trueChild;
-                } else if (branchPredecessor.trueChild == basicBlockWithBranch) {
-                    branchPredecessor.trueChild = trueChild;
+    private void removeTrueBranch(BasicBlockWithBranch basicBlockWithBranch) {
+        // if (false) || if (0)
+        // just reduce this to the true branch
+        var trueChild = basicBlockWithBranch.trueChild;
+        basicBlockWithBranch.threeAddressCodeList.reset(Collections.emptyList());
+        trueChild.threeAddressCodeList.reset(Collections.emptyList());
+
+        var visited = new HashSet<ThreeAddressCodeList>();
+        visited.add(trueChild.threeAddressCodeList);
+        var nextTacList = trueChild.threeAddressCodeList.next;
+        var labelToUnconditionalJump = new HashMap<Label, ThreeAddressCodeList>();
+        while (nextTacList != null) {
+            if (visited.contains(nextTacList))
+                break;
+            visited.add(nextTacList);
+            Optional<ConditionalJump> conditional = getConditional(nextTacList);
+            if (nextTacList.size() == 1 && nextTacList.get(0) instanceof UnconditionalJump) {
+                Label label = ((UnconditionalJump) nextTacList.get(0)).goToLabel;
+                labelToUnconditionalJump.put(label, nextTacList);
+                nextTacList = predecessors.get(label);
+                if (label == null)
+                    throw new IllegalArgumentException();
+                continue;
+            }
+            if (conditional.isPresent()) {
+                Label label = (Label) nextTacList.get(0);
+                if (labelToUnconditionalJump.containsKey(label)) {
+                    labelToUnconditionalJump.get(label)
+                            .reset(Collections.emptyList());
+                    break;
                 }
-            } else {
-                var branchLessPredecessor = (BasicBlockBranchLess) predecessor;
-                if (trueChild instanceof BasicBlockWithBranch) {
-                    branchLessPredecessor.autoChild = trueChild;
-                    branchLessPredecessor.threeAddressCodeList.resetNext(trueChild.threeAddressCodeList);
+                labelToUnconditionalJump.put(label, nextTacList);
+                if (label.aliasLabels.isEmpty()) {
+                    nextTacList.reset(Collections.emptyList());
                 } else {
-                    basicBlockWithBranch.threeAddressCodeList.reset(Collections.emptyList());
-                    branchLessPredecessor.threeAddressCodeList.add(trueChild.threeAddressCodeList);
-                    trueChild.threeAddressCodeList.reset(Collections.emptyList());
-                    var collect = falseChild.threeAddressCodeList.getCodes()
-                            .stream()
-                            .dropWhile(BranchSimplificationPass::isNotExitLabel)
-                            .collect(Collectors.toList());
-                    branchLessPredecessor.threeAddressCodeList.getCodes()
-                            .addAll(collect);
-                    falseChild.threeAddressCodeList.reset(Collections.emptyList());
+                    label.aliasLabels.remove(0);
+                    break;
                 }
             }
+            if (!nextTacList.isEmpty() && nextTacList.get(0) instanceof Label) {
+                Label label = (Label) nextTacList.get(0);
+                if (labelToUnconditionalJump.containsKey(label)) {
+                    labelToUnconditionalJump.get(label)
+                            .reset(Collections.emptyList());
+                    break;
+                }
+                labelToUnconditionalJump.put(label, nextTacList);
+                if (label.aliasLabels.isEmpty())
+                    nextTacList.reset(Collections.emptyList());
+                else {
+                    label.aliasLabels.remove(0);
+                    break;
+                }
+            } else {
+                nextTacList.reset(Collections.emptyList());
+            }
+            nextTacList = nextTacList.next;
         }
+        noChanges = false;
+
+//        Label label = (Label) falseChild.threeAddressCodeList.get(0);
+//        if (label.aliasLabels.isEmpty()) {
+//            var collect = falseChild.threeAddressCodeList.getCodes()
+//                    .stream()
+//                    .dropWhile(BranchSimplificationPass::isNotExitLabel)
+//                    .collect(Collectors.toList());
+//            trueChild.threeAddressCodeList.getCodes()
+//                    .addAll(collect);
+//            falseChild.threeAddressCodeList.reset(Collections.emptyList());
+//        } else {
+//            label.aliasLabels.remove(0);
+//        }
     }
 
     private static boolean isNotExitLabel(ThreeAddressCode threeAddressCode) {
@@ -129,14 +196,18 @@ public class BranchSimplificationPass extends OptimizationPass {
                     evaluateToFalse.add(basicBlockWithBranch);
             }
         }
+        if (evaluateToFalse.isEmpty())
+            noChanges = true;
+        if (evaluateToTrue.isEmpty())
+            noChanges = true;
         evaluateToTrue.forEach(this::removeFalseBranch);
+        evaluateToFalse.forEach(this::removeTrueBranch);
     }
 
 
     @Override
     public boolean run() {
-        final var oldCodes = entryBlock.codes();
         removeUselessBranches();
-        return oldCodes.equals(entryBlock.threeAddressCodeList.getCodes());
+        return noChanges;
     }
 }

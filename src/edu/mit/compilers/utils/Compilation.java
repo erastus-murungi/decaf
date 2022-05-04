@@ -1,10 +1,13 @@
 package edu.mit.compilers.utils;
 
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import edu.mit.compilers.asm.X64CodeConverter;
 import edu.mit.compilers.asm.X64Program;
@@ -14,6 +17,7 @@ import edu.mit.compilers.cfg.iCFGVisitor;
 import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.ThreeAddressCodesListConverter;
 import edu.mit.compilers.codegen.codes.MethodBegin;
+import edu.mit.compilers.codegen.codes.ThreeAddressCode;
 import edu.mit.compilers.dataflow.DataflowOptimizer;
 import edu.mit.compilers.dataflow.passes.InstructionSimplifyIrPass;
 import edu.mit.compilers.dataflow.passes.PeepHoleOptimizationAsmPass;
@@ -115,7 +119,7 @@ public class Compilation {
         initialize();
     }
 
-    private void specificTestFileInitialize(InputStream inputStream) throws FileNotFoundException {
+    private void specificTestFileInitialize(InputStream inputStream) {
         CLI.opts = new boolean[] {true};
         CLI.target = CLI.Action.ASSEMBLY;
         CLI.debug = true;
@@ -128,12 +132,12 @@ public class Compilation {
     }
 
     private void defaultInitialize() throws FileNotFoundException {
-        InputStream inputStream = CLI.infile == null ? System.in : new java.io.FileInputStream(CLI.infile);
+        InputStream inputStream = CLI.infile == null ? System.in : new FileInputStream(CLI.infile);
         sourceCode = Utils.getStringFromInputStream(inputStream);
     }
 
     private void initialize() throws FileNotFoundException {
-        outputStream = CLI.outfile == null ? System.out : new java.io.PrintStream(new java.io.FileOutputStream(CLI.outfile));
+        outputStream = CLI.outfile == null ? System.out : new java.io.PrintStream(new FileOutputStream(CLI.outfile));
         decafExceptionProcessor = new DecafExceptionProcessor(sourceCode);
         compilationState = CompilationState.INITIALIZED;
     }
@@ -185,6 +189,7 @@ public class Compilation {
     private void generateCFGVisualizationPdfs() {
         var copy = new HashMap<>(iCFGVisitor.methodCFGBlocks);
         copy.put("globals", iCFGVisitor.initialGlobalBlock);
+//        GraphVizPrinter.printGraph(copy, (basicBlock -> basicBlock.threeAddressCodeList.getCodes().stream().map(ThreeAddressCode::repr).collect(Collectors.joining("\n"))));
         GraphVizPrinter.printGraph(copy);
     }
 
@@ -221,9 +226,6 @@ public class Compilation {
 
         cfgGenerator = new CFGGenerator(parser.getRoot(), semanticChecker.globalDescriptor);
         iCFGVisitor = cfgGenerator.buildiCFG();
-        if (CLI.debug) {
-            generateCFGVisualizationPdfs();
-        }
         compilationState = CompilationState.CFG_GENERATED;
     }
 
@@ -242,6 +244,9 @@ public class Compilation {
         programIr = threeAddressCodesListConverter.fill(iCFGVisitor, parser.getRoot());
         if (CLI.debug) {
             generateSymbolTablePdfs();
+        }
+        if (CLI.debug) {
+            generateCFGVisualizationPdfs();
         }
         compilationState = CompilationState.IR_GENERATED;
     }
