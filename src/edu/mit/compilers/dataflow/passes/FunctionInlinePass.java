@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import edu.mit.compilers.cfg.BasicBlock;
@@ -101,6 +103,7 @@ public class FunctionInlinePass {
 
     private List<ThreeAddressCode> findReplacementBody(List<AbstractName> arguments,
                                                        ThreeAddressCodeList functionBody) {
+        functionBody = functionBody.flatten();
         // replace all instances of arguments with
         // find my actual parameter names
         List<ThreeAddressCode> newTacList = new ArrayList<>();
@@ -213,13 +216,30 @@ public class FunctionInlinePass {
         return false;
     }
 
+    private ThreeAddressCodeList getNonEmpty(ThreeAddressCodeList tacList) {
+           if (!tacList.isEmpty())
+               return tacList;
+            while (tacList.getNext().isPresent()) {
+                tacList = tacList
+                        .getNext()
+                        .get();
+                if (!tacList.isEmpty())
+                    return tacList;
+            }
+            throw new IllegalArgumentException("all ThreeAddressCodeList's are empty");
+    }
+
+
+    private boolean hasBranching(MethodBegin methodBegin) {
+        return methodBegin.entryBlock.threeAddressCodeList.toString().contains("if");
+    }
+
     private boolean shouldBeInlined(MethodBegin methodBegin) {
         if (methodBegin.isMain())
             return false;
         if (isRecursive(methodBegin))
             return false;
-        if (methodBegin.entryBlock.threeAddressCodeList.getNext()
-                .isPresent())
+        if (hasBranching(methodBegin))
             return false;
         final var functionName = methodBegin.methodName();
         final int programSize = getProgramSize();
