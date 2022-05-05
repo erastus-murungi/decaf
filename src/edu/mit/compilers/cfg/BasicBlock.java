@@ -19,11 +19,7 @@ public abstract class BasicBlock {
     public ArrayList<AST> lines;
 
     public String getLeader() {
-        if (lines.isEmpty()) {
-            return "None";
-        } else {
-            return lines.get(0).getSourceCode();
-        }
+        return lines.isEmpty() ? "None" : lines.get(0).getSourceCode();
     }
 
     public void addPredecessor(BasicBlock predecessor) {
