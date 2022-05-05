@@ -121,11 +121,15 @@ public class DataflowOptimizer {
         for (int run = 0; run < numberOfRuns; run++) {
             boolean changesHappened = false;
             for (var optimizationPass : optimizationPassList) {
+                if (!methodBeginTacLists.contains(optimizationPass.getMethod()))
+                    continue;
                 var changesHappenedForOpt = optimizationPass.run();
                 changesHappened = changesHappened | !changesHappenedForOpt;
-//                System.out.format("%s<%s> run = %s", optimizationPass.getClass().getSimpleName(), optimizationPass.getMethod().methodName(), run);
-//                System.out.println(optimizationPass.getMethod().entryBlock.threeAddressCodeList.flatten());
-//                System.out.println(Utils.coloredPrint(String.valueOf(changesHappened), Utils.ANSIColorConstants.ANSI_RED));
+                System.out.format("%s<%s> run = %s", optimizationPass.getClass().getSimpleName(), optimizationPass.getMethod().methodName(), run);
+                System.out.println(optimizationPass.getMethod().entryBlock.instructionList.flatten());
+                System.out.println(Utils.coloredPrint(String.valueOf(changesHappened), Utils.ANSIColorConstants.ANSI_RED));
+                if (run % methodBeginTacLists.size() == 0)
+                    runIntraProceduralPasses();
             }
             if (!changesHappened) {
                 break;

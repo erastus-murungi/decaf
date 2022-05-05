@@ -2,12 +2,11 @@ package edu.mit.compilers.dataflow.analyses;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.HasOperand;
-import edu.mit.compilers.codegen.codes.HasResult;
-import edu.mit.compilers.codegen.codes.ThreeAddressCode;
+import edu.mit.compilers.codegen.codes.Store;
+import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.dataflow.Direction;
-import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.usedef.Def;
 import edu.mit.compilers.dataflow.usedef.Use;
 import edu.mit.compilers.dataflow.usedef.UseDef;
@@ -88,9 +87,9 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
     // an instruction makes a variable "live" it references it
     private Set<UseDef> use(BasicBlock basicBlock) {
         var useSet = new HashSet<UseDef>();
-        final var tacReversed = basicBlock.codes();
+        final var tacReversed = basicBlock.getCopyOfInstructionList();
         Collections.reverse(tacReversed);
-        for (ThreeAddressCode tac : tacReversed) {
+        for (Instruction tac : tacReversed) {
             if (tac instanceof HasOperand) {
                 var hasOperand = (HasOperand) tac;
                 hasOperand.getOperandNamesNoArrayNoConstants().forEach(abstractName -> useSet.add(new Use(abstractName, tac)));
@@ -101,12 +100,12 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
 
     private Set<UseDef> def(BasicBlock basicBlock) {
         var defSet = new HashSet<UseDef>();
-        final var tacReversed = basicBlock.codes();
+        final var tacReversed = basicBlock.getCopyOfInstructionList();
         Collections.reverse(tacReversed);
-        for (ThreeAddressCode tac : tacReversed) {
-            if (tac instanceof HasResult) {
-                var hasResult = (HasResult) tac;
-                if (!(hasResult.getResultLocation() instanceof ArrayName)) {
+        for (Instruction tac : tacReversed) {
+            if (tac instanceof Store) {
+                var hasResult = (Store) tac;
+                if (!(hasResult.getStore() instanceof ArrayName)) {
                     defSet.add(new Def(hasResult));
                 }
             }

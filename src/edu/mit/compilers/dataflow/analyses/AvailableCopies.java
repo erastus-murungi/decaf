@@ -2,7 +2,7 @@ package edu.mit.compilers.dataflow.analyses;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.Assign;
-import edu.mit.compilers.codegen.codes.HasResult;
+import edu.mit.compilers.codegen.codes.Store;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.AssignableName;
@@ -101,23 +101,23 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
     private HashSet<CopyQuadruple> copy(BasicBlock basicBlock) {
         var copyQuadruples = new HashSet<CopyQuadruple>();
 
-        for (HasResult hasResult : basicBlock.assignments()) {
+        for (Store store : basicBlock.getStores()) {
             // check to see whether any existing assignments are invalidated by this one
-            if (!(hasResult.getResultLocation() instanceof ArrayName)) {
-                final AssignableName resulLocation = hasResult.getResultLocation();
+            if (!(store.getStore() instanceof ArrayName)) {
+                final AssignableName resulLocation = store.getStore();
                 // remove any copy's where u, or v are being reassigned by "resultLocation"
                 copyQuadruples.removeIf(copyQuadruple -> copyQuadruple.contains(resulLocation));
             }
-            if (hasResult instanceof Assign) {
-                Assign assign = (Assign) hasResult;
+            if (store instanceof Assign) {
+                Assign assign = (Assign) store;
                 if ((!assign.assignmentOperator.equals(DecafScanner.ASSIGN)) || assign.operand instanceof ArrayName)
                     continue;
             }
-            var computation = hasResult.getComputationNoArray();
-            computation.ifPresent(value -> copyQuadruples.add(new CopyQuadruple(hasResult.getResultLocation(), value,
+            var computation = store.getOperandNoArray();
+            computation.ifPresent(value -> copyQuadruples.add(new CopyQuadruple(store.getStore(), value,
                     basicBlock
-                            .codes()
-                            .indexOf(hasResult), basicBlock)));
+                            .getCopyOfInstructionList()
+                            .indexOf(store), basicBlock)));
 
         }
         return copyQuadruples;
@@ -127,9 +127,9 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
     private HashSet<CopyQuadruple> kill(BasicBlock basicBlock) {
         var superSet = new HashSet<>(allValues);
         var killedCopyQuadruples = new HashSet<CopyQuadruple>();
-        for (HasResult hasResult : basicBlock.assignments()) {
-            if (!(hasResult.getResultLocation() instanceof ArrayName)) {
-                final AssignableName resulLocation = hasResult.getResultLocation();
+        for (Store store : basicBlock.getStores()) {
+            if (!(store.getStore() instanceof ArrayName)) {
+                final AssignableName resulLocation = store.getStore();
                 for (CopyQuadruple copyQuadruple : superSet) {
                     if (copyQuadruple.basicBlock != basicBlock && copyQuadruple.contains(resulLocation)) {
                         killedCopyQuadruples.add(copyQuadruple);

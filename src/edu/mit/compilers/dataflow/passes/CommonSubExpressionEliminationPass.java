@@ -11,21 +11,19 @@ import java.util.Set;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.TemporaryNameGenerator;
-import edu.mit.compilers.codegen.ThreeAddressCodeList;
+import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.codes.Assign;
-import edu.mit.compilers.codegen.codes.HasResult;
+import edu.mit.compilers.codegen.codes.Store;
 import edu.mit.compilers.codegen.codes.MethodBegin;
-import edu.mit.compilers.codegen.codes.Quadruple;
-import edu.mit.compilers.codegen.codes.ThreeAddressCode;
-import edu.mit.compilers.codegen.codes.Triple;
+import edu.mit.compilers.codegen.codes.BinaryInstruction;
+import edu.mit.compilers.codegen.codes.Instruction;
+import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.codegen.names.TemporaryName;
 import edu.mit.compilers.dataflow.analyses.AvailableExpressions;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.operand.Operand;
-import edu.mit.compilers.grammar.DecafScanner;
 
 public class CommonSubExpressionEliminationPass extends OptimizationPass {
     public CommonSubExpressionEliminationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
@@ -33,44 +31,44 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
         TemporaryNameGenerator.setTempVariableIndexToHighestValue();
     }
 
-    private static void swapOut(ThreeAddressCodeList tacList,
-                                Map<ThreeAddressCode, Integer> tacToPositionInList,
-                                ThreeAddressCode oldCode,
-                                ThreeAddressCode newCode) {
+    private static void swapOut(InstructionList tacList,
+                                Map<Instruction, Integer> tacToPositionInList,
+                                Instruction oldCode,
+                                Instruction newCode) {
         final var indexOfOldCode = tacToPositionInList.get(oldCode);
         tacList.replaceIfContainsOldCodeAtIndex(indexOfOldCode, oldCode, newCode);
         tacToPositionInList.put(newCode, indexOfOldCode);
     }
 
 
-    private static void performCSE(HasResult hasResult,
+    private static void performCSE(Store store,
                                    Operand operand,
-                                   ThreeAddressCodeList tacList,
+                                   InstructionList tacList,
                                    Set<AbstractName> globalVariables,
                                    HashMap<Operand, AbstractName> expressionToVariable,
-                                   HashMap<ThreeAddressCode, Integer> tacToPositionInList
+                                   HashMap<Instruction, Integer> tacToPositionInList
     ) {
         if (expressionToVariable.containsKey(operand)) {
             // this computation has been made before, so swap it with the variable that already stores the value
-            var replacer = Assign.ofRegularAssign(hasResult.getResultLocation(), expressionToVariable.get(operand));
-            var indexOfOldCode = tacToPositionInList.get(hasResult);
+            var replacer = Assign.ofRegularAssign(store.getStore(), expressionToVariable.get(operand));
+            var indexOfOldCode = tacToPositionInList.get(store);
             /* we check if the oldCode is indeed present in the tac list.
                if it is not, this method throws an IllegalArgumentException
             */
-            tacList.replaceIfContainsOldCodeAtIndex(indexOfOldCode, hasResult, replacer);
+            tacList.replaceIfContainsOldCodeAtIndex(indexOfOldCode, store, replacer);
             tacToPositionInList.put(replacer, indexOfOldCode);
         }
         // the operand already doesn't contain any array name
         if (!operand.containsAny(globalVariables)) {
-            expressionToVariable.put(operand, hasResult.getResultLocation());
+            expressionToVariable.put(operand, store.getStore());
         }
     }
 
-    private static void discardKilledExpressions(HasResult hasResult,
+    private static void discardKilledExpressions(Store store,
                                                  HashMap<Operand, AbstractName> expressionToVariable) {
         // we iterate through a copy of the keys to prevent a ConcurrentCoModificationException
         for (Operand operand : new ArrayList<>(expressionToVariable.keySet())) {
-            if (operand.contains(hasResult.getResultLocation())) {
+            if (operand.contains(store.getStore())) {
                 expressionToVariable.remove(operand);
             }
         }
@@ -78,15 +76,15 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
 
     /**
      * Maps each tac to its index in its corresponding tac list
-     * @param threeAddressCodeList the subject tac list
+     * @param instructionList the subject tac list
      *
      * @return a mapping from tac to its index
      */
 
-    public static HashMap<ThreeAddressCode, Integer> getTacToPosMapping(ThreeAddressCodeList threeAddressCodeList) {
-        var tacToPositionInList = new HashMap<ThreeAddressCode, Integer>();
+    public static HashMap<Instruction, Integer> getTacToPosMapping(InstructionList instructionList) {
+        var tacToPositionInList = new HashMap<Instruction, Integer>();
         var index = 0;
-        for (ThreeAddressCode tac : threeAddressCodeList) {
+        for (Instruction tac : instructionList) {
             tacToPositionInList.put(tac, index);
             ++index;
         }
@@ -99,19 +97,19 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
         final var expressionToVariable = new HashMap<Operand, AbstractName>();
         // this maps each three address code to it's position in its corresponding TAC list
         // it is helpful when swapping out expressions with their replacements
-        final var tacToPositionInList = getTacToPosMapping(basicBlock.threeAddressCodeList);
+        final var tacToPositionInList = getTacToPosMapping(basicBlock.instructionList);
 
-        final var tacList = basicBlock.threeAddressCodeList;
+        final var tacList = basicBlock.instructionList;
 
-        for (HasResult hasResult : basicBlock.assignments()) {
+        for (Store store : basicBlock.getStores()) {
             // we don't cache expressions involving array variables
-            if (hasResult instanceof Quadruple || hasResult instanceof Triple) {
-                hasResult.getComputationNoArray()
+            if (store instanceof BinaryInstruction || store instanceof UnaryInstruction) {
+                store.getOperandNoArray()
                         .ifPresent(
-                                operand -> performCSE(hasResult, operand, tacList, globalVariables, expressionToVariable, tacToPositionInList));
+                                operand -> performCSE(store, operand, tacList, globalVariables, expressionToVariable, tacToPositionInList));
             }
             // remove all expressions which have been killed by this assignment
-            discardKilledExpressions(hasResult, expressionToVariable);
+            discardKilledExpressions(store, expressionToVariable);
         }
     }
 
@@ -128,21 +126,21 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
 
         for (BasicBlock basicBlock : basicBlocks) {
             final var availableExpressionsForBlock = availableExpressionsIn.get(basicBlock);
-            final var tacList = basicBlock.threeAddressCodeList;
+            final var tacList = basicBlock.instructionList;
             final var tacToPositionInList = DataFlowAnalysis.getTacToPosMapping(tacList);
 
             Objects.requireNonNull(availableExpressions, () -> "In[B] for basicBlock " + basicBlock + " not found");
 
             for (Operand computation : availableExpressionsForBlock) {
-                for (HasResult hasResult : basicBlock.assignments()) {
-                    if (hasResult instanceof Triple || hasResult instanceof Quadruple) {
-                        if (computation.isContainedIn(hasResult) && !isReassignedBeforeUse(basicBlock, computation, hasResult)) {
-                            final var operand = backPropagateToEliminateCSEFromCFG(basicBlock, computation, hasResult);
-                            final var assign = Assign.ofRegularAssign(hasResult.getResultLocation(), operand);
-                            swapOut(tacList, tacToPositionInList, hasResult, assign);
+                for (Store store : basicBlock.getStores()) {
+                    if (store instanceof UnaryInstruction || store instanceof BinaryInstruction) {
+                        if (computation.isContainedIn(store) && !isReassignedBeforeUse(basicBlock, computation, store)) {
+                            final var operand = backPropagateToEliminateCSEFromCFG(basicBlock, computation, store);
+                            final var assign = Assign.ofRegularAssign(store.getStore(), operand);
+                            swapOut(tacList, tacToPositionInList, store, assign);
                             break;
                         }
-                        if (computation.contains(hasResult.getResultLocation())) {
+                        if (computation.contains(store.getStore())) {
                             break;
                         }
                     }
@@ -157,15 +155,15 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
     proceed to another expression or another block as appropriate.
     */
 
-    private static boolean isReassignedBeforeUse(BasicBlock basicBlock, Operand operand, HasResult original) {
-        var indexOfOriginal = basicBlock.threeAddressCodeList.getCodes().indexOf(original);
+    private static boolean isReassignedBeforeUse(BasicBlock basicBlock, Operand operand, Store original) {
+        var indexOfOriginal = basicBlock.instructionList.indexOf(original);
         assert indexOfOriginal != -1;
         if (indexOfOriginal == 0)
             return false;
         for (int indexOfCode = indexOfOriginal - 1;  indexOfCode >= 0; indexOfCode--) {
-            ThreeAddressCode threeAddressCode = basicBlock.threeAddressCodeList.get(indexOfCode);
-            if (threeAddressCode instanceof HasResult) {
-                if (operand.contains(((HasResult) threeAddressCode).getResultLocation()) && !isTrivialAssignment(threeAddressCode)) {
+            Instruction instruction = basicBlock.instructionList.get(indexOfCode);
+            if (instruction instanceof Store) {
+                if (operand.contains(((Store) instruction).getStore()) && !isTrivialAssignment(instruction)) {
                     return true;
                 }
             }
@@ -175,7 +173,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
 
     private static AbstractName backPropagateToEliminateCSEFromCFG(BasicBlock basicBlock,
                                                                    Operand operand,
-                                                                   HasResult original) {
+                                                                   Store original) {
         // perform a breadth first search to perform the replacement
         AssignableName uniqueName = null;
         final var queue = new ArrayDeque<>(basicBlock.getPredecessors());
@@ -189,18 +187,18 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
             visited.add(current);
 
             var computationFound = false;
-            final var updateTacList = new ArrayList<ThreeAddressCode>();
+            final var updateTacList = new ArrayList<Instruction>();
 
-            final var tacListReversed = current.codes();
+            final var tacListReversed = current.getCopyOfInstructionList();
             Collections.reverse(tacListReversed);
             for (var threeAddressCode : tacListReversed) {
                 if (!computationFound) {
-                    if (threeAddressCode instanceof Triple || threeAddressCode instanceof Quadruple) {
-                        final var hasResult = (HasResult) threeAddressCode;
+                    if (threeAddressCode instanceof UnaryInstruction || threeAddressCode instanceof BinaryInstruction) {
+                        final var hasResult = (Store) threeAddressCode;
                         if (operand.isContainedIn(hasResult)) {
                             // create a new temp
-                            uniqueName = TemporaryName.generateTemporaryName(hasResult.getResultLocation().builtinType);
-                            updateTacList.add(Assign.ofRegularAssign(hasResult.getResultLocation(), uniqueName));
+                            uniqueName = TemporaryName.generateTemporaryName(hasResult.getStore().builtinType);
+                            updateTacList.add(Assign.ofRegularAssign(hasResult.getStore(), uniqueName));
                             updateTacList.add(operand.fromOperand(uniqueName));
                             computationFound = true;
                             continue;
@@ -210,7 +208,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
                 updateTacList.add(threeAddressCode);
             }
             Collections.reverse(updateTacList);
-            final var codes = current.threeAddressCodeList.getCodes();
+            final var codes = current.instructionList;
             codes.clear();
             codes.addAll(updateTacList);
 
@@ -224,9 +222,9 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
 
     @Override
     public boolean run() {
-        var oldTacList = entryBlock.codes();
+        var oldTacList = entryBlock.getCopyOfInstructionList();
         performGlobalCSE();
         // return whether this blocks threeAddressCodeList has not changed.
-        return oldTacList.equals(entryBlock.threeAddressCodeList.getCodes());
+        return oldTacList.equals(entryBlock.instructionList);
     }
 }

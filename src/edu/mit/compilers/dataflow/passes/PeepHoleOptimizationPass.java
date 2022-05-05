@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import edu.mit.compilers.codegen.codes.ConditionalJump;
 import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.MethodBegin;
-import edu.mit.compilers.codegen.codes.ThreeAddressCode;
+import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.codegen.names.AbstractName;
 
@@ -21,13 +21,13 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
     private void eliminateRedundantJumps() {
         for (var basicBlock: basicBlocks) {
             var indicesToRemove = new ArrayList<Integer>();
-            for (var indexOfCode = 0; indexOfCode < basicBlock.threeAddressCodeList.size(); indexOfCode++) {
-                var tac = basicBlock.threeAddressCodeList.get(indexOfCode);
+            for (var indexOfCode = 0; indexOfCode < basicBlock.instructionList.size(); indexOfCode++) {
+                var tac = basicBlock.instructionList.get(indexOfCode);
                 if (tac instanceof UnconditionalJump) {
                     var unconditionalJump = (UnconditionalJump) tac;
 
-                    if (indexOfCode + 1 < basicBlock.threeAddressCodeList.size()) {
-                        var nextTac = basicBlock.threeAddressCodeList.get(indexOfCode + 1);
+                    if (indexOfCode + 1 < basicBlock.instructionList.size()) {
+                        var nextTac = basicBlock.instructionList.get(indexOfCode + 1);
                         if (nextTac instanceof Label) {
                             var label = (Label) nextTac;
                             if (unconditionalJump.goToLabel.equals(label)) {
@@ -37,28 +37,28 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
                     }
                 }
             }
-            if (basicBlock.threeAddressCodeList.lastCode().isPresent()) {
-                var last = basicBlock.threeAddressCodeList.lastCode().get();
-                var nextBlock = basicBlock.threeAddressCodeList.next;
+            if (basicBlock.instructionList.lastCode().isPresent()) {
+                var last = basicBlock.instructionList.lastCode().get();
+                var nextBlock = basicBlock.instructionList.nextInstructionList;
                 while (nextBlock != null && nextBlock.isEmpty())
-                    nextBlock = nextBlock.next;
+                    nextBlock = nextBlock.nextInstructionList;
                 if (nextBlock != null && nextBlock.isEmpty()) {
                     var first = nextBlock.firstCode();
                     if (last instanceof UnconditionalJump) {
                         if (first instanceof Label) {
                             if (((UnconditionalJump) last).goToLabel.label.equals(((Label) first).label)) {
-                                basicBlock.threeAddressCodeList.getCodes().remove(basicBlock.threeAddressCodeList.size() - 1);
-                                nextBlock.getCodes().remove(0);
+                                basicBlock.instructionList.remove(basicBlock.instructionList.size() - 1);
+                                nextBlock.remove(0);
                             }
                         }
                     }
                 }
             }
             for (var index : indicesToRemove) {
-                basicBlock.threeAddressCodeList.getCodes()
+                basicBlock.instructionList
                         .set(index, null);
             }
-            basicBlock.threeAddressCodeList.reset(basicBlock.codes()
+            basicBlock.instructionList.reset(basicBlock.getCopyOfInstructionList()
                     .stream()
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList()));
@@ -68,7 +68,7 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
     private Set<Label> findAllLabelsJumpedTo() {
         var allLabelsJumpedTo = new HashSet<Label>();
         for (var basicBlock : basicBlocks) {
-            for (ThreeAddressCode tac : basicBlock.threeAddressCodeList.flatten()) {
+            for (Instruction tac : basicBlock.instructionList.flatten()) {
                 if (tac instanceof ConditionalJump) {
                     allLabelsJumpedTo.add(((ConditionalJump) tac).trueLabel);
                 } else if (tac instanceof UnconditionalJump) {
@@ -83,8 +83,8 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
         final var allLabelsJumpedTo = findAllLabelsJumpedTo();
         for (var basicBlock : basicBlocks) {
             var indicesToRemove = new ArrayList<Integer>();
-            for (var indexOfCode = 0; indexOfCode < basicBlock.threeAddressCodeList.size(); indexOfCode++) {
-                var tac = basicBlock.threeAddressCodeList.get(indexOfCode);
+            for (var indexOfCode = 0; indexOfCode < basicBlock.instructionList.size(); indexOfCode++) {
+                var tac = basicBlock.instructionList.get(indexOfCode);
                 if (tac instanceof Label) {
                     var label = (Label) tac;
                     if (!allLabelsJumpedTo.contains(label)) {
@@ -93,10 +93,10 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
                 }
             }
             for (var index : indicesToRemove) {
-                basicBlock.threeAddressCodeList.getCodes()
+                basicBlock.instructionList
                         .set(index, null);
             }
-            basicBlock.threeAddressCodeList.reset(basicBlock.codes()
+            basicBlock.instructionList.reset(basicBlock.getCopyOfInstructionList()
                     .stream()
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList()));
@@ -107,9 +107,9 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
 
     @Override
     public boolean run() {
-        final var oldCodes = entryBlock.codes();
+        final var oldCodes = entryBlock.getCopyOfInstructionList();
         eliminateRedundantJumps();
         eliminateUnUsedJumps();
-        return oldCodes.equals(entryBlock.threeAddressCodeList.getCodes());
+        return oldCodes.equals(entryBlock.instructionList);
     }
 }
