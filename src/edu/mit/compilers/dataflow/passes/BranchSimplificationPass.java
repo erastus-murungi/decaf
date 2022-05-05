@@ -21,12 +21,12 @@ import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.codegen.names.AbstractName;
 
 public class BranchSimplificationPass extends OptimizationPass {
-    HashMap<Label, InstructionList> predecessors;
+    HashMap<Label, InstructionList> nextBlockInPath;
     boolean noChanges = true;
 
     public BranchSimplificationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
         super(globalVariables, methodBegin);
-        buildDependencyGraph();
+        buildBlockPath();
     }
 
     private boolean isTrue(ConditionalJump conditionalJump) {
@@ -37,21 +37,21 @@ public class BranchSimplificationPass extends OptimizationPass {
         return conditionalJump.condition.equals(InstructionSimplifyPass.mZero);
     }
 
-    private void buildDependencyGraph() {
-        predecessors = new HashMap<>();
+    private void buildBlockPath() {
+        nextBlockInPath = new HashMap<>();
         for (BasicBlock basicBlock : basicBlocks) {
             var tacList = basicBlock.instructionList;
             if (!tacList.isEmpty()) {
                 Instruction tac = tacList.firstCode();
                 if (tac instanceof Label)
-                    predecessors.put(((Label) tac), tacList);
+                    nextBlockInPath.put(((Label) tac), tacList);
             }
             var nextTacList = tacList.nextInstructionList;
             while (nextTacList != null) {
                 if (!nextTacList.isEmpty()) {
                     Instruction tac = nextTacList.firstCode();
                     if (tac instanceof Label)
-                        predecessors.put(((Label) tac), nextTacList);
+                        nextBlockInPath.put(((Label) tac), nextTacList);
                 }
                 tacList = nextTacList;
                 nextTacList = tacList.nextInstructionList;
@@ -117,12 +117,12 @@ public class BranchSimplificationPass extends OptimizationPass {
             if (nextTacList.size() == 1 && nextTacList.get(0) instanceof UnconditionalJump) {
                 Label label = ((UnconditionalJump) nextTacList.get(0)).goToLabel;
                 labelToUnconditionalJump.put(label, nextTacList);
-                nextTacList = predecessors.get(label);
+                nextTacList = nextBlockInPath.get(label);
                 if (label == null)
                     throw new IllegalArgumentException();
                 continue;
             }
-            if (conditional.isPresent()) {
+            if (conditional.isPresent() || !nextTacList.isEmpty() && nextTacList.get(0) instanceof Label) {
                 Label label = (Label) nextTacList.get(0);
                 if (labelToUnconditionalJump.containsKey(label)) {
                     labelToUnconditionalJump.get(label)
@@ -137,39 +137,12 @@ public class BranchSimplificationPass extends OptimizationPass {
                     break;
                 }
             }
-            if (!nextTacList.isEmpty() && nextTacList.get(0) instanceof Label) {
-                Label label = (Label) nextTacList.get(0);
-                if (labelToUnconditionalJump.containsKey(label)) {
-                    labelToUnconditionalJump.get(label)
-                            .reset(Collections.emptyList());
-                    break;
-                }
-                labelToUnconditionalJump.put(label, nextTacList);
-                if (label.aliasLabels.isEmpty())
-                    nextTacList.reset(Collections.emptyList());
-                else {
-                    label.aliasLabels.remove(0);
-                    break;
-                }
-            } else {
+            else {
                 nextTacList.reset(Collections.emptyList());
             }
             nextTacList = nextTacList.nextInstructionList;
         }
         noChanges = false;
-
-//        Label label = (Label) falseChild.threeAddressCodeList.get(0);
-//        if (label.aliasLabels.isEmpty()) {
-//            var collect = falseChild.threeAddressCodeList.getCodes()
-//                    .stream()
-//                    .dropWhile(BranchSimplificationPass::isNotExitLabel)
-//                    .collect(Collectors.toList());
-//            trueChild.threeAddressCodeList.getCodes()
-//                    .addAll(collect);
-//            falseChild.threeAddressCodeList.reset(Collections.emptyList());
-//        } else {
-//            label.aliasLabels.remove(0);
-//        }
     }
 
     private static boolean isNotExitLabel(Instruction instruction) {
@@ -195,9 +168,7 @@ public class BranchSimplificationPass extends OptimizationPass {
                     evaluateToFalse.add(basicBlockWithBranch);
             }
         }
-        if (evaluateToFalse.isEmpty())
-            noChanges = true;
-        if (evaluateToTrue.isEmpty())
+        if (evaluateToFalse.isEmpty() || evaluateToTrue.isEmpty())
             noChanges = true;
         evaluateToTrue.forEach(this::removeFalseBranch);
         evaluateToFalse.forEach(this::removeTrueBranch);
