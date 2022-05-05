@@ -16,6 +16,7 @@ import edu.mit.compilers.dataflow.passes.FunctionInlinePass;
 import edu.mit.compilers.dataflow.passes.InstructionSimplifyPass;
 import edu.mit.compilers.dataflow.passes.OptimizationPass;
 import edu.mit.compilers.dataflow.passes.PeepHoleOptimizationPass;
+import edu.mit.compilers.tools.CLI;
 import edu.mit.compilers.utils.Utils;
 
 public class DataflowOptimizer {
@@ -125,9 +126,11 @@ public class DataflowOptimizer {
                     continue;
                 var changesHappenedForOpt = optimizationPass.run();
                 changesHappened = changesHappened | !changesHappenedForOpt;
-//                System.out.format("%s<%s> run = %s", optimizationPass.getClass().getSimpleName(), optimizationPass.getMethod().methodName(), run);
-//                System.out.println(optimizationPass.getMethod().entryBlock.instructionList.flatten());
-//                System.out.println(Utils.coloredPrint(String.valueOf(changesHappened), Utils.ANSIColorConstants.ANSI_RED));
+                if (CLI.debug) {
+                    System.out.format("%s<%s> run = %s", optimizationPass.getClass().getSimpleName(), optimizationPass.getMethod().methodName(), run);
+                    System.out.println(optimizationPass.getMethod().entryBlock.instructionList.flatten());
+                    System.out.println(Utils.coloredPrint(String.valueOf(changesHappened), Utils.ANSIColorConstants.ANSI_RED));
+                }
                 if (run % methodBeginTacLists.size() == 0)
                     runInterProceduralPasses();
             }
