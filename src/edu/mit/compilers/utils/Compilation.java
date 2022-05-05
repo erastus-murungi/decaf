@@ -51,6 +51,8 @@ public class Compilation {
         return nLinesOfCodeReductionFactor;
     }
 
+    public AST getAstRoot() {return parser.getRoot();}
+
     enum CompilationState {
         INITIALIZED,
         SCANNED,
