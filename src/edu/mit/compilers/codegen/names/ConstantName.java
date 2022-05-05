@@ -3,6 +3,7 @@ package edu.mit.compilers.codegen.names;
 import edu.mit.compilers.ast.BooleanLiteral;
 import edu.mit.compilers.ast.BuiltinType;
 import edu.mit.compilers.ast.IntLiteral;
+import edu.mit.compilers.utils.Utils;
 
 import java.util.Objects;
 
@@ -39,7 +40,7 @@ public class ConstantName extends AbstractName {
 
     @Override
     public String repr() {
-        return String.format("const %s", value);
+        return String.format("%s %s", Utils.coloredPrint("const", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD), value);
     }
 
     @Override

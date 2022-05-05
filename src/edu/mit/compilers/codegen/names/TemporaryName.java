@@ -14,7 +14,7 @@ public class TemporaryName extends AssignableName {
 
     @Override
     public String repr() {
-        return String.format("%%%s", index);
+        return Utils.coloredPrint(String.format("%%%s", index), Utils.ANSIColorConstants.ANSI_BLUE);
     }
 
     public static TemporaryName generateTemporaryName(BuiltinType builtinType) {
