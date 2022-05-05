@@ -87,6 +87,11 @@ public abstract class BasicBlock {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * note that this method returns an {@link ArrayList} not a {@link InstructionList}
+     *
+     * @return an {@link ArrayList} of the Instructions in this {@link InstructionList}
+     */
     public List<Instruction> getCopyOfInstructionList() {
         return new ArrayList<>(instructionList);
     }
