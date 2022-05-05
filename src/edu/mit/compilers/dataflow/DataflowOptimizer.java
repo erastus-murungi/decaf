@@ -97,7 +97,7 @@ public class DataflowOptimizer {
     }
 
     public void initialize() {
-        runIntraProceduralPasses();
+        runInterProceduralPasses();
         addPass(OptimizationPassType.PeepHoleOptimization);
         addPass(OptimizationPassType.CommonSubExpression);
         addPass(OptimizationPassType.CopyPropagation);
@@ -113,7 +113,7 @@ public class DataflowOptimizer {
         this.methodBeginTacLists = methodBeginTacLists;
     }
 
-    private void runIntraProceduralPasses() {
+    private void runInterProceduralPasses() {
         FunctionInlinePass functionInlinePass = new FunctionInlinePass(methodBeginTacLists);
         methodBeginTacLists = functionInlinePass.run();
     }
@@ -125,11 +125,11 @@ public class DataflowOptimizer {
                     continue;
                 var changesHappenedForOpt = optimizationPass.run();
                 changesHappened = changesHappened | !changesHappenedForOpt;
-                System.out.format("%s<%s> run = %s", optimizationPass.getClass().getSimpleName(), optimizationPass.getMethod().methodName(), run);
-                System.out.println(optimizationPass.getMethod().entryBlock.instructionList.flatten());
-                System.out.println(Utils.coloredPrint(String.valueOf(changesHappened), Utils.ANSIColorConstants.ANSI_RED));
+//                System.out.format("%s<%s> run = %s", optimizationPass.getClass().getSimpleName(), optimizationPass.getMethod().methodName(), run);
+//                System.out.println(optimizationPass.getMethod().entryBlock.instructionList.flatten());
+//                System.out.println(Utils.coloredPrint(String.valueOf(changesHappened), Utils.ANSIColorConstants.ANSI_RED));
                 if (run % methodBeginTacLists.size() == 0)
-                    runIntraProceduralPasses();
+                    runInterProceduralPasses();
             }
             if (!changesHappened) {
                 break;
