@@ -28,8 +28,8 @@ public class UnmodifiedOperand extends Operand {
     }
 
     @Override
-    public Store fromOperand(AssignableName resultLocation) {
-        return new Assign(resultLocation, operator, abstractName, null, null);
+    public Store storeInstructionFromOperand(AssignableName store) {
+        return new Assign(store, operator, abstractName, null, null);
     }
 
     @Override

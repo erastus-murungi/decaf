@@ -32,5 +32,5 @@ public abstract class Operand {
 
     public abstract boolean isContainedIn(Store store);
 
-    public abstract Store fromOperand(AssignableName resultLocation);
+    public abstract Store storeInstructionFromOperand(AssignableName store);
 }

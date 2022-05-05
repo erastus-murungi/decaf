@@ -32,8 +32,8 @@ public class BinaryOperand extends Operand {
     }
 
     @Override
-    public Store fromOperand(AssignableName resultLocation) {
-        return new BinaryInstruction(resultLocation, fstOperand, operator, sndOperand, null, null);
+    public Store storeInstructionFromOperand(AssignableName store) {
+        return new BinaryInstruction(store, fstOperand, operator, sndOperand, null, null);
     }
 
     @Override

@@ -30,8 +30,8 @@ public class UnaryOperand extends Operand {
     }
 
     @Override
-    public Store fromOperand(AssignableName resultLocation) {
-        return new UnaryInstruction(resultLocation, operator, operand, null);
+    public Store storeInstructionFromOperand(AssignableName store) {
+        return new UnaryInstruction(store, operator, operand, null);
     }
 
     @Override
