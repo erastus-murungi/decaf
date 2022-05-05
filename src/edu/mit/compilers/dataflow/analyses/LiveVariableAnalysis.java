@@ -19,16 +19,7 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
         super(basicBlock);
     }
 
-    public Set<AbstractName> neededVariables(BasicBlock basicBlock) {
-        // the set of variables actually needed later in the program
-        return in
-        .get(basicBlock)
-        .stream()
-        .map(useDef -> useDef.variable)
-        .collect(Collectors.toSet());
-    }
-
-    public Set<AbstractName> usedLater(BasicBlock basicBlock) {
+    public Set<AbstractName> liveOut(BasicBlock basicBlock) {
         // the set of variables actually needed later in the program
         return out
                 .get(basicBlock)

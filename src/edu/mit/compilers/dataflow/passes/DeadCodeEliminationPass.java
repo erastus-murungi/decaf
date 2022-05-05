@@ -16,20 +16,6 @@ public class DeadCodeEliminationPass extends OptimizationPass {
         super(globalVariables, methodBegin);
     }
 
-//    private boolean augmentedAssignVariablesNeeded(ThreeAddressCode tac) {
-//        if (tac instanceof HasOperand) {
-//            var hasOperand = (HasOperand) tac;
-//            var operand = hasOperand.getOperand();
-//            if (operand instanceof AugmentedOperand) {
-//                return hasOperand.getOperandNamesNoArray()
-//                        .stream()
-//                        .allMatch(this::isConstant);
-//            }
-//        }
-//        return false;
-//
-//    }
-
     /**
      * removes push's which are more than needed for function call
      */

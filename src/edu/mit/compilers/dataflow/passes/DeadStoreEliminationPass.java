@@ -46,105 +46,117 @@ public class DeadStoreEliminationPass extends OptimizationPass {
      * @param instruction the ThreeAddressCode to be tested
      * @return true if a threeAddressCode has a right-hand side and all the operands on the right-hand side are constants
      */
-    private boolean allVariableConstants(Instruction instruction) {
-        if (instruction instanceof Store)
-            return ((HasOperand) instruction).getOperandNames().stream().allMatch(this::isConstant);
+    private boolean allOperandNamesConstant(Instruction instruction) {
+        if (instruction instanceof HasOperand)
+            return ((HasOperand) instruction).getOperandNames()
+                    .stream()
+                    .allMatch(this::isConstant);
         return false;
     }
 
-    private void backwardRun(BasicBlock basicBlock, Set<AbstractName> usedBeforeGlobal, Set<AbstractName> usedLaterGlobal) {
+    /**
+     * @param basicBlock        basic block whose dead stores we are attempting to eliminate
+     * @param basicBlockLiveOut set of names which are live going out of this block
+     */
+    private void backwardRun(BasicBlock basicBlock, Set<AbstractName> basicBlockLiveOut) {
+        // we will be iterating backward
         var copyOfInstructionList = basicBlock.getCopyOfInstructionList();
+        Collections.reverse(copyOfInstructionList);
+
+        // this is the list we will be updating, we don't use a new arraylist because we want to maintain all the other
+        // internal members of the basicBlock, such as `nextInstruction`
+        final var instructionListToUpdate = basicBlock.instructionList;
+        instructionListToUpdate.clear();
+
+        final var namesUsedSoFar = new HashSet<AbstractName>();
+        // we iterate in reverse
+        for (var possibleStoreInstruction : copyOfInstructionList) {
+            // always ignore assignments like a = a, a[i] = a[i]
+            if (isTrivialAssignment(possibleStoreInstruction))
+                continue;
+
+            // check if this a possible store instruction
+            if (possibleStoreInstruction instanceof Store) {
+                // grab the store location
+                var store = ((Store) possibleStoreInstruction).getStore();
+
+                // ignore arrays for now
+                if (!(store instanceof ArrayName)) {
+                    // do not eliminate global variables and store instructions where the
+                    // right-hand side is composed of all constants, for example a = 1 + 2 or a = 3
+                    // if (we are in the main method then we can afford to ignore global variables)
+                    if ((globalVariables.contains(store) && !methodBegin.isMain()) || allOperandNamesConstant(possibleStoreInstruction)) {
+                        if (possibleStoreInstruction instanceof HasOperand)
+                            namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandNames());
+                        instructionListToUpdate.add(possibleStoreInstruction);
+                        continue;
+                    }
+                    // if we don't use this variable after this block
+                    if (!basicBlockLiveOut.contains(store) &&
+                            // and we don't use this variable in this block, after this program point
+                            !namesUsedSoFar.contains(store)) {
+                        continue;
+                    }
+                }
+            }
+            if (possibleStoreInstruction instanceof HasOperand)
+                namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandNames());
+
+            instructionListToUpdate.add(possibleStoreInstruction);
+        }
+    }
+
+    private void forwardRun(BasicBlock basicBlock, Set<AbstractName> basicBlockLiveOut) {
+        var copyOfInstructionList = new ArrayList<>(basicBlock.instructionList);
         Collections.reverse(copyOfInstructionList);
         final var instructionListToUpdate = basicBlock.instructionList;
         instructionListToUpdate.clear();
 
-        final var usedInBlock = new HashSet<AbstractName>();
-        // we iterate in reverse
-        for (var instruction: copyOfInstructionList) {
-            if (isTrivialAssignment(instruction))
-                continue;
-            if (instruction instanceof Store) {
-                // this is a store
-                // check if it is in uses
-                // if it is not used afterwards, remove it
-                var store = ((Store) instruction).getStore();
-
-                if (!(store instanceof ArrayName)) {
-                    if (globalVariables.contains(store) || allVariableConstants(instruction)) {
-                        usedInBlock.addAll(instruction.getAllNames());
-                        instructionListToUpdate.add(instruction);
-                        continue;
-                    }
-
-                    // if this store is not used
-                    if (!usedLaterGlobal.contains(store) && !usedInBlock.contains(store) && (methodBegin.isMain() || (!globalVariables.contains(store))))
-                        continue;
-                    if (!usedBeforeGlobal.contains(store) && (methodBegin.isMain() || (!globalVariables.contains(store))))
-                        continue;
-                }
-            }
-            if (instruction instanceof HasOperand)
-                usedInBlock.addAll(instruction.getAllNames());
-
-            instructionListToUpdate.add(instruction);
-        }
-    }
-
-    private void forwardRun(BasicBlock basicBlock, Set<AbstractName> usedLaterGlobal) {
-//        var copyOfInstructionList = basicBlock.getCopyOfInstructionList();
-        var forwardTacList = new ArrayList<>(basicBlock.instructionList);
-        Collections.reverse(forwardTacList);
-        final var instructionListToUpdate = basicBlock.instructionList;
-        instructionListToUpdate.clear();
-
-        int startIndex = -1;
-        for (var instruction: forwardTacList) {
-            ++startIndex;
-            if (instruction instanceof Store) {
-                // this is a store
-                // check if it is in uses
-                // if it is not used afterwards, remove it
-                var storeInstruction = ((Store) instruction);
-                var store = storeInstruction.getStore();
-                if (instruction instanceof FunctionCallWithResult) {
-                    instructionListToUpdate.add(instruction);
+        int indexOfInstruction = -1;
+        for (var possibleStoreInstruction : copyOfInstructionList) {
+            ++indexOfInstruction;
+            if (possibleStoreInstruction instanceof Store) {
+                if (possibleStoreInstruction instanceof FunctionCallWithResult) {
+                    instructionListToUpdate.add(possibleStoreInstruction);
                     continue;
                 }
 
+                var storeInstruction = ((Store) possibleStoreInstruction);
+                var store = storeInstruction.getStore();
+
                 if (!(store instanceof ArrayName)) {
-                    if (globalVariables.contains(store)) {
-                        instructionListToUpdate.add(instruction);
+                    if (globalVariables.contains(store) && !methodBegin.isMain()) {
+                        instructionListToUpdate.add(possibleStoreInstruction);
                         continue;
                     }
-                    if (!storeIsUsedBeforeNextReassignmentInBlock(storeInstruction, forwardTacList, startIndex)
-                            && !(isLastStoreInstructionInBlock(storeInstruction, forwardTacList, startIndex) && usedLaterGlobal.contains(store)))
+                    if (!storeIsUsedBeforeNextReassignmentInBlock(storeInstruction, copyOfInstructionList, indexOfInstruction)
+                            && !(isLastStoreInstructionInBlock(storeInstruction, copyOfInstructionList, indexOfInstruction)
+                            && basicBlockLiveOut.contains(store)))
                         continue;
                 }
             }
-            instructionListToUpdate.add(instruction);
+            instructionListToUpdate.add(possibleStoreInstruction);
         }
     }
+
     private void performDeadStoreElimination() {
         final var liveVariableAnalysis = new LiveVariableAnalysis(entryBlock);
 
         for (var basicBlock : basicBlocks) {
-            final var usedBeforeGlobal = Collections.unmodifiableSet(liveVariableAnalysis.neededVariables(basicBlock));
-            final var usedLaterGlobal = Collections.unmodifiableSet(liveVariableAnalysis.usedLater(basicBlock));
+            final var basicBlockLiveOut = Collections.unmodifiableSet(liveVariableAnalysis.liveOut(basicBlock));
 
-            backwardRun(basicBlock, usedBeforeGlobal, usedLaterGlobal);
-            forwardRun(basicBlock, usedLaterGlobal);
+            backwardRun(basicBlock, basicBlockLiveOut);
+            forwardRun(basicBlock, basicBlockLiveOut);
         }
     }
 
     /**
-     *  Checks whether a store is used on some right-hand-side before its next reassignment in the same block
+     * Checks whether a store is used on some right-hand-side before its next reassignment in the same block
      *
-     * @param storeInstruction a store instruction to be tested
-     * @param blockInstructionList the instruction list containing {@code storeInstruction}
+     * @param storeInstruction               a store instruction to be tested
+     * @param blockInstructionList           the instruction list containing {@code storeInstruction}
      * @param indexOfStoreInstructionInBlock the index of {@code storeInstruction} in {@code blockInstructionList}
-     *
      * @return true if {@code storeInstruction} is used on some right-hand-side before its next reassignment in the same block
-     *
      * @implNote if there is no other reassignment of the store, this method returns true
      */
     private boolean storeIsUsedBeforeNextReassignmentInBlock(Store storeInstruction,
@@ -160,24 +172,25 @@ public class DeadStoreEliminationPass extends OptimizationPass {
             var possibleStoreInstruction = blockInstructionList.get(indexOfInstruction);
             if (possibleStoreInstruction instanceof Store) {
                 var candidateStoreInstruction = (Store) possibleStoreInstruction;
-                if (candidateStoreInstruction.getStore().equals(storeInstruction.getStore())) {
+                if (candidateStoreInstruction.getStore()
+                        .equals(storeInstruction.getStore())) {
                     /* add the operands
-                    * Before breaking, we add the operands of this assignment too
-                    * we add this extra check because of stores of inputs like:
-                    *
-                    * 0: foo -> void {
-                    * 1:        a = const 0
-                    * 2:        b = const 1
-                    * 3:        d = const 3
-                    * 4:        d: int = b + d
-                    * 5:        a: int = a + b
-                    * 6:        call bar
-                    * &: }
-                    *
-                    *  While checking whether assignment 1: (a = const 0) is redefined, we first stop at  line 5 (a: int = a + b)
-                    *  We first add the operands (a, b) to `usedNames` before breaking
-                    *  Without doing so we report that a = 0 is never used before the reassignment at line 5
-                    */
+                     * Before breaking, we add the operands of this assignment too
+                     * we add this extra check because of stores of inputs like:
+                     *
+                     * 0: foo -> void {
+                     * 1:        a = const 0
+                     * 2:        b = const 1
+                     * 3:        d = const 3
+                     * 4:        d: int = b + d
+                     * 5:        a: int = a + b
+                     * 6:        call bar
+                     * &: }
+                     *
+                     *  While checking whether assignment 1: (a = const 0) is redefined, we first stop at  line 5 (a: int = a + b)
+                     *  We first add the operands (a, b) to `usedNames` before breaking
+                     *  Without doing so we report that a = 0 is never used before the reassignment at line 5
+                     */
                     if (candidateStoreInstruction instanceof HasOperand) {
                         var storeInstructionWithOperand = ((HasOperand) candidateStoreInstruction);
                         usedNames.addAll(storeInstructionWithOperand.getOperandNames());
@@ -197,11 +210,10 @@ public class DeadStoreEliminationPass extends OptimizationPass {
     /**
      * Checks if an assignment to a variable is the last one to assign to that variable in that basic block
      *
-     * @param storeInstruction the Store Instruction whose "last-ness" is to be tested
-     * @param blockInstructionList the {@link InstructionList} which contains an
-     *                              assignment to {@code store}
+     * @param storeInstruction               the Store Instruction whose "last-ness" is to be tested
+     * @param blockInstructionList           the {@link InstructionList} which contains an
+     *                                       assignment to {@code store}
      * @param indexOfStoreInstructionInBlock the index of assignment to {@code store} in the tac-list
-     *
      * @return true is there is no other assigment which overwrites {@code store}
      *
      * <p>For example:
@@ -219,20 +231,22 @@ public class DeadStoreEliminationPass extends OptimizationPass {
      *
      * }</pre>
      *
-     *     <pre> {@code isLastStoreInBlock(a, fooTacList, 1) == false}</pre>
-     *     <pre> {@code isLastStoreInBlock(c, fooTacList, 3) == true}</pre>
+     * <pre> {@code isLastStoreInBlock(a, fooTacList, 1) == false}</pre>
+     * <pre> {@code isLastStoreInBlock(c, fooTacList, 3) == true}</pre>
      */
     private boolean isLastStoreInstructionInBlock(Store storeInstruction, List<Instruction> blockInstructionList, int indexOfStoreInstructionInBlock) {
         // Because blockInstructionList[indexOfStoreInstructionInBlock] == storeInstruction = `some operand`
         // we start our check from indexOfStoreInstructionInBlock + 1
-        assert blockInstructionList.get(indexOfStoreInstructionInBlock).equals(storeInstruction);
+        assert blockInstructionList.get(indexOfStoreInstructionInBlock)
+                .equals(storeInstruction);
 
         for (var indexOfInstruction = indexOfStoreInstructionInBlock + 1; indexOfInstruction < blockInstructionList.size(); indexOfInstruction++) {
             var possibleStoreInstruction = blockInstructionList.get(indexOfInstruction);
             if (possibleStoreInstruction instanceof Store) {
                 var candidateStoreInstruction = (Store) possibleStoreInstruction;
                 // check if we are indeed overwriting the store
-                if (candidateStoreInstruction.getStore().equals(storeInstruction.getStore())) {
+                if (candidateStoreInstruction.getStore()
+                        .equals(storeInstruction.getStore())) {
                     return false;
                 }
             }
