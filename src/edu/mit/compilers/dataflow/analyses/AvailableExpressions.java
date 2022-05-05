@@ -1,18 +1,11 @@
 package edu.mit.compilers.dataflow.analyses;
 
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.codes.Assign;
-import edu.mit.compilers.codegen.codes.HasResult;
-import edu.mit.compilers.codegen.codes.MethodCallSetResult;
-import edu.mit.compilers.codegen.codes.Quadruple;
-import edu.mit.compilers.codegen.codes.Triple;
-import edu.mit.compilers.codegen.names.TemporaryName;
-import edu.mit.compilers.codegen.names.VariableName;
+import edu.mit.compilers.codegen.codes.Store;
+import edu.mit.compilers.codegen.codes.BinaryInstruction;
+import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.dataflow.Direction;
-import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
-import edu.mit.compilers.dataflow.operand.BinaryOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
-import edu.mit.compilers.dataflow.operand.UnaryOperand;
 import edu.mit.compilers.grammar.DecafScanner;
 
 import java.util.*;
@@ -95,12 +88,12 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
         var superSet = new HashSet<>(allValues);
         var killedExpressions = new HashSet<Operand>();
 
-        for (HasResult assignment : basicBlock.assignments()) {
+        for (Store assignment : basicBlock.getStores()) {
             // add all the computations that contain operands
             // that get re-assigned by the current stmt to
             // killedExpressions
             for (Operand comp : superSet) {
-                if (comp.contains(assignment.getResultLocation())) {
+                if (comp.contains(assignment.getStore())) {
                     killedExpressions.add(comp);
                 }
             }
@@ -110,12 +103,12 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
 
     private HashSet<Operand> gen(BasicBlock basicBlock) {
         var validComputations = new HashSet<Operand>();
-        for (HasResult assignment : basicBlock.assignments()) {
-            if (assignment instanceof Triple || assignment instanceof Quadruple) {
-                assignment.getComputationNoArray()
+        for (Store assignment : basicBlock.getStores()) {
+            if (assignment instanceof UnaryInstruction || assignment instanceof BinaryInstruction) {
+                assignment.getOperandNoArray()
                         .ifPresent(validComputations::add);
             }
-            validComputations.removeIf((operand -> operand.contains(assignment.getResultLocation())));
+            validComputations.removeIf((operand -> operand.contains(assignment.getStore())));
         }
         return validComputations;
     }
@@ -132,16 +125,16 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
      * @return true if the two assignments are equivalent and false otherwise
      * @throws IllegalArgumentException if any of the arguments is null
      */
-    public static boolean expressionsAreIsomorphic(HasResult a, HasResult b) {
+    public static boolean expressionsAreIsomorphic(Store a, Store b) {
         if (a == null) {
             throw new IllegalArgumentException("first assignment is a null pointer");
         } else if (b == null) {
             throw new IllegalArgumentException("second assignment is a null pointer");
         }
 
-        if (a instanceof Quadruple && b instanceof Quadruple) {
-            final Quadruple aQuad = (Quadruple) a;
-            final Quadruple bQuad = (Quadruple) b;
+        if (a instanceof BinaryInstruction && b instanceof BinaryInstruction) {
+            final BinaryInstruction aQuad = (BinaryInstruction) a;
+            final BinaryInstruction bQuad = (BinaryInstruction) b;
             if (aQuad.operator.equals(bQuad.operator)) {
                 final String operator = aQuad.operator;
                 if (operatorIsCommutative(operator)) {
@@ -151,11 +144,11 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
                     return aQuad.fstOperand.equals(bQuad.fstOperand) && aQuad.sndOperand.equals(bQuad.sndOperand);
                 }
             }
-        } else if (a instanceof Triple && b instanceof Triple) {
-            final Triple aTriple = (Triple) a;
-            final Triple bTriple = (Triple) b;
-            if (aTriple.operator.equals(bTriple.operator)) {
-                return aTriple.operand.equals(bTriple.operand);
+        } else if (a instanceof UnaryInstruction && b instanceof UnaryInstruction) {
+            final UnaryInstruction aUnaryInstruction = (UnaryInstruction) a;
+            final UnaryInstruction bUnaryInstruction = (UnaryInstruction) b;
+            if (aUnaryInstruction.operator.equals(bUnaryInstruction.operator)) {
+                return aUnaryInstruction.operand.equals(bUnaryInstruction.operand);
             }
         }
         return false;

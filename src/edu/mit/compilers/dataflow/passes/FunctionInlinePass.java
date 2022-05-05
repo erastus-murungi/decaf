@@ -5,23 +5,21 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.ThreeAddressCodeList;
+import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.codes.Assign;
+import edu.mit.compilers.codegen.codes.FunctionCall;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.MethodBegin;
-import edu.mit.compilers.codegen.codes.MethodCallNoResult;
-import edu.mit.compilers.codegen.codes.MethodCallSetResult;
+import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
 import edu.mit.compilers.codegen.codes.MethodEnd;
 import edu.mit.compilers.codegen.codes.MethodReturn;
 import edu.mit.compilers.codegen.codes.PopParameter;
 import edu.mit.compilers.codegen.codes.PushParameter;
-import edu.mit.compilers.codegen.codes.ThreeAddressCode;
+import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
@@ -46,7 +44,7 @@ public class FunctionInlinePass {
         return newMethodBeginList;
     }
 
-    private Map<AbstractName, AbstractName> mapParametersToArguments(ThreeAddressCodeList functionTacList,
+    private Map<AbstractName, AbstractName> mapParametersToArguments(InstructionList functionTacList,
                                                                      List<AbstractName> arguments) {
         int indexOfCode = 1;
         int functionTacListSize = functionTacList.size();
@@ -64,10 +62,10 @@ public class FunctionInlinePass {
         return map;
     }
 
-    private Map<ThreeAddressCodeList, List<Integer>> findCallSites(MethodBegin methodBegin, String functionName) {
-        var callSites = new HashMap<ThreeAddressCodeList, List<Integer>>();
+    private Map<InstructionList, List<Integer>> findCallSites(MethodBegin methodBegin, String functionName) {
+        var callSites = new HashMap<InstructionList, List<Integer>>();
         for (BasicBlock basicBlock : DataFlowAnalysis.getReversePostOrder(methodBegin.entryBlock)) {
-            var threeAddressCodeList = basicBlock.threeAddressCodeList;
+            var threeAddressCodeList = basicBlock.instructionList;
             callSites.put(threeAddressCodeList, new ArrayList<>());
             IntStream.range(0, threeAddressCodeList.size())
                     .forEach(indexOfTac -> {
@@ -80,12 +78,12 @@ public class FunctionInlinePass {
         return callSites;
     }
 
-    private List<AbstractName> findArgumentNames(ThreeAddressCodeList threeAddressCodeList, int indexOfFunctionCall) {
-        assert threeAddressCodeList.get(indexOfFunctionCall) instanceof MethodCallSetResult || threeAddressCodeList.get(indexOfFunctionCall) instanceof MethodCallNoResult;
+    private List<AbstractName> findArgumentNames(InstructionList instructionList, int indexOfFunctionCall) {
+        assert instructionList.get(indexOfFunctionCall) instanceof FunctionCall;
         var arguments = new ArrayList<AbstractName>();
         int indexOfPushParameter = indexOfFunctionCall - 1;
-        while (indexOfPushParameter >= 0 && threeAddressCodeList.get(indexOfPushParameter) instanceof PushParameter) {
-            PushParameter pushParameter = (PushParameter) threeAddressCodeList.get(indexOfPushParameter);
+        while (indexOfPushParameter >= 0 && instructionList.get(indexOfPushParameter) instanceof PushParameter) {
+            PushParameter pushParameter = (PushParameter) instructionList.get(indexOfPushParameter);
             arguments.add(pushParameter.parameterName);
             indexOfPushParameter--;
         }
@@ -97,23 +95,23 @@ public class FunctionInlinePass {
         for (MethodBegin targetMethodBegin : methodBeginList) {
             if (methodBegin == targetMethodBegin)
                 continue;
-            findCallSites(targetMethodBegin, functionName).forEach(((threeAddressCodeList, indicesOfCallSites) -> inlineCallSite(threeAddressCodeList, indicesOfCallSites, methodBegin.entryBlock.threeAddressCodeList)));
+            findCallSites(targetMethodBegin, functionName).forEach(((threeAddressCodeList, indicesOfCallSites) -> inlineCallSite(threeAddressCodeList, indicesOfCallSites, methodBegin.entryBlock.instructionList)));
         }
     }
 
-    private List<ThreeAddressCode> findReplacementBody(List<AbstractName> arguments,
-                                                       ThreeAddressCodeList functionBody) {
+    private List<Instruction> findReplacementBody(List<AbstractName> arguments,
+                                                  InstructionList functionBody) {
         functionBody = functionBody.flatten();
         // replace all instances of arguments with
         // find my actual parameter names
-        List<ThreeAddressCode> newTacList = new ArrayList<>();
+        List<Instruction> newTacList = new ArrayList<>();
         Map<AbstractName, AbstractName> paramToArg = mapParametersToArguments(functionBody, arguments);
         for (var tac : functionBody) {
             if (tac instanceof PopParameter || tac instanceof MethodEnd || tac instanceof Label || tac instanceof UnconditionalJump || tac instanceof MethodBegin)
                 continue;
             if (tac instanceof HasOperand) {
                 tac = tac.copy();
-                paramToArg.forEach(((HasOperand)tac)::replace);
+                paramToArg.forEach(((HasOperand) tac)::replace);
             }
             newTacList.add(tac);
         }
@@ -127,34 +125,33 @@ public class FunctionInlinePass {
      * @param indicesOfCallSite
      * @param functionBody
      */
-    private void inlineCallSite(ThreeAddressCodeList targetTacList, List<Integer> indicesOfCallSite, ThreeAddressCodeList functionBody) {
+    private void inlineCallSite(InstructionList targetTacList, List<Integer> indicesOfCallSite, InstructionList functionBody) {
         if (targetTacList.isEmpty())
             return;
-        var replacementBodies = new ArrayList<List<ThreeAddressCode>>();
+        var replacementBodies = new ArrayList<List<Instruction>>();
         for (var indexOfCallSite : indicesOfCallSite) {
             replacementBodies.add(findReplacementBody(findArgumentNames(targetTacList, indexOfCallSite), functionBody));
         }
-        var newTacList = new ArrayList<ThreeAddressCode>();
+        var newTacList = new ArrayList<Instruction>();
         Collections.reverse(indicesOfCallSite);
         int last = targetTacList.size() - 1;
 
         // we are going in reverse order
         int indexOfReplacementBody = replacementBodies.size() - 1;
         for (var indexOfCallSite : indicesOfCallSite) {
-            var subTacList = targetTacList.getCodes()
-                    .subList(indexOfCallSite + 1, last + 1);
+            var subTacList = targetTacList.subList(indexOfCallSite + 1, last + 1);
 
             Collections.reverse(subTacList);
             newTacList.addAll(subTacList);
             var replacement = replacementBodies.get(indexOfReplacementBody);
             Collections.reverse(replacement);
 
-            if (targetTacList.get(indexOfCallSite) instanceof MethodCallSetResult) {
+            if (targetTacList.get(indexOfCallSite) instanceof FunctionCallWithResult) {
 
                 assert replacement.get(0) instanceof MethodReturn;
                 var methodReturn = (MethodReturn) replacement.get(0);
-                var methodCallSetResult = (MethodCallSetResult) targetTacList.get(indexOfCallSite);
-                newTacList.add(Assign.ofRegularAssign(methodCallSetResult.dst, methodReturn.getReturnAddress()
+                var methodCallSetResult = (FunctionCallWithResult) targetTacList.get(indexOfCallSite);
+                newTacList.add(Assign.ofRegularAssign(methodCallSetResult.store, methodReturn.getReturnAddress()
                         .orElseThrow()));
 
                 replacement.remove(0);
@@ -165,7 +162,7 @@ public class FunctionInlinePass {
                 last--;
             indexOfReplacementBody--;
         }
-        var subTacList = targetTacList.getCodes()
+        var subTacList = targetTacList
                 .subList(0, last + 1);
 
         Collections.reverse(subTacList);
@@ -175,19 +172,17 @@ public class FunctionInlinePass {
 
     }
 
-    private boolean isMethodCallAndNameMatches(ThreeAddressCode threeAddressCode, String functionName) {
-        return threeAddressCode instanceof MethodCallSetResult && ((MethodCallSetResult) threeAddressCode).getMethodName()
-                .equals(functionName) ||
-                threeAddressCode instanceof MethodCallNoResult && ((MethodCallNoResult) threeAddressCode).getMethodName()
-                        .equals(functionName);
+    private boolean isMethodCallAndNameMatches(Instruction instruction, String functionName) {
+        return instruction instanceof FunctionCall && ((FunctionCall) instruction).getMethodName()
+                .equals(functionName);
     }
 
 
     private int getNumberOfCallsToFunction(String functionName) {
         int numberOfCalls = 0;
         for (MethodBegin methodBegin : methodBeginList) {
-            for (ThreeAddressCode threeAddressCode : methodBegin.entryBlock.threeAddressCodeList) {
-                if (isMethodCallAndNameMatches(threeAddressCode, functionName)) {
+            for (Instruction instruction : methodBegin.entryBlock.instructionList) {
+                if (isMethodCallAndNameMatches(instruction, functionName)) {
                     numberOfCalls += 1;
                 }
             }
@@ -198,40 +193,42 @@ public class FunctionInlinePass {
     private int getProgramSize() {
         int programSize = 0;
         for (MethodBegin methodBegin : methodBeginList) {
-            programSize += methodBegin.entryBlock.threeAddressCodeList.flattenedSize();
+            programSize += methodBegin.entryBlock.instructionList.flattenedSize();
         }
         return programSize;
     }
 
     private int getMethodSize(MethodBegin functionName) {
-        return functionName.entryBlock.threeAddressCodeList.size();
+        return functionName.entryBlock.instructionList.size();
     }
 
     private boolean isRecursive(MethodBegin methodBegin) {
-        for (ThreeAddressCode threeAddressCode : methodBegin.entryBlock.threeAddressCodeList.flatten()) {
-            if (isMethodCallAndNameMatches(threeAddressCode, methodBegin.methodName())) {
+        for (Instruction instruction : methodBegin.entryBlock.instructionList.flatten()) {
+            if (isMethodCallAndNameMatches(instruction, methodBegin.methodName())) {
                 return true;
             }
         }
         return false;
     }
 
-    private ThreeAddressCodeList getNonEmpty(ThreeAddressCodeList tacList) {
-           if (!tacList.isEmpty())
-               return tacList;
-            while (tacList.getNext().isPresent()) {
-                tacList = tacList
-                        .getNext()
-                        .get();
-                if (!tacList.isEmpty())
-                    return tacList;
-            }
-            throw new IllegalArgumentException("all ThreeAddressCodeList's are empty");
+    private InstructionList getNonEmpty(InstructionList tacList) {
+        if (!tacList.isEmpty())
+            return tacList;
+        while (tacList.getNextInstructionList()
+                .isPresent()) {
+            tacList = tacList
+                    .getNextInstructionList()
+                    .get();
+            if (!tacList.isEmpty())
+                return tacList;
+        }
+        throw new IllegalArgumentException("all ThreeAddressCodeList's are empty");
     }
 
 
     private boolean hasBranching(MethodBegin methodBegin) {
-        return methodBegin.entryBlock.threeAddressCodeList.toString().contains("if");
+        return methodBegin.entryBlock.instructionList.toString()
+                .contains("if");
     }
 
     private boolean shouldBeInlined(MethodBegin methodBegin) {

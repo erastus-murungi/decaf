@@ -11,8 +11,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public interface HasOperand {
-    boolean hasUnModifiedOperand();
-
     Operand getOperand();
 
     List<AbstractName> getOperandNames();

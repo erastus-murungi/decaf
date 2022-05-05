@@ -1,7 +1,7 @@
 package edu.mit.compilers.dataflow.operand;
 
 import edu.mit.compilers.codegen.codes.Assign;
-import edu.mit.compilers.codegen.codes.HasResult;
+import edu.mit.compilers.codegen.codes.Store;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
 
@@ -20,12 +20,12 @@ public class IncDecOperand extends Operand {
     }
 
     @Override
-    public boolean isContainedIn(HasResult hasResult) {
+    public boolean isContainedIn(Store store) {
         return false;
     }
 
     @Override
-    public HasResult fromOperand(AssignableName resultLocation) {
+    public Store fromOperand(AssignableName resultLocation) {
         return new Assign(resultLocation, operator, operand, null, null);
     }
 }

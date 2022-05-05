@@ -1,8 +1,8 @@
 package edu.mit.compilers.dataflow;
 
 import edu.mit.compilers.ast.BuiltinType;
-import edu.mit.compilers.codegen.codes.Quadruple;
-import edu.mit.compilers.codegen.codes.Triple;
+import edu.mit.compilers.codegen.codes.BinaryInstruction;
+import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.names.VariableName;
 import edu.mit.compilers.dataflow.analyses.AvailableExpressions;
 import edu.mit.compilers.grammar.DecafScanner;
@@ -22,18 +22,18 @@ public class AvailableExpressionsTest {
     private final VariableName c = new VariableName("c", Utils.WORD_SIZE, BuiltinType.Int);
     private final VariableName d = new VariableName("d", Utils.WORD_SIZE, BuiltinType.Int);
 
-    private Quadruple aEqualsBPlusC;
-    private Quadruple dEqualsCPlusB;
-    private Quadruple aEqualsBMinusC;
-    private Quadruple dEqualsCMinusB;
+    private BinaryInstruction aEqualsBPlusC;
+    private BinaryInstruction dEqualsCPlusB;
+    private BinaryInstruction aEqualsBMinusC;
+    private BinaryInstruction dEqualsCMinusB;
 
-    private Quadruple aEqualsBTimesC;
-    private Quadruple dEqualsCTimesB;
-    private Quadruple aEqualsBDivideC;
-    private Quadruple dEqualsCDivideB;
+    private BinaryInstruction aEqualsBTimesC;
+    private BinaryInstruction dEqualsCTimesB;
+    private BinaryInstruction aEqualsBDivideC;
+    private BinaryInstruction dEqualsCDivideB;
 
-    private Triple aEqualsMinusB;
-    private Triple cEqualsMinusB;
+    private UnaryInstruction aEqualsMinusB;
+    private UnaryInstruction cEqualsMinusB;
 
     private static final String[] allDecafOperators = {
             DecafScanner.PLUS,
@@ -57,18 +57,18 @@ public class AvailableExpressionsTest {
 
     @Before
     public void setUp() throws Exception {
-        aEqualsBPlusC = new Quadruple(a, b, DecafScanner.PLUS, c, null, null);
-        dEqualsCPlusB = new Quadruple(d, c, DecafScanner.PLUS, b, null, null);
-        aEqualsBMinusC = new Quadruple(a, b, DecafScanner.MINUS, c, null, null);
-        dEqualsCMinusB = new Quadruple(d, c, DecafScanner.PLUS, b, null, null);
+        aEqualsBPlusC = new BinaryInstruction(a, b, DecafScanner.PLUS, c, null, null);
+        dEqualsCPlusB = new BinaryInstruction(d, c, DecafScanner.PLUS, b, null, null);
+        aEqualsBMinusC = new BinaryInstruction(a, b, DecafScanner.MINUS, c, null, null);
+        dEqualsCMinusB = new BinaryInstruction(d, c, DecafScanner.PLUS, b, null, null);
 
-        aEqualsBTimesC = new Quadruple(a, b, DecafScanner.MULTIPLY, c, null, null);
-        dEqualsCTimesB = new Quadruple(d, c, DecafScanner.MULTIPLY, b, null, null);
-        aEqualsBDivideC = new Quadruple(a, b, DecafScanner.DIVIDE, c, null, null);
-        dEqualsCDivideB = new Quadruple(d, c, DecafScanner.DIVIDE, b, null, null);
+        aEqualsBTimesC = new BinaryInstruction(a, b, DecafScanner.MULTIPLY, c, null, null);
+        dEqualsCTimesB = new BinaryInstruction(d, c, DecafScanner.MULTIPLY, b, null, null);
+        aEqualsBDivideC = new BinaryInstruction(a, b, DecafScanner.DIVIDE, c, null, null);
+        dEqualsCDivideB = new BinaryInstruction(d, c, DecafScanner.DIVIDE, b, null, null);
 
-        aEqualsMinusB = new Triple(a, DecafScanner.MINUS, b, null);
-        cEqualsMinusB = new Triple(c, DecafScanner.MINUS, b, null);
+        aEqualsMinusB = new UnaryInstruction(a, DecafScanner.MINUS, b, null);
+        cEqualsMinusB = new UnaryInstruction(c, DecafScanner.MINUS, b, null);
     }
 
     @After

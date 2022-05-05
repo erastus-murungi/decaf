@@ -1,12 +1,10 @@
 package edu.mit.compilers.ast;
 
-import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable; 
 import edu.mit.compilers.utils.Pair;
 
 import java.util.List;
-import java.util.Optional;
 
 public abstract class AST {
     public abstract List<Pair<String, AST>> getChildren();

@@ -1,22 +1,20 @@
 package edu.mit.compilers.cfg;
 
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.ast.Array;
-import edu.mit.compilers.codegen.ThreeAddressCodeList;
-import edu.mit.compilers.codegen.codes.HasResult;
-import edu.mit.compilers.codegen.codes.ThreeAddressCode;
+import edu.mit.compilers.codegen.InstructionList;
+import edu.mit.compilers.codegen.codes.Store;
+import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public abstract class BasicBlock {
     private final ArrayList<BasicBlock> predecessors;
-    // to be set by the threeAddressCodeList
-    public ThreeAddressCodeList threeAddressCodeList;
+    // to be set by a visitor
+    public InstructionList instructionList;
 
     public ArrayList<AST> lines;
 
@@ -61,7 +59,7 @@ public abstract class BasicBlock {
     public BasicBlock() {
         predecessors = new ArrayList<>();
         lines = new ArrayList<>();
-        threeAddressCodeList = ThreeAddressCodeList.empty();
+        instructionList = new InstructionList();
     }
 
     public abstract <T> T accept(BasicBlockVisitor<T> visitor, SymbolTable symbolTable);
@@ -82,15 +80,14 @@ public abstract class BasicBlock {
      * get only TACs which change values of variables
      * @return Iterator of Assignment TACs
      */
-    public List<HasResult> assignments() {
-        return StreamSupport
-                .stream(threeAddressCodeList.spliterator(), false)
-                .filter(tac -> tac instanceof HasResult)
-                .map(tac -> (HasResult) tac)
+    public List<Store> getStores() {
+        return instructionList.stream()
+                .filter(tac -> tac instanceof Store)
+                .map(tac -> (Store) tac)
                 .collect(Collectors.toList());
     }
 
-    public List<ThreeAddressCode> codes() {
-        return new ArrayList<>(threeAddressCodeList.getCodes());
+    public List<Instruction> getCopyOfInstructionList() {
+        return new ArrayList<>(instructionList);
     }
 }

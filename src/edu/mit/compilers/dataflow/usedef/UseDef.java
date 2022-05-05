@@ -1,15 +1,15 @@
 package edu.mit.compilers.dataflow.usedef;
 
-import edu.mit.compilers.codegen.codes.ThreeAddressCode;
+import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.names.AbstractName;
 
 import java.util.Objects;
 
 public abstract class UseDef {
     public final AbstractName variable;
-    public final ThreeAddressCode line;
+    public final Instruction line;
 
-    public UseDef(AbstractName variable, ThreeAddressCode line) {
+    public UseDef(AbstractName variable, Instruction line) {
         this.variable = variable;
         this.line = line;
     }

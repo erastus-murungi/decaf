@@ -2,13 +2,13 @@ package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.*;
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.ThreeAddressCodeList;
-import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
+import edu.mit.compilers.codegen.InstructionList;
+import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 
 import java.util.*;
 
-public class MethodBegin extends ThreeAddressCode {
+public class MethodBegin extends Instruction {
     public final MethodDefinition methodDefinition;
     /**
      * @implNote instead of storing the set of locals, we now store a method's tac list.
@@ -16,7 +16,7 @@ public class MethodBegin extends ThreeAddressCode {
      *
      * This is the unoptimized threeAddressCodeList of a method
      */
-    public ThreeAddressCodeList unoptimized;
+    public InstructionList unoptimized;
 
     /**
      * We use this for optimization
@@ -45,12 +45,12 @@ public class MethodBegin extends ThreeAddressCode {
     }
 
     @Override
-    public <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, E extra) {
+    public <T, E> T accept(InstructionVisitor<T, E> visitor, E extra) {
         return visitor.visit(this, extra);
     }
 
     @Override
-    public List<AbstractName> getNames() {
+    public List<AbstractName> getAllNames() {
         return Collections.emptyList();
     }
 
@@ -60,7 +60,7 @@ public class MethodBegin extends ThreeAddressCode {
     }
 
     @Override
-    public ThreeAddressCode copy() {
+    public Instruction copy() {
         return new MethodBegin(methodDefinition);
     }
 }

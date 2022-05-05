@@ -1,18 +1,16 @@
 package edu.mit.compilers.dataflow.passes;
 
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.codes.HasOperand;
-import edu.mit.compilers.codegen.codes.HasResult;
+import edu.mit.compilers.codegen.codes.Store;
 import edu.mit.compilers.codegen.codes.MethodBegin;
-import edu.mit.compilers.codegen.codes.ThreeAddressCode;
+import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.ConstantName;
 import edu.mit.compilers.dataflow.analyses.ReachingDefinitions;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 import edu.mit.compilers.dataflow.reachingvalues.DefValue;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -26,16 +24,16 @@ public class ConstantPropagationPass extends OptimizationPass {
     public void runGlobalConstantPropagation() {
         final ReachingDefinitions reachingDefinitions = new ReachingDefinitions(entryBlock);
         for (BasicBlock basicBlock : basicBlocks) {
-            var tacList = basicBlock.codes();
-            final var newtaclist = basicBlock.threeAddressCodeList;
-            newtaclist.getCodes().clear();
+            var tacList = basicBlock.getCopyOfInstructionList();
+            final var newTacList = basicBlock.instructionList;
+            newTacList.clear();
             var inSet = organize(reachingDefinitions.in.get(basicBlock));
             HashMap<AbstractName, DefValue> freshlyGen = new HashMap<>();
-            for (ThreeAddressCode line : tacList){
+            for (Instruction line : tacList){
                 // if line is new definition of a variable, we update the map which keeps track of the latest definition
                 // of a variable in our current block
-                if (line instanceof HasResult){
-                    DefValue defValue = new DefValue((HasResult) line);
+                if (line instanceof Store){
+                    DefValue defValue = new DefValue((Store) line);
                     freshlyGen.put(defValue.variableName, defValue);
                 }
 
@@ -69,7 +67,7 @@ public class ConstantPropagationPass extends OptimizationPass {
                         }
                     }
                 }
-                newtaclist.addCode(line);
+                newTacList.add(line);
             }
         }
     }
@@ -91,8 +89,8 @@ public class ConstantPropagationPass extends OptimizationPass {
 
     @Override
     public boolean run() {
-        final var oldCodes = entryBlock.codes();
+        final var oldCodes = entryBlock.getCopyOfInstructionList();
         runGlobalConstantPropagation();
-        return oldCodes.equals(entryBlock.threeAddressCodeList.getCodes());
+        return oldCodes.equals(entryBlock.instructionList);
     }
 }

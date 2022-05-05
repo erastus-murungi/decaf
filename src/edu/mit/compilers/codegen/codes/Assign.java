@@ -1,10 +1,11 @@
 package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
+import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.ConstantName;
 import edu.mit.compilers.dataflow.operand.AugmentedOperand;
 import edu.mit.compilers.dataflow.operand.IncDecOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
@@ -13,9 +14,8 @@ import edu.mit.compilers.grammar.DecafScanner;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
-public class Assign extends HasResult implements Cloneable, HasOperand {
+public class Assign extends Store implements Cloneable, HasOperand {
     public String assignmentOperator;
     public AbstractName operand;
 
@@ -30,32 +30,34 @@ public class Assign extends HasResult implements Cloneable, HasOperand {
     }
 
     @Override
-    public <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, E extra) {
+    public <T, E> T accept(InstructionVisitor<T, E> visitor, E extra) {
         return visitor.visit(this, extra);
     }
 
     @Override
-    public List<AbstractName> getNames() {
-        return List.of(dst, operand);
+    public List<AbstractName> getAllNames() {
+        return List.of(store, operand);
     }
 
     @Override
     public String repr() {
-        return String.format("%s%s: %s %s %s", DOUBLE_INDENT, dst.repr(), dst.builtinType.getSourceCode(), assignmentOperator, operand.repr());
+        if (operand instanceof ConstantName)
+            return String.format("%s%s: %s %s %s", DOUBLE_INDENT, store.repr(), store.builtinType.getSourceCode(), assignmentOperator, operand.repr());
+        return String.format("%s%s: %s %s load %s", DOUBLE_INDENT, store.repr(), store.builtinType.getSourceCode(), assignmentOperator, operand.repr());
     }
 
     @Override
-    public ThreeAddressCode copy() {
-        return new Assign(dst, assignmentOperator, operand, source, getComment().orElse(null));
+    public Instruction copy() {
+        return new Assign(store, assignmentOperator, operand, source, getComment().orElse(null));
     }
 
     @Override
     public String toString() {
-        return String.format("%s%s %s %s", DOUBLE_INDENT, dst, assignmentOperator, operand);
+        return String.format("%s%s %s %s", DOUBLE_INDENT, store, assignmentOperator, operand);
     }
 
     @Override
-    public Optional<Operand> getComputationNoArray() {
+    public Optional<Operand> getOperandNoArray() {
         if (operand instanceof ArrayName)
             return Optional.empty();
         switch (assignmentOperator) {
@@ -71,7 +73,7 @@ public class Assign extends HasResult implements Cloneable, HasOperand {
     }
 
     public boolean contains(AbstractName name) {
-        return dst.equals(name) || operand.equals(name);
+        return store.equals(name) || operand.equals(name);
     }
 
     @Override
@@ -81,7 +83,7 @@ public class Assign extends HasResult implements Cloneable, HasOperand {
         clone.operand = operand;
         clone.assignmentOperator = assignmentOperator;
         clone.setComment(getComment().orElse(null));
-        clone.dst = dst;
+        clone.store = store;
         clone.source = source;
         return clone;
     }
@@ -112,11 +114,6 @@ public class Assign extends HasResult implements Cloneable, HasOperand {
             replaced = true;
         }
         return replaced;
-    }
-
-    @Override
-    public boolean hasUnModifiedOperand() {
-        return true;
     }
 
 }

@@ -1,19 +1,18 @@
 package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
+import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.ConstantName;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class ArrayAccess extends ThreeAddressCode implements HasOperand  {
+public class ArrayAccess extends Instruction implements HasOperand  {
     public ArrayName arrayName;
     public ConstantName arrayLength;
     public AbstractName accessIndex;
@@ -43,12 +42,12 @@ public class ArrayAccess extends ThreeAddressCode implements HasOperand  {
     }
 
     @Override
-    public <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, E extra) {
+    public <T, E> T accept(InstructionVisitor<T, E> visitor, E extra) {
         return visitor.visit(this, extra);
     }
 
     @Override
-    public List<AbstractName> getNames() {
+    public List<AbstractName> getAllNames() {
         return List.of(accessIndex);
     }
 
@@ -58,7 +57,7 @@ public class ArrayAccess extends ThreeAddressCode implements HasOperand  {
     }
 
     @Override
-    public ThreeAddressCode copy() {
+    public Instruction copy() {
         return new ArrayAccess(source, getComment().orElse(null), arrayName, arrayLength, accessIndex);
     }
 
@@ -80,11 +79,6 @@ public class ArrayAccess extends ThreeAddressCode implements HasOperand  {
     @Override
     public List<AbstractName> getOperandNamesNoArray() {
         return getOperandNames().stream().filter(abstractName -> !(abstractName instanceof ArrayName)).collect(Collectors.toList());
-    }
-
-    @Override
-    public boolean hasUnModifiedOperand() {
-        return true;
     }
 
     public boolean replace(AbstractName oldVariable, AbstractName replacer) {

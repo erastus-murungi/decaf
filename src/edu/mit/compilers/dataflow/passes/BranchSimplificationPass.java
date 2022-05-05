@@ -12,16 +12,16 @@ import java.util.stream.Collectors;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.BasicBlockWithBranch;
-import edu.mit.compilers.codegen.ThreeAddressCodeList;
+import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.codes.ConditionalJump;
 import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.MethodBegin;
-import edu.mit.compilers.codegen.codes.ThreeAddressCode;
+import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.codegen.names.AbstractName;
 
 public class BranchSimplificationPass extends OptimizationPass {
-    HashMap<Label, ThreeAddressCodeList> predecessors;
+    HashMap<Label, InstructionList> predecessors;
     boolean noChanges = true;
 
     public BranchSimplificationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
@@ -40,27 +40,27 @@ public class BranchSimplificationPass extends OptimizationPass {
     private void buildDependencyGraph() {
         predecessors = new HashMap<>();
         for (BasicBlock basicBlock : basicBlocks) {
-            var tacList = basicBlock.threeAddressCodeList;
+            var tacList = basicBlock.instructionList;
             if (!tacList.isEmpty()) {
-                ThreeAddressCode tac = tacList.firstCode();
+                Instruction tac = tacList.firstCode();
                 if (tac instanceof Label)
                     predecessors.put(((Label) tac), tacList);
             }
-            var nextTacList = tacList.next;
+            var nextTacList = tacList.nextInstructionList;
             while (nextTacList != null) {
                 if (!nextTacList.isEmpty()) {
-                    ThreeAddressCode tac = nextTacList.firstCode();
+                    Instruction tac = nextTacList.firstCode();
                     if (tac instanceof Label)
                         predecessors.put(((Label) tac), nextTacList);
                 }
                 tacList = nextTacList;
-                nextTacList = tacList.next;
+                nextTacList = tacList.nextInstructionList;
             }
         }
     }
 
-    private Optional<ConditionalJump> getConditional(ThreeAddressCodeList threeAddressCodeList) {
-        return threeAddressCodeList.getCodes()
+    private Optional<ConditionalJump> getConditional(InstructionList instructionList) {
+        return instructionList
                 .stream()
                 .dropWhile(threeAddressCode -> !(threeAddressCode instanceof ConditionalJump))
                 .map(threeAddressCode -> (ConditionalJump) threeAddressCode)
@@ -68,7 +68,7 @@ public class BranchSimplificationPass extends OptimizationPass {
     }
 
     private Boolean getStateOfBlockCondition(BasicBlockWithBranch basicBlockWithBranch) {
-        Optional<ConditionalJump> conditionalJump = getConditional(basicBlockWithBranch.threeAddressCodeList);
+        Optional<ConditionalJump> conditionalJump = getConditional(basicBlockWithBranch.instructionList);
         if (conditionalJump.isPresent()) {
             if (isTrue(conditionalJump.get())) {
                 return true;
@@ -83,16 +83,15 @@ public class BranchSimplificationPass extends OptimizationPass {
         // just reduce this to the true branch
         var trueChild = basicBlockWithBranch.trueChild;
         var falseChild = basicBlockWithBranch.falseChild;
-        basicBlockWithBranch.threeAddressCodeList.reset(Collections.emptyList());
-        Label label = (Label) falseChild.threeAddressCodeList.get(0);
+        basicBlockWithBranch.instructionList.reset(Collections.emptyList());
+        Label label = (Label) falseChild.instructionList.get(0);
         if (label.aliasLabels.isEmpty()) {
-            var collect = falseChild.threeAddressCodeList.getCodes()
+            var collect = falseChild.instructionList
                     .stream()
                     .dropWhile(BranchSimplificationPass::isNotExitLabel)
                     .collect(Collectors.toList());
-            trueChild.threeAddressCodeList.getCodes()
-                    .addAll(collect);
-            falseChild.threeAddressCodeList.reset(Collections.emptyList());
+            trueChild.instructionList.addAll(collect);
+            falseChild.instructionList.reset(Collections.emptyList());
         } else {
             label.aliasLabels.remove(0);
         }
@@ -103,13 +102,13 @@ public class BranchSimplificationPass extends OptimizationPass {
         // if (false) || if (0)
         // just reduce this to the true branch
         var trueChild = basicBlockWithBranch.trueChild;
-        basicBlockWithBranch.threeAddressCodeList.reset(Collections.emptyList());
-        trueChild.threeAddressCodeList.reset(Collections.emptyList());
+        basicBlockWithBranch.instructionList.reset(Collections.emptyList());
+        trueChild.instructionList.reset(Collections.emptyList());
 
-        var visited = new HashSet<ThreeAddressCodeList>();
-        visited.add(trueChild.threeAddressCodeList);
-        var nextTacList = trueChild.threeAddressCodeList.next;
-        var labelToUnconditionalJump = new HashMap<Label, ThreeAddressCodeList>();
+        var visited = new HashSet<InstructionList>();
+        visited.add(trueChild.instructionList);
+        var nextTacList = trueChild.instructionList.nextInstructionList;
+        var labelToUnconditionalJump = new HashMap<Label, InstructionList>();
         while (nextTacList != null) {
             if (visited.contains(nextTacList))
                 break;
@@ -155,7 +154,7 @@ public class BranchSimplificationPass extends OptimizationPass {
             } else {
                 nextTacList.reset(Collections.emptyList());
             }
-            nextTacList = nextTacList.next;
+            nextTacList = nextTacList.nextInstructionList;
         }
         noChanges = false;
 
@@ -173,9 +172,9 @@ public class BranchSimplificationPass extends OptimizationPass {
 //        }
     }
 
-    private static boolean isNotExitLabel(ThreeAddressCode threeAddressCode) {
-        if (threeAddressCode instanceof Label) {
-            var label = (Label) threeAddressCode;
+    private static boolean isNotExitLabel(Instruction instruction) {
+        if (instruction instanceof Label) {
+            var label = (Label) instruction;
             return !label.label.startsWith("exit");
         }
         return true;

@@ -1,17 +1,17 @@
 package edu.mit.compilers.dataflow.operand;
 
-import edu.mit.compilers.codegen.codes.HasResult;
-import edu.mit.compilers.codegen.codes.MethodCallSetResult;
+import edu.mit.compilers.codegen.codes.Store;
+import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
 
 import java.util.Objects;
 
 public class MethodCallOperand extends Operand {
-    public MethodCallSetResult methodCallSetResult;
+    public FunctionCallWithResult functionCallWithResult;
 
-    public MethodCallOperand(MethodCallSetResult methodCallSetResult) {
-        this.methodCallSetResult = methodCallSetResult;
+    public MethodCallOperand(FunctionCallWithResult functionCallWithResult) {
+        this.functionCallWithResult = functionCallWithResult;
     }
 
     @Override
@@ -20,14 +20,14 @@ public class MethodCallOperand extends Operand {
     }
 
     @Override
-    public boolean isContainedIn(HasResult hasResult) {
+    public boolean isContainedIn(Store store) {
         return false;
     }
 
     @Override
-    public HasResult fromOperand(AssignableName resultLocation) {
-        var methodCallSetResultCopy = methodCallSetResult.clone();
-        methodCallSetResultCopy.setResultLocation(resultLocation);
+    public Store fromOperand(AssignableName resultLocation) {
+        var methodCallSetResultCopy = functionCallWithResult.clone();
+        methodCallSetResultCopy.setStore(resultLocation);
         return methodCallSetResultCopy;
     }
 
@@ -36,16 +36,16 @@ public class MethodCallOperand extends Operand {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MethodCallOperand that = (MethodCallOperand) o;
-        return Objects.equals(methodCallSetResult.toString(), that.methodCallSetResult.toString());
+        return Objects.equals(functionCallWithResult.toString(), that.functionCallWithResult.toString());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(methodCallSetResult.toString());
+        return Objects.hash(functionCallWithResult.toString());
     }
 
     @Override
     public String toString() {
-        return methodCallSetResult.toString();
+        return functionCallWithResult.toString();
     }
 }
