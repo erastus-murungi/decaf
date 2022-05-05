@@ -51,10 +51,6 @@ public class Compilation {
         return nLinesOfCodeReductionFactor;
     }
 
-    public AST getAstRoot() {
-        return parser.getRoot();
-    }
-
     enum CompilationState {
         INITIALIZED,
         SCANNED,
@@ -127,7 +123,7 @@ public class Compilation {
     public Compilation(InputStream inputStream, boolean debug) throws FileNotFoundException {
         specificTestFileInitialize(inputStream);
         initialize();
-        CLI.debug = true;
+        CLI.debug = debug;
     }
 
     public Compilation(InputStream inputStream) throws FileNotFoundException {
