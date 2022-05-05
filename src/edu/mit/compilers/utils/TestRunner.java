@@ -53,6 +53,9 @@ public class TestRunner {
         int[] nLinesRemoved = new int[nTestFiles];
         for (var indexOfTestFile = 0; indexOfTestFile < nTestFiles; indexOfTestFile++) {
             var testFile = allTestFiles.get(indexOfTestFile);
+            if (testFile.getName().equals("test.dcf"))
+                continue;
+            System.out.println(testFile.getAbsolutePath());
             var compilation = compileTest(testFile);
             fileNames[indexOfTestFile] = testFile.getName();
             reductionRatios[indexOfTestFile] = compilation.getNLinesOfCodeReductionFactor();
