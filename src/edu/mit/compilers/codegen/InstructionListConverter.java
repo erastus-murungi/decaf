@@ -272,7 +272,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             for (int i = newParamNames.size() - 1; i >= 0; i--) {
                 final var pushParameter = new PushParameter(newParamNames.get(i), i, methodCallOrDefinitionArguments.get(i));
                 instructionList.add(pushParameter);
-                pushParameter.setComment("index of parameter = " + i);
             }
         }
 
@@ -475,8 +474,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             instructionList.add(new PopParameter(
                     new VariableName(parameter.id.id, Utils.WORD_SIZE, parameter.builtinType),
                     parameter,
-                    i,
-                    "# index of parameter = " + i
+                    i
             ));
         }
     }

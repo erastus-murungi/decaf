@@ -5,6 +5,7 @@ import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
+import edu.mit.compilers.utils.Utils;
 
 import java.util.List;
 
@@ -35,7 +36,9 @@ public class ConditionalJump extends Instruction implements HasOperand {
 
     @Override
     public String repr() {
-        return toString();
+        var ifString =  Utils.coloredPrint("if false", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+        var goTo =  Utils.coloredPrint("goto", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, ifString, condition.repr(), goTo, trueLabel.label, DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
     }
 
     @Override

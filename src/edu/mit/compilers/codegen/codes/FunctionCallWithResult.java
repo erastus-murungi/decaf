@@ -7,6 +7,7 @@ import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.MethodCallOperand;
+import edu.mit.compilers.utils.Utils;
 
 import java.util.Collections;
 import java.util.List;
@@ -38,7 +39,8 @@ public class FunctionCallWithResult extends Store implements HasOperand, Functio
 
     @Override
     public String repr() {
-        return String.format("%s%s: %s = %s @%s %s%s", DOUBLE_INDENT, getStore().repr(), getMethodReturnType(), "call", getMethodName() , DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
+        var callString =  Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+        return String.format("%s%s: %s = %s @%s %s%s", DOUBLE_INDENT, getStore().repr(), getMethodReturnType(), callString, getMethodName() , DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
     }
 
     @Override

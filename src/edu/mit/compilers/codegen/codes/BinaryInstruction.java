@@ -7,6 +7,7 @@ import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.dataflow.operand.BinaryOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
+import edu.mit.compilers.utils.Utils;
 
 import java.util.List;
 import java.util.Optional;
@@ -49,9 +50,10 @@ public class BinaryInstruction extends Store implements HasOperand {
 
     @Override
     public String repr() {
+        var typeString = store.builtinType.getSourceCode();
         if (getComment().isPresent())
-            return String.format("%s%s: %s = %s %s %s %s%s", DOUBLE_INDENT, store.repr(), store.builtinType.getSourceCode(), fstOperand.repr(), operator, sndOperand.repr(), DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s: %s = %s %s %s", DOUBLE_INDENT, store.repr(), store.builtinType.getSourceCode(), fstOperand.repr(), operator, sndOperand.repr());
+            return String.format("%s%s: %s = %s %s %s %s%s", DOUBLE_INDENT, store.repr(), typeString, fstOperand.repr(), operator, sndOperand.repr(), DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s: %s = %s %s %s", DOUBLE_INDENT, store.repr(), typeString, fstOperand.repr(), operator, sndOperand.repr());
     }
 
     @Override

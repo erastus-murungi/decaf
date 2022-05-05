@@ -11,6 +11,7 @@ import edu.mit.compilers.dataflow.operand.IncDecOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 import edu.mit.compilers.grammar.DecafScanner;
+import edu.mit.compilers.utils.Utils;
 
 import java.util.List;
 import java.util.Optional;
@@ -43,7 +44,8 @@ public class Assign extends Store implements Cloneable, HasOperand {
     public String repr() {
         if (operand instanceof ConstantName)
             return String.format("%s%s: %s %s %s", DOUBLE_INDENT, store.repr(), store.builtinType.getSourceCode(), assignmentOperator, operand.repr());
-        return String.format("%s%s: %s %s load %s", DOUBLE_INDENT, store.repr(), store.builtinType.getSourceCode(), assignmentOperator, operand.repr());
+        var load =  Utils.coloredPrint("load", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+        return String.format("%s%s: %s %s %s %s", DOUBLE_INDENT, store.repr(), store.builtinType.getSourceCode(), assignmentOperator, load, operand.repr());
     }
 
     @Override

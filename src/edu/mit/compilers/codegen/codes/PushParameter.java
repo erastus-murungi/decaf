@@ -5,6 +5,7 @@ import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
+import edu.mit.compilers.utils.Utils;
 
 import java.util.List;
 
@@ -35,8 +36,9 @@ public class PushParameter extends Instruction implements HasOperand {
 
     @Override
     public String repr() {
-        String comment = "# " + getComment().orElse("");
-        return String.format("%s%s %s%s%20s", DOUBLE_INDENT, "push", parameterName.repr(), DOUBLE_INDENT, comment);
+        var push =  Utils.coloredPrint("push", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+        return String.format("%s%s %s%s", DOUBLE_INDENT, push, parameterName.repr(), DOUBLE_INDENT);
+
     }
 
     @Override

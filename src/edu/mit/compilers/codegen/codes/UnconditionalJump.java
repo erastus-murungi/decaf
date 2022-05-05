@@ -2,6 +2,7 @@ package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.utils.Utils;
 
 import java.util.Collections;
 import java.util.List;
@@ -32,7 +33,8 @@ public class UnconditionalJump extends Instruction {
 
     @Override
     public String repr() {
-        return toString();
+        var goTo =  Utils.coloredPrint("goto", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+        return String.format("%s%s %s", DOUBLE_INDENT, goTo, goToLabel.label);
     }
 
     @Override

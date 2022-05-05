@@ -3,6 +3,7 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.utils.Utils;
 
 import java.util.Collections;
 import java.util.List;
@@ -33,7 +34,8 @@ public class FunctionCallNoResult extends Instruction implements FunctionCall {
 
     @Override
     public String repr() {
-        return String.format("%s%s %s @%s %s%s", DOUBLE_INDENT, "call", getMethodReturnType(), getMethodName(), DOUBLE_INDENT, getComment().isPresent() ? " #  " + getComment().get() : "");
+        var callString =  Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+        return String.format("%s%s %s @%s %s%s", DOUBLE_INDENT, callString, getMethodReturnType(), getMethodName(), DOUBLE_INDENT, getComment().isPresent() ? " #  " + getComment().get() : "");
     }
 
     @Override
