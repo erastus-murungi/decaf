@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 public class InstructionList extends ArrayList<Instruction> {
     public AbstractName place;
     public InstructionList nextInstructionList;
-    public InstructionList tailInstructionList;
 
     public InstructionList(AbstractName place, List<Instruction> codes) {
         this.place = place;
