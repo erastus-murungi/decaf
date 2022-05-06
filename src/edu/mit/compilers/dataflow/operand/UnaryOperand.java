@@ -30,7 +30,7 @@ public class UnaryOperand extends Operand {
     }
 
     @Override
-    public Store storeInstructionFromOperand(AssignableName store) {
+    public Store getStoreInstructionFromOperand(AssignableName store) {
         return new UnaryInstruction(store, operator, operand, null);
     }
 

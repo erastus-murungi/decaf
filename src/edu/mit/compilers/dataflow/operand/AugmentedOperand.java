@@ -27,7 +27,7 @@ public class AugmentedOperand extends Operand {
     }
 
     @Override
-    public Store storeInstructionFromOperand(AssignableName store) {
+    public Store getStoreInstructionFromOperand(AssignableName store) {
         return new Assign(store, operator, operand, null, null);
     }
 

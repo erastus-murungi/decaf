@@ -25,7 +25,7 @@ public class MethodCallOperand extends Operand {
     }
 
     @Override
-    public Store storeInstructionFromOperand(AssignableName store) {
+    public Store getStoreInstructionFromOperand(AssignableName store) {
         var methodCallSetResultCopy = functionCallWithResult.clone();
         methodCallSetResultCopy.setStore(store);
         return methodCallSetResultCopy;
