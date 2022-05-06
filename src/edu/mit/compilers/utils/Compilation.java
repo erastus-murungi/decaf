@@ -214,12 +214,6 @@ public class Compilation {
                 System.out.println(parser.getRoot().getSourceCode());
             }
             InstructionSimplifyIrPass.run(parser.getRoot());
-            // this line is preventing the code from failing
-            // getSourceCode() does not modify the AST in any way
-            // it is a very odd bug which we have no clue of how to fix yet
-            /////////////////////////////////
-            parser.getRoot().getSourceCode();
-            ////////////////////////////////
             if (CLI.debug) {
                 System.out.println("after InstructionSimplifyPass");
                 System.out.println(parser.getRoot().getSourceCode());
