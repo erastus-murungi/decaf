@@ -1,45 +1,39 @@
 <project name="Compiler" default="jar" basedir=".">
 
-    <property environment="env"/>
-    <property name="base_package_dir" value="edu/mit/compilers"/>
-    <property name="base_package_name" value="edu.mit.compilers"/>
-    <property name="test.path" value="tests"/>
+    <property environment="env" />
+    <property name="base_package_dir" value="edu/mit/compilers" />
+    <property name="base_package_name" value="edu.mit.compilers" />
 
     <!-- Manually generated java files -->
-    <property name="src" location="src"/>
+    <property name="src"     location="src"     />
     <!-- Target Dir for compile -->
-    <property name="classes.main" location="classes/main"/>
+    <property name="classes" location="classes" />
     <!-- Jar directory -->
-    <property name="dist.main" location="dist"/>
     <property name="dist"    location="dist"    />
     <!-- Binaries for tools, etc. -->
-    <property name="bin" location="bin"/>
-    <!-- Runtime libraries -->
+    <property name="bin"     location="bin"     />
+    <!-- Directory containing tests -->
+    <property name="tests"   location="tests"   />
+
     <property name="lib" location="lib"/>
-
-    <property name="test" location="test"/>
-
-    <property name="test.main" location="classes/tests"/>
-
 
     <!-- Build up a path structure for a classpath
          that includes the binaries (jars) in bin/ and
          the existing classpath.  Not used now,
          because the jflex and cup task define their own cp,
          but could come in handly later. -->
-
     <path id="binaries">
-        <pathelement location="${bin}"/>
+        <pathelement location="${bin}" />
         <fileset dir="${bin}">
-            <include name="**/*.jar"/>
-            <include name="**/*.zip"/>
+            <include name="**/*.jar" />
+            <include name="**/*.zip" />
         </fileset>
-        <pathelement path="${java.class.path}"/>
-        <pathelement path="${classes.main}"/>
+        <pathelement path="${java.class.path}" />
+        <pathelement path="${classes}" />
     </path>
 
     <!-- Build up a path structure for a classpath
-       that includes the libraries and the existing classpath -->
+   that includes the libraries and the existing classpath -->
     <path id="libraries">
         <pathelement location="${lib}"/>
         <fileset dir="${lib}">
@@ -50,23 +44,12 @@
     </path>
 
     <target name="init">
-        <mkdir dir="${classes.main}"/>
-        <mkdir dir="${dist.main}"/>
-        <mkdir dir="${test.main}"/>
-        <mkdir dir="${dist}"/>
+        <mkdir dir="${classes}" />
+        <mkdir dir="${dist}" />
     </target>
 
-    <path id="classpath.base"/>
-
-    <path id="classpath.test">
-        <pathelement location="lib/junit-4.12.jar"/>
-        <pathelement location="lib/hamcrest-core-1.3.jar"/>
-        <pathelement location="${classes.main}"/>
-        <path refid="classpath.base"/>
-    </path>
-
     <target name="compile" depends="init">
-        <javac srcdir="${src}" destdir="${classes.main}"
+        <javac srcdir="${src}" destdir="${classes}"
                debug="on" includeantruntime="true">
             <classpath>
                 <pathelement path="${lib}/EvalEx-2.7.jar"/>
@@ -78,67 +61,22 @@
         </javac>
     </target>
 
-  <target name="compile-test" depends="compile">
-    <javac srcdir="${test}" destdir="${test.main}"
-           debug="on" includeantruntime="false">
-      <classpath refid="classpath.test"/>
-      <classpath>
-        <fileset dir="${lib}/">
-          <include name="**/*.jar"/>
-          <include name="**/*.zip"/>
-        </fileset>
-      </classpath>
-    </javac>
-  </target>
-
-    <manifestclasspath property="jar.classpath" jarfile="${dist.main}/Compiler.jar">
-        <classpath>
-            <fileset dir="${lib}" includes="*.jar"/>
-        </classpath>
-    </manifestclasspath>
-
     <target name="jar" depends="compile">
-        <jar destfile="${dist.main}/Compiler.jar" basedir="${classes.main}">
+        <jar destfile="${dist}/Compiler.jar" basedir="${classes}">
             <manifest>
-                <attribute name="Main-Class" value="${base_package_name}.Main"/>
-                <attribute name="Class-Path" value="${jar.classpath}" />
+                <attribute name="Main-Class" value="${base_package_name}.Main" />
+                <attribute name="Class-Path" value="${lib}/EvalEx-2.7.jar" />
             </manifest>
         </jar>
+        <symlink link="${dist}/EvalEx-2.7.jar" resource="${lib}/EvalEx-2.7.jar"
+        overwrite="true" />
     </target>
 
     <!-- to clean, delete everything in the autogen, classes, and dist
      directory -->
     <target name="clean">
-        <delete dir="${classes.main}"/>
-        <delete dir="${dist.main}"/>
-        <delete dir="${test.main}"/>
-    </target>
-
-    <target name="junit" depends="compile-test">
-        <tstamp/>
-
-        <junit printsummary="yes" haltonfailure="no" showoutput="yes" enableTestListenerEvents="true">
-
-            <classpath>
-                <fileset dir="${lib}">
-                    <include name="**/*.jar"/>
-                    <include name="**/*.zip"/>
-                </fileset>
-            </classpath>
-
-            <formatter type="brief" usefile="false"/>
-
-            <classpath>
-                <path refid="classpath.test"/>
-                <pathelement location="${test.main}"/>
-            </classpath>
-
-            <batchtest fork="yes">
-                <fileset dir="${test}">
-                    <include name="**/*Test*.java"/>
-                </fileset>
-            </batchtest>
-        </junit>
+        <delete dir="${classes}" />
+        <delete dir="${dist}" />
     </target>
 
 </project>
