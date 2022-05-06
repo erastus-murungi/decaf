@@ -1,9 +1,8 @@
 package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
+import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 
@@ -11,8 +10,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public class MethodReturn extends ThreeAddressCode implements HasOperand {
+public class MethodReturn extends Instruction implements HasOperand {
     private AbstractName returnAddress;
+
     public MethodReturn(AST source) {
         super(source);
     }
@@ -32,12 +32,12 @@ public class MethodReturn extends ThreeAddressCode implements HasOperand {
     }
 
     @Override
-    public <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, E extra) {
+    public <T, E> T accept(InstructionVisitor<T, E> visitor, E extra) {
         return visitor.visit(this, extra);
     }
 
     @Override
-    public List<AbstractName> getNames() {
+    public List<AbstractName> getAllNames() {
         if (returnAddress == null)
             return Collections.emptyList();
         return List.of(returnAddress);
@@ -49,13 +49,8 @@ public class MethodReturn extends ThreeAddressCode implements HasOperand {
     }
 
     @Override
-    public ThreeAddressCode copy() {
+    public Instruction copy() {
         return new MethodReturn(source, returnAddress);
-    }
-
-    @Override
-    public boolean hasUnModifiedOperand() {
-        return true;
     }
 
     @Override

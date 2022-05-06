@@ -1,13 +1,14 @@
 package edu.mit.compilers.codegen.codes;
 
-import edu.mit.compilers.codegen.ThreeAddressCodeVisitor;
+import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.utils.Utils;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class UnconditionalJump extends ThreeAddressCode {
+public class UnconditionalJump extends Instruction {
     public final Label goToLabel;
 
     public UnconditionalJump(Label goToLabel) {
@@ -21,22 +22,23 @@ public class UnconditionalJump extends ThreeAddressCode {
     }
 
     @Override
-    public <T, E> T accept(ThreeAddressCodeVisitor<T, E> visitor, E extra) {
+    public <T, E> T accept(InstructionVisitor<T, E> visitor, E extra) {
         return visitor.visit(this, extra);
     }
 
     @Override
-    public List<AbstractName> getNames() {
+    public List<AbstractName> getAllNames() {
         return Collections.emptyList();
     }
 
     @Override
     public String repr() {
-        return toString();
+        var goTo =  Utils.coloredPrint("goto", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+        return String.format("%s%s %s", DOUBLE_INDENT, goTo, goToLabel.label);
     }
 
     @Override
-    public ThreeAddressCode copy() {
+    public Instruction copy() {
         return new UnconditionalJump(goToLabel);
     }
 

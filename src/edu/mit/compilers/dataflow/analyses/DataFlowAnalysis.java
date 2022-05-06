@@ -2,8 +2,8 @@ package edu.mit.compilers.dataflow.analyses;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.NOP;
-import edu.mit.compilers.codegen.ThreeAddressCodeList;
-import edu.mit.compilers.codegen.codes.ThreeAddressCode;
+import edu.mit.compilers.codegen.InstructionList;
+import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.dataflow.Direction;
 
 import java.util.*;
@@ -179,10 +179,10 @@ public abstract class DataFlowAnalysis<Value> {
         return index;
     }
 
-    public static Map<ThreeAddressCode, Integer> getTacToPosMapping(ThreeAddressCodeList threeAddressCodeList) {
-        var tacToPositionInList = new LinkedHashMap<ThreeAddressCode, Integer>();
+    public static Map<Instruction, Integer> getTacToPosMapping(InstructionList instructionList) {
+        var tacToPositionInList = new LinkedHashMap<Instruction, Integer>();
         var index = 0;
-        for (ThreeAddressCode tac : threeAddressCodeList) {
+        for (Instruction tac : instructionList) {
             tacToPositionInList.put(tac, index);
             ++index;
         }

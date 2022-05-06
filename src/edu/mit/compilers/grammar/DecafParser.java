@@ -7,6 +7,9 @@ import edu.mit.compilers.utils.DecafExceptionProcessor;
 import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.Utils;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -49,8 +52,10 @@ public class DecafParser {
             errors.add(e);
         }
         root = program;
-        if (showTrace)
+        if (showTrace) {
             printParseTree(root);
+            printParseTree();
+        }
     }
 
     private Token getCurrentToken() {
@@ -810,13 +815,31 @@ public class DecafParser {
     }
 
     public static void printParseTree(AST root) {
+            try {
+                var st = OutputStream.nullOutputStream();
+                st.write("".getBytes(StandardCharsets.UTF_8));
+                st.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+    }
+
+
+
+    public void printParseTree() {
         List<String> tree = new ArrayList<>();
         treeBody(new Pair<>(".", root), tree, "");
         while (tree.size() > 0 && tree.get(tree.size() - 1)
                 .equals(""))
             tree.remove(tree.size() - 1);
-        for (String s : tree)
-            System.out.println(s);
+        for (String s : tree) {
+            try {
+                OutputStream.nullOutputStream().write(s.getBytes(StandardCharsets.UTF_8));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            //            System.err.println(s);
+        }
     }
 
     public void setTrace(boolean showTrace) {

@@ -20,120 +20,120 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAddressCodeList> {
+public class InstructionListConverter implements BasicBlockVisitor<InstructionList> {
     private final List<DecafException> errors;
     public Set<AbstractName> globalNames;
 
-    private static class ThreeAddressCodesConverter implements Visitor<ThreeAddressCodeList> {
+    private static class InstructionConverter implements Visitor<InstructionList> {
         HashMap<String, String> temporaryToStringLiteral;
 
-        public ThreeAddressCodesConverter() {
+        public InstructionConverter() {
             this.temporaryToStringLiteral = new HashMap<>();
         }
 
         @Override
-        public ThreeAddressCodeList visit(IntLiteral intLiteral, SymbolTable symbolTable) {
+        public InstructionList visit(IntLiteral intLiteral, SymbolTable symbolTable) {
             throw new IllegalStateException("unreachable AST node");
         }
 
         @Override
-        public ThreeAddressCodeList visit(BooleanLiteral booleanLiteral, SymbolTable symbolTable) {
+        public InstructionList visit(BooleanLiteral booleanLiteral, SymbolTable symbolTable) {
             var place = resolveStoreLocation(BuiltinType.Bool);
             resetStoreLocation();
-            return new ThreeAddressCodeList(
+            return new InstructionList(
                     place,
                     Collections.singletonList(new Assign(place, "=", ConstantName.fromBooleanLiteral(booleanLiteral), booleanLiteral, place + " = " + booleanLiteral)));
         }
 
         @Override
-        public ThreeAddressCodeList visit(DecimalLiteral decimalLiteral, SymbolTable symbolTable) {
+        public InstructionList visit(DecimalLiteral decimalLiteral, SymbolTable symbolTable) {
             var place = resolveStoreLocation(BuiltinType.Int);
             resetStoreLocation();
-            return new ThreeAddressCodeList(
+            return new InstructionList(
                     place,
                     Collections.singletonList(new Assign(place, "=", ConstantName.fromIntLiteral(decimalLiteral), decimalLiteral, place + " = " + decimalLiteral)));
         }
 
         @Override
-        public ThreeAddressCodeList visit(HexLiteral hexLiteral, SymbolTable symbolTable) {
+        public InstructionList visit(HexLiteral hexLiteral, SymbolTable symbolTable) {
             var place = resolveStoreLocation(BuiltinType.Int);
             resetStoreLocation();
-            return new ThreeAddressCodeList(
+            return new InstructionList(
                     place,
                     Collections.singletonList(new Assign(place, "=", ConstantName.fromIntLiteral(hexLiteral), hexLiteral, place + " = " + hexLiteral)));
         }
 
         @Override
-        public ThreeAddressCodeList visit(FieldDeclaration fieldDeclaration, SymbolTable symbolTable) {
-            ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
+        public InstructionList visit(FieldDeclaration fieldDeclaration, SymbolTable symbolTable) {
+            InstructionList instructionList = new InstructionList();
             for (Name name: fieldDeclaration.names) {
                 if (fieldDeclaration.builtinType.equals(BuiltinType.Int) || fieldDeclaration.builtinType.equals(BuiltinType.Bool)) {
-                    threeAddressCodeList.addCode(new Assign(new VariableName(name.id, Utils.WORD_SIZE, BuiltinType.Int), "=", ConstantName.zero(), name, name.id + " = " + 0));
+                    instructionList.add(new Assign(new VariableName(name.id, Utils.WORD_SIZE, BuiltinType.Int), "=", ConstantName.zero(), name, name.id + " = " + 0));
                 }
 
             }
-            return threeAddressCodeList;
+            return instructionList;
 
         }
 
         @Override
-        public ThreeAddressCodeList visit(MethodDefinition methodDefinition, SymbolTable symbolTable) {
+        public InstructionList visit(MethodDefinition methodDefinition, SymbolTable symbolTable) {
             throw new IllegalStateException("A method definition is illegal");
         }
 
         @Override
-        public ThreeAddressCodeList visit(ImportDeclaration importDeclaration, SymbolTable symbolTable) {
+        public InstructionList visit(ImportDeclaration importDeclaration, SymbolTable symbolTable) {
             throw new IllegalStateException("An import statement is illegal");
         }
 
         @Override
-        public ThreeAddressCodeList visit(For forStatement, SymbolTable symbolTable) {
+        public InstructionList visit(For forStatement, SymbolTable symbolTable) {
             throw new IllegalStateException("A for statement is illegal");
         }
 
         @Override
-        public ThreeAddressCodeList visit(Break breakStatement, SymbolTable symbolTable) {
+        public InstructionList visit(Break breakStatement, SymbolTable symbolTable) {
             throw new IllegalStateException("A break statement is illegal");
         }
 
         @Override
-        public ThreeAddressCodeList visit(Continue continueStatement, SymbolTable symbolTable) {
+        public InstructionList visit(Continue continueStatement, SymbolTable symbolTable) {
             throw new IllegalStateException("A continue statement is illegal");
         }
 
         @Override
-        public ThreeAddressCodeList visit(While whileStatement, SymbolTable symbolTable) {
+        public InstructionList visit(While whileStatement, SymbolTable symbolTable) {
             throw new IllegalStateException("A while statement is illegal");
         }
 
         @Override
-        public ThreeAddressCodeList visit(Program program, SymbolTable symbolTable) {
+        public InstructionList visit(Program program, SymbolTable symbolTable) {
             throw new IllegalStateException("A program is illegal");
         }
 
         @Override
-        public ThreeAddressCodeList visit(UnaryOpExpression unaryOpExpression, SymbolTable symbolTable) {
+        public InstructionList visit(UnaryOpExpression unaryOpExpression, SymbolTable symbolTable) {
             final var operandTACList = unaryOpExpression.operand.accept(this, symbolTable);
-            final var retTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
-            retTACList.add(operandTACList);
+            final var retTACList = new InstructionList();
+            retTACList.addAll(operandTACList);
             var place = resolveStoreLocation(unaryOpExpression.builtinType);
             resetStoreLocation();
-            retTACList.addCode(new Triple(place, unaryOpExpression.op.getSourceCode(), operandTACList.place, unaryOpExpression));
+            retTACList.add(new UnaryInstruction(place, unaryOpExpression.op.getSourceCode(), operandTACList.place, unaryOpExpression));
             retTACList.place = place;
             return retTACList;
         }
 
         @Override
-        public ThreeAddressCodeList visit(BinaryOpExpression binaryOpExpression, SymbolTable symbolTable) {
+        public InstructionList visit(BinaryOpExpression binaryOpExpression, SymbolTable symbolTable) {
             final var cachedPlace = methodSetResultLocation;
             resetStoreLocation();
 
             final var leftTACList = binaryOpExpression.lhs.accept(this, symbolTable);
             final var rightTACList = binaryOpExpression.rhs.accept(this, symbolTable);
 
-            final var binOpExpressionTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
-            binOpExpressionTACList.add(leftTACList);
-            binOpExpressionTACList.add(rightTACList);
+            final var binOpExpressionTACList = new InstructionList();
+            binOpExpressionTACList.addAll(leftTACList);
+            binOpExpressionTACList.addAll(rightTACList);
 
             AssignableName place;
             if (cachedPlace == null)
@@ -142,8 +142,8 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
                 place = cachedPlace;
             resetStoreLocation();
 
-            binOpExpressionTACList.addCode(
-                    new Quadruple(
+            binOpExpressionTACList.add(
+                    new BinaryInstruction(
                             place,
                             leftTACList.place,
                             binaryOpExpression.op.getSourceCode(),
@@ -158,37 +158,37 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         }
 
         @Override
-        public ThreeAddressCodeList visit(Block block, SymbolTable symbolTable) {
-            final ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
+        public InstructionList visit(Block block, SymbolTable symbolTable) {
+            final InstructionList instructionList = new InstructionList();
             for (FieldDeclaration fieldDeclaration : block.fieldDeclarationList)
-                threeAddressCodeList.add(fieldDeclaration.accept(this, symbolTable));
+                instructionList.addAll(fieldDeclaration.accept(this, symbolTable));
             for (Statement statement : block.statementList)
                 statement.accept(this, symbolTable);
-            return threeAddressCodeList;
+            return instructionList;
         }
 
         @Override
-        public ThreeAddressCodeList visit(ParenthesizedExpression parenthesizedExpression, SymbolTable symbolTable) {
+        public InstructionList visit(ParenthesizedExpression parenthesizedExpression, SymbolTable symbolTable) {
             return parenthesizedExpression.expression.accept(this, symbolTable);
         }
 
 
         private void addArrayAccessBoundsCheck(
-                ThreeAddressCodeList threeAddressCodeList,
+                InstructionList instructionList,
                 ArrayAccess arrayAccess
         ) {
 
             final String boundsIndex = TemporaryNameGenerator.getNextBoundsCheckLabel();
             Label boundsBad = new Label("IndexIsLessThanArrayLengthCheckDone_" + boundsIndex, null);
             Label boundsGood = new Label("IndexIsNotNegativeCheckDone_" + boundsIndex, null);
-            threeAddressCodeList.addCode(new ArrayBoundsCheck(null, arrayAccess, null, boundsBad, boundsGood));
+            instructionList.add(new ArrayBoundsCheck(null, arrayAccess, null, boundsBad, boundsGood));
         }
 
         @Override
-        public ThreeAddressCodeList visit(LocationArray locationArray, SymbolTable symbolTable) {
+        public InstructionList visit(LocationArray locationArray, SymbolTable symbolTable) {
             final var locationThreeAddressCodeList = locationArray.expression.accept(this, symbolTable);
-            final var threeAddressCodeList = ThreeAddressCodeList.empty();
-            threeAddressCodeList.add(locationThreeAddressCodeList);
+            final var threeAddressCodeList = new InstructionList();
+            threeAddressCodeList.addAll(locationThreeAddressCodeList);
 
             final var descriptorFromValidScopes = symbolTable.getDescriptorFromValidScopes(locationArray.name.id);
             final var arrayDescriptor = (ArrayDescriptor) descriptorFromValidScopes.orElseThrow(
@@ -203,14 +203,14 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
                     locationThreeAddressCodeList.place);
             arrayName.arrayAccess = arrayAccess;
             addArrayAccessBoundsCheck(threeAddressCodeList, arrayAccess);
-            threeAddressCodeList.addCode(arrayAccess);
+            threeAddressCodeList.add(arrayAccess);
             threeAddressCodeList.place = arrayAccess.arrayName;
             return threeAddressCodeList;
         }
 
         @Override
-        public ThreeAddressCodeList visit(ExpressionParameter expressionParameter, SymbolTable symbolTable) {
-            ThreeAddressCodeList expressionParameterTACList = ThreeAddressCodeList.empty();
+        public InstructionList visit(ExpressionParameter expressionParameter, SymbolTable symbolTable) {
+            InstructionList expressionParameterTACList = new InstructionList();
 
             if (expressionParameter.expression instanceof LocationVariable) {
                 // no need for temporaries
@@ -219,60 +219,59 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
                 expressionParameterTACList.place = new ConstantName(((IntLiteral) expressionParameter.expression).convertToLong(), BuiltinType.Int);
             } else {
                 TemporaryName temporaryVariable = TemporaryName.generateTemporaryName(expressionParameter.expression.builtinType);
-                ThreeAddressCodeList expressionTACList = expressionParameter.expression.accept(this, symbolTable);
-                expressionParameterTACList.add(expressionTACList);
-                expressionParameterTACList.addCode(new Assign(temporaryVariable, "=", expressionTACList.place, expressionParameter, temporaryVariable + " = " + expressionTACList.place));
+                InstructionList expressionTACList = expressionParameter.expression.accept(this, symbolTable);
+                expressionParameterTACList.addAll(expressionTACList);
+                expressionParameterTACList.add(new Assign(temporaryVariable, "=", expressionTACList.place, expressionParameter, temporaryVariable + " = " + expressionTACList.place));
                 expressionParameterTACList.place = temporaryVariable;
             }
             return expressionParameterTACList;
         }
 
         @Override
-        public ThreeAddressCodeList visit(If ifStatement, SymbolTable symbolTable) {
+        public InstructionList visit(If ifStatement, SymbolTable symbolTable) {
             throw new IllegalStateException("An if statement is illegal");
         }
 
         @Override
-        public ThreeAddressCodeList visit(Return returnStatement, SymbolTable symbolTable) {
-            final ThreeAddressCodeList retTACList;
+        public InstructionList visit(Return returnStatement, SymbolTable symbolTable) {
+            final InstructionList retTACList;
             if (returnStatement.retExpression != null) {
-                ThreeAddressCodeList retExpressionTACList = returnStatement.retExpression.accept(this, symbolTable);
-                retTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
-                retTACList.add(retExpressionTACList);
+                InstructionList retExpressionTACList = returnStatement.retExpression.accept(this, symbolTable);
+                retTACList = new InstructionList();
+                retTACList.addAll(retExpressionTACList);
                 retTACList.place = retExpressionTACList.place;
-                retTACList.addCode(new MethodReturn(returnStatement, (AssignableName) retTACList.place));
+                retTACList.add(new MethodReturn(returnStatement, retTACList.place));
             } else {
-                retTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
-                retTACList.addCode(new MethodReturn(returnStatement));
+                retTACList = new InstructionList();
+                retTACList.add(new MethodReturn(returnStatement));
             }
             return retTACList;
         }
 
         @Override
-        public ThreeAddressCodeList visit(Array array, SymbolTable symbolTable) {
+        public InstructionList visit(Array array, SymbolTable symbolTable) {
             return null;
         }
 
-        private void flattenMethodCallArguments(ThreeAddressCodeList threeAddressCodeList,
+        private void flattenMethodCallArguments(InstructionList instructionList,
                                                 List<MethodCallParameter> methodCallParameterList,
                                                 SymbolTable symbolTable) {
             var paramNames = new ArrayList<AbstractName>();
             for (MethodCallParameter methodCallParameter : methodCallParameterList) {
                 var paramTACList = methodCallParameter.accept(this, symbolTable);
-                threeAddressCodeList.add(paramTACList);
+                instructionList.addAll(paramTACList);
                 paramNames.add((paramTACList.place));
             }
 
-            getPushParameterCode(threeAddressCodeList, paramNames, methodCallParameterList);
+            getPushParameterCode(instructionList, paramNames, methodCallParameterList);
         }
 
-        private void getPushParameterCode(ThreeAddressCodeList threeAddressCodeList,
+        private void getPushParameterCode(InstructionList instructionList,
                                           List<AbstractName> newParamNames,
                                           List<? extends AST> methodCallOrDefinitionArguments) {
             for (int i = newParamNames.size() - 1; i >= 0; i--) {
                 final var pushParameter = new PushParameter(newParamNames.get(i), i, methodCallOrDefinitionArguments.get(i));
-                threeAddressCodeList.addCode(pushParameter);
-                pushParameter.setComment("index of parameter = " + i);
+                instructionList.add(pushParameter);
             }
         }
 
@@ -291,134 +290,134 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         }
 
         @Override
-        public ThreeAddressCodeList visit(MethodCall methodCall, SymbolTable symbolTable) {
-            final ThreeAddressCodeList threeAddressCodeList = ThreeAddressCodeList.empty();
-            flattenMethodCallArguments(threeAddressCodeList, methodCall.methodCallParameterList, symbolTable);
+        public InstructionList visit(MethodCall methodCall, SymbolTable symbolTable) {
+            final InstructionList instructionList = new InstructionList();
+            flattenMethodCallArguments(instructionList, methodCall.methodCallParameterList, symbolTable);
             var place = resolveStoreLocation(methodCall.builtinType);
             resetStoreLocation();
-            threeAddressCodeList.addCode(new MethodCallSetResult(methodCall, place, methodCall.getSourceCode()));
-            threeAddressCodeList.place = place;
-            return threeAddressCodeList;
+            instructionList.add(new FunctionCallWithResult(methodCall, place, methodCall.getSourceCode()));
+            instructionList.place = place;
+            return instructionList;
         }
 
 
         @Override
-        public ThreeAddressCodeList visit(MethodCallStatement methodCallStatement, SymbolTable symbolTable) {
-            ThreeAddressCodeList threeAddressCodeList = ThreeAddressCodeList.empty();
-            flattenMethodCallArguments(threeAddressCodeList, methodCallStatement.methodCall.methodCallParameterList, symbolTable);
-            threeAddressCodeList.addCode(new MethodCallNoResult(methodCallStatement.methodCall, methodCallStatement.getSourceCode()));
-            return threeAddressCodeList;
+        public InstructionList visit(MethodCallStatement methodCallStatement, SymbolTable symbolTable) {
+            InstructionList instructionList = new InstructionList();
+            flattenMethodCallArguments(instructionList, methodCallStatement.methodCall.methodCallParameterList, symbolTable);
+            instructionList.add(new FunctionCallNoResult(methodCallStatement.methodCall, methodCallStatement.getSourceCode()));
+            return instructionList;
         }
 
         @Override
-        public ThreeAddressCodeList visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable) {
-            final ThreeAddressCodeList lhs = locationAssignExpr.location.accept(this, symbolTable);
+        public InstructionList visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable) {
+            final InstructionList lhs = locationAssignExpr.location.accept(this, symbolTable);
             AssignableName locationVariable = (AssignableName) lhs.place;
-            final ThreeAddressCodeList rhs = locationAssignExpr.assignExpr.accept(this, symbolTable);
+            final InstructionList rhs = locationAssignExpr.assignExpr.accept(this, symbolTable);
             AbstractName valueVariable = rhs.place;
-            lhs.add(rhs);
-            lhs.addCode(new Assign(locationVariable, locationAssignExpr.getSourceCode(), valueVariable, locationAssignExpr, locationAssignExpr.assignExpr.getSourceCode()));
+            lhs.addAll(rhs);
+            lhs.add(new Assign(locationVariable, locationAssignExpr.getSourceCode(), valueVariable, locationAssignExpr, locationAssignExpr.assignExpr.getSourceCode()));
             return lhs;
         }
 
         @Override
-        public ThreeAddressCodeList visit(AssignOpExpr assignOpExpr, SymbolTable symbolTable) {
+        public InstructionList visit(AssignOpExpr assignOpExpr, SymbolTable symbolTable) {
             throw new IllegalStateException("not allowed");
         }
 
         @Override
-        public ThreeAddressCodeList visit(MethodDefinitionParameter methodDefinitionParameter, SymbolTable symbolTable) {
-            return new ThreeAddressCodeList(new VariableName(methodDefinitionParameter.id.id, Utils.WORD_SIZE, methodDefinitionParameter.builtinType));
+        public InstructionList visit(MethodDefinitionParameter methodDefinitionParameter, SymbolTable symbolTable) {
+            return new InstructionList(new VariableName(methodDefinitionParameter.id.id, Utils.WORD_SIZE, methodDefinitionParameter.builtinType));
         }
 
         @Override
-        public ThreeAddressCodeList visit(Name name, SymbolTable symbolTable) {
+        public InstructionList visit(Name name, SymbolTable symbolTable) {
             BuiltinType type = symbolTable.getDescriptorFromValidScopes(name.id)
                     .orElseThrow().type;
-            return new ThreeAddressCodeList(new VariableName(name.id, Utils.WORD_SIZE, type));
+            return new InstructionList(new VariableName(name.id, Utils.WORD_SIZE, type));
         }
 
         @Override
-        public ThreeAddressCodeList visit(LocationVariable locationVariable, SymbolTable symbolTable) {
+        public InstructionList visit(LocationVariable locationVariable, SymbolTable symbolTable) {
             BuiltinType type = symbolTable.getDescriptorFromValidScopes(locationVariable.name.id)
                     .orElseThrow().type;
-            return new ThreeAddressCodeList(new VariableName(locationVariable.name.id, Utils.WORD_SIZE, type));
+            return new InstructionList(new VariableName(locationVariable.name.id, Utils.WORD_SIZE, type));
         }
 
         @Override
-        public ThreeAddressCodeList visit(Len len, SymbolTable symbolTable) {
+        public InstructionList visit(Len len, SymbolTable symbolTable) {
             final ArrayDescriptor arrayDescriptor = (ArrayDescriptor) symbolTable
                     .getDescriptorFromValidScopes(len.nameId.id)
                     .orElseThrow(() -> new IllegalStateException(len.nameId.id + " should be present"));
-            return new ThreeAddressCodeList(new ConstantName(arrayDescriptor.size, BuiltinType.Int));
+            return new InstructionList(new ConstantName(arrayDescriptor.size, BuiltinType.Int));
         }
 
         @Override
-        public ThreeAddressCodeList visit(Increment increment, SymbolTable symbolTable) {
+        public InstructionList visit(Increment increment, SymbolTable symbolTable) {
             throw new IllegalStateException("not allowed");
         }
 
         @Override
-        public ThreeAddressCodeList visit(Decrement decrement, SymbolTable symbolTable) {
+        public InstructionList visit(Decrement decrement, SymbolTable symbolTable) {
             throw new IllegalStateException("not allowed");
         }
 
         @Override
-        public ThreeAddressCodeList visit(CharLiteral charLiteral, SymbolTable symbolTable) {
-            return new ThreeAddressCodeList(ConstantName.fromIntLiteral(charLiteral));
+        public InstructionList visit(CharLiteral charLiteral, SymbolTable symbolTable) {
+            return new InstructionList(ConstantName.fromIntLiteral(charLiteral));
         }
 
         @Override
-        public ThreeAddressCodeList visit(StringLiteral stringLiteral, SymbolTable symbolTable) {
+        public InstructionList visit(StringLiteral stringLiteral, SymbolTable symbolTable) {
             StringLiteralStackAllocation label = literalStackAllocationHashMap.get(stringLiteral.literal);
             StringConstantName stringConstantName = new StringConstantName(label);
-            return new ThreeAddressCodeList(stringConstantName);
+            return new InstructionList(stringConstantName);
         }
 
         @Override
-        public ThreeAddressCodeList visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable curSymbolTable) {
+        public InstructionList visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable curSymbolTable) {
             return compoundAssignOpExpr.expression.accept(this, curSymbolTable);
         }
 
         @Override
-        public ThreeAddressCodeList visit(Initialization initialization, SymbolTable symbolTable) {
-            ThreeAddressCodeList initIdThreeAddressList = initialization.initId.accept(this, symbolTable);
+        public InstructionList visit(Initialization initialization, SymbolTable symbolTable) {
+            InstructionList initIdThreeAddressList = initialization.initId.accept(this, symbolTable);
             setStoreLocation((AssignableName) initIdThreeAddressList.place);
-            ThreeAddressCodeList initExpressionThreeAddressList = initialization.initExpression.accept(this, symbolTable);
+            InstructionList initExpressionThreeAddressList = initialization.initExpression.accept(this, symbolTable);
             Assign copyInstruction = new Assign((AssignableName) initIdThreeAddressList.place, "=", initExpressionThreeAddressList.place, initialization, initialization.getSourceCode());
 
-            ThreeAddressCodeList initializationThreeAddressCodeList = new ThreeAddressCodeList(initIdThreeAddressList.place);
-            initializationThreeAddressCodeList.add(initIdThreeAddressList);
-            initializationThreeAddressCodeList.add(initExpressionThreeAddressList);
-            initializationThreeAddressCodeList.addCode(copyInstruction);
+            InstructionList initializationInstructionList = new InstructionList(initIdThreeAddressList.place);
+            initializationInstructionList.addAll(initIdThreeAddressList);
+            initializationInstructionList.addAll(initExpressionThreeAddressList);
+            initializationInstructionList.add(copyInstruction);
             resetStoreLocation();
-            return initializationThreeAddressCodeList;
+            return initializationInstructionList;
         }
 
         @Override
-        public ThreeAddressCodeList visit(Assignment assignment, SymbolTable symbolTable) {
-            ThreeAddressCodeList returnTACList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
-            ThreeAddressCodeList lhs = assignment.location.accept(this, symbolTable);
-            ThreeAddressCodeList rhs;
+        public InstructionList visit(Assignment assignment, SymbolTable symbolTable) {
+            InstructionList returnTACList = new InstructionList();
+            InstructionList lhs = assignment.location.accept(this, symbolTable);
+            InstructionList rhs;
             if (assignment.assignExpr.expression != null) {
                 if (assignment.getOperator()
                         .equals("="))
                     setStoreLocation((AssignableName) lhs.place);
                 rhs = assignment.assignExpr.expression.accept(this, symbolTable);
             } else {
-                rhs = ThreeAddressCodeList.empty();
+                rhs = new InstructionList();
             }
-            returnTACList.add(rhs);
-            returnTACList.add(lhs);
+            returnTACList.addAll(rhs);
+            returnTACList.addAll(lhs);
 
             if (assignment.assignExpr instanceof AssignOpExpr) {
-                returnTACList.addCode(new Assign((AssignableName) lhs.place, ((AssignOpExpr) assignment.assignExpr).assignOp.getSourceCode(), rhs.place, assignment, assignment.getSourceCode()));
+                returnTACList.add(new Assign((AssignableName) lhs.place, ((AssignOpExpr) assignment.assignExpr).assignOp.getSourceCode(), rhs.place, assignment, assignment.getSourceCode()));
             } else if (assignment.assignExpr instanceof CompoundAssignOpExpr) {
-                returnTACList.addCode(new Assign((AssignableName) lhs.place, ((CompoundAssignOpExpr) assignment.assignExpr).compoundAssignOp.getSourceCode(), rhs.place, assignment, assignment.getSourceCode()));
+                returnTACList.add(new Assign((AssignableName) lhs.place, ((CompoundAssignOpExpr) assignment.assignExpr).compoundAssignOp.getSourceCode(), rhs.place, assignment, assignment.getSourceCode()));
             } else if (assignment.assignExpr instanceof Decrement || assignment.assignExpr instanceof Increment) {
-                returnTACList.addCode(new Assign((AssignableName) lhs.place, assignment.assignExpr.getSourceCode(), lhs.place, assignment.assignExpr, assignment.getSourceCode()));
+                returnTACList.add(new Assign((AssignableName) lhs.place, assignment.assignExpr.getSourceCode(), lhs.place, assignment.assignExpr, assignment.getSourceCode()));
             } else {
-                returnTACList.addCode(new Assign((AssignableName) lhs.place, DecafScanner.ASSIGN, rhs.place, assignment, assignment.getSourceCode()));
+                returnTACList.add(new Assign((AssignableName) lhs.place, DecafScanner.ASSIGN, rhs.place, assignment, assignment.getSourceCode()));
             }
             resetStoreLocation();
             returnTACList.place = lhs.place;
@@ -428,11 +427,11 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
 
     final private static HashMap<String, StringLiteralStackAllocation> literalStackAllocationHashMap = new HashMap<>();
 
-    ThreeAddressCodesConverter visitor;
+    InstructionConverter visitor;
     Label endLabelGlobal;
     Set<BasicBlock> visited = new HashSet<>();
     HashMap<BasicBlock, Label> blockToLabelHashMap = new HashMap<>();
-    HashMap<BasicBlock, ThreeAddressCodeList> blockToCodeHashMap = new HashMap<>();
+    HashMap<BasicBlock, InstructionList> blockToCodeHashMap = new HashMap<>();
     static AssignableName methodSetResultLocation;
     public HashMap<String, SymbolTable> cfgSymbolTables;
 
@@ -443,40 +442,39 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
 
         endLabelGlobal = new Label("exit_" + methodDefinition.methodName.id, methodStart);
 
-        var threeAddressCodeList = ThreeAddressCodeList.empty();
+        var instructions = new InstructionList();
         var methodBegin = new MethodBegin(methodDefinition);
-        threeAddressCodeList.addCode(methodBegin);
+        instructions.add(methodBegin);
 
-        threeAddressCodeList.add(
+        instructions.addAll(
                 errors.stream()
                         .map(error -> new RuntimeException(error.getMessage(), -2, error))
                         .collect(Collectors.toList()));
 
-        flattenMethodDefinitionArguments(threeAddressCodeList, methodDefinition.methodDefinitionParameterList);
+        flattenMethodDefinitionArguments(instructions, methodDefinition.methodDefinitionParameterList);
 
         final var firstBasicBlockTacList = methodStart.accept(this, symbolTable);
-        firstBasicBlockTacList.prependAll(threeAddressCodeList);
+        firstBasicBlockTacList.addAll(0, instructions);
 
-        firstBasicBlockTacList.addLast(endLabelGlobal);
+        firstBasicBlockTacList.addToTail(endLabelGlobal);
 
-        firstBasicBlockTacList.addLast(new MethodEnd(methodDefinition));
-        methodStart.threeAddressCodeList = firstBasicBlockTacList;
+        firstBasicBlockTacList.addToTail(new MethodEnd(methodDefinition));
+        methodStart.instructionList = firstBasicBlockTacList;
         methodBegin.unoptimized = firstBasicBlockTacList.flatten();
         methodBegin.entryBlock = methodStart;
         return methodBegin;
     }
 
 
-    public void flattenMethodDefinitionArguments(ThreeAddressCodeList threeAddressCodeList,
+    public void flattenMethodDefinitionArguments(InstructionList instructionList,
                                                  List<MethodDefinitionParameter> methodDefinitionParameterList) {
 
         for (int i = 0; i < methodDefinitionParameterList.size(); i++) {
             MethodDefinitionParameter parameter = methodDefinitionParameterList.get(i);
-            threeAddressCodeList.addCode(new PopParameter(
+            instructionList.add(new PopParameter(
                     new VariableName(parameter.id.id, Utils.WORD_SIZE, parameter.builtinType),
                     parameter,
-                    i,
-                    "# index of parameter = " + i
+                    i
             ));
         }
     }
@@ -490,40 +488,40 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         throw new IllegalStateException("expected to find method " + name);
     }
 
-    private ThreeAddressCodeList fillOutGlobals(List<FieldDeclaration> fieldDeclarationList) {
-        ThreeAddressCodeList threeAddressCodeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
+    private InstructionList fillOutGlobals(List<FieldDeclaration> fieldDeclarationList) {
+        InstructionList instructionList = new InstructionList();
         for (FieldDeclaration fieldDeclaration : fieldDeclarationList) {
             for (Name name : fieldDeclaration.names) {
-                threeAddressCodeList.addCode(new GlobalAllocation(name, "# " + name.getSourceCode(),
+                instructionList.add(new GlobalAllocation(name, "# " + name.getSourceCode(),
                         new VariableName(name.id, Utils.WORD_SIZE, fieldDeclaration.builtinType), fieldDeclaration.builtinType.getFieldSize(), fieldDeclaration.builtinType));
             }
             for (Array array : fieldDeclaration.arrays) {
                 long size = (fieldDeclaration.builtinType.getFieldSize() * array.size.convertToLong());
-                threeAddressCodeList.addCode(new GlobalAllocation(array, "# " + array.getSourceCode(),
+                instructionList.add(new GlobalAllocation(array, "# " + array.getSourceCode(),
                         new ArrayName(array.id.id,
                                 size, fieldDeclaration.builtinType), size, fieldDeclaration.builtinType));
             }
         }
-        getGlobals(threeAddressCodeList);
-        return threeAddressCodeList;
+        getGlobals(instructionList);
+        return instructionList;
     }
 
 
-    private ThreeAddressCodeList initProgram(Program program) {
-        ThreeAddressCodeList threeAddressCodeList = fillOutGlobals(program.fieldDeclarationList);
+    private InstructionList initProgram(Program program) {
+        InstructionList instructionList = fillOutGlobals(program.fieldDeclarationList);
         Set<String> stringLiteralList = findAllStringLiterals(program);
         for (String stringLiteral : stringLiteralList) {
             final StringLiteralStackAllocation literalStackAllocation = new StringLiteralStackAllocation(stringLiteral);
-            threeAddressCodeList.addCode(literalStackAllocation);
+            instructionList.add(literalStackAllocation);
             literalStackAllocationHashMap.put(stringLiteral, literalStackAllocation);
         }
-        return threeAddressCodeList;
+        return instructionList;
     }
 
-    private void getGlobals(ThreeAddressCodeList threeAddressCodeList) {
+    private void getGlobals(InstructionList instructionList) {
         globalNames = new HashSet<>();
-        for (ThreeAddressCode threeAddressCode : threeAddressCodeList) {
-            for (AbstractName name : threeAddressCode.getNames()) {
+        for (Instruction instruction : instructionList) {
+            for (AbstractName name : instruction.getAllNames()) {
                 if (name instanceof VariableName || name instanceof ArrayName)
                     globalNames.add(name);
             }
@@ -547,8 +545,8 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         return literalList;
     }
 
-    public Pair<ThreeAddressCodeList, List<MethodBegin>> fill(iCFGVisitor visitor,
-                                                              Program program) {
+    public Pair<InstructionList, List<MethodBegin>> fill(iCFGVisitor visitor,
+                                                         Program program) {
         var programStartTacList = initProgram(program);
 
         var methodsTacLists = new ArrayList<MethodBegin>();
@@ -567,36 +565,36 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         return new Pair<>(programStartTacList, methodsTacLists);
     }
 
-    public ThreeAddressCodesListConverter(CFGGenerator cfgGenerator) {
+    public InstructionListConverter(CFGGenerator cfgGenerator) {
         this.errors = cfgGenerator.errors;
-        this.visitor = new ThreeAddressCodesConverter();
+        this.visitor = new InstructionConverter();
         SymbolTableFlattener symbolTableFlattener = new SymbolTableFlattener(cfgGenerator.globalDescriptor);
         this.cfgSymbolTables = symbolTableFlattener.createCFGSymbolTables();
     }
 
     @Override
-    public ThreeAddressCodeList visit(BasicBlockBranchLess basicBlockBranchLess, SymbolTable symbolTable) {
+    public InstructionList visit(BasicBlockBranchLess basicBlockBranchLess, SymbolTable symbolTable) {
         visited.add(basicBlockBranchLess);
-        ThreeAddressCodeList universalThreeAddressCodeList = new ThreeAddressCodeList(ThreeAddressCodeList.UNDEFINED);
+        InstructionList universalInstructionList = new InstructionList();
         for (AST line : basicBlockBranchLess.lines) {
-            universalThreeAddressCodeList.add(line.accept(visitor, symbolTable));
+            universalInstructionList.addAll(line.accept(visitor, symbolTable));
         }
-        blockToCodeHashMap.put(basicBlockBranchLess, universalThreeAddressCodeList);
+        blockToCodeHashMap.put(basicBlockBranchLess, universalInstructionList);
         if (!(basicBlockBranchLess instanceof NOP) && !(basicBlockBranchLess.autoChild instanceof NOP)) {
             if (visited.contains(basicBlockBranchLess.autoChild)) {
 		        var label = blockToLabelHashMap.get(basicBlockBranchLess.autoChild);
                 if (label == null) {
                     label = getLabel(basicBlockBranchLess.autoChild, null);
                 }
-                universalThreeAddressCodeList.setNext(ThreeAddressCodeList.of(new UnconditionalJump(label)));
+                universalInstructionList.appendInInstructionListLinkedList(InstructionList.of(new UnconditionalJump(label)));
              } else {
-                universalThreeAddressCodeList.setNext(basicBlockBranchLess.autoChild.accept(this, symbolTable));
+                universalInstructionList.appendInInstructionListLinkedList(basicBlockBranchLess.autoChild.accept(this, symbolTable));
             }
         } else {
-            universalThreeAddressCodeList.addLast(new UnconditionalJump(endLabelGlobal));
+            universalInstructionList.addToTail(new UnconditionalJump(endLabelGlobal));
         }
-        basicBlockBranchLess.threeAddressCodeList = universalThreeAddressCodeList;
-        return universalThreeAddressCodeList;
+        basicBlockBranchLess.instructionList = universalInstructionList;
+        return universalInstructionList;
     }
 
     private Label getLabel(BasicBlock cfgBlock, Label from) {
@@ -614,7 +612,7 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         return blockToLabelHashMap.compute(cfgBlock, function);
     }
 
-    private ThreeAddressCodeList getConditionTACList(Expression condition, SymbolTable symbolTable) {
+    private InstructionList getConditionTACList(Expression condition, SymbolTable symbolTable) {
         if (condition instanceof BinaryOpExpression)
             return visitor.visit((BinaryOpExpression) condition, symbolTable);
         else if (condition instanceof UnaryOpExpression)
@@ -628,13 +626,13 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
         else throw new IllegalStateException("an expression of type " + condition + " is not allowed");
     }
 
-    private ThreeAddressCodeList getConditionalChildBlock(
+    private InstructionList getConditionalChildBlock(
             BasicBlock child,
             Label conditionalLabel,
             SymbolTable symbolTable) {
 
-        ThreeAddressCodeList codeList;
-        ThreeAddressCodeList trueBlock;
+        InstructionList codeList;
+        InstructionList trueBlock;
 
         if (!(child instanceof NOP)) {
             if (visited.contains(child)) {
@@ -644,32 +642,32 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
                     label = (Label) codeList.get(0);
                 else {
                     label = getLabel(child, conditionalLabel);
-                    codeList.prepend(label);
+                    codeList.add(0, label);
                 }
-                trueBlock = ThreeAddressCodeList.of(new UnconditionalJump(label));
+                trueBlock = InstructionList.of(new UnconditionalJump(label));
             } else
                 trueBlock = child.accept(this, symbolTable);
         } else {
-            trueBlock = ThreeAddressCodeList.of(new UnconditionalJump(endLabelGlobal));
+            trueBlock = InstructionList.of(new UnconditionalJump(endLabelGlobal));
         }
         return trueBlock;
     }
 
     @Override
-    public ThreeAddressCodeList visit(BasicBlockWithBranch basicBlockWithBranch, SymbolTable symbolTable) {
+    public InstructionList visit(BasicBlockWithBranch basicBlockWithBranch, SymbolTable symbolTable) {
         visited.add(basicBlockWithBranch);
 
         final Expression condition = basicBlockWithBranch.condition;
-        final ThreeAddressCodeList testConditionThreeAddressList = getConditionTACList(condition, symbolTable);
+        final InstructionList testConditionThreeAddressList = getConditionTACList(condition, symbolTable);
         final Label conditionLabel = getLabel(basicBlockWithBranch, null);
 
-        final ThreeAddressCodeList conditionLabelTACList = ThreeAddressCodeList.of(conditionLabel);
-        conditionLabelTACList.add(testConditionThreeAddressList);
+        final InstructionList conditionLabelTACList = InstructionList.of(conditionLabel);
+        conditionLabelTACList.addAll(testConditionThreeAddressList);
 
         blockToCodeHashMap.put(basicBlockWithBranch, conditionLabelTACList);
 
-        final ThreeAddressCodeList trueBlock = getConditionalChildBlock(basicBlockWithBranch.trueChild, conditionLabel, symbolTable);
-        final ThreeAddressCodeList falseBlock = getConditionalChildBlock(basicBlockWithBranch.falseChild, conditionLabel, symbolTable);
+        final InstructionList trueBlock = getConditionalChildBlock(basicBlockWithBranch.trueChild, conditionLabel, symbolTable);
+        final InstructionList falseBlock = getConditionalChildBlock(basicBlockWithBranch.falseChild, conditionLabel, symbolTable);
 
         final Label falseLabel = getLabel(basicBlockWithBranch.falseChild, conditionLabel);
         final Label endLabel = new Label(conditionLabel.label + "end", null);
@@ -678,35 +676,35 @@ public class ThreeAddressCodesListConverter implements BasicBlockVisitor<ThreeAd
                 new ConditionalJump(condition,
                         testConditionThreeAddressList.place,
                         falseLabel, "if !(" + basicBlockWithBranch.condition.getSourceCode() + ")");
-        conditionLabelTACList.addCode(jumpIfFalse);
-        if (!(trueBlock.last() instanceof UnconditionalJump))
-            trueBlock.addLast(new UnconditionalJump(endLabel));
+        conditionLabelTACList.add(jumpIfFalse);
+        if (!(trueBlock.lastCodeInLinkedList() instanceof UnconditionalJump))
+            trueBlock.addToTail(new UnconditionalJump(endLabel));
 
         // no need for consecutive similar labels
         if (!falseBlock.isEmpty() && falseBlock.firstCode() instanceof UnconditionalJump) {
             UnconditionalJump unconditionalJump = (UnconditionalJump) falseBlock.firstCode();
             if (!unconditionalJump.goToLabel.label.equals(falseLabel.label))
-                falseBlock.prepend(falseLabel);
+                falseBlock.add(0, falseLabel);
         } else if (!falseBlock.firstCode()
                 .equals(falseLabel))
-            falseBlock.prepend(falseLabel);
-        if (!(falseBlock.last() instanceof UnconditionalJump) && !(trueBlock.last() instanceof UnconditionalJump))
-            falseBlock.addLast(new UnconditionalJump(endLabel));
+            falseBlock.add(0, falseLabel);
+        if (!(falseBlock.lastCodeInLinkedList() instanceof UnconditionalJump) && !(trueBlock.lastCodeInLinkedList() instanceof UnconditionalJump))
+            falseBlock.addToTail(new UnconditionalJump(endLabel));
         if (falseBlock.flattenedSize() == 1 && falseBlock.firstCode() instanceof UnconditionalJump) {
-            conditionLabelTACList.setNext(trueBlock);
-            basicBlockWithBranch.threeAddressCodeList = conditionLabelTACList;
+            conditionLabelTACList.appendInInstructionListLinkedList(trueBlock);
+            basicBlockWithBranch.instructionList = conditionLabelTACList;
             return conditionLabelTACList;
         }
         conditionLabelTACList
-                .setNext(trueBlock)
-                .setNext(falseBlock);
-        basicBlockWithBranch.threeAddressCodeList = conditionLabelTACList;
+                .appendInInstructionListLinkedList(trueBlock)
+                .appendInInstructionListLinkedList(falseBlock);
+        basicBlockWithBranch.instructionList = conditionLabelTACList;
         return conditionLabelTACList;
     }
 
     @Override
-    public ThreeAddressCodeList visit(NOP nop, SymbolTable symbolTable) {
-        nop.threeAddressCodeList = ThreeAddressCodeList.empty();
-        return nop.threeAddressCodeList;
+    public InstructionList visit(NOP nop, SymbolTable symbolTable) {
+        nop.instructionList = new InstructionList();
+        return nop.instructionList;
     }
 }

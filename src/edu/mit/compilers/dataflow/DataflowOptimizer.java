@@ -16,6 +16,7 @@ import edu.mit.compilers.dataflow.passes.FunctionInlinePass;
 import edu.mit.compilers.dataflow.passes.InstructionSimplifyPass;
 import edu.mit.compilers.dataflow.passes.OptimizationPass;
 import edu.mit.compilers.dataflow.passes.PeepHoleOptimizationPass;
+import edu.mit.compilers.tools.CLI;
 import edu.mit.compilers.utils.Utils;
 
 public class DataflowOptimizer {
@@ -97,7 +98,7 @@ public class DataflowOptimizer {
     }
 
     public void initialize() {
-        runIntraProceduralPasses();
+        runInterProceduralPasses();
         addPass(OptimizationPassType.PeepHoleOptimization);
         addPass(OptimizationPassType.CommonSubExpression);
         addPass(OptimizationPassType.CopyPropagation);
@@ -113,7 +114,7 @@ public class DataflowOptimizer {
         this.methodBeginTacLists = methodBeginTacLists;
     }
 
-    private void runIntraProceduralPasses() {
+    private void runInterProceduralPasses() {
         FunctionInlinePass functionInlinePass = new FunctionInlinePass(methodBeginTacLists);
         methodBeginTacLists = functionInlinePass.run();
     }
@@ -121,11 +122,17 @@ public class DataflowOptimizer {
         for (int run = 0; run < numberOfRuns; run++) {
             boolean changesHappened = false;
             for (var optimizationPass : optimizationPassList) {
+                if (!methodBeginTacLists.contains(optimizationPass.getMethod()))
+                    continue;
                 var changesHappenedForOpt = optimizationPass.run();
                 changesHappened = changesHappened | !changesHappenedForOpt;
-//                System.out.format("%s<%s> run = %s", optimizationPass.getClass().getSimpleName(), optimizationPass.getMethod().methodName(), run);
-//                System.out.println(optimizationPass.getMethod().entryBlock.threeAddressCodeList.flatten());
-//                System.out.println(Utils.coloredPrint(String.valueOf(changesHappened), Utils.ANSIColorConstants.ANSI_RED));
+                if (CLI.debug) {
+                    System.out.format("%s<%s> run = %s", optimizationPass.getClass().getSimpleName(), optimizationPass.getMethod().methodName(), run);
+                    System.out.println(optimizationPass.getMethod().entryBlock.instructionList.flatten());
+                    System.out.println(Utils.coloredPrint(String.valueOf(changesHappened), Utils.ANSIColorConstants.ANSI_RED));
+                }
+                if (run % methodBeginTacLists.size() == 0)
+                    runInterProceduralPasses();
             }
             if (!changesHappened) {
                 break;

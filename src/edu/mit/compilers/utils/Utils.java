@@ -222,6 +222,9 @@ public class Utils {
         String ANSI_CYAN = "\u001B[36m";
         String ANSI_WHITE = "\u001B[37m";
 
+        String ANSI_PURPLE_BOLD = "\u001B[35;1m";
+        String ANSI_BLUE_BOLD = "\u001B[34;1m";
+
         String ANSI_BRIGHT_RED = "\u001B[91m";
         String ANSI_BRIGHT_BLACK = "\u001B[90m";
         String ANSI_BRIGHT_GREEN = "\u001B[92m";

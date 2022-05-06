@@ -1,7 +1,7 @@
 package edu.mit.compilers.dataflow.operand;
 
-import edu.mit.compilers.codegen.codes.HasResult;
-import edu.mit.compilers.codegen.codes.Triple;
+import edu.mit.compilers.codegen.codes.Store;
+import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
 
@@ -11,9 +11,9 @@ public class UnaryOperand extends Operand {
     public final AbstractName operand;
     public final String operator;
 
-    public UnaryOperand(Triple triple) {
-        this.operand = triple.operand;
-        this.operator = triple.operator;
+    public UnaryOperand(UnaryInstruction unaryInstruction) {
+        this.operand = unaryInstruction.operand;
+        this.operator = unaryInstruction.operator;
     }
     @Override
     public boolean contains(AbstractName name) {
@@ -21,17 +21,17 @@ public class UnaryOperand extends Operand {
     }
 
     @Override
-    public boolean isContainedIn(HasResult hasResult) {
-        if (hasResult instanceof Triple) {
-            Triple triple = (Triple) hasResult;
-            return new UnaryOperand(triple).equals(this);
+    public boolean isContainedIn(Store store) {
+        if (store instanceof UnaryInstruction) {
+            UnaryInstruction unaryInstruction = (UnaryInstruction) store;
+            return new UnaryOperand(unaryInstruction).equals(this);
         }
         return false;
     }
 
     @Override
-    public HasResult fromOperand(AssignableName resultLocation) {
-        return new Triple(resultLocation, operator, operand, null);
+    public Store getStoreInstructionFromOperand(AssignableName store) {
+        return new UnaryInstruction(store, operator, operand, null);
     }
 
     @Override

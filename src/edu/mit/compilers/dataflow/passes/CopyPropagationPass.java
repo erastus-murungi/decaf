@@ -1,15 +1,12 @@
 package edu.mit.compilers.dataflow.passes;
 
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.ThreeAddressCodeList;
 import edu.mit.compilers.codegen.codes.*;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.dataflow.analyses.AvailableCopies;
-import edu.mit.compilers.dataflow.operand.BinaryOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
-import edu.mit.compilers.grammar.DecafScanner;
 
 import java.util.*;
 
@@ -30,7 +27,7 @@ public class CopyPropagationPass extends OptimizationPass {
             for (var toBeReplaced : hasOperand.getOperandNamesNoArray()) {
                 if (copies.get(toBeReplaced) instanceof UnmodifiedOperand) {
                     var replacer = ((UnmodifiedOperand) copies.get(toBeReplaced)).abstractName;
-                    if (!isTrivialAssignment((ThreeAddressCode) hasOperand)) {
+                    if (!isTrivialAssignment((Instruction) hasOperand)) {
                         hasOperand.replace(toBeReplaced, replacer);
                     } else {
                         continue;
@@ -49,21 +46,20 @@ public class CopyPropagationPass extends OptimizationPass {
 
     private boolean performLocalCopyPropagation(BasicBlock basicBlock, HashMap<AbstractName, Operand> copies) {
         // we need a reference tac list to know whether any changes occurred
-        final var tacList = basicBlock.codes();
-        final var newTacList = basicBlock.threeAddressCodeList;
+        final var tacList = basicBlock.getCopyOfInstructionList();
+        final var newTacList = basicBlock.instructionList;
 
-        newTacList.getCodes()
-                .clear();
+        newTacList.clear();
 
-        for (ThreeAddressCode threeAddressCode : tacList) {
+        for (Instruction instruction : tacList) {
             // we only perform copy propagation on instructions with variables
-            if (threeAddressCode instanceof HasOperand) {
-                propagateCopy((HasOperand) threeAddressCode, copies);
+            if (instruction instanceof HasOperand) {
+                propagateCopy((HasOperand) instruction, copies);
             }
 
-            if (threeAddressCode instanceof HasResult) {
-                var hasResult = (HasResult) threeAddressCode;
-                var resultLocation = hasResult.getResultLocation();
+            if (instruction instanceof Store) {
+                var hasResult = (Store) instruction;
+                var resultLocation = hasResult.getStore();
                 if (!(resultLocation instanceof ArrayName)) {
                     for (var assignableName : new ArrayList<>(copies.keySet())) {
                         var replacer = copies.get(assignableName);
@@ -75,15 +71,13 @@ public class CopyPropagationPass extends OptimizationPass {
                         }
                     }
                     // insert this new pair into copies
-                        var operand = hasResult.getComputationNoArrayNoGlobals(globalVariables);
+                        var operand = hasResult.getOperandNoArrayNoGlobals(globalVariables);
                         operand.ifPresent(value -> copies.put(resultLocation, value));
                 }
             }
-            newTacList.addCode(threeAddressCode);
+            newTacList.add(instruction);
         }
-        return newTacList
-                .getCodes()
-                .equals(tacList);
+        return newTacList.equals(tacList);
     }
 
     public void performGlobalCopyPropagation() {
@@ -112,8 +106,8 @@ public class CopyPropagationPass extends OptimizationPass {
 
     @Override
     public boolean run() {
-        final var oldCodes = entryBlock.codes();
+        final var oldCodes = entryBlock.getCopyOfInstructionList();
         performGlobalCopyPropagation();
-        return oldCodes.equals(entryBlock.threeAddressCodeList.getCodes());
+        return oldCodes.equals(entryBlock.instructionList);
     }
 }

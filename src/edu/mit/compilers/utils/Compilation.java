@@ -7,17 +7,15 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import edu.mit.compilers.asm.X64CodeConverter;
 import edu.mit.compilers.asm.X64Program;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.cfg.CFGGenerator;
 import edu.mit.compilers.cfg.iCFGVisitor;
-import edu.mit.compilers.codegen.ThreeAddressCodeList;
-import edu.mit.compilers.codegen.ThreeAddressCodesListConverter;
+import edu.mit.compilers.codegen.InstructionList;
+import edu.mit.compilers.codegen.InstructionListConverter;
 import edu.mit.compilers.codegen.codes.MethodBegin;
-import edu.mit.compilers.codegen.codes.ThreeAddressCode;
 import edu.mit.compilers.dataflow.DataflowOptimizer;
 import edu.mit.compilers.dataflow.passes.InstructionSimplifyIrPass;
 import edu.mit.compilers.dataflow.passes.PeepHoleOptimizationAsmPass;
@@ -33,10 +31,10 @@ public class Compilation {
     private DecafParser parser;
     private DecafSemanticChecker semanticChecker;
     private CFGGenerator cfgGenerator;
-    private ThreeAddressCodesListConverter threeAddressCodesListConverter;
+    private InstructionListConverter instructionListConverter;
     private iCFGVisitor iCFGVisitor;
 
-    private Pair<ThreeAddressCodeList, List<MethodBegin>> programIr;
+    private Pair<InstructionList, List<MethodBegin>> programIr;
 
     private DecafExceptionProcessor decafExceptionProcessor;
     private PrintStream outputStream;
@@ -53,9 +51,7 @@ public class Compilation {
         return nLinesOfCodeReductionFactor;
     }
 
-    public AST getAstRoot() {
-        return parser.getRoot();
-    }
+    public AST getAstRoot() {return parser.getRoot();}
 
     enum CompilationState {
         INITIALIZED,
@@ -124,6 +120,12 @@ public class Compilation {
         CLI.target = CLI.Action.ASSEMBLY;
         CLI.debug = true;
         sourceCode = Utils.getStringFromInputStream(inputStream);
+    }
+
+    public Compilation(InputStream inputStream, boolean debug) throws FileNotFoundException {
+        specificTestFileInitialize(inputStream);
+        initialize();
+        CLI.debug = debug;
     }
 
     public Compilation(InputStream inputStream) throws FileNotFoundException {
@@ -201,7 +203,7 @@ public class Compilation {
     }
 
     private void generateSymbolTablePdfs() {
-        GraphVizPrinter.printSymbolTables(parser.getRoot(), threeAddressCodesListConverter.cfgSymbolTables);
+        GraphVizPrinter.printSymbolTables(parser.getRoot(), instructionListConverter.cfgSymbolTables);
     }
 
     private void generateCFGs() {
@@ -229,19 +231,19 @@ public class Compilation {
         compilationState = CompilationState.CFG_GENERATED;
     }
 
-    private ThreeAddressCodeList mergeProgram() {
+    private InstructionList mergeProgram() {
         var programHeader = programIr.first;
-        var tacList = programHeader.clone();
+        var tacList = programHeader.copy();
         for (MethodBegin methodBegin : programIr.second()) {
-            tacList.add(methodBegin.entryBlock.threeAddressCodeList.flatten());
+            tacList.addAll(methodBegin.entryBlock.instructionList.flatten());
         }
         return tacList;
     }
 
     private void generateIr() {
         assert compilationState == CompilationState.CFG_GENERATED;
-        threeAddressCodesListConverter = new ThreeAddressCodesListConverter(cfgGenerator);
-        programIr = threeAddressCodesListConverter.fill(iCFGVisitor, parser.getRoot());
+        instructionListConverter = new InstructionListConverter(cfgGenerator);
+        programIr = instructionListConverter.fill(iCFGVisitor, parser.getRoot());
         if (CLI.debug) {
             generateSymbolTablePdfs();
         }
@@ -252,7 +254,7 @@ public class Compilation {
     }
 
     private int countLinesOfCode() {
-        return mergeProgram().getCodes().size();
+        return mergeProgram().size();
     }
 
     private void runDataflowOptimizationPasses() {
@@ -264,7 +266,7 @@ public class Compilation {
                 System.out.println("Before optimization");
                 System.out.println(mergeProgram());
             }
-            var dataflowOptimizer = new DataflowOptimizer(programIr.second, threeAddressCodesListConverter.globalNames);
+            var dataflowOptimizer = new DataflowOptimizer(programIr.second, instructionListConverter.globalNames);
             dataflowOptimizer.initialize();
             dataflowOptimizer.optimize();
             programIr = new Pair<>(programIr.first, dataflowOptimizer.methodBeginTacLists);

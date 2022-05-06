@@ -1,31 +1,25 @@
 package edu.mit.compilers.cfg;
 
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.ast.Array;
-import edu.mit.compilers.codegen.ThreeAddressCodeList;
-import edu.mit.compilers.codegen.codes.HasResult;
-import edu.mit.compilers.codegen.codes.ThreeAddressCode;
+import edu.mit.compilers.codegen.InstructionList;
+import edu.mit.compilers.codegen.codes.Store;
+import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public abstract class BasicBlock {
     private final ArrayList<BasicBlock> predecessors;
-    // to be set by the threeAddressCodeList
-    public ThreeAddressCodeList threeAddressCodeList;
+    // to be set by a visitor
+    public InstructionList instructionList;
 
     public ArrayList<AST> lines;
 
     public String getLeader() {
-        if (lines.isEmpty()) {
-            return "None";
-        } else {
-            return lines.get(0).getSourceCode();
-        }
+        return lines.isEmpty() ? "None" : lines.get(0).getSourceCode();
     }
 
     public void addPredecessor(BasicBlock predecessor) {
@@ -61,7 +55,7 @@ public abstract class BasicBlock {
     public BasicBlock() {
         predecessors = new ArrayList<>();
         lines = new ArrayList<>();
-        threeAddressCodeList = ThreeAddressCodeList.empty();
+        instructionList = new InstructionList();
     }
 
     public abstract <T> T accept(BasicBlockVisitor<T> visitor, SymbolTable symbolTable);
@@ -82,15 +76,19 @@ public abstract class BasicBlock {
      * get only TACs which change values of variables
      * @return Iterator of Assignment TACs
      */
-    public List<HasResult> assignments() {
-        return StreamSupport
-                .stream(threeAddressCodeList.spliterator(), false)
-                .filter(tac -> tac instanceof HasResult)
-                .map(tac -> (HasResult) tac)
+    public List<Store> getStores() {
+        return instructionList.stream()
+                .filter(tac -> tac instanceof Store)
+                .map(tac -> (Store) tac)
                 .collect(Collectors.toList());
     }
 
-    public List<ThreeAddressCode> codes() {
-        return new ArrayList<>(threeAddressCodeList.getCodes());
+    /**
+     * note that this method returns an {@link ArrayList} not a {@link InstructionList}
+     *
+     * @return an {@link ArrayList} of the Instructions in this {@link InstructionList}
+     */
+    public List<Instruction> getCopyOfInstructionList() {
+        return new ArrayList<>(instructionList);
     }
 }

@@ -2,6 +2,7 @@ package edu.mit.compilers.codegen.names;
 
 import edu.mit.compilers.ast.BuiltinType;
 import edu.mit.compilers.codegen.codes.ArrayAccess;
+import edu.mit.compilers.utils.Utils;
 
 public class ArrayName extends AssignableName {
     public ArrayAccess arrayAccess;
@@ -21,8 +22,12 @@ public class ArrayName extends AssignableName {
 
     @Override
     public String repr() {
-        if (arrayAccess != null)
-            return String.format("*%s[%s]", value, arrayAccess.accessIndex.repr());
-        return String.format("*%s", value);
+        String rep;
+        if (arrayAccess != null) {
+            rep = String.format("*%s[%s]", value, arrayAccess.accessIndex.repr());
+        } else  {
+        rep = String.format("*%s", value);
+        }
+        return Utils.coloredPrint(rep, Utils.ANSIColorConstants.ANSI_BLUE);
     }
 }
