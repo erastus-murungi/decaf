@@ -28,7 +28,7 @@ public class UnmodifiedOperand extends Operand {
     }
 
     @Override
-    public Store storeInstructionFromOperand(AssignableName store) {
+    public Store getStoreInstructionFromOperand(AssignableName store) {
         return new Assign(store, operator, abstractName, null, null);
     }
 
