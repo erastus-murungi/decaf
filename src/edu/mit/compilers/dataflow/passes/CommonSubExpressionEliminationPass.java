@@ -199,7 +199,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
                             // create a new temp
                             uniqueName = TemporaryName.generateTemporaryName(hasResult.getStore().builtinType);
                             updateTacList.add(Assign.ofRegularAssign(hasResult.getStore(), uniqueName));
-                            updateTacList.add(operand.storeInstructionFromOperand(uniqueName));
+                            updateTacList.add(operand.getStoreInstructionFromOperand(uniqueName));
                             computationFound = true;
                             continue;
                         }
