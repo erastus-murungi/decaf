@@ -49,6 +49,6 @@ public class StringLiteralStackAllocation extends Instruction {
     }
 
     public String getASM() {
-        return String.format("%s:\n\t.%s   %s", label, "string", stringConstant);
+        return String.format("%s:\n\t.%s   %s\n\t.align 16", label, "string", stringConstant);
     }
 }
