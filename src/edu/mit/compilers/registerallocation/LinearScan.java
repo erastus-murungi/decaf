@@ -17,7 +17,7 @@ import edu.mit.compilers.codegen.names.AssignableName;
 
 public class LinearScan {
     private final List<X64Register> availableRegisters = new ArrayList<>();
-    private final List<LiveInterval> active = new ArrayList<>();
+    private List<LiveInterval> active = new ArrayList<>();
     private final Map<MethodBegin, Map<AbstractName, X64Register>> varToRegMap = new HashMap<>();
     private final Map<MethodBegin, List<LiveInterval>> liveIntervals;
     public static final int N_AVAILABLE_REGISTERS = 14;
@@ -62,6 +62,7 @@ public class LinearScan {
             List<LiveInterval> liveIntervalsList = entry.getValue();
             liveIntervalsList.sort(LiveInterval::compareStartPoint);
             Map<AbstractName, X64Register> varToReg = varToRegMap.get(entry.getKey());
+            active = new ArrayList<>();
             for (LiveInterval i : liveIntervalsList) {
                 if (assignableNames.contains(i.variable))
                     continue;
