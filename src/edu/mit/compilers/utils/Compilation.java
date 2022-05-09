@@ -54,7 +54,9 @@ public class Compilation {
         return nLinesOfCodeReductionFactor;
     }
 
-    public AST getAstRoot() {return parser.getRoot();}
+    public AST getAstRoot() {
+        return parser.getRoot();
+    }
 
     enum CompilationState {
         INITIALIZED,
@@ -109,7 +111,7 @@ public class Compilation {
         initialize();
         CLI.debug = debug;
         CLI.target = CLI.Action.ASSEMBLY;
-        CLI.opts = new boolean[] {true};
+        CLI.opts = new boolean[]{true};
 
     }
 
@@ -119,7 +121,7 @@ public class Compilation {
     }
 
     private void specificTestFileInitialize(InputStream inputStream) {
-        CLI.opts = new boolean[] {true};
+        CLI.opts = new boolean[]{true};
         CLI.target = CLI.Action.ASSEMBLY;
         CLI.debug = true;
         sourceCode = Utils.getStringFromInputStream(inputStream);
@@ -199,7 +201,7 @@ public class Compilation {
     }
 
     private boolean shouldOptimize() {
-        for (boolean opt: CLI.opts)
+        for (boolean opt : CLI.opts)
             if (opt)
                 return true;
         return false;
@@ -214,12 +216,14 @@ public class Compilation {
         if (shouldOptimize()) {
             if (CLI.debug) {
                 System.out.println("before InstructionSimplifyPass");
-                System.out.println(parser.getRoot().getSourceCode());
+                System.out.println(parser.getRoot()
+                        .getSourceCode());
             }
             InstructionSimplifyIrPass.run(parser.getRoot());
             if (CLI.debug) {
                 System.out.println("after InstructionSimplifyPass");
-                System.out.println(parser.getRoot().getSourceCode());
+                System.out.println(parser.getRoot()
+                        .getSourceCode());
             }
         }
 
@@ -281,17 +285,22 @@ public class Compilation {
     private void generateAssembly() {
         assert compilationState == CompilationState.DATAFLOW_OPTIMIZED;
 
-        var registerAllocation = new RegisterAllocation(programIr);
-        var copy = new HashMap<String, BasicBlock>();
-        programIr.methodBeginList.forEach(methodBegin -> copy.put(methodBegin.methodName(), methodBegin.entryBlock));
-        copy.put("globals", iCFGVisitor.initialGlobalBlock);
-        GraphVizPrinter.printGraph(copy,
-                (basicBlock -> basicBlock.instructionList.stream().map(Instruction::repr).collect(Collectors.joining("\n"))),
-                "cfg_ir"
-        );
-
-        X64CodeConverter x64CodeConverter = new X64CodeConverter(registerAllocation.getVariableToRegisterMapping());
-//        X64CodeConverter x64CodeConverter = new X64CodeConverter();
+        X64CodeConverter x64CodeConverter;
+        if (shouldOptimize()) {
+            var registerAllocation = new RegisterAllocation(programIr);
+            var copy = new HashMap<String, BasicBlock>();
+            programIr.methodBeginList.forEach(methodBegin -> copy.put(methodBegin.methodName(), methodBegin.entryBlock));
+            copy.put("globals", iCFGVisitor.initialGlobalBlock);
+            GraphVizPrinter.printGraph(copy,
+                    (basicBlock -> basicBlock.instructionList.stream()
+                            .map(Instruction::repr)
+                            .collect(Collectors.joining("\n"))),
+                    "cfg_ir"
+            );
+            x64CodeConverter = new X64CodeConverter(registerAllocation.getVariableToRegisterMapping());
+        } else {
+            x64CodeConverter = new X64CodeConverter();
+        }
         X64Program x64program = x64CodeConverter.convert(mergeProgram());
         if (shouldOptimize()) {
 //            var peepHoleOptimizationAsmPass = new PeepHoleOptimizationAsmPass(x64program);
