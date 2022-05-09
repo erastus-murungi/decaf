@@ -474,7 +474,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                 return x64Builder
                         .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))
                         .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, destStackLocation))
-                        .addLine(x64InstructionLine(X64Instruction.xorb, ONE, destStackLocation));
+                        .addLine(x64InstructionLine(X64Instruction.xor, ONE, destStackLocation));
             case "-":
                 return x64Builder
                         .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, X64Register.RAX))

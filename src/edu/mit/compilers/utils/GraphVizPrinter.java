@@ -54,6 +54,7 @@ import java.util.function.Function;
  *    gv.addln("A -> B;");
  *    gv.addln("A -> C;");
  *    gv.addln(gv.end_graph());
+ *
  *    System.out.println(gv.getDotSource());
  *
  *    String type = "gif";

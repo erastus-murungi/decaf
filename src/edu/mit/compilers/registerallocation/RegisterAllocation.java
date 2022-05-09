@@ -124,7 +124,7 @@ public class RegisterAllocation {
 
                     var block = basicBlock;
                     BasicBlockBranchLess prevBasicBlock;
-                    if (!basicBlock.instructionList.isEmpty()) {
+                    if (!instructionsToSplit.isEmpty()) {
                         var prevInstructions = instructionsToSplit.subList(0, 1);
                         var rest = new ArrayList<>(instructionsToSplit.subList(1, instructionsToSplit.size()));
 
@@ -155,7 +155,6 @@ public class RegisterAllocation {
                                 withBranch.falseChild = block;
                                 var bb = withBranch.instructionList;
                                 while (bb.nextInstructionList != null && bb.nextInstructionList != (basicBlock.instructionList)) {
-                                    System.out.println(bb.toStringLocal());
                                     bb = bb.nextInstructionList;
                                 }
                                 if (bb.nextInstructionList == basicBlock.instructionList)

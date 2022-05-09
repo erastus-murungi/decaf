@@ -6,18 +6,21 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import edu.mit.compilers.asm.X64Register;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.AssignableName;
 
 public class LinearScan {
     private final List<X64Register> availableRegisters = new ArrayList<>();
     private final List<LiveInterval> active = new ArrayList<>();
     private final Map<MethodBegin, Map<AbstractName, X64Register>> varToRegMap = new HashMap<>();
     private final Map<MethodBegin, List<LiveInterval>> liveIntervals;
+    public static final int N_AVAILABLE_REGISTERS = 14;
 
     public LinearScan(Collection<X64Register> availableRegisters, Map<MethodBegin, List<LiveInterval>> liveIntervals) {
         this.availableRegisters.addAll(availableRegisters);
@@ -36,7 +39,7 @@ public class LinearScan {
                 .count();
     }
 
-    private void mapParametersToRegisters(MethodBegin methodBegin) {
+    private Set<AssignableName> mapParametersToRegisters(MethodBegin methodBegin) {
         var instructionList = methodBegin.entryBlock.instructionList.flatten();
         var parameters = methodBegin
                 .getParameterNames()
@@ -48,19 +51,22 @@ public class LinearScan {
             varToRegMap.get(methodBegin).put(parameters.get(i), X64Register.argumentRegs[i]);
             availableRegisters.remove(X64Register.argumentRegs[i]);
         }
+        return parameters.stream().collect(Collectors.toUnmodifiableSet());
     }
 
     public void allocate() {
         for (var entry : liveIntervals.entrySet()) {
             availableRegisters.clear();
             availableRegisters.addAll(List.of(X64Register.availableRegs));
-            mapParametersToRegisters(entry.getKey());
+            Set<AssignableName> assignableNames = mapParametersToRegisters(entry.getKey());
             List<LiveInterval> liveIntervalsList = entry.getValue();
             liveIntervalsList.sort(LiveInterval::compareStartPoint);
             Map<AbstractName, X64Register> varToReg = varToRegMap.get(entry.getKey());
             for (LiveInterval i : liveIntervalsList) {
+                if (assignableNames.contains(i.variable))
+                    continue;
                 expireOldIntervals(i, varToReg);
-                if (active.size() == availableRegisters.size()) {
+                if (active.size() == N_AVAILABLE_REGISTERS) {
                     spillAtInterval(i, varToReg);
                 } else {
                     varToReg.put(i.variable, availableRegisters.remove(0));
