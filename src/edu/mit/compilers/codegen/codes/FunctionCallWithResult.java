@@ -39,7 +39,8 @@ public class FunctionCallWithResult extends Store implements HasOperand, Functio
 
     @Override
     public String repr() {
-        var callString =  Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+        //        var callString =  Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+        var callString = "call";
         return String.format("%s%s: %s = %s @%s %s%s", DOUBLE_INDENT, getStore().repr(), getMethodReturnType(), callString, getMethodName() , DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
     }
 

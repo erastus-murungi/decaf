@@ -6,15 +6,17 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
-import java.util.List;
+import java.util.stream.Collectors;
 
 import edu.mit.compilers.asm.X64CodeConverter;
 import edu.mit.compilers.asm.X64Program;
 import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.CFGGenerator;
 import edu.mit.compilers.cfg.iCFGVisitor;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.InstructionListConverter;
+import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.dataflow.DataflowOptimizer;
 import edu.mit.compilers.dataflow.passes.InstructionSimplifyIrPass;
@@ -23,6 +25,7 @@ import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.Token;
 import edu.mit.compilers.ir.DecafSemanticChecker;
+import edu.mit.compilers.registerallocation.RegisterAllocation;
 import edu.mit.compilers.tools.CLI;
 
 public class Compilation {
@@ -34,7 +37,7 @@ public class Compilation {
     private InstructionListConverter instructionListConverter;
     private iCFGVisitor iCFGVisitor;
 
-    private Pair<InstructionList, List<MethodBegin>> programIr;
+    private ProgramIr programIr;
 
     private DecafExceptionProcessor decafExceptionProcessor;
     private PrintStream outputStream;
@@ -226,9 +229,9 @@ public class Compilation {
     }
 
     private InstructionList mergeProgram() {
-        var programHeader = programIr.first;
+        var programHeader = programIr.instructionList.copy();
         var tacList = programHeader.copy();
-        for (MethodBegin methodBegin : programIr.second()) {
+        for (MethodBegin methodBegin : programIr.methodBeginList) {
             tacList.addAll(methodBegin.entryBlock.instructionList.flatten());
         }
         return tacList;
@@ -260,15 +263,15 @@ public class Compilation {
                 System.out.println("Before optimization");
                 System.out.println(mergeProgram());
             }
-            var dataflowOptimizer = new DataflowOptimizer(programIr.second, instructionListConverter.globalNames);
+            var dataflowOptimizer = new DataflowOptimizer(programIr.methodBeginList, instructionListConverter.globalNames);
             dataflowOptimizer.initialize();
             dataflowOptimizer.optimize();
-            programIr = new Pair<>(programIr.first, dataflowOptimizer.methodBeginTacLists);
+            programIr.methodBeginList = dataflowOptimizer.methodBeginTacLists;
             nLinesOfCodeReductionFactor = (oldNLinesOfCode - countLinesOfCode()) / oldNLinesOfCode;
             if (CLI.debug) {
                 System.out.println("After optimization");
                 System.out.println(mergeProgram());
-                System.err.format("lines of code reduced by a factor of: %f\n", nLinesOfCodeReductionFactor);
+                System.out.format("lines of code reduced by a factor of: %f\n", nLinesOfCodeReductionFactor);
             }
 
         }
@@ -277,6 +280,16 @@ public class Compilation {
 
     private void generateAssembly() {
         assert compilationState == CompilationState.DATAFLOW_OPTIMIZED;
+
+//        var registerAllocation = new RegisterAllocation(programIr);
+//        var copy = new HashMap<String, BasicBlock>();
+//        programIr.methodBeginList.forEach(methodBegin -> copy.put(methodBegin.methodName(), methodBegin.entryBlock));
+//        copy.put("globals", iCFGVisitor.initialGlobalBlock);
+//        GraphVizPrinter.printGraph(copy,
+//                (basicBlock -> basicBlock.instructionList.stream().map(Instruction::repr).collect(Collectors.joining("\n"))),
+//                "cfg_ir"
+//        );
+
         X64CodeConverter x64CodeConverter = new X64CodeConverter();
         X64Program x64program = x64CodeConverter.convert(mergeProgram());
         if (shouldOptimize()) {
@@ -286,6 +299,13 @@ public class Compilation {
         }
         outputStream.println(x64program);
         compilationState = CompilationState.ASSEMBLED;
+    }
+
+    public InstructionList getInstructionList() {
+        if (compilationState != CompilationState.IR_GENERATED && compilationState != CompilationState.ASSEMBLED) {
+            throw new IllegalStateException("instruction list has not been created yet");
+        }
+        return mergeProgram();
     }
 
     private void patternMatchTest() {

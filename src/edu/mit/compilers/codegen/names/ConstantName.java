@@ -40,7 +40,9 @@ public class ConstantName extends AbstractName {
 
     @Override
     public String repr() {
-        return String.format("%s %s", Utils.coloredPrint("const", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD), value);
+//        var constString = Utils.coloredPrint("const", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+        var constString = "const";
+        return String.format("%s %s", constString, value);
     }
 
     @Override

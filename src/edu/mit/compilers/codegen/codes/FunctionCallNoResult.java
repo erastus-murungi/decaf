@@ -34,7 +34,8 @@ public class FunctionCallNoResult extends Instruction implements FunctionCall {
 
     @Override
     public String repr() {
-        var callString =  Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+//        var callString =  Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+        var callString = "call";
         return String.format("%s%s %s @%s %s%s", DOUBLE_INDENT, callString, getMethodReturnType(), getMethodName(), DOUBLE_INDENT, getComment().isPresent() ? " #  " + getComment().get() : "");
     }
 

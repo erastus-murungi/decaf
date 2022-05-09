@@ -36,7 +36,8 @@ public class PushParameter extends Instruction implements HasOperand {
 
     @Override
     public String repr() {
-        var push =  Utils.coloredPrint("push", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+//        var push =  Utils.coloredPrint("push", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+        var push = "push";
         return String.format("%s%s %s%s", DOUBLE_INDENT, push, parameterName.repr(), DOUBLE_INDENT);
 
     }
