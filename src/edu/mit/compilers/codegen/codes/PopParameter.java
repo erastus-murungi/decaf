@@ -37,7 +37,8 @@ public class PopParameter extends Instruction implements HasOperand {
 
     @Override
     public String repr() {
-        var pop =  Utils.coloredPrint("pop", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+//        var pop =  Utils.coloredPrint("pop", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+        var pop =  "pop";
         return String.format("%s%s %s%s%s", DOUBLE_INDENT, pop, parameterName.repr(), DOUBLE_INDENT, getComment().orElse(""));
     }
 

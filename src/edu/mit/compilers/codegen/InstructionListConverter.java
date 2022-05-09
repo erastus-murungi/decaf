@@ -13,6 +13,7 @@ import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
+import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.Utils;
 
 
@@ -545,7 +546,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
         return literalList;
     }
 
-    public Pair<InstructionList, List<MethodBegin>> fill(iCFGVisitor visitor,
+    public ProgramIr fill(iCFGVisitor visitor,
                                                          Program program) {
         var programStartTacList = initProgram(program);
 
@@ -562,7 +563,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
                 methodsTacLists.add(convertMethodDefinition(getMethodDefinitionFromProgram(k, program), v, cfgSymbolTables.get(k)));
             }
         });
-        return new Pair<>(programStartTacList, methodsTacLists);
+        return new ProgramIr(programStartTacList, methodsTacLists);
     }
 
     public InstructionListConverter(CFGGenerator cfgGenerator) {

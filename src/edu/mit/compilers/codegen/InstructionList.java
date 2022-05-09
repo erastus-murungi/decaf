@@ -9,11 +9,24 @@ import java.util.stream.Collectors;
 
 public class InstructionList extends ArrayList<Instruction> {
     public AbstractName place;
+
     public InstructionList nextInstructionList;
 
     public InstructionList(AbstractName place, List<Instruction> codes) {
         this.place = place;
         addAll(codes);
+    }
+
+    public List<InstructionList> getListOfInstructionLists() {
+        var flattened = new ArrayList<InstructionList>();
+        InstructionList tacList = this;
+        while (tacList != null) {
+            if (flattened.size() > 10)
+                System.out.println(flattened);
+            flattened.add(tacList);
+            tacList = tacList.nextInstructionList;
+        }
+        return flattened;
     }
 
     public InstructionList(List<Instruction> codes) {
@@ -46,6 +59,8 @@ public class InstructionList extends ArrayList<Instruction> {
         InstructionList flattened = new InstructionList();
         InstructionList tacList = this;
         while (tacList != null) {
+            if (flattened.size() > 50)
+                System.out.println(flattened);
             flattened.addAll(tacList);
             tacList = tacList.nextInstructionList;
         }
@@ -108,6 +123,10 @@ public class InstructionList extends ArrayList<Instruction> {
     @Override
     public String toString() {
         return flatten().stream().filter(code -> !(code instanceof ArrayAccess)).map(Instruction::repr).collect(Collectors.joining("\n"));
+    }
+
+    public String toStringLocal() {
+        return stream().filter(code -> !(code instanceof ArrayAccess)).map(Instruction::repr).collect(Collectors.joining("\n"));
     }
     public InstructionList copy() {
         return new InstructionList(place, this);

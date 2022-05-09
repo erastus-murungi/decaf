@@ -11,6 +11,6 @@ public class Use extends UseDef {
 
     @Override
     public String toString() {
-        return "Use{\"" + variable + "\"}";
+        return "use "+ variable.repr();
     }
 }
