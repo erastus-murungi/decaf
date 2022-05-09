@@ -283,9 +283,9 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
         if (methodBegin.isMain()) {
             x64builder = x64builder.addLine(new X64Code(".globl main"));
-            for (AbstractName name : globals)
-                for (int i = 0; i < name.size; i += 8)
-                    x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, i + " + " + String.format("%s(%s)", name, "%rip")));
+//            for (AbstractName name : globals)
+//                for (int i = 0; i < name.size; i += 8)
+//                    x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, i + " + " + String.format("%s(%s)", name, "%rip")));
         }
         x64builder.addLine(new X64Code(methodBegin.methodName() + ":"));
 
@@ -359,6 +359,18 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         return x64Builder;
     }
 
+    private Set<X64Register> allAllocatedRegisters() {
+        var setOfRegisters = new HashSet<X64Register>();
+        for (Map<AbstractName, X64Register> x64Registers : registerMapping.values()) {
+            for (var register : x64Registers.values()) {
+                if (register.equals(X64Register.STACK))
+                    continue;
+                setOfRegisters.add(register);
+            }
+        }
+        return setOfRegisters;
+    }
+
     private X64Builder callerSave(X64Builder x64Builder, String methodName) {
         for (MethodBegin methodBegin : registerMapping.keySet()) {
             if (methodBegin.methodName()
@@ -372,19 +384,19 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                         x64Builder.addLine(x64InstructionLine(X64Instruction.movq, register.toString(), location));
                     }
                 }
-                stackSpace += 8;
-                final String location = String.format("-%s(%s)", stackSpace, X64Register.RBP);
-                callStack.peek().nameToStackOffset.put(X64Register.RAX.toString(), (int) stackSpace);
-                x64Builder.addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, location));
-                return x64Builder;
+//                stackSpace += 8;
+//                final String location = String.format("-%s(%s)", stackSpace, X64Register.RBP);
+//                callStack.peek().nameToStackOffset.put(X64Register.RAX.toString(), (int) stackSpace);
+//                x64Builder.addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, location));
+//                return x64Builder;
+//            }
             }
-        }
 //        for (var register : X64Register.callerSaved) {
 //            stackSpace += 8;
 //            final String location = String.format("-%s(%s)", stackSpace, X64Register.RBP);
 //            callStack.peek().nameToStackOffset.put(register.toString(), (int) stackSpace);
 //            x64Builder.addLine(x64InstructionLine(X64Instruction.movq, register.toString(), location));
-//        }
+        }
         return x64Builder;
     }
 
@@ -399,9 +411,9 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                         x64Builder.addLine(x64InstructionLine(X64Instruction.movq, location, register.toString()));
                     }
                 }
-                final String location = String.format("-%s(%s)", callStack.peek().nameToStackOffset.get(X64Register.RAX.toString()), X64Register.RBP);
-                x64Builder.addLine(x64InstructionLine(X64Instruction.movq, location, X64Register.RAX));
-                return x64Builder;
+//                final String location = String.format("-%s(%s)", callStack.peek().nameToStackOffset.get(X64Register.RAX.toString()), X64Register.RBP);
+//                x64Builder.addLine(x64InstructionLine(X64Instruction.movq, location, X64Register.RAX));
+//                return x64Builder;
             }
         }
 //        for (var register : X64Register.callerSaved) {
@@ -420,21 +432,24 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
     @Override
     public X64Builder visit(FunctionCallWithResult methodCall, X64Builder x64builder) {
-        callerSave(x64builder, methodCall.getMethodName());
+//        callerSave(x64builder, methodCall.getMethodName());
         (methodCall.isImported() ? x64builder.addLine((x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX))) : x64builder)
                 .addLine(x64InstructionLine(X64Instruction.callq, methodCall.getMethodName()))
                 .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, resolveLoadLocation(methodCall
                         .getStore())));
-        return callerRestore(x64builder, methodCall.getMethodName());
+//        return callerRestore(x64builder, methodCall.getMethodName());
+        return x64builder;
     }
 
     @Override
     public X64Builder visit(FunctionCallNoResult methodCall, X64Builder x64builder) {
-        callerSave(x64builder, methodCall.getMethodName());
+//        callerSave(x64builder, methodCall.getMethodName());
         (methodCall.isImported() ? x64builder.addLine((x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX))) : x64builder)
                 .addLine(x64InstructionLine(X64Instruction.callq,
                         methodCall.getMethodName()));
-        return callerRestore(x64builder, methodCall.getMethodName());
+//        return callerRestore(x64builder, methodCall.getMethodName());
+        return x64builder;
+
     }
 
     @Override
@@ -559,75 +574,6 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
     @Override
     public X64Builder visit(BinaryInstruction binaryInstruction, X64Builder x64builder) {
-        if (resolveLoadLocation(binaryInstruction.fstOperand).startsWith("%s")) {
-            String location = resolveLoadLocation(binaryInstruction.fstOperand);
-            switch (binaryInstruction.operator) {
-                case "+":
-                case "-":
-                    return x64builder
-                            .addLine(x64InstructionLine(X64Instruction.getX64OperatorCode(binaryInstruction.operator), resolveLoadLocation(binaryInstruction.sndOperand), location))
-                            .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", binaryInstruction.store.repr(), binaryInstruction.fstOperand.repr(), binaryInstruction.operator, binaryInstruction.sndOperand.repr()), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(binaryInstruction.store)));
-                case "*":
-                    return x64builder
-                            .addLine(x64InstructionLine(X64Instruction.imulq, resolveLoadLocation(binaryInstruction.sndOperand), location))
-                            .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", binaryInstruction.store.repr(), binaryInstruction.fstOperand.repr(), binaryInstruction.operator, binaryInstruction.sndOperand.repr()), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(binaryInstruction.store)));
-                // TODO: cheatsheet says that %rdx:%rax is divided by S (source) but we are going to assume just %rax for now
-                case "/":
-                    if (binaryInstruction.sndOperand instanceof ConstantName) {
-                        return x64builder
-                                .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(binaryInstruction.fstOperand), X64Register.RAX))
-                                .addLine(x64InstructionLine(X64Instruction.cqto))
-                                .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(binaryInstruction.sndOperand), X64Register.R9))
-                                .addLine(x64InstructionLine(X64Instruction.idivq, X64Register.R9))
-                                .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", binaryInstruction.store.repr(), binaryInstruction.fstOperand.repr(), binaryInstruction.operator, binaryInstruction.sndOperand.repr()), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(binaryInstruction.store)));
-                    }
-                    return x64builder
-                            .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(binaryInstruction.fstOperand), X64Register.RAX))
-                            .addLine(x64InstructionLine(X64Instruction.cqto))
-                            .addLine(x64InstructionLine(X64Instruction.idivq, resolveLoadLocation(binaryInstruction.sndOperand)))
-                            .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", binaryInstruction.store.repr(), binaryInstruction.fstOperand, binaryInstruction.operator, binaryInstruction.sndOperand), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(binaryInstruction.store)));
-                // TODO: cheatsheet says that %rdx:%rax is divided by S (source) but we are going to assume just %rax for now
-                case "%":
-                    if (binaryInstruction.sndOperand instanceof ConstantName) {
-                        return x64builder
-                                .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(binaryInstruction.fstOperand), X64Register.RAX))
-                                .addLine(x64InstructionLine(X64Instruction.cqto))
-                                .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(binaryInstruction.sndOperand), X64Register.R9))
-                                .addLine(x64InstructionLine(X64Instruction.idivq, X64Register.R9))
-                                .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", binaryInstruction.store, binaryInstruction.fstOperand, binaryInstruction.operator, binaryInstruction.sndOperand), X64Instruction.movq, X64Register.RDX, resolveLoadLocation(binaryInstruction.store)));
-                    }
-                    return x64builder
-                            .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(binaryInstruction.fstOperand), X64Register.RAX))
-                            .addLine(x64InstructionLine(X64Instruction.cqto))
-                            .addLine(x64InstructionLine(X64Instruction.idivq, resolveLoadLocation(binaryInstruction.sndOperand)))
-                            .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", binaryInstruction.store, binaryInstruction.fstOperand, binaryInstruction.operator, binaryInstruction.sndOperand), X64Instruction.movq, X64Register.RDX, resolveLoadLocation(binaryInstruction.store)));
-                case "||":
-                    return x64builder
-                            .addLine(x64InstructionLine(X64Instruction.mov, resolveLoadLocation(binaryInstruction.fstOperand), X64Register.RAX))
-                            .addLine(x64InstructionLine(X64Instruction.or, resolveLoadLocation(binaryInstruction.sndOperand), X64Register.RAX))
-                            .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", binaryInstruction.store, binaryInstruction.fstOperand, binaryInstruction.operator, binaryInstruction.sndOperand), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(binaryInstruction.store)));
-                case "&&":
-                    return x64builder
-                            .addLine(x64InstructionLine(X64Instruction.mov, resolveLoadLocation(binaryInstruction.fstOperand), X64Register.RAX))
-                            .addLine(x64InstructionLine(X64Instruction.and, resolveLoadLocation(binaryInstruction.sndOperand), X64Register.RAX))
-                            .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", binaryInstruction.store, binaryInstruction.fstOperand, binaryInstruction.operator, binaryInstruction.sndOperand), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(binaryInstruction.store)));
-                case "==":
-                case "!=":
-                case "<":
-                case ">":
-                case "<=":
-                case ">=":
-                    lastComparisonOperator = binaryInstruction.operator;
-                    return x64builder
-                            .addLine(x64InstructionLine(X64Instruction.mov, resolveLoadLocation(binaryInstruction.fstOperand), X64Register.RAX))
-                            .addLine(x64InstructionLine(X64Instruction.cmp, resolveLoadLocation(binaryInstruction.sndOperand), X64Register.RAX))
-                            .addLine(x64InstructionLine(X64Instruction.getCorrectComparisonSetInstruction(binaryInstruction.operator), X64Register.al))
-                            .addLine(x64InstructionLine(X64Instruction.movzbq, X64Register.al, X64Register.RAX))
-                            .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", binaryInstruction.store.repr(), binaryInstruction.fstOperand.repr(), binaryInstruction.operator, binaryInstruction.sndOperand.repr()), X64Instruction.movq, X64Register.RAX, resolveLoadLocation(binaryInstruction.store)));
-                default:
-                    return null;
-            }
-        }
         switch (binaryInstruction.operator) {
             case "+":
             case "-":
@@ -706,9 +652,10 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     @Override
     public X64Builder visit(GlobalAllocation globalAllocation, X64Builder x64Builder) {
         globals.add(globalAllocation.variableName);
-        return x64Builder.addLine(x64InstructionLine(String.format("%s:\n\t\t.zero %s",
-                globalAllocation.variableName,
-                globalAllocation.variableName.size)));
+        return x64Builder.addLine(x64InstructionLine(String.format("\tcomm %s, %s, %s", globalAllocation.variableName, globalAllocation.variableName.size, 16)));
+//        return x64Builder.addLine(x64InstructionLine(String.format("%s:\n\t\t.zero %s",
+//                globalAllocation.variableName,
+//                globalAllocation.variableName.size)));
     }
 }
 
