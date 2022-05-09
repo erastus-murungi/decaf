@@ -52,14 +52,12 @@ public class LinearScan {
 
     public void allocate() {
         for (var entry : liveIntervals.entrySet()) {
+            availableRegisters.clear();
+            availableRegisters.addAll(List.of(X64Register.availableRegs));
             mapParametersToRegisters(entry.getKey());
             List<LiveInterval> liveIntervalsList = entry.getValue();
             liveIntervalsList.sort(LiveInterval::compareStartPoint);
             Map<AbstractName, X64Register> varToReg = varToRegMap.get(entry.getKey());
-//            if (liveIntervalsList.size() == 1) {
-//                varToReg.put(liveIntervalsList.get(0).variable, X64Register.RAX);
-//                continue;
-//            }
             for (LiveInterval i : liveIntervalsList) {
                 expireOldIntervals(i, varToReg);
                 if (active.size() == availableRegisters.size()) {

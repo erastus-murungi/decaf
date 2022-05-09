@@ -294,9 +294,9 @@ public class Compilation {
 //        X64CodeConverter x64CodeConverter = new X64CodeConverter();
         X64Program x64program = x64CodeConverter.convert(mergeProgram());
         if (shouldOptimize()) {
-            var peepHoleOptimizationAsmPass = new PeepHoleOptimizationAsmPass(x64program);
-            peepHoleOptimizationAsmPass.run();
-            nLinesRemovedByAssemblyOptimizer = peepHoleOptimizationAsmPass.getNumInstructionsRemoved();
+//            var peepHoleOptimizationAsmPass = new PeepHoleOptimizationAsmPass(x64program);
+//            peepHoleOptimizationAsmPass.run();
+//            nLinesRemovedByAssemblyOptimizer = peepHoleOptimizationAsmPass.getNumInstructionsRemoved();
         }
         outputStream.println(x64program);
         compilationState = CompilationState.ASSEMBLED;

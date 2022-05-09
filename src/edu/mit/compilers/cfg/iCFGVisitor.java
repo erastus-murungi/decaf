@@ -187,7 +187,7 @@ public class iCFGVisitor implements Visitor<BasicBlocksPair> {
 
     @Override
     public BasicBlocksPair visit(Program program, SymbolTable symbolTable) {
-        BasicBlocksPair curPair = new BasicBlocksPair(initialGlobalBlock, new NOP());
+        BasicBlocksPair curPair = new BasicBlocksPair(initialGlobalBlock, new NOP("global NOP"));
         initialGlobalBlock.autoChild = curPair.endBlock;
         for (ImportDeclaration import_ : program.importDeclarationList) {
             BasicBlocksPair placeholder = import_.accept(this, symbolTable);

@@ -8,6 +8,7 @@ import edu.mit.compilers.descriptors.GlobalDescriptor;
 import edu.mit.compilers.descriptors.MethodDescriptor;
 import edu.mit.compilers.exceptions.DecafException;
 import edu.mit.compilers.symbolTable.SymbolTable;
+import edu.mit.compilers.utils.GraphVizPrinter;
 import edu.mit.compilers.utils.Utils;
 
 import java.util.*;
@@ -79,6 +80,7 @@ public class CFGGenerator {
                     .getDescriptorFromValidScopes(k)
                     .orElseThrow());
         });
+        nopVisitor.exit = (NOP) visitor.initialGlobalBlock.autoChild;
         visitor.initialGlobalBlock.accept(nopVisitor, theSymbolWeCareAbout);
         HashMap<String, BasicBlock> methodBlocksCFG = new HashMap<>();
         visitor.methodCFGBlocks.forEach((k, v) -> {
@@ -93,8 +95,8 @@ public class CFGGenerator {
             methodBlocksCFG.put(k, v);
         });
         visitor.methodCFGBlocks = methodBlocksCFG;
+        maximalVisitor.exitNOP = (NOP) visitor.initialGlobalBlock.autoChild;
         visitor.initialGlobalBlock.accept(maximalVisitor, theSymbolWeCareAbout);
-
 
         return visitor;
     }

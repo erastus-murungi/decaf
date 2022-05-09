@@ -107,8 +107,10 @@ public class RegisterAllocation {
                         basicBlock.instructionList.reset(new ArrayList<>(prevInstructions));
 
                         prevBasicBlock = splitBasicBlock(rest, prevBasicBlock, beforeAutoChild, basicBlock.instructionList.nextInstructionList);
-                        beforeAutoChild.addPredecessor(prevBasicBlock);
-                        beforeAutoChild.removePredecessor(basicBlock);
+                        if (beforeAutoChild != null) {
+                            beforeAutoChild.addPredecessor(prevBasicBlock);
+                            beforeAutoChild.removePredecessor(basicBlock);
+                        }
                     }
                 } else {
                     // take the branch
