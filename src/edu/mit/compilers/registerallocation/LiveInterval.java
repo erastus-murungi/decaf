@@ -7,15 +7,27 @@ public class LiveInterval {
     InstructionList instructionList;
     AssignableName variable;
     int startPoint;
-    int end;
+    int endPoint;
     String methodName;
 
     public LiveInterval(AssignableName variable, int startPoint, int endPoint, InstructionList instructionList, String methodName) {
         this.variable = variable;
         this.startPoint = startPoint;
-        this.end = endPoint;
+        this.endPoint = endPoint;
         this.instructionList = instructionList;
         this.methodName = methodName;
+    }
+
+    public int compareStartPoint(LiveInterval other) {
+        if(startPoint == other.startPoint)
+            return 0;
+        return startPoint < other.startPoint ? -1 : 1;
+    }
+
+    public int compareEndpoint(LiveInterval other) {
+        if(endPoint == other.endPoint)
+            return 0;
+        return endPoint < other.endPoint ? -1 : 1;
     }
 
     @Override
@@ -23,7 +35,7 @@ public class LiveInterval {
         return "LiveInterval{" +
                 "variable=" + variable.repr() +
                 ", start=" + startPoint +
-                ", end=" + end +
+                ", end=" + endPoint +
                 ", methodName='" + methodName + '\'' +
                 '}';
     }

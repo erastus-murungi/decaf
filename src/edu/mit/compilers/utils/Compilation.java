@@ -281,16 +281,17 @@ public class Compilation {
     private void generateAssembly() {
         assert compilationState == CompilationState.DATAFLOW_OPTIMIZED;
 
-//        var registerAllocation = new RegisterAllocation(programIr);
-//        var copy = new HashMap<String, BasicBlock>();
-//        programIr.methodBeginList.forEach(methodBegin -> copy.put(methodBegin.methodName(), methodBegin.entryBlock));
-//        copy.put("globals", iCFGVisitor.initialGlobalBlock);
-//        GraphVizPrinter.printGraph(copy,
-//                (basicBlock -> basicBlock.instructionList.stream().map(Instruction::repr).collect(Collectors.joining("\n"))),
-//                "cfg_ir"
-//        );
+        var registerAllocation = new RegisterAllocation(programIr);
+        var copy = new HashMap<String, BasicBlock>();
+        programIr.methodBeginList.forEach(methodBegin -> copy.put(methodBegin.methodName(), methodBegin.entryBlock));
+        copy.put("globals", iCFGVisitor.initialGlobalBlock);
+        GraphVizPrinter.printGraph(copy,
+                (basicBlock -> basicBlock.instructionList.stream().map(Instruction::repr).collect(Collectors.joining("\n"))),
+                "cfg_ir"
+        );
 
-        X64CodeConverter x64CodeConverter = new X64CodeConverter();
+        X64CodeConverter x64CodeConverter = new X64CodeConverter(registerAllocation.getVariableToRegisterMapping());
+//        X64CodeConverter x64CodeConverter = new X64CodeConverter();
         X64Program x64program = x64CodeConverter.convert(mergeProgram());
         if (shouldOptimize()) {
             var peepHoleOptimizationAsmPass = new PeepHoleOptimizationAsmPass(x64program);

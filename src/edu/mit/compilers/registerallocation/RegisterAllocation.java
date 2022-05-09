@@ -1,12 +1,12 @@
 package edu.mit.compilers.registerallocation;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import edu.mit.compilers.asm.X64Register;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.BasicBlockBranchLess;
 import edu.mit.compilers.cfg.BasicBlockWithBranch;
@@ -27,6 +27,9 @@ public class RegisterAllocation {
     ProgramIr programIr;
     private final Map<Instruction, BasicBlock> instructionBasicBlockMap = new HashMap<>();
     private final Map<BasicBlock, Set<AbstractName>> blockToLiveOut = new HashMap<>();
+    private final Map<MethodBegin, List<LiveInterval>> liveIntervals = new HashMap<>();
+    private final Map<MethodBegin, Map<AbstractName, X64Register>> variableToRegisterMapping;
+    private final LinearScan linearScan;
 
     public RegisterAllocation(ProgramIr programIr) {
         this.programIr = programIr;
@@ -35,9 +38,16 @@ public class RegisterAllocation {
         computeLiveness();
         if (CLI.debug)
             printLiveVariables();
-        computerLiveRanges();
+        computeLiveIntervals();
+        linearScan = new LinearScan(List.of(X64Register.availableRegs), liveIntervals);
+        linearScan.allocate();
+        variableToRegisterMapping = linearScan.getVariableToRegisterMapping();
+        System.out.println(linearScan.getVariableToRegisterMapping());
     }
 
+    public Map<MethodBegin, Map<AbstractName, X64Register>> getVariableToRegisterMapping() {
+        return variableToRegisterMapping;
+    }
 
     private void computeLiveness() {
         for (MethodBegin methodBegin : programIr.methodBeginList) {
@@ -78,8 +88,13 @@ public class RegisterAllocation {
     private void linearizeCfg() {
         for (MethodBegin methodBegin : programIr.methodBeginList) {
             DataFlowAnalysis.correctPredecessors(methodBegin.entryBlock);
+            final var string = methodBegin.entryBlock.instructionList.toString();
             var basicBlocks = DataFlowAnalysis.getReversePostOrder(methodBegin.entryBlock);
             for (BasicBlock basicBlock : basicBlocks) {
+//                if (!basicBlock.instructionList.isEmpty() && basicBlock.instructionList.get(0).repr().contains("L11"))
+//                    System.out.println("yes");
+//                System.out.println("before");
+//                System.out.println(Utils.coloredPrint(basicBlock.instructionList.toString(), Utils.ANSIColorConstants.ANSI_GREEN));
                 int indexOfInstruction = 0;
                 if (basicBlock instanceof BasicBlockBranchLess) {
                     indexOfInstruction += 1;
@@ -91,7 +106,7 @@ public class RegisterAllocation {
 
                         basicBlock.instructionList.reset(new ArrayList<>(prevInstructions));
 
-                        prevBasicBlock = getBasicBlockBranchLess(rest, prevBasicBlock, beforeAutoChild, basicBlock.instructionList.nextInstructionList);
+                        prevBasicBlock = splitBasicBlock(rest, prevBasicBlock, beforeAutoChild, basicBlock.instructionList.nextInstructionList);
                         beforeAutoChild.addPredecessor(prevBasicBlock);
                         beforeAutoChild.removePredecessor(basicBlock);
                     }
@@ -108,60 +123,63 @@ public class RegisterAllocation {
                     var block = basicBlock;
                     BasicBlockBranchLess prevBasicBlock;
                     if (!basicBlock.instructionList.isEmpty()) {
-                        var prevInstructions = instructionsToSplit.subList(0, indexOfInstruction);
-                        var rest = new ArrayList<>(instructionsToSplit.subList(indexOfInstruction, instructionsToSplit.size()));
+                        var prevInstructions = instructionsToSplit.subList(0, 1);
+                        var rest = new ArrayList<>(instructionsToSplit.subList(1, instructionsToSplit.size()));
 
                         prevBasicBlock = new BasicBlockBranchLess();
                         prevBasicBlock.instructionList.addAll(prevInstructions);
                         block = prevBasicBlock;
 
-                        getBasicBlockBranchLess(rest, prevBasicBlock, basicBlock, basicBlock.instructionList);
+                        splitBasicBlock(rest, prevBasicBlock, basicBlock, basicBlock.instructionList);
                     }
                     var predecessors = basicBlock.getPredecessors();
                     for (BasicBlock predecessor : predecessors) {
                         if (predecessor instanceof BasicBlockBranchLess) {
                             var branchLess = (BasicBlockBranchLess) predecessor;
                             branchLess.autoChild = block;
+                            if (predecessor.instructionList.nextInstructionList == (basicBlock.instructionList)) {
+                                branchLess.instructionList.nextInstructionList = block.instructionList;
+                            }
                         } else {
                             var withBranch = (BasicBlockWithBranch) predecessor;
                             if (withBranch.trueChild == basicBlock) {
                                 withBranch.trueChild = block;
+                                if (predecessor.instructionList.nextInstructionList == (basicBlock.instructionList)) {
+                                    withBranch.instructionList.nextInstructionList = block.instructionList;
+                                }
                             } else {
                                 if (withBranch.falseChild != basicBlock)
                                     throw new IllegalStateException();
                                 withBranch.falseChild = block;
+                                var bb = withBranch.instructionList;
+                                while (bb.nextInstructionList != null && bb.nextInstructionList != (basicBlock.instructionList)) {
+                                    System.out.println(bb.toStringLocal());
+                                    bb = bb.nextInstructionList;
+                                }
+                                if (bb.nextInstructionList == basicBlock.instructionList)
+                                    bb.nextInstructionList = block.instructionList;
                             }
                         }
                     }
                 }
+//                System.out.println("after");
+//                System.out.println(Utils.coloredPrint(basicBlock.instructionList.toString(), Utils.ANSIColorConstants.ANSI_RED));
+                if (!methodBegin.entryBlock.instructionList.toString().equals(string))
+                    throw new IllegalStateException();
             }
             DataFlowAnalysis.correctPredecessors(methodBegin.entryBlock);
         }
     }
 
-    @NotNull
-    private BasicBlockBranchLess getBasicBlockBranchLess(ArrayList<Instruction> rest,
-                                                         BasicBlockBranchLess prevBasicBlock,
-                                                         BasicBlock beforeAutoChild, InstructionList nextInstructionList) {
-        var newInstructionList = new InstructionList();
+    private BasicBlockBranchLess splitBasicBlock(ArrayList<Instruction> rest,
+                                                 BasicBlockBranchLess prevBasicBlock,
+                                                 BasicBlock beforeAutoChild, InstructionList nextInstructionList) {
         for (var instruction : rest) {
             var bb = new BasicBlockBranchLess();
-            bb.instructionList = newInstructionList;
+            bb.instructionList = InstructionList.of(instruction);
             bb.addPredecessor(prevBasicBlock);
             prevBasicBlock.autoChild = bb;
-            prevBasicBlock.instructionList.nextInstructionList = newInstructionList;
-            prevBasicBlock = bb;
-
-            newInstructionList = new InstructionList();
-            newInstructionList.add(instruction);
-
-        }
-        if (!newInstructionList.isEmpty()) {
-            var bb = new BasicBlockBranchLess();
-            bb.instructionList = newInstructionList;
-            bb.addPredecessor(prevBasicBlock);
-            prevBasicBlock.autoChild = bb;
-            prevBasicBlock.instructionList.nextInstructionList = newInstructionList;
+            prevBasicBlock.instructionList.nextInstructionList = bb.instructionList;
             prevBasicBlock = bb;
         }
         prevBasicBlock.autoChild = beforeAutoChild;
@@ -202,23 +220,24 @@ public class RegisterAllocation {
             if (getLive(instructionList.get(loc)).contains(abstractName))
                 break;
         }
-        return loc;
+        return loc + 1;
     }
 
-    private void computerLiveRanges() {
-        var liveIntervals = new ArrayList<LiveInterval>();
+    private void computeLiveIntervals() {
         for (var methodBegin : programIr.methodBeginList) {
+            var liveIntervalList = new ArrayList<LiveInterval>();
             InstructionList instructionList = methodBegin.entryBlock.instructionList.flatten();
             var allVariables = getLive(methodBegin.entryBlock.instructionList.get(0));
             // all the variables later used will be on the first line of the program
 //            System.out.println(allVariables);
             for (var variable: allVariables) {
-                liveIntervals.add(new LiveInterval((AssignableName) variable,
+                liveIntervalList.add(new LiveInterval((AssignableName) variable,
                         findFirstDefinition(instructionList, variable),
                         findLastUse(instructionList, variable), instructionList, methodBegin.methodName())
 
                 );
             }
+            liveIntervals.put(methodBegin, liveIntervalList);
 //            System.out.println(liveIntervals);
         }
     }

@@ -12,6 +12,10 @@ public class MethodEnd extends Instruction {
         super(methodDefinition);
     }
 
+    public boolean isMain() {
+        return methodName().equals("main");
+    }
+
     public String methodName() {
         return ((MethodDefinition) source).methodName.id;
     }

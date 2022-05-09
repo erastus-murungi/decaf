@@ -17,6 +17,7 @@ public enum X64Register {
     R13,
     R14,
     R15,
+    STACK,
 
     al,
 

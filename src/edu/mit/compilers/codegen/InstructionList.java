@@ -21,8 +21,6 @@ public class InstructionList extends ArrayList<Instruction> {
         var flattened = new ArrayList<InstructionList>();
         InstructionList tacList = this;
         while (tacList != null) {
-            if (flattened.size() > 10)
-                System.out.println(flattened);
             flattened.add(tacList);
             tacList = tacList.nextInstructionList;
         }
@@ -59,8 +57,6 @@ public class InstructionList extends ArrayList<Instruction> {
         InstructionList flattened = new InstructionList();
         InstructionList tacList = this;
         while (tacList != null) {
-            if (flattened.size() > 50)
-                System.out.println(flattened);
             flattened.addAll(tacList);
             tacList = tacList.nextInstructionList;
         }

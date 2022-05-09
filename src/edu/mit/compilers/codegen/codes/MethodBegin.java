@@ -5,15 +5,19 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.VariableName;
+import edu.mit.compilers.utils.Utils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class MethodBegin extends Instruction {
     public final MethodDefinition methodDefinition;
     /**
      * @implNote instead of storing the set of locals, we now store a method's tac list.
      * Because of optimizations, the set of locals could be re-computed;
-     *
+     * <p>
      * This is the unoptimized threeAddressCodeList of a method
      */
     public InstructionList unoptimized;
@@ -29,6 +33,12 @@ public class MethodBegin extends Instruction {
 
     public String methodName() {
         return methodDefinition.methodName.id;
+    }
+
+    public Set<AssignableName> getParameterNames() {
+        return methodDefinition.methodDefinitionParameterList.stream()
+                .map(methodDefinitionParameter -> new VariableName(methodDefinitionParameter.id.id, Utils.WORD_SIZE, methodDefinitionParameter.builtinType))
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     // to be filled in later by the X64Converter
