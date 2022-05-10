@@ -253,12 +253,12 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         if (stackSpace != 0) {
             stackSpace = roundUp16(stackSpace);
 
-            x64builder.addAtIndex(loc, x64InstructionLine(X64Instruction.subq, "$" + stackSpace, X64Register.RSP));
+            x64builder.addAtIndex(loc, x64InstructionLine(X64Instruction.subq, "$" + stackSpace, X64Register.RSP)); }
             x64builder.addAtIndex(loc,
                     x64InstructionLine(X64Instruction.movq, X64Register.RSP, X64Register.RBP));
             x64builder.addAtIndex(loc,
                     x64InstructionLine(X64Instruction.pushq, X64Register.RBP));
-        }
+        
         x64builder = (methodEnd.isMain() ? x64builder
                 .addLine(x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX)) : x64builder);
         ((stackSpace == 0) ? x64builder :
@@ -282,9 +282,9 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
         if (methodBegin.isMain()) {
             x64builder = x64builder.addLine(new X64Code(".globl main"));
-            for (AbstractName name : globals)
-                for (int i = 0; i < name.size; i += 8)
-                    x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, i + " + " + String.format("%s(%s)", name, "%rip")));
+//            for (AbstractName name : globals)
+  //              for (int i = 0; i < name.size; i += 8)
+    //                x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, i + " + " + String.format("%s(%s)", name, "%rip")));
         }
         x64builder.addLine(new X64Code(methodBegin.methodName() + ":"));
 
@@ -655,7 +655,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     @Override
     public X64Builder visit(GlobalAllocation globalAllocation, X64Builder x64Builder) {
         globals.add(globalAllocation.variableName);
-        return x64Builder.addLine(x64InstructionLine(String.format(".comm %s, %s, %s\n\t.align 16\n", globalAllocation.variableName, globalAllocation.variableName.size, 16)));
+        return x64Builder.addLine(x64InstructionLine(String.format(".comm %s, %s, %s", globalAllocation.variableName, globalAllocation.variableName.size, 64)));
 //        return x64Builder.addLine(x64InstructionLine(String.format("%s:\n\t\t.zero %s",
 //                globalAllocation.variableName,
 //                globalAllocation.variableName.size)));

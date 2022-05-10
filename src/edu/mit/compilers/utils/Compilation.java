@@ -286,7 +286,7 @@ public class Compilation {
         assert compilationState == CompilationState.DATAFLOW_OPTIMIZED;
 
         X64CodeConverter x64CodeConverter;
-        if (shouldOptimize()) {
+        if (false) {
             var registerAllocation = new RegisterAllocation(programIr);
             var copy = new HashMap<String, BasicBlock>();
             programIr.methodBeginList.forEach(methodBegin -> copy.put(methodBegin.methodName(), methodBegin.entryBlock));
