@@ -240,6 +240,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         x64Builder
                 .addLine(
                         x64InstructionLine(X64Instruction.pushq, X64Register.RBP))
+                .addLine(x64InstructionLine(X64Instruction.pushq, ZERO))
                 .addLine(
                         x64InstructionLine(X64Instruction.movq, X64Register.RSP, X64Register.RBP));
     }
