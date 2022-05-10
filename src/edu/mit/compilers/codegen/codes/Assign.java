@@ -107,7 +107,7 @@ public class Assign extends Store implements Cloneable, HasOperand {
 
     @Override
     public List<AbstractName> getOperandNames() {
-        if (Set.of("++", "--", "=").contains(operand.toString()))
+        if (Set.of("++", "--", "=").contains(assignmentOperator))
             return List.of(operand);
         return List.of(operand, getStore());
     }
