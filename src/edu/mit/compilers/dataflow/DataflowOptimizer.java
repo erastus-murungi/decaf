@@ -103,7 +103,7 @@ public class DataflowOptimizer {
         addPass(OptimizationPassType.CommonSubExpression);
         //addPass(OptimizationPassType.CopyPropagation);
         addPass(OptimizationPassType.DeadCodeElimination);
-         addPass(OptimizationPassType.DeadStoreElimination);
+        addPass(OptimizationPassType.DeadStoreElimination);
         //addPass(OptimizationPassType.ConstantPropagation);
         addPass(OptimizationPassType.InstructionSimplification);
         addPass(OptimizationPassType.BranchSimplification);

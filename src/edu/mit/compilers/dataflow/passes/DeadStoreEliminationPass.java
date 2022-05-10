@@ -75,6 +75,13 @@ public class DeadStoreEliminationPass extends OptimizationPass {
             if (isTrivialAssignment(possibleStoreInstruction))
                 continue;
 
+            if (possibleStoreInstruction instanceof HasOperand) {
+                if (((HasOperand) possibleStoreInstruction).getOperandNames().stream().anyMatch(abstractName -> abstractName instanceof ArrayName)) {
+                    instructionListToUpdate.add(possibleStoreInstruction);
+                    continue;
+                }
+            }
+
             // check if this a possible store instruction
             if (possibleStoreInstruction instanceof Store) {
                 // grab the store location
@@ -119,6 +126,12 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                 if (possibleStoreInstruction instanceof FunctionCallWithResult) {
                     instructionListToUpdate.add(possibleStoreInstruction);
                     continue;
+                }
+                if (possibleStoreInstruction instanceof HasOperand) {
+                    if (((HasOperand) possibleStoreInstruction).getOperandNames().stream().anyMatch(abstractName -> abstractName instanceof ArrayName)) {
+                        instructionListToUpdate.add(possibleStoreInstruction);
+                        continue;
+                    }
                 }
 
                 var storeInstruction = ((Store) possibleStoreInstruction);
