@@ -53,7 +53,6 @@ public class DecafParser {
         }
         root = program;
         if (showTrace) {
-            printParseTree(root);
             printParseTree();
         }
     }
@@ -813,17 +812,6 @@ public class DecafParser {
                 addNonTerminal(labelAndNode, i, nodeList.size(), prefix, connector, tree);
         }
     }
-
-    public static void printParseTree(AST root) {
-            try {
-                var st = OutputStream.nullOutputStream();
-                st.write("".getBytes(StandardCharsets.UTF_8));
-                st.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-    }
-
 
 
     public void printParseTree() {

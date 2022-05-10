@@ -36,8 +36,10 @@ public class ConditionalJump extends Instruction implements HasOperand {
 
     @Override
     public String repr() {
-        var ifString =  Utils.coloredPrint("if false", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
-        var goTo =  Utils.coloredPrint("goto", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+//        var ifString =  Utils.coloredPrint("if false", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+        var ifString =  "if false";
+        //        var goTo =  Utils.coloredPrint("goto", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+        var goTo =  "goto";
         return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, ifString, condition.repr(), goTo, trueLabel.label, DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
     }
 

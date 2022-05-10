@@ -33,7 +33,9 @@ public class UnconditionalJump extends Instruction {
 
     @Override
     public String repr() {
-        var goTo =  Utils.coloredPrint("goto", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+//        var goTo =  Utils.coloredPrint("goto", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
+        var goTo =  "goto";
+
         return String.format("%s%s %s", DOUBLE_INDENT, goTo, goToLabel.label);
     }
 

@@ -2,6 +2,7 @@ package edu.mit.compilers.cfg;
 
 import edu.mit.compilers.symbolTable.SymbolTable;
 
+import java.util.Collections;
 import java.util.List;
 
 public class BasicBlockBranchLess extends BasicBlock {
@@ -13,6 +14,8 @@ public class BasicBlockBranchLess extends BasicBlock {
 
     @Override
     public List<BasicBlock> getSuccessors() {
+        if (autoChild == null)
+            return Collections.emptyList();
         return List.of(autoChild);
     }
 

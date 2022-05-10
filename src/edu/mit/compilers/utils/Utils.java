@@ -112,15 +112,16 @@ public class Utils {
         return str;
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> Set<T> findAllOfType(AST root, Class<T> tClass) {
         Set<T> results = new HashSet<>();
         Stack<AST> toExplore = new Stack<>();
         toExplore.add(root);
         while (!toExplore.isEmpty()) {
             final AST node = toExplore.pop();
-            if (tClass.isAssignableFrom(node.getClass()))
+            if (tClass.isAssignableFrom(node.getClass())) {
                 results.add((T) node);
-            else {
+            } else {
                 for (Pair<String, AST> astPair : node.getChildren()) {
                     toExplore.add(astPair.second());
                 }

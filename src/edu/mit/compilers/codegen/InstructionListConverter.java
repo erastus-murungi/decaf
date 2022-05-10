@@ -13,6 +13,7 @@ import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
+import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.Utils;
 
 
@@ -274,7 +275,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
                 instructionList.add(pushParameter);
             }
         }
-
 
         private AssignableName resolveStoreLocation(BuiltinType builtinType) {
             return Objects.requireNonNullElseGet(methodSetResultLocation, () -> TemporaryName.generateTemporaryName(builtinType));
@@ -545,7 +545,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
         return literalList;
     }
 
-    public Pair<InstructionList, List<MethodBegin>> fill(iCFGVisitor visitor,
+    public ProgramIr fill(iCFGVisitor visitor,
                                                          Program program) {
         var programStartTacList = initProgram(program);
 
@@ -562,7 +562,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
                 methodsTacLists.add(convertMethodDefinition(getMethodDefinitionFromProgram(k, program), v, cfgSymbolTables.get(k)));
             }
         });
-        return new Pair<>(programStartTacList, methodsTacLists);
+        return new ProgramIr(programStartTacList, methodsTacLists);
     }
 
     public InstructionListConverter(CFGGenerator cfgGenerator) {
@@ -613,17 +613,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
     }
 
     private InstructionList getConditionTACList(Expression condition, SymbolTable symbolTable) {
-        if (condition instanceof BinaryOpExpression)
-            return visitor.visit((BinaryOpExpression) condition, symbolTable);
-        else if (condition instanceof UnaryOpExpression)
-            return visitor.visit((UnaryOpExpression) condition, symbolTable);
-        else if (condition instanceof MethodCall)
-            return visitor.visit((MethodCall) condition, symbolTable);
-        else if (condition instanceof LocationVariable)
-            return visitor.visit((LocationVariable) condition, symbolTable);
-        else if (condition instanceof ParenthesizedExpression)
-            return visitor.visit((ParenthesizedExpression) condition, symbolTable);
-        else throw new IllegalStateException("an expression of type " + condition + " is not allowed");
+        return condition.accept(this.visitor, symbolTable);
     }
 
     private InstructionList getConditionalChildBlock(
