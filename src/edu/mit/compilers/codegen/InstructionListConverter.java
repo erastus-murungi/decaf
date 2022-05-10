@@ -137,10 +137,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             binOpExpressionTACList.addAll(rightTACList);
 
             AssignableName place;
-            if (cachedPlace == null)
-                place = resolveStoreLocation(binaryOpExpression.builtinType);
-            else
-                place = cachedPlace;
+            place = resolveStoreLocation(binaryOpExpression.builtinType);
             resetStoreLocation();
 
             binOpExpressionTACList.add(
