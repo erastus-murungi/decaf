@@ -614,17 +614,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
     }
 
     private InstructionList getConditionTACList(Expression condition, SymbolTable symbolTable) {
-        if (condition instanceof BinaryOpExpression)
-            return visitor.visit((BinaryOpExpression) condition, symbolTable);
-        else if (condition instanceof UnaryOpExpression)
-            return visitor.visit((UnaryOpExpression) condition, symbolTable);
-        else if (condition instanceof MethodCall)
-            return visitor.visit((MethodCall) condition, symbolTable);
-        else if (condition instanceof LocationVariable)
-            return visitor.visit((LocationVariable) condition, symbolTable);
-        else if (condition instanceof ParenthesizedExpression)
-            return visitor.visit((ParenthesizedExpression) condition, symbolTable);
-        else throw new IllegalStateException("an expression of type " + condition + " is not allowed");
+        return condition.accept(this.visitor, symbolTable);
     }
 
     private InstructionList getConditionalChildBlock(
