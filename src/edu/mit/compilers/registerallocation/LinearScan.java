@@ -20,7 +20,7 @@ public class LinearScan {
     private List<LiveInterval> active = new ArrayList<>();
     private final Map<MethodBegin, Map<AbstractName, X64Register>> varToRegMap = new HashMap<>();
     private final Map<MethodBegin, List<LiveInterval>> liveIntervals;
-    public static final int N_AVAILABLE_REGISTERS = 14;
+    public static final int N_AVAILABLE_REGISTERS = 13;
 
     public LinearScan(Collection<X64Register> availableRegisters, Map<MethodBegin, List<LiveInterval>> liveIntervals) {
         this.availableRegisters.addAll(availableRegisters);
@@ -58,6 +58,7 @@ public class LinearScan {
         for (var entry : liveIntervals.entrySet()) {
             availableRegisters.clear();
             availableRegisters.addAll(List.of(X64Register.availableRegs));
+            availableRegisters.remove(X64Register.RAX);
             Set<AssignableName> assignableNames = mapParametersToRegisters(entry.getKey());
             List<LiveInterval> liveIntervalsList = entry.getValue();
             liveIntervalsList.sort(LiveInterval::compareStartPoint);

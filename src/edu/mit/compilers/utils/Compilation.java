@@ -201,9 +201,9 @@ public class Compilation {
     }
 
     private boolean shouldOptimize() {
-        for (boolean opt : CLI.opts)
-            if (opt)
-                return true;
+//        for (boolean opt : CLI.opts)
+//            if (opt)
+//                return true;
         return false;
     }
 
@@ -286,7 +286,7 @@ public class Compilation {
         assert compilationState == CompilationState.DATAFLOW_OPTIMIZED;
 
         X64CodeConverter x64CodeConverter;
-        if (shouldOptimize()) {
+        if (true) {
             var registerAllocation = new RegisterAllocation(programIr);
             var copy = new HashMap<String, BasicBlock>();
             programIr.methodBeginList.forEach(methodBegin -> copy.put(methodBegin.methodName(), methodBegin.entryBlock));
