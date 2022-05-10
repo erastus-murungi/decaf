@@ -101,10 +101,10 @@ public class DataflowOptimizer {
         runInterProceduralPasses();
         addPass(OptimizationPassType.PeepHoleOptimization);
         addPass(OptimizationPassType.CommonSubExpression);
-        addPass(OptimizationPassType.CopyPropagation);
+        //addPass(OptimizationPassType.CopyPropagation);
         addPass(OptimizationPassType.DeadCodeElimination);
-        addPass(OptimizationPassType.DeadStoreElimination);
-        addPass(OptimizationPassType.ConstantPropagation);
+         addPass(OptimizationPassType.DeadStoreElimination);
+        //addPass(OptimizationPassType.ConstantPropagation);
         addPass(OptimizationPassType.InstructionSimplification);
         addPass(OptimizationPassType.BranchSimplification);
     }
