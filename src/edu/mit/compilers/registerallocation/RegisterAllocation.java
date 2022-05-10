@@ -42,7 +42,7 @@ public class RegisterAllocation {
         linearScan = new LinearScan(List.of(X64Register.availableRegs), liveIntervals);
         linearScan.allocate();
         variableToRegisterMapping = linearScan.getVariableToRegisterMapping();
-        // System.out.println(linearScan.getVariableToRegisterMapping());
+        System.out.println(linearScan.getVariableToRegisterMapping());
     }
 
     public Map<MethodBegin, Map<AbstractName, X64Register>> getVariableToRegisterMapping() {

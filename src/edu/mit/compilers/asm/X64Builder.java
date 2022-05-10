@@ -21,6 +21,10 @@ public class X64Builder {
         return x64CodeList.size();
     }
 
+    public X64Code get(int index) {
+        return x64CodeList.get(index);
+    }
+
     public X64Builder addAtIndex(int index, X64Code line) {
         x64CodeList.add(index, line);
         return this;

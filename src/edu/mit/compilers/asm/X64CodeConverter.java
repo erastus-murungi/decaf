@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 import static edu.mit.compilers.asm.X64Register.N_ARG_REGISTERS;
 
 public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Builder> {
-
     private boolean textAdded = false;
     private final Set<AbstractName> globals = new HashSet<>();
     private final Stack<MethodBegin> callStack = new Stack<>();
@@ -29,6 +28,8 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     private Map<MethodBegin, Map<AbstractName, X64Register>> registerMapping = new HashMap<>();
     private Map<AbstractName, X64Register> currentMapping;
     private final Stack<Integer> subqLocs = new Stack<>();
+    private boolean pushSeen = false;
+    private final Stack<PushParameter> pushParameters = new Stack<>();
 
     public X64CodeConverter(Map<MethodBegin, Map<AbstractName, X64Register>> abstractNameToX64RegisterMap) {
         this.registerMapping = abstractNameToX64RegisterMap;
@@ -84,9 +85,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                 methodParametersNames.add(local);
             }
         }
-        for (AbstractName name : methodParametersNames) {
-            locals.remove(name);
-        }
+        locals.removeAll(methodParametersNames);
         locals.addAll(0, methodParamNamesList
                 .stream()
                 .sorted(Comparator.comparing(AbstractName::toString))
@@ -371,17 +370,18 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         return setOfRegisters;
     }
 
-    private X64Builder callerSave(X64Builder x64Builder, String methodName) {
+    private X64Builder callerSave(X64Builder x64Builder, String methodName, X64Register returnAddress) {
         for (MethodBegin methodBegin : registerMapping.keySet()) {
             if (methodBegin.methodName()
                     .equals(methodName)) {
+                int start = x64Builder.currentIndex();
                 for (var register : registerMapping.get(methodBegin)
                         .values()) {
-                    if (currentMapping.containsValue(register)) {
+                    if (currentMapping.containsValue(register) && register != returnAddress) {
                         stackSpace += 8;
                         final String location = String.format("-%s(%s)", stackSpace, X64Register.RBP);
                         callStack.peek().nameToStackOffset.put(register.toString(), (int) stackSpace);
-                        x64Builder.addLine(x64InstructionLine(X64Instruction.movq, register.toString(), location));
+                        x64Builder.addAtIndex(start - pushParameters.size(), x64InstructionLine(X64Instruction.movq, register.toString(), location));
                     }
                 }
 //                stackSpace += 8;
@@ -400,13 +400,13 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         return x64Builder;
     }
 
-    private X64Builder callerRestore(X64Builder x64Builder, String methodName) {
+    private X64Builder callerRestore(X64Builder x64Builder, String methodName, X64Register returnAddress) {
         for (MethodBegin methodBegin : registerMapping.keySet()) {
             if (methodBegin.methodName()
                     .equals(methodName)) {
                 for (var register : registerMapping.get(methodBegin)
                         .values()) {
-                    if (currentMapping.containsValue(register)) {
+                    if (currentMapping.containsValue(register) && register != returnAddress) {
                         final String location = String.format("-%s(%s)", callStack.peek().nameToStackOffset.get(register.toString()), X64Register.RBP);
                         x64Builder.addLine(x64InstructionLine(X64Instruction.movq, location, register.toString()));
                     }
@@ -432,23 +432,23 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
     @Override
     public X64Builder visit(FunctionCallWithResult methodCall, X64Builder x64builder) {
-//        callerSave(x64builder, methodCall.getMethodName());
+        callerSave(x64builder, methodCall.getMethodName(), currentMapping.get(methodCall.store));
         (methodCall.isImported() ? x64builder.addLine((x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX))) : x64builder)
                 .addLine(x64InstructionLine(X64Instruction.callq, methodCall.getMethodName()))
                 .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, resolveLoadLocation(methodCall
                         .getStore())));
-//        return callerRestore(x64builder, methodCall.getMethodName());
-        return x64builder;
+        return callerRestore(x64builder, methodCall.getMethodName(), currentMapping.get(methodCall.store));
+//        return x64builder;
     }
 
     @Override
     public X64Builder visit(FunctionCallNoResult methodCall, X64Builder x64builder) {
-//        callerSave(x64builder, methodCall.getMethodName());
+        callerSave(x64builder, methodCall.getMethodName(), null);
         (methodCall.isImported() ? x64builder.addLine((x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX))) : x64builder)
                 .addLine(x64InstructionLine(X64Instruction.callq,
                         methodCall.getMethodName()));
-//        return callerRestore(x64builder, methodCall.getMethodName());
-        return x64builder;
+        return callerRestore(x64builder, methodCall.getMethodName(), null);
+//        return x64builder;
 
     }
 
@@ -487,16 +487,19 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
     @Override
     public X64Builder visit(PushParameter pushParameter, X64Builder x64builder) {
-        if (pushParameter.parameterIndex < N_ARG_REGISTERS)
+        pushParameters.push(pushParameter);
+        if (pushParameter.parameterIndex < N_ARG_REGISTERS) {
             return x64builder.addLine(x64InstructionLine(X64Instruction.movq,
                     resolveLoadLocation(pushParameter.parameterName),
                     X64Register.argumentRegs[pushParameter.parameterIndex]));
+        }
         else
             return x64builder.addLine(x64InstructionLine(X64Instruction.pushq, resolveLoadLocation(pushParameter.parameterName)));
     }
 
     @Override
     public X64Builder visit(PopParameter popParameter, X64Builder x64builder) {
+        pushParameters.pop();
         if (popParameter.parameterIndex < N_ARG_REGISTERS)
             return x64builder
                     .addLine(x64InstructionLine(X64Instruction.movq,

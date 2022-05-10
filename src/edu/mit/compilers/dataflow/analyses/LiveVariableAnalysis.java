@@ -83,7 +83,8 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
         for (Instruction tac : tacReversed) {
             if (tac instanceof HasOperand) {
                 var hasOperand = (HasOperand) tac;
-                hasOperand.getOperandNamesNoArrayNoConstants().forEach(abstractName -> useSet.add(new Use(abstractName, tac)));
+                hasOperand.getOperandNamesNoArrayNoConstants()
+                        .forEach(abstractName -> useSet.add(new Use(abstractName, tac)));
             }
         }
         return useSet;
