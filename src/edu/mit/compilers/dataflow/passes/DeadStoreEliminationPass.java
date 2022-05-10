@@ -72,12 +72,15 @@ public class DeadStoreEliminationPass extends OptimizationPass {
         // we iterate in reverse
         for (var possibleStoreInstruction : copyOfInstructionList) {
             // always ignore assignments like a = a, a[i] = a[i]
+            if (possibleStoreInstruction.repr().contains("kernel"))
+                System.out.println("stop");
             if (isTrivialAssignment(possibleStoreInstruction))
                 continue;
 
             if (possibleStoreInstruction instanceof HasOperand) {
                 if (((HasOperand) possibleStoreInstruction).getOperandNames().stream().anyMatch(abstractName -> abstractName instanceof ArrayName)) {
                     instructionListToUpdate.add(possibleStoreInstruction);
+                    namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandNames());
                     continue;
                 }
             }
@@ -121,6 +124,8 @@ public class DeadStoreEliminationPass extends OptimizationPass {
 
         int indexOfInstruction = -1;
         for (var possibleStoreInstruction : copyOfInstructionList) {
+            if (possibleStoreInstruction.repr().contains("4433"))
+                System.out.println("stop");
             ++indexOfInstruction;
             if (possibleStoreInstruction instanceof Store) {
                 if (possibleStoreInstruction instanceof FunctionCallWithResult) {

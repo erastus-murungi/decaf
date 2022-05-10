@@ -15,6 +15,7 @@ import edu.mit.compilers.utils.Utils;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class Assign extends Store implements Cloneable, HasOperand {
     public String assignmentOperator;
@@ -106,7 +107,9 @@ public class Assign extends Store implements Cloneable, HasOperand {
 
     @Override
     public List<AbstractName> getOperandNames() {
-        return List.of(operand);
+        if (Set.of("++", "--", "=").contains(operand.toString()))
+            return List.of(operand);
+        return List.of(operand, getStore());
     }
 
     public boolean replace(AbstractName oldVariable, AbstractName replacer) {
