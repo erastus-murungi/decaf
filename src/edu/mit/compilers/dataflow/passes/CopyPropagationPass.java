@@ -17,6 +17,8 @@ public class CopyPropagationPass extends OptimizationPass {
 
 
     private static void propagateCopy(HasOperand hasOperand, HashMap<AbstractName, Operand> copies) {
+        if (copies.isEmpty())
+            return;
         boolean notConverged = true;
         while (notConverged) {
             // we have to do this in a while loop because of how copy replacements propagate
@@ -25,6 +27,8 @@ public class CopyPropagationPass extends OptimizationPass {
             // we want to eventually propagate so that a = $0
             notConverged = false;
             for (var toBeReplaced : hasOperand.getOperandNamesNoArray()) {
+                if (hasOperand instanceof Store && ((Store) hasOperand).getStore().equals(toBeReplaced))
+                    continue;
                 if (copies.get(toBeReplaced) instanceof UnmodifiedOperand) {
                     var replacer = ((UnmodifiedOperand) copies.get(toBeReplaced)).abstractName;
                     if (!isTrivialAssignment((Instruction) hasOperand)) {
