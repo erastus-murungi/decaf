@@ -3,10 +3,12 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.dataflow.operand.Operand;
+import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 
 import java.util.List;
 
-public class ArrayBoundsCheck extends Instruction {
+public class ArrayBoundsCheck extends Instruction implements HasOperand {
     public Label indexIsLessThanArraySize;
     public Label indexIsGTEZero;
     public ArrayAccess arrayAccess;
@@ -41,6 +43,26 @@ public class ArrayBoundsCheck extends Instruction {
     @Override
     public String toString() {
         return String.format("%scheck bounds *%s ", DOUBLE_INDENT, arrayAccess);
+    }
+
+    @Override
+    public Operand getOperand() {
+        return new UnmodifiedOperand(arrayAccess.accessIndex);
+    }
+
+    @Override
+    public List<AbstractName> getOperandNames() {
+        return List.of(arrayAccess.accessIndex);
+    }
+
+    @Override
+    public boolean replace(AbstractName oldName, AbstractName newName) {
+        var replaced = false;
+        if (arrayAccess.accessIndex.equals(oldName)) {
+            arrayAccess.accessIndex = newName;
+            replaced = true;
+        }
+        return replaced;
     }
 
 //    @Override
