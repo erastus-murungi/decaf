@@ -253,18 +253,20 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         if (stackSpace != 0) {
             stackSpace = roundUp16(stackSpace);
 
-            x64builder.addAtIndex(loc, x64InstructionLine(X64Instruction.subq, "$" + stackSpace, X64Register.RSP)); }
-            x64builder.addAtIndex(loc,
-                    x64InstructionLine(X64Instruction.movq, X64Register.RSP, X64Register.RBP));
-            x64builder.addAtIndex(loc,
-                    x64InstructionLine(X64Instruction.pushq, X64Register.RBP));
-        
+            x64builder.addAtIndex(loc, x64InstructionLine(X64Instruction.subq, "$" + stackSpace, X64Register.RSP));
+        }
+        x64builder.addAtIndex(loc,
+                x64InstructionLine(X64Instruction.movq, X64Register.RSP, X64Register.RBP));
+        x64builder.addAtIndex(loc,
+                x64InstructionLine(X64Instruction.pushq, X64Register.RBP));
+
         x64builder = (methodEnd.isMain() ? x64builder
                 .addLine(x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX)) : x64builder);
-        ((stackSpace == 0) ? x64builder :
-                x64builder.addLine(x64InstructionLine(X64Instruction.addq, "$" + stackSpace, X64Register.RSP))
-                        .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RBP, X64Register.RSP))
-                        .addLine(x64InstructionLine(X64Instruction.popq, X64Register.RBP)))
+        if (stackSpace != 0) {
+            x64builder.addLine(x64InstructionLine(X64Instruction.addq, "$" + stackSpace, X64Register.RSP));
+        }
+        x64builder.addLine(x64InstructionLine(X64Instruction.movq, X64Register.RBP, X64Register.RSP))
+                .addLine(x64InstructionLine(X64Instruction.popq, X64Register.RBP))
                 .addLine(x64InstructionLine(X64Instruction.ret));
         return x64builder;
     }
@@ -283,8 +285,8 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         if (methodBegin.isMain()) {
             x64builder = x64builder.addLine(new X64Code(".globl main"));
 //            for (AbstractName name : globals)
-  //              for (int i = 0; i < name.size; i += 8)
-    //                x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, i + " + " + String.format("%s(%s)", name, "%rip")));
+            //              for (int i = 0; i < name.size; i += 8)
+            //                x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, i + " + " + String.format("%s(%s)", name, "%rip")));
         }
         x64builder.addLine(new X64Code(methodBegin.methodName() + ":"));
 
@@ -293,8 +295,6 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
         List<AbstractName> locals = getLocals(methodBegin.entryBlock.instructionList);
         reorderLocals(locals, methodBegin.methodDefinition);
-        if (currentMapping.containsValue(X64Register.STACK))
-            saveBaseAndStackPointer(x64builder);
 
         for (var variableName : locals) {
             if (!globals.contains(variableName)) {
@@ -492,8 +492,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
             return x64builder.addLine(x64InstructionLine(X64Instruction.movq,
                     resolveLoadLocation(pushParameter.parameterName),
                     X64Register.argumentRegs[pushParameter.parameterIndex]));
-        }
-        else
+        } else
             return x64builder.addLine(x64InstructionLine(X64Instruction.pushq, resolveLoadLocation(pushParameter.parameterName)));
     }
 
