@@ -652,6 +652,12 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
             case "*":
             case "||":
             case "&&":
+                var lhsLocation = resolveLoadLocation(binaryInstruction.fstOperand);
+                var destLocation = resolveLoadLocation(binaryInstruction.store);
+                if (isConstant(lhsLocation) || isRegister(lhsLocation) && isRegister(destLocation)) {
+                    return x64builder.addLine(x64InstructionLine(X64Instruction.getX64OperatorCode(binaryInstruction.operator), resolveLoadLocation(binaryInstruction.sndOperand), lhsLocation))
+                            .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", binaryInstruction.store.repr(), binaryInstruction.fstOperand.repr(), binaryInstruction.operator, binaryInstruction.sndOperand.repr()), X64Instruction.movq, lhsLocation, resolveLoadLocation(binaryInstruction.store)));
+                }
                 return x64builder
                         .addLine(x64InstructionLine(X64Instruction.mov, resolveLoadLocation(binaryInstruction.fstOperand), COPY_TEMP_REGISTER))
                         .addLine(x64InstructionLine(X64Instruction.getX64OperatorCode(binaryInstruction.operator), resolveLoadLocation(binaryInstruction.sndOperand), COPY_TEMP_REGISTER))
@@ -707,9 +713,6 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     public X64Builder visit(GlobalAllocation globalAllocation, X64Builder x64Builder) {
         globals.add(globalAllocation.variableName);
         return x64Builder.addLine(x64InstructionLine(String.format(".comm %s, %s, %s", globalAllocation.variableName, globalAllocation.variableName.size, 64)));
-//        return x64Builder.addLine(x64InstructionLine(String.format("%s:\n\t\t.zero %s",
-//                globalAllocation.variableName,
-//                globalAllocation.variableName.size)));
     }
 }
 
