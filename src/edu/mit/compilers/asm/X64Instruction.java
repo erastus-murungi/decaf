@@ -13,6 +13,10 @@ public enum X64Instruction {
                 return subq;
             case DecafScanner.DIVIDE:
                 return idivq;
+            case DecafScanner.CONDITIONAL_AND:
+                return andq;
+            case DecafScanner.CONDITIONAL_OR:
+                return orq;
             case DecafScanner.GEQ:
             case DecafScanner.GT:
             case DecafScanner.LT:
