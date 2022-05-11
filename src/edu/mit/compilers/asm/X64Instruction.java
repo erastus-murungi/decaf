@@ -48,6 +48,12 @@ public enum X64Instruction {
         throw new IllegalStateException("operator " + operator + " not found");
     }
 
+    public static X64Instruction getCorrectIncrementInstruction(String operator) {
+        if (operator.equals(DecafScanner.INCREMENT))
+            return inc;
+        else return dec;
+    }
+
     public static X64Instruction getCorrectJumpIfFalseInstruction(String operator) {
         switch (operator) {
             case DecafScanner.LT:
