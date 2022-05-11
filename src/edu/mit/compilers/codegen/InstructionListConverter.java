@@ -448,6 +448,8 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
                 errors.stream()
                         .map(error -> new RuntimeException(error.getMessage(), -2, error))
                         .collect(Collectors.toList()));
+        // if the errors list is non-empty, set hasRuntimeException to true
+        methodBegin.setHasRuntimeException(!errors.isEmpty());
 
         flattenMethodDefinitionArguments(instructions, methodDefinition.methodDefinitionParameterList);
 

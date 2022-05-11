@@ -27,6 +27,16 @@ public class MethodBegin extends Instruction {
      */
     public BasicBlock entryBlock;
 
+    private boolean hasRuntimeException;
+
+    public boolean hasRuntimeException() {
+        return hasRuntimeException;
+    }
+
+    public void setHasRuntimeException(boolean hasRuntimeException) {
+        this.hasRuntimeException = hasRuntimeException;
+    }
+
     public boolean isMain() {
         return methodDefinition.methodName.id.equals("main");
     }
