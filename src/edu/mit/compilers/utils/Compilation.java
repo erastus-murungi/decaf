@@ -201,9 +201,9 @@ public class Compilation {
     }
 
     private boolean shouldOptimize() {
-        for (boolean opt : CLI.opts)
-            if (opt)
-                return true;
+//        for (boolean opt : CLI.opts)
+//            if (opt)
+//                return true;
         return false;
     }
 
@@ -270,7 +270,7 @@ public class Compilation {
             var dataflowOptimizer = new DataflowOptimizer(programIr.methodBeginList, instructionListConverter.globalNames);
             dataflowOptimizer.initialize();
             dataflowOptimizer.optimize();
-            programIr.methodBeginList = dataflowOptimizer.methodBeginTacLists;
+            programIr.methodBeginList = dataflowOptimizer.allMethods;
             nLinesOfCodeReductionFactor = (oldNLinesOfCode - countLinesOfCode()) / oldNLinesOfCode;
             if (CLI.debug) {
                 System.out.println("After optimization");
@@ -286,7 +286,7 @@ public class Compilation {
         assert compilationState == CompilationState.DATAFLOW_OPTIMIZED;
 
         X64CodeConverter x64CodeConverter;
-        if (false) {
+        if (true) {
             var registerAllocation = new RegisterAllocation(programIr);
             var copy = new HashMap<String, BasicBlock>();
             programIr.methodBeginList.forEach(methodBegin -> copy.put(methodBegin.methodName(), methodBegin.entryBlock));
