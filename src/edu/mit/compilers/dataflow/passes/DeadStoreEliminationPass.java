@@ -96,7 +96,9 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                     // do not eliminate global variables and store instructions where the
                     // right-hand side is composed of all constants, for example a = 1 + 2 or a = 3
                     // if (we are in the main method then we can afford to ignore global variables)
-                    if ((globalVariables.contains(store) && (!methodBegin.isMain()) || anySubsequentFunctionCalls(copyOfInstructionList.subList(0, copyOfInstructionList.indexOf(possibleStoreInstruction)))) || allOperandNamesConstant(possibleStoreInstruction)) {
+                    if ((globalVariables.contains(store) && 
+					    (!methodBegin.isMain()) || anySubsequentFunctionCalls(copyOfInstructionList.subList(0, copyOfInstructionList.indexOf(possibleStoreInstruction)))) 
+				    || allOperandNamesConstant(possibleStoreInstruction)) {
                         if (possibleStoreInstruction instanceof HasOperand)
                             namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandNames());
                         instructionListToUpdate.add(possibleStoreInstruction);

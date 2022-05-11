@@ -258,7 +258,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                 x64InstructionLine(X64Instruction.movq, X64Register.RSP, X64Register.RBP));
         x64builder.addAtIndex(loc,
                 x64InstructionLine(X64Instruction.pushq, X64Register.RBP));
-        x64builder.addAtIndex(loc, x64InstructionLine(X64Instruction.pushq, ZERO));
+        // x64builder.addAtIndex(loc, x64InstructionLine(X64Instruction.pushq, ZERO));
 
         x64builder = (methodEnd.isMain() ? x64builder
                 .addLine(x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX)) : x64builder);
@@ -267,7 +267,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         }
         x64builder.addLine(x64InstructionLine(X64Instruction.movq, X64Register.RBP, X64Register.RSP))
                 .addLine(x64InstructionLine(X64Instruction.popq, X64Register.RBP))
-                .addLine(x64InstructionLine(X64Instruction.popq, X64Register.RCX))
+           //     .addLine(x64InstructionLine(X64Instruction.popq, X64Register.RCX))
                 .addLine(x64InstructionLine(X64Instruction.ret));
         return x64builder;
     }
