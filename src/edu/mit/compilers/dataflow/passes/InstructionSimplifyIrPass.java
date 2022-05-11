@@ -14,6 +14,7 @@ import edu.mit.compilers.ast.Expression;
 import edu.mit.compilers.ast.HasExpression;
 import edu.mit.compilers.ast.IntLiteral;
 import edu.mit.compilers.ast.LocationArray;
+import edu.mit.compilers.ast.Return;
 import edu.mit.compilers.ast.UnaryOpExpression;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
