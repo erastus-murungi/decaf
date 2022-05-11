@@ -20,7 +20,6 @@ public class LinearScan {
     private List<LiveInterval> active = new ArrayList<>();
     private final Map<MethodBegin, Map<AbstractName, X64Register>> varToRegMap = new HashMap<>();
     private final Map<MethodBegin, List<LiveInterval>> liveIntervals;
-    public static final int N_AVAILABLE_REGISTERS = 14;
 
     public LinearScan(Collection<X64Register> availableRegisters, Map<MethodBegin, List<LiveInterval>> liveIntervals) {
         this.availableRegisters.addAll(availableRegisters);
@@ -31,21 +30,8 @@ public class LinearScan {
         return varToRegMap;
     }
 
-    public int getUsageCount(InstructionList instructionList, AbstractName abstractName) {
-        return (int) instructionList.stream()
-                .flatMap(instruction -> instruction.getAllNames()
-                        .stream()
-                        .filter(abstractName::equals))
-                .count();
-    }
-
     private Set<AssignableName> mapParametersToRegisters(MethodBegin methodBegin) {
-        var instructionList = methodBegin.entryBlock.instructionList.flatten();
-        var parameters = methodBegin
-                .getParameterNames()
-                .stream()
-                .sorted((Comparator.comparingInt(o -> -getUsageCount(instructionList, o))))
-                .collect(Collectors.toList());
+        var parameters = methodBegin.getParameterNames();
         varToRegMap.put(methodBegin, new HashMap<>());
         for (int i = 0; i < Math.min(parameters.size(), X64Register.N_ARG_REGISTERS); i++) {
             varToRegMap.get(methodBegin).put(parameters.get(i), X64Register.argumentRegs[i]);
@@ -67,7 +53,7 @@ public class LinearScan {
                 if (assignableNames.contains(i.variable))
                     continue;
                 expireOldIntervals(i, varToReg);
-                if (active.size() == N_AVAILABLE_REGISTERS) {
+                if (active.size() == X64Register.N_AVAILABLE_REGISTERS) {
                     spillAtInterval(i, varToReg);
                 } else {
                     varToReg.put(i.variable, availableRegisters.remove(0));

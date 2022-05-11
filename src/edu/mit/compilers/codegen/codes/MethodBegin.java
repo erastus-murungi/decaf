@@ -35,10 +35,10 @@ public class MethodBegin extends Instruction {
         return methodDefinition.methodName.id;
     }
 
-    public Set<AssignableName> getParameterNames() {
+    public List<AssignableName> getParameterNames() {
         return methodDefinition.methodDefinitionParameterList.stream()
                 .map(methodDefinitionParameter -> new VariableName(methodDefinitionParameter.id.id, Utils.WORD_SIZE, methodDefinitionParameter.builtinType))
-                .collect(Collectors.toUnmodifiableSet());
+                .collect(Collectors.toList());
     }
 
     // to be filled in later by the X64Converter
