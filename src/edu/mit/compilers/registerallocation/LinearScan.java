@@ -57,7 +57,7 @@ public class LinearScan {
     public void allocate() {
         for (var entry : liveIntervals.entrySet()) {
             availableRegisters.clear();
-            availableRegisters.addAll(List.of(X64Register.availableRegs));
+            availableRegisters.addAll(List.of(X64Register.regsToAllocate));
             Set<AssignableName> assignableNames = mapParametersToRegisters(entry.getKey());
             List<LiveInterval> liveIntervalsList = entry.getValue();
             liveIntervalsList.sort(LiveInterval::compareStartPoint);
@@ -76,6 +76,7 @@ public class LinearScan {
                 }
             }
         }
+//        System.out.println(varToRegMap);
     }
 
     public void expireOldIntervals(LiveInterval i, Map<AbstractName, X64Register> varToReg) {
