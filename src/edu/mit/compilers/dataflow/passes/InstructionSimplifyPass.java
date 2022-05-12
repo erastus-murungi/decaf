@@ -76,16 +76,18 @@ public class InstructionSimplifyPass extends OptimizationPass {
         // X == true -> X
         // true == X -> X
         var X = getNotEq(eqInstruction, mOne);
-        if (matchBinOpOperandsCommutative(eqInstruction, X, mOne))
-            return Assign.ofRegularAssign(eqInstruction.store, X);
-        // true == true -> true
-        if (matchBinOpOperands(eqInstruction, mOne, mOne)) {
-            return Assign.ofRegularAssign(eqInstruction.store, mOne);
-        }
-        // true == false -> false
-        // false == true -> false
-        if (matchBinOpOperandsCommutative(eqInstruction, mOne, mZero)) {
-            return Assign.ofRegularAssign(eqInstruction.store, getZero());
+        if (X.builtinType.equals(BuiltinType.Bool)) {
+            if (matchBinOpOperandsCommutative(eqInstruction, X, mOne))
+                return Assign.ofRegularAssign(eqInstruction.store, X);
+            // true == true -> true
+            if (matchBinOpOperands(eqInstruction, mOne, mOne)) {
+                return Assign.ofRegularAssign(eqInstruction.store, mOne);
+            }
+            // true == false -> false
+            // false == true -> false
+            if (matchBinOpOperandsCommutative(eqInstruction, mOne, mZero)) {
+                return Assign.ofRegularAssign(eqInstruction.store, getZero());
+            }
         }
         return eqInstruction;
     }
