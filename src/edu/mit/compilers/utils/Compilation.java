@@ -284,11 +284,11 @@ public class Compilation {
         X64CodeConverter x64CodeConverter;
         if (true) {
             var registerAllocation = new RegisterAllocation(programIr);
-            x64CodeConverter = new X64CodeConverter(registerAllocation.getVariableToRegisterMap(), registerAllocation.getMethodToLiveRegistersInfo());
+            x64CodeConverter = new X64CodeConverter(programIr.mergeProgram(), registerAllocation.getVariableToRegisterMap(), registerAllocation.getMethodToLiveRegistersInfo());
         } else {
-            x64CodeConverter = new X64CodeConverter();
+            x64CodeConverter = new X64CodeConverter(programIr.mergeProgram());
         }
-        X64Program x64program = x64CodeConverter.convert(mergeProgram());
+        X64Program x64program = x64CodeConverter.convert();
         if (shouldOptimize()) {
 //            var peepHoleOptimizationAsmPass = new PeepHoleOptimizationAsmPass(x64program);
 //            peepHoleOptimizationAsmPass.run();
