@@ -232,10 +232,14 @@ public class RegisterAllocation {
                     }
                     BasicBlock finalBlock = block;
                     toUpdate.forEach(instructionList -> instructionList.nextInstructionList = finalBlock.instructionList);
+                    if (methodBegin.entryBlock.instructionList == basicBlock.instructionList) {
+                        methodBegin.entryBlock.instructionList = block.instructionList;
+                    }
                 }
                 if (!methodBegin.entryBlock.instructionList.toString()
-                        .equals(string))
+                        .equals(string)) {
                     throw new IllegalStateException();
+                }
             }
             DataFlowAnalysis.correctPredecessors(methodBegin.entryBlock);
         }
