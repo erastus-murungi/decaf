@@ -24,6 +24,7 @@ public class ConstantPropagationPass extends OptimizationPass {
     public void runGlobalConstantPropagation() {
         final ReachingDefinitions reachingDefinitions = new ReachingDefinitions(entryBlock);
         for (BasicBlock basicBlock : basicBlocks) {
+            System.out.println(basicBlock);
             var tacList = basicBlock.getCopyOfInstructionList();
             final var newTacList = basicBlock.instructionList;
             newTacList.clear();
@@ -43,6 +44,8 @@ public class ConstantPropagationPass extends OptimizationPass {
                     var newLine = (HasOperand) line;
                     // for each variable name
                     for (AbstractName oldName : newLine.getOperandNames()){
+                        if (globalVariables.contains(oldName))
+                            continue;
                         // check if that variable has only one reaching definition and it hasn't been redefined in the block
                         if (inSet.containsKey(oldName) && inSet.get(oldName).size() == 1 && !freshlyGen.containsKey(oldName)){
                             DefValue defValue = (DefValue) inSet.get(oldName).toArray()[0];
