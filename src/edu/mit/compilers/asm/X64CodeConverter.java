@@ -505,7 +505,6 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
     @Override
     public X64Builder visit(PopParameter popParameter, X64Builder x64builder) {
-        pushParameters.pop();
         if (popParameter.parameterIndex < N_ARG_REGISTERS)
             return x64builder
                     .addLine(x64InstructionLine(X64Instruction.movq,
