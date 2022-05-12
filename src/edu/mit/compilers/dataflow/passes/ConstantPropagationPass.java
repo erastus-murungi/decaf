@@ -24,7 +24,6 @@ public class ConstantPropagationPass extends OptimizationPass {
     public void runGlobalConstantPropagation() {
         final ReachingDefinitions reachingDefinitions = new ReachingDefinitions(entryBlock);
         for (BasicBlock basicBlock : basicBlocks) {
-            System.out.println(basicBlock);
             var tacList = basicBlock.getCopyOfInstructionList();
             final var newTacList = basicBlock.instructionList;
             newTacList.clear();
