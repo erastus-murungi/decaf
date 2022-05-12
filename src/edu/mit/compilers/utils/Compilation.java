@@ -6,21 +6,17 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
-import java.util.stream.Collectors;
 
 import edu.mit.compilers.asm.X64CodeConverter;
 import edu.mit.compilers.asm.X64Program;
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.CFGGenerator;
 import edu.mit.compilers.cfg.iCFGVisitor;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.InstructionListConverter;
-import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.dataflow.DataflowOptimizer;
 import edu.mit.compilers.dataflow.passes.InstructionSimplifyIrPass;
-import edu.mit.compilers.dataflow.passes.PeepHoleOptimizationAsmPass;
 import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.Token;
@@ -201,9 +197,9 @@ public class Compilation {
     }
 
     private boolean shouldOptimize() {
-//        for (boolean opt : CLI.opts)
-//            if (opt)
-//                return true;
+        for (boolean opt : CLI.opts)
+            if (opt)
+                return true;
         return false;
     }
 
@@ -233,7 +229,7 @@ public class Compilation {
     }
 
     private InstructionList mergeProgram() {
-        var programHeader = programIr.instructionList.copy();
+        var programHeader = programIr.headerInstructions.copy();
         var tacList = programHeader.copy();
         for (MethodBegin methodBegin : programIr.methodBeginList) {
             tacList.addAll(methodBegin.entryBlock.instructionList.flatten());
@@ -288,16 +284,7 @@ public class Compilation {
         X64CodeConverter x64CodeConverter;
         if (true) {
             var registerAllocation = new RegisterAllocation(programIr);
-            var copy = new HashMap<String, BasicBlock>();
-            programIr.methodBeginList.forEach(methodBegin -> copy.put(methodBegin.methodName(), methodBegin.entryBlock));
-            copy.put("globals", iCFGVisitor.initialGlobalBlock);
-            GraphVizPrinter.printGraph(copy,
-                    (basicBlock -> basicBlock.instructionList.stream()
-                            .map(Instruction::repr)
-                            .collect(Collectors.joining("\n"))),
-                    "cfg_ir"
-            );
-            x64CodeConverter = new X64CodeConverter(registerAllocation.getVariableToRegisterMapping());
+            x64CodeConverter = new X64CodeConverter(registerAllocation.getVariableToRegisterMap(), registerAllocation.getMethodToLiveRegistersInfo());
         } else {
             x64CodeConverter = new X64CodeConverter();
         }
