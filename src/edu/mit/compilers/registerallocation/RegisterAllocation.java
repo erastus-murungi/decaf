@@ -241,7 +241,6 @@ public class RegisterAllocation {
                         methodBegin.entryBlock.instructionList = block.instructionList;
                     }
                 }
-                System.out.println(methodBegin.entryBlock.instructionList.toString());
                 if (!methodBegin.entryBlock.instructionList.toString()
                         .equals(string)) {
                     System.out.println(string);
