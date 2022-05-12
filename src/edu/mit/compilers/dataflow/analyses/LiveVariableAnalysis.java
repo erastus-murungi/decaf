@@ -2,6 +2,7 @@ package edu.mit.compilers.dataflow.analyses;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.HasOperand;
+import edu.mit.compilers.codegen.codes.PopParameter;
 import edu.mit.compilers.codegen.codes.Store;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.names.AbstractName;
@@ -22,6 +23,14 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
     public Set<AbstractName> liveOut(BasicBlock basicBlock) {
         // the set of variables actually needed later in the program
         return out
+                .get(basicBlock)
+                .stream()
+                .map(useDef -> useDef.variable)
+                .collect(Collectors.toSet());
+    }
+
+    public Set<AbstractName> liveIn(BasicBlock basicBlock) {
+        return in
                 .get(basicBlock)
                 .stream()
                 .map(useDef -> useDef.variable)
@@ -95,6 +104,9 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
         final var tacReversed = basicBlock.getCopyOfInstructionList();
         Collections.reverse(tacReversed);
         for (Instruction tac : tacReversed) {
+            if (tac instanceof PopParameter) {
+                defSet.add(new Def((PopParameter) tac));
+            }
             if (tac instanceof Store) {
                 var hasResult = (Store) tac;
                 if (!(hasResult.getStore() instanceof ArrayName)) {

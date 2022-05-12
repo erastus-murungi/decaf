@@ -2,12 +2,12 @@ package edu.mit.compilers.registerallocation;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import edu.mit.compilers.asm.X64Register;
 import edu.mit.compilers.cfg.BasicBlock;
@@ -15,49 +15,103 @@ import edu.mit.compilers.cfg.BasicBlockBranchLess;
 import edu.mit.compilers.cfg.BasicBlockWithBranch;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.codes.ConditionalJump;
+import edu.mit.compilers.codegen.codes.GlobalAllocation;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.MethodBegin;
-import edu.mit.compilers.codegen.codes.Store;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.codegen.names.VariableName;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
 import edu.mit.compilers.tools.CLI;
+import edu.mit.compilers.utils.GraphVizPrinter;
 import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.Utils;
 
 public class RegisterAllocation {
-    ProgramIr programIr;
-    private final Map<Instruction, BasicBlock> instructionBasicBlockMap = new HashMap<>();
-    private final Map<BasicBlock, Set<AbstractName>> blockToLiveOut = new HashMap<>();
-    private final Map<MethodBegin, List<LiveInterval>> liveIntervals = new HashMap<>();
-    private final Map<MethodBegin, Map<AbstractName, X64Register>> variableToRegisterMapping;
+    private final ProgramIr programIr;
+    private final Map<Instruction, InstructionList> instructionToInstructionListMap = new HashMap<>();
+    private final Map<InstructionList, Set<AbstractName>> blockToLiveOut = new HashMap<>();
+    private final Map<MethodBegin, List<LiveInterval>> methodToLiveIntervalsMap = new HashMap<>();
+    private final Map<MethodBegin, Map<AbstractName, X64Register>> variableToRegisterMap = new HashMap<>();
+    private final Map<MethodBegin, Map<Instruction, Set<X64Register>>> methodToLiveRegistersInfo = new HashMap<>();
+    private Set<AbstractName> globalVariables;
+
+    private void getGlobals() {
+        globalVariables = programIr.mergeProgram()
+                .stream()
+                .filter(instruction -> instruction instanceof GlobalAllocation)
+                .map(instruction -> (GlobalAllocation) instruction)
+                .map(globalAllocation -> globalAllocation.variableName)
+                .filter(abstractName -> abstractName.size == Utils.WORD_SIZE)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+
+    private Map<Instruction, Set<X64Register>> computeInstructionToLiveRegistersMap(List<LiveInterval> liveIntervals, Map<AbstractName, X64Register> registerMap) {
+        var instructionToLiveRegistersMap = new HashMap<Instruction, Set<X64Register>>();
+        if (!liveIntervals.isEmpty()) {
+            var instructionList = liveIntervals.get(0).instructionList;
+            IntStream.range(0, instructionList.size())
+                    .forEach(indexOfInstruction -> instructionToLiveRegistersMap.put(instructionList.get(indexOfInstruction),
+                            getLiveRegistersAtPoint(liveIntervals, indexOfInstruction, registerMap)));
+        }
+        return instructionToLiveRegistersMap;
+    }
+
+    private void computeMethodToLiveRegistersInfo() {
+        methodToLiveIntervalsMap.forEach(((methodBegin, liveIntervals) ->
+                methodToLiveRegistersInfo.put(
+                        methodBegin,
+                        computeInstructionToLiveRegistersMap(liveIntervals,
+                                variableToRegisterMap.get(methodBegin))
+                )));
+    }
+
+    private void printLinearizedCfg() {
+        var copy = new HashMap<String, BasicBlock>();
+        programIr.methodBeginList.forEach(methodBegin -> copy.put(methodBegin.methodName(), methodBegin.entryBlock));
+        GraphVizPrinter.printGraph(copy,
+                (basicBlock -> basicBlock.instructionList.stream()
+                        .map(Instruction::repr)
+                        .collect(Collectors.joining("\n"))),
+                "cfg_ir"
+        );
+    }
 
     public RegisterAllocation(ProgramIr programIr) {
         this.programIr = programIr;
+        getGlobals();
         linearizeCfg();
         computeInstructionBasicBlock();
         computeLiveness();
-        if (CLI.debug)
-            printLiveVariables();
         computeLiveIntervals();
-        LinearScan linearScan = new LinearScan(List.of(X64Register.regsToAllocate), liveIntervals);
+        if (CLI.debug) {
+            printLiveVariables();
+            printLinearizedCfg();
+            programIr.methodBeginList.forEach(this::printLiveIntervals);
+            System.out.println(methodToLiveRegistersInfo);
+        }
+        LinearScan linearScan = new LinearScan(List.of(X64Register.regsToAllocate), methodToLiveIntervalsMap);
         linearScan.allocate();
-        variableToRegisterMapping = linearScan.getVariableToRegisterMapping();
-        // System.out.println(linearScan.getVariableToRegisterMapping());
-        // validateLiveIntervals();
+        variableToRegisterMap.putAll(linearScan.getVariableToRegisterMapping());
+        computeMethodToLiveRegistersInfo();
+        validateLiveIntervals();
     }
 
-    public Map<MethodBegin, Map<AbstractName, X64Register>> getVariableToRegisterMapping() {
-        return variableToRegisterMapping;
+    public Map<MethodBegin, Map<AbstractName, X64Register>> getVariableToRegisterMap() {
+        return variableToRegisterMap;
+    }
+
+    public Map<MethodBegin, Map<Instruction, Set<X64Register>>> getMethodToLiveRegistersInfo() {
+        return methodToLiveRegistersInfo;
     }
 
     private void computeLiveness() {
         for (MethodBegin methodBegin : programIr.methodBeginList) {
             var liveVariableAnalysis = new LiveVariableAnalysis(methodBegin.entryBlock);
             var basicBlocks = DataFlowAnalysis.getReversePostOrder(methodBegin.entryBlock);
-            basicBlocks.forEach(basicBlock -> blockToLiveOut.put(basicBlock, liveVariableAnalysis.liveOut(basicBlock)));
+            basicBlocks.forEach(basicBlock -> blockToLiveOut.put(basicBlock.instructionList, liveVariableAnalysis.liveOut(basicBlock)));
         }
     }
 
@@ -68,14 +122,18 @@ public class RegisterAllocation {
 
     void printLiveVariables(InstructionList instructionList) {
         var output = new ArrayList<String>();
+        int index = 0;
         for (Instruction instruction : instructionList) {
             // live out
-            var liveOut = blockToLiveOut.get(instructionBasicBlockMap.get(instruction));
+            var liveOut = blockToLiveOut.get(instructionToInstructionListMap.get(instruction));
             if (liveOut != null) {
                 var s = instruction.repr()
                         .split("#")[0];
-                output.add(s + "\t// live out =  " + prettyPrintLive(liveOut));
+                output.add(String.format("%3d:    ", index) + s + "\t// live out =  " + prettyPrintLive(liveOut));
+            } else {
+                output.add(String.format("%3d:    ", index) + instruction.repr());
             }
+            index += 1;
         }
         System.out.println(String.join("\n", output));
     }
@@ -146,7 +204,7 @@ public class RegisterAllocation {
                             var branchLess = (BasicBlockBranchLess) predecessor;
                             branchLess.autoChild = block;
                             if (branchLess.instructionList.nextInstructionList == (basicBlock.instructionList)) {
-                                 toUpdate.add(branchLess.instructionList) ;
+                                toUpdate.add(branchLess.instructionList);
                             }
                         } else {
                             var withBranch = (BasicBlockWithBranch) predecessor;
@@ -200,7 +258,7 @@ public class RegisterAllocation {
             for (BasicBlock basicBlock : DataFlowAnalysis.getReversePostOrder(methodBegin.entryBlock)) {
                 for (InstructionList instructionList : basicBlock.instructionList.getListOfInstructionLists()) {
                     for (Instruction instruction : instructionList) {
-                        instructionBasicBlockMap.put(instruction, basicBlock);
+                        instructionToInstructionListMap.put(instruction, instructionList);
                     }
                 }
             }
@@ -208,15 +266,14 @@ public class RegisterAllocation {
     }
 
     private Set<AbstractName> getLive(Instruction instruction) {
-        return blockToLiveOut.get(instructionBasicBlockMap.get(instruction));
+        return blockToLiveOut.get(instructionToInstructionListMap.get(instruction));
     }
 
     private int findFirstDefinition(InstructionList instructionList, AbstractName variable) {
         int indexOfInstruction = 0;
         for (Instruction instruction : instructionList) {
-            if (instruction instanceof Store && ((Store) instruction).store.equals(variable)) {
+            if (instruction.getAllNames().contains(variable))
                 break;
-            }
             indexOfInstruction++;
         }
         return indexOfInstruction;
@@ -237,7 +294,6 @@ public class RegisterAllocation {
             InstructionList instructionList = methodBegin.entryBlock.instructionList.flatten();
             var allVariables = getLive(methodBegin.entryBlock.instructionList.get(0));
             // all the variables later used will be on the first line of the program
-//            System.out.println(allVariables);
             for (var variable : allVariables) {
                 liveIntervalList.add(new LiveInterval((AssignableName) variable,
                         findFirstDefinition(instructionList, variable),
@@ -245,8 +301,7 @@ public class RegisterAllocation {
 
                 );
             }
-            liveIntervals.put(methodBegin, liveIntervalList);
-//            System.out.println(liveIntervals);
+            methodToLiveIntervalsMap.put(methodBegin, liveIntervalList);
         }
     }
 
@@ -264,6 +319,15 @@ public class RegisterAllocation {
         return liveIntervals.stream()
                 .filter(liveInterval -> liveInterval.startPoint <= index && liveInterval.endPoint >= index)
                 .collect(Collectors.toList());
+    }
+
+    private Set<X64Register> getLiveRegistersAtPoint(Collection<LiveInterval> liveIntervals, int index, Map<AbstractName, X64Register> registerMap) {
+        return liveIntervals.stream()
+                .filter(liveInterval -> liveInterval.startPoint <= index && liveInterval.endPoint >= index)
+                .map(liveInterval -> liveInterval.variable)
+                .filter(name -> !globalVariables.contains(name))
+                .map(registerMap::get)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private void checkEveryProgramPointVariablesDontCollide(Collection<LiveInterval> liveIntervals,
@@ -290,12 +354,34 @@ public class RegisterAllocation {
         }
     }
 
+    private void printLiveIntervals(MethodBegin methodBegin) {
+        // get all variables
+        int maxIntervalLength = methodBegin.entryBlock.instructionList.flatten().size();
+        var liveIntervals = this.methodToLiveIntervalsMap.get(methodBegin);
+        int maxVariableLength = liveIntervals.stream().map(liveInterval -> liveInterval.variable).map(AssignableName::repr).mapToInt(String::length).max().getAsInt() + 2;
+        String[] colors = {Utils.ANSIColorConstants.ANSI_GREEN, Utils.ANSIColorConstants.ANSI_CYAN, Utils.ANSIColorConstants.ANSI_PURPLE, Utils.ANSIColorConstants.ANSI_YELLOW,  Utils.ANSIColorConstants.ANSI_RED};
+        int indexOfLiveInterval = 0;
+        var toPrint = new ArrayList<String>();
+        toPrint.add("live intervals: " + methodBegin.methodName());
+        toPrint.add(String.format("%s%s", " ".repeat(maxVariableLength), IntStream.range(0, maxIntervalLength).mapToObj(integer -> String.format("%03d", integer)).collect(Collectors.joining(" "))));
+        int sizeOfHeaderInstructions = programIr.getSizeOfHeaderInstructions();
+        for (var liveInterval: liveIntervals) {
+            // pick a color
+            String color = colors[indexOfLiveInterval % colors.length];
+            String repr = liveInterval.variable.repr();
+            toPrint.add(String.format("%s%s%s", repr + " ".repeat(maxVariableLength - repr.length()), "    ".repeat(liveInterval.startPoint + sizeOfHeaderInstructions), Utils.coloredPrint(" *  ", color).repeat(liveInterval.endPoint - liveInterval.startPoint + sizeOfHeaderInstructions)));
+            indexOfLiveInterval += 1;
+        }
+        System.out.println(String.join("\n", toPrint));
+        System.out.println(liveIntervals);
+    }
+
     private void validateLiveIntervals() {
-        liveIntervals.values()
+        methodToLiveIntervalsMap.values()
                 .forEach(this::checkStartComesBeforeEnd);
-        liveIntervals.forEach((methodBegin, liveIntervals1) ->
-                checkEveryProgramPointVariablesDontCollide(liveIntervals1,
-                        liveIntervals1.get(0).instructionList,
-                        variableToRegisterMapping.get(methodBegin)));
+//        methodToLiveIntervalsMap.forEach((methodBegin, liveIntervals1) ->
+//                checkEveryProgramPointVariablesDontCollide(liveIntervals1,
+//                        liveIntervals1.get(0).instructionList,
+//                        variableToRegisterMap.get(methodBegin)));
     }
 }

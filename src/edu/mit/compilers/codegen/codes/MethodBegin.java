@@ -76,7 +76,7 @@ public class MethodBegin extends Instruction {
 
     @Override
     public String repr() {
-        return String.format("\n%s: -> %s {%s", methodDefinition.methodName.id, methodDefinition.returnType.getSourceCode(), DOUBLE_INDENT);
+        return String.format("%s: -> %s {%s", methodDefinition.methodName.id, methodDefinition.returnType.getSourceCode(), DOUBLE_INDENT);
     }
 
     @Override

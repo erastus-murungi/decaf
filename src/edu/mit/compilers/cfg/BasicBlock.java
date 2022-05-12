@@ -61,6 +61,11 @@ public abstract class BasicBlock {
     public abstract <T> T accept(BasicBlockVisitor<T> visitor, SymbolTable symbolTable);
 
     public String getLabel() {
+        if (lines.isEmpty()) {
+            if (!instructionList.isEmpty()) {
+                return instructionList.get(0).repr();
+            }
+        }
         return lines
                 .stream()
                 .map(AST::getSourceCode)

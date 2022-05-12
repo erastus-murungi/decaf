@@ -118,7 +118,15 @@ public class InstructionList extends ArrayList<Instruction> {
 
     @Override
     public String toString() {
-        return flatten().stream().filter(code -> !(code instanceof ArrayAccess)).map(Instruction::repr).collect(Collectors.joining("\n"));
+        Set<String> collect = flatten().stream()
+                .filter(code -> !(code instanceof ArrayAccess))
+                .map(Instruction::repr)
+                .collect(Collectors.toUnmodifiableSet());
+        var results = new ArrayList<String>();
+        for (int index = 0; index < collect.size(); index++) {
+            results.add(String.format("%03d:    ", index));
+        }
+        return String.join("\n", results);
     }
 
     public String toStringLocal() {
