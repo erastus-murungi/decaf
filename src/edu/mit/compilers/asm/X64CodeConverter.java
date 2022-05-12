@@ -96,15 +96,24 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
     private Map<MethodBegin, Map<Instruction, Set<X64Register>>> methodToLiveRegistersInfo = new HashMap<>();
 
-    public X64CodeConverter(Map<MethodBegin,
+    private InstructionList instructionList;
+
+    private Integer currentInstructionIndex;
+
+    public X64CodeConverter(InstructionList instructionList, Map<MethodBegin,
             Map<AbstractName, X64Register>> abstractNameToX64RegisterMap,
                             Map<MethodBegin, Map<Instruction, Set<X64Register>>> methodToLiveRegistersInfo
     ) {
+        this.instructionList = instructionList;
         this.registerMapping = abstractNameToX64RegisterMap;
         this.methodToLiveRegistersInfo = methodToLiveRegistersInfo;
     }
 
-    public X64CodeConverter() {
+    public X64CodeConverter(InstructionList instructionList) {
+        this(instructionList, Collections.emptyMap(), Collections.emptyMap());
+    }
+
+    private X64CodeConverter() {
     }
 
     private List<AbstractName> getLocals(InstructionList instructionList) {
@@ -162,10 +171,12 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     }
 
 
-    public X64Program convert(InstructionList instructionList) {
+    public X64Program convert() {
         X64Builder x64Builder = initializeDataSection();
         final X64Builder root = x64Builder;
+        currentInstructionIndex = -1;
         for (Instruction instruction : instructionList) {
+            currentInstructionIndex += 1;
             x64Builder = instruction.accept(this, x64Builder);
             if (x64Builder == null)
                 return null;
@@ -400,7 +411,8 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         return x64builder;
     }
 
-    private void callerSave(X64Builder x64Builder, Instruction instruction, X64Register returnAddressRegister) {
+    private void callerSave(X64Builder x64Builder, X64Register returnAddressRegister) {
+        var instruction = instructionList.get(currentInstructionIndex);
         Set<X64Register> x64Registers = methodToLiveRegistersInfo.getOrDefault(currentMethod, Collections.emptyMap())
                 .getOrDefault(instruction, Collections.emptySet());
         int startIndex = x64Builder.currentIndex();
@@ -414,7 +426,8 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         }
     }
 
-    private X64Builder callerRestore(X64Builder x64Builder, Instruction instruction, X64Register returnAddressRegister) {
+    private X64Builder callerRestore(X64Builder x64Builder, X64Register returnAddressRegister) {
+        var instruction = instructionList.get(currentInstructionIndex);
         Set<X64Register> x64Registers = methodToLiveRegistersInfo.getOrDefault(currentMethod, Collections.emptyMap())
                 .getOrDefault(instruction, Collections.emptySet());
         for (var x64Register : x64Registers) {
@@ -437,23 +450,23 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
     @Override
     public X64Builder visit(FunctionCallWithResult methodCall, X64Builder x64builder) {
-        callerSave(x64builder, methodCall, currentMapping.get(methodCall.store));
+        callerSave(x64builder, currentMapping.get(methodCall.store));
         (methodCall.isImported() ? x64builder.addLine((x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX))) : x64builder)
                 .addLine(x64InstructionLine(X64Instruction.callq, methodCall.getMethodName()))
                 .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, resolveLoadLocation(methodCall
                         .getStore())));
-        callerRestore(x64builder, methodCall, currentMapping.get(methodCall.store));
+        callerRestore(x64builder, currentMapping.get(methodCall.store));
         pushParameters.clear();
         return x64builder;
     }
 
     @Override
     public X64Builder visit(FunctionCallNoResult methodCall, X64Builder x64builder) {
-        callerSave(x64builder, methodCall, null);
+        callerSave(x64builder, null);
         (methodCall.isImported() ? x64builder.addLine((x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX))) : x64builder)
                 .addLine(x64InstructionLine(X64Instruction.callq,
                         methodCall.getMethodName()));
-         callerRestore(x64builder, methodCall, null);
+         callerRestore(x64builder, null);
         pushParameters.clear();
         return x64builder;
 
@@ -605,7 +618,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
             case "/":
             case "%": {
                 // If we are planning to use RDX, we spill it first
-                if (binaryInstruction.operator.equals("%"))
+                if (binaryInstruction.operator.equals("%") && !resolveLoadLocation(binaryInstruction.store).equals(X64Register.RDX.toString()))
                     x64builder.addLine(x64InstructionLine(X64Instruction.movq, X64Register.RDX, getNextStackLocation(X64Register.RDX.toString())));
                 if (binaryInstruction.sndOperand instanceof ConstantName) {
                     x64builder
@@ -621,7 +634,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                 }
                 x64builder.addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", binaryInstruction.store.repr(), binaryInstruction.fstOperand.repr(), binaryInstruction.operator, binaryInstruction.sndOperand.repr()), X64Instruction.movq, (binaryInstruction.operator.equals("%") ? X64Register.RDX : X64Register.RAX), resolveLoadLocation(binaryInstruction.store)));
                 // restore RDX
-                if (binaryInstruction.operator.equals("%"))
+                if (binaryInstruction.operator.equals("%") && !resolveLoadLocation(binaryInstruction.store).equals(X64Register.RDX.toString()))
                     x64builder.addLine(x64InstructionLine(X64Instruction.movq, getNextStackLocation(X64Register.RDX.toString()), X64Register.RDX));
                 return x64builder;
             }
