@@ -266,7 +266,7 @@ public class Compilation {
             var dataflowOptimizer = new DataflowOptimizer(programIr.methodBeginList, instructionListConverter.globalNames);
             dataflowOptimizer.initialize();
             dataflowOptimizer.optimize();
-            programIr.methodBeginList = dataflowOptimizer.toOptimizeMethods;
+            programIr.methodBeginList = dataflowOptimizer.getOptimizedMethods();
             nLinesOfCodeReductionFactor = (oldNLinesOfCode - countLinesOfCode()) / oldNLinesOfCode;
             if (CLI.debug) {
                 System.out.println("After optimization");

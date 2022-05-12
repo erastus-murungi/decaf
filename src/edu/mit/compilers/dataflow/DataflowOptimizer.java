@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.names.AbstractName;
@@ -26,8 +25,8 @@ public class DataflowOptimizer {
 
     Integer numberOfRuns = MAX_RUNS;
     Set<AbstractName> globalNames;
-    public List<MethodBegin> allMethods;
-    public List<MethodBegin> toOptimizeMethods;
+    private List<MethodBegin> allMethods;
+    private List<MethodBegin> toOptimizeMethods;
     List<OptimizationPass> optimizationPassList = new ArrayList<>();
 
     Factory optimizationPassesFactory = new Factory();
@@ -110,6 +109,14 @@ public class DataflowOptimizer {
         addPass(OptimizationPassType.ConstantPropagation);
         addPass(OptimizationPassType.InstructionSimplification);
         // addPass(OptimizationPassType.BranchSimplification);
+    }
+
+    public List<MethodBegin> getOptimizedMethods() {
+        if (toOptimizeMethods.isEmpty()) {
+            return allMethods;
+        } else {
+            return toOptimizeMethods;
+        }
     }
 
     public DataflowOptimizer(List<MethodBegin> allMethods, Set<AbstractName> globalNames) {
