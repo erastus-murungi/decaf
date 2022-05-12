@@ -135,7 +135,7 @@ public class DataflowOptimizer {
                 var changesHappenedForOpt = optimizationPass.run();
                 changesHappened = changesHappened | !changesHappenedForOpt;
                 if (CLI.debug) {
-                    System.out.format("%s<%s> run = %s", optimizationPass.getClass().getSimpleName(), optimizationPass.getMethod().methodName(), run);
+                    System.out.format("%s<%s> run = %s\n", optimizationPass.getClass().getSimpleName(), optimizationPass.getMethod().methodName(), run);
                     System.out.println(optimizationPass.getMethod().entryBlock.instructionList.flatten());
                     System.out.println(Utils.coloredPrint(String.valueOf(changesHappened), Utils.ANSIColorConstants.ANSI_RED));
                 }

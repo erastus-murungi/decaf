@@ -85,17 +85,17 @@ public class RegisterAllocation {
         linearizeCfg();
         computeLiveness();
         computeLiveIntervals();
+        LinearScan linearScan = new LinearScan(List.of(X64Register.regsToAllocate), methodToLiveIntervalsMap);
+        linearScan.allocate();
+        variableToRegisterMap.putAll(linearScan.getVariableToRegisterMapping());
+        computeMethodToLiveRegistersInfo();
+        validateLiveIntervals();
         if (CLI.debug) {
             printLiveVariables();
             printLinearizedCfg();
             programIr.methodBeginList.forEach(this::printLiveIntervals);
             System.out.println(methodToLiveRegistersInfo);
         }
-        LinearScan linearScan = new LinearScan(List.of(X64Register.regsToAllocate), methodToLiveIntervalsMap);
-        linearScan.allocate();
-        variableToRegisterMap.putAll(linearScan.getVariableToRegisterMapping());
-        computeMethodToLiveRegistersInfo();
-        validateLiveIntervals();
     }
 
     public Map<MethodBegin, Map<AbstractName, X64Register>> getVariableToRegisterMap() {

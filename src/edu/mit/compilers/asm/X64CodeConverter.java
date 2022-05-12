@@ -405,6 +405,8 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                 .getOrDefault(instruction, Collections.emptySet());
         int startIndex = x64Builder.currentIndex();
         for (var x64Register : x64Registers) {
+            if (x64Register.equals(X64Register.STACK))
+                continue;
             if (x64Register != returnAddressRegister) {
                 String location = getNextStackLocation(x64Register.toString());
                 x64Builder.addAtIndex(startIndex - pushParameters.size(), x64InstructionLine(X64Instruction.movq, x64Register, location));
@@ -417,6 +419,8 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         Set<X64Register> x64Registers = methodToLiveRegistersInfo.getOrDefault(currentMethod, Collections.emptyMap())
                 .getOrDefault(instruction, Collections.emptySet());
         for (var x64Register : x64Registers) {
+            if (x64Register.equals(X64Register.STACK))
+                continue;
             if (x64Register != returnAddressRegister) {
                 String location = getNextStackLocation(x64Register.toString());
                 x64Builder.addLine(x64InstructionLine(X64Instruction.movq, location, x64Register));
@@ -555,10 +559,12 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     }
 
     public String resolveLoadLocation(AbstractName name) {
-        if (currentMapping.containsKey(name) && !currentMapping.get(name)
-                .equals(X64Register.STACK)) {
-            return currentMapping.get(name)
-                    .toString();
+        X64Register register = currentMapping.get(name);
+        if (register != null && register != X64Register.STACK) {
+                return currentMapping.get(name)
+                        .toString();
+        } else if (register == X64Register.STACK) {
+            return getNextStackLocation(name.toString());
         }
         var reg = findLatestOccurrence(name);
         if (reg != null) {
@@ -577,7 +583,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     }
 
     private String getNextStackLocation(String loc) {
-        if (!currentMethod.nameToStackOffset.containsKey(loc)) {
+        if (loc.contains("stack") || !currentMethod.nameToStackOffset.containsKey(loc)) {
             stackSpace += 8;
             currentMethod.nameToStackOffset.put(loc, (int) stackSpace);
         }
