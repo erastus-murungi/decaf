@@ -214,8 +214,12 @@ public class RegisterAllocation {
                             var withBranch = (BasicBlockWithBranch) predecessor;
                             if (withBranch.trueChild == basicBlock) {
                                 withBranch.trueChild = block;
-                                if (predecessor.instructionList.nextInstructionList == (basicBlock.instructionList)) {
-                                    toUpdate.add(withBranch.instructionList);
+                                var bb = withBranch.instructionList;
+                                while (bb.nextInstructionList != null && bb.nextInstructionList != (basicBlock.instructionList)) {
+                                    bb = bb.nextInstructionList;
+                                }
+                                if (bb.nextInstructionList == (basicBlock.instructionList)) {
+                                    toUpdate.add(bb);
                                 }
                             } else {
                                 if (withBranch.falseChild != basicBlock)
@@ -232,12 +236,17 @@ public class RegisterAllocation {
                     }
                     BasicBlock finalBlock = block;
                     toUpdate.forEach(instructionList -> instructionList.nextInstructionList = finalBlock.instructionList);
+
                     if (methodBegin.entryBlock.instructionList == basicBlock.instructionList) {
                         methodBegin.entryBlock.instructionList = block.instructionList;
                     }
                 }
+                System.out.println(methodBegin.entryBlock.instructionList.toString());
                 if (!methodBegin.entryBlock.instructionList.toString()
                         .equals(string)) {
+                    System.out.println(string);
+                    System.out.println("*******");
+                    System.out.println(methodBegin.entryBlock.instructionList.toString());
                     throw new IllegalStateException();
                 }
             }
