@@ -268,7 +268,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
                                           List<AbstractName> newParamNames,
                                           List<? extends AST> methodCallOrDefinitionArguments) {
             for (int i = newParamNames.size() - 1; i >= 0; i--) {
-                final var pushParameter = new PushParameter(newParamNames.get(i), i, methodCallOrDefinitionArguments.get(i));
+                final var pushParameter = new PushArgument(newParamNames.get(i), i, methodCallOrDefinitionArguments.get(i));
                 instructionList.add(pushParameter);
             }
         }

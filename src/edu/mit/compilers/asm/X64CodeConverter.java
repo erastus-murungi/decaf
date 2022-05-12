@@ -73,7 +73,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
      * A stack of push parameters
      * Useful when trying to place a caller saved register store
      */
-    private final Stack<PushParameter> pushParameters = new Stack<>();
+    private final Stack<PushArgument> pushArguments = new Stack<>();
 
     /**
      * @implNote We choose %r10 as our temporary copy register
@@ -355,12 +355,9 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
             textAdded = true;
         }
 
-        if (methodBegin.isMain()) {
+        if (methodBegin.isMain())
             x64builder = x64builder.addLine(new X64Code(".globl main"));
-//            for (AbstractName name : globals)
-            //              for (int i = 0; i < name.size; i += 8)
-            //                x64builder.addLine(x64InstructionLine(X64Instruction.movq, ZERO, i + " + " + String.format("%s(%s)", name, "%rip")));
-        }
+
         x64builder.addLine(new X64Code(methodBegin.methodName() + ":"));
 
         int stackOffsetIndex = 0;
@@ -421,7 +418,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                 continue;
             if (x64Register != returnAddressRegister) {
                 String location = getNextStackLocation(x64Register.toString());
-                x64Builder.addAtIndex(startIndex - pushParameters.size(), x64InstructionLine(X64Instruction.movq, x64Register, location));
+                x64Builder.addAtIndex(startIndex - pushArguments.size(), x64InstructionLine(X64Instruction.movq, x64Register, location));
             }
         }
     }
@@ -448,26 +445,130 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         return n >= 0 ? ((n + (long) 16 - 1) / (long) 16) * (long) 16 : (n / (long) 16) * (long) 16;
     }
 
+    private final HashMap<X64Register, Long> argRegisterToStackOffset = new HashMap<>();
+
+    private String getStackLocationOfParameterRegisterFromCache(X64Register argumentRegister) {
+        if (!argRegisterToStackOffset.containsKey(argumentRegister)) {
+            stackSpace += 8;
+            argRegisterToStackOffset.put(argumentRegister, stackSpace);
+        }
+        return String.format("-%s(%s)", argRegisterToStackOffset.get(argumentRegister), X64Register.RBP);
+    }
+
+
+    /**
+     * Splices push arguments into the correct position in the XBuilder
+     * while avoiding overwrites
+     * @param x64Builder the X64Builder to modify
+     */
+
+    private void orderFunctionCallArguments(X64Builder x64Builder) {
+        // first let's copy the parameters we will push to the stack
+        // this makes it easier to extract the most recent 6 parameters
+        var copyOfPushArguments = new ArrayList<>(pushArguments);
+
+        // we reverse the push parameters because parameters are pushed to the stack
+        // in LIFO order
+        Collections.reverse(copyOfPushArguments);
+
+        // extract the most recent pushes
+        var argumentsToStoreInParameterRegisters = new ArrayList<>(copyOfPushArguments.subList(0, Math.min(6, pushArguments.size())));
+
+        // this is a map of a register to the argument it stores
+        // note that the registers are represented as enums -> we use an EnumMap
+        // note that X64Register.STACK is also included, so we need to consider it differently later
+        var registerToResidentArgument = new EnumMap<X64Register, PushArgument>(X64Register.class);
+
+        // we also have a reverse map to make looking an argument's register easier
+        var residentArgumentToRegister = new HashMap<PushArgument, X64Register>();
+
+        // this is a map of arguments to the correct argument registers
+        // we assign the arguments in the exact order, i.e RDI, RSI, RDX, RCX, R8, R9
+        // this is why we use an indexOfArgument variable to loop through the argument registers
+        // in the correct order
+        var pushParameterX64RegisterMap = new HashMap<PushArgument, X64Register>();
+
+        // the index of the parameter register
+        int indexOfParameterRegister = 0;
+        for (PushArgument argument : argumentsToStoreInParameterRegisters) {
+            // argument register
+            var parameterRegister = X64Register.parameterRegisters[indexOfParameterRegister];
+
+            // the register which houses this argument
+            // if the mapping doesn't contain a register for this argument, we default to X64Register.STACK
+            var residentRegister = currentMapping.getOrDefault(argument.parameterName, X64Register.STACK);
+
+            registerToResidentArgument.put(residentRegister, argument);
+            residentArgumentToRegister.put(argument, residentRegister);
+
+            pushParameterX64RegisterMap.put(argument, parameterRegister);
+
+            // march forward
+            indexOfParameterRegister++;
+        }
+
+        // we create a set of parameter registers to make lookups more convenient
+        var setOfParameterRegisters = Set.of(X64Register.parameterRegisters);
+
+        // here we store arguments whose resident registers are the same as parameter registers
+        // which could be potentially overwritten as we push arguments to parameter registers
+        var potentiallyOverwrittenParameterRegisters = new HashMap<PushArgument, X64Register>();
+
+        // instructions we will splice into the builder
+        var instructions = new ArrayList<X64Code>();
+
+        for (X64Register x64Register: registerToResidentArgument.keySet()) {
+            if (setOfParameterRegisters.contains(x64Register)) {
+                potentiallyOverwrittenParameterRegisters.put(registerToResidentArgument.get(x64Register), x64Register);
+                // this is the stack location storing the argument resident register
+                var registerCache = getStackLocationOfParameterRegisterFromCache(x64Register);
+                instructions.add(x64InstructionLine(X64Instruction.movq, x64Register, registerCache));
+            }
+        }
+
+        for (PushArgument argument: argumentsToStoreInParameterRegisters) {
+            var argumentResidentRegister = residentArgumentToRegister.getOrDefault(argument, null);
+            // if the argument is stored in the stack, just move it from the stack to parameter register
+            if (argumentResidentRegister == X64Register.STACK) {
+                instructions.add(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(argument.parameterName), pushParameterX64RegisterMap.get(argument)));
+            } else {
+                // if conflict might happen, then move from the register cache
+                if (potentiallyOverwrittenParameterRegisters.containsKey(argument)) {
+                    var parameterRegisterCache = getStackLocationOfParameterRegisterFromCache(argumentResidentRegister);
+                    instructions.add(x64InstructionLine(X64Instruction.movq, parameterRegisterCache, pushParameterX64RegisterMap.get(argument)));
+                } else {
+                    // just resolve the location, for arguments like string constants and constants
+                    instructions.add(x64InstructionLine(X64Instruction.movq, argumentResidentRegister.toString(), pushParameterX64RegisterMap.get(argument)));
+                }
+            }
+        }
+       x64Builder.addAllAtIndex(x64Builder.currentIndex(), instructions);
+    }
+
+
+
     @Override
     public X64Builder visit(FunctionCallWithResult methodCall, X64Builder x64builder) {
         callerSave(x64builder, currentMapping.get(methodCall.store));
+        orderFunctionCallArguments(x64builder);
         (methodCall.isImported() ? x64builder.addLine((x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX))) : x64builder)
                 .addLine(x64InstructionLine(X64Instruction.callq, methodCall.getMethodName()))
                 .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, resolveLoadLocation(methodCall
                         .getStore())));
         callerRestore(x64builder, currentMapping.get(methodCall.store));
-        pushParameters.clear();
+        pushArguments.clear();
         return x64builder;
     }
 
     @Override
     public X64Builder visit(FunctionCallNoResult methodCall, X64Builder x64builder) {
         callerSave(x64builder, null);
+        orderFunctionCallArguments(x64builder);
         (methodCall.isImported() ? x64builder.addLine((x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX))) : x64builder)
                 .addLine(x64InstructionLine(X64Instruction.callq,
                         methodCall.getMethodName()));
          callerRestore(x64builder, null);
-        pushParameters.clear();
+        pushArguments.clear();
         return x64builder;
 
     }
@@ -506,14 +607,15 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     }
 
     @Override
-    public X64Builder visit(PushParameter pushParameter, X64Builder x64builder) {
-        pushParameters.push(pushParameter);
-        if (pushParameter.parameterIndex < N_ARG_REGISTERS) {
-            return x64builder.addLine(x64InstructionLine(X64Instruction.movq,
-                    resolveLoadLocation(pushParameter.parameterName),
-                    X64Register.argumentRegs[pushParameter.parameterIndex]));
+    public X64Builder visit(PushArgument pushArgument, X64Builder x64builder) {
+        pushArguments.push(pushArgument);
+        if (pushArgument.parameterIndex < N_ARG_REGISTERS) {
+            // we do not want to overwrite registers, so we just save this push so that
+            // we find a correct ordering that does not cause overwrites later
+            // just before the function call
+            return x64builder;
         } else
-            return x64builder.addLine(x64InstructionLine(X64Instruction.pushq, resolveLoadLocation(pushParameter.parameterName)));
+            return x64builder.addLine(x64InstructionLine(X64Instruction.pushq, resolveLoadLocation(pushArgument.parameterName)));
     }
 
     @Override
@@ -521,7 +623,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         if (popParameter.parameterIndex < N_ARG_REGISTERS)
             return x64builder
                     .addLine(x64InstructionLine(X64Instruction.movq,
-                            X64Register.argumentRegs[popParameter.parameterIndex],
+                            X64Register.parameterRegisters[popParameter.parameterIndex],
                             resolveLoadLocation(popParameter.parameterName)));
         else
             return x64builder

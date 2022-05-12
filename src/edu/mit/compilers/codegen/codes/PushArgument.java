@@ -5,15 +5,14 @@ import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
-import edu.mit.compilers.utils.Utils;
 
 import java.util.List;
 
-public class PushParameter extends Instruction implements HasOperand {
+public class PushArgument extends Instruction implements HasOperand {
     public AbstractName parameterName;
     public final int parameterIndex;
 
-    public PushParameter(AbstractName parameterName, int parameterIndex, AST source) {
+    public PushArgument(AbstractName parameterName, int parameterIndex, AST source) {
         super(source);
         this.parameterName = parameterName;
         this.parameterIndex = parameterIndex;
@@ -44,7 +43,7 @@ public class PushParameter extends Instruction implements HasOperand {
 
     @Override
     public Instruction copy() {
-        return new PushParameter(parameterName, parameterIndex, source);
+        return new PushArgument(parameterName, parameterIndex, source);
     }
 
     @Override

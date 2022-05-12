@@ -23,7 +23,7 @@ public interface InstructionVisitor<ReturnType, ExtraInfoType> {
 
     ReturnType visit(PopParameter popParameter, ExtraInfoType extraInfo);
 
-    ReturnType visit(PushParameter pushParameter, ExtraInfoType extraInfo);
+    ReturnType visit(PushArgument pushArgument, ExtraInfoType extraInfo);
 
     ReturnType visit(StringLiteralStackAllocation stringLiteralStackAllocation, ExtraInfoType extraInfo);
 

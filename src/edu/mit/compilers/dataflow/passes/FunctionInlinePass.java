@@ -18,7 +18,7 @@ import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
 import edu.mit.compilers.codegen.codes.MethodEnd;
 import edu.mit.compilers.codegen.codes.MethodReturn;
 import edu.mit.compilers.codegen.codes.PopParameter;
-import edu.mit.compilers.codegen.codes.PushParameter;
+import edu.mit.compilers.codegen.codes.PushArgument;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.codegen.names.AbstractName;
@@ -82,9 +82,9 @@ public class FunctionInlinePass {
         assert instructionList.get(indexOfFunctionCall) instanceof FunctionCall;
         var arguments = new ArrayList<AbstractName>();
         int indexOfPushParameter = indexOfFunctionCall - 1;
-        while (indexOfPushParameter >= 0 && instructionList.get(indexOfPushParameter) instanceof PushParameter) {
-            PushParameter pushParameter = (PushParameter) instructionList.get(indexOfPushParameter);
-            arguments.add(pushParameter.parameterName);
+        while (indexOfPushParameter >= 0 && instructionList.get(indexOfPushParameter) instanceof PushArgument) {
+            PushArgument pushArgument = (PushArgument) instructionList.get(indexOfPushParameter);
+            arguments.add(pushArgument.parameterName);
             indexOfPushParameter--;
         }
         return arguments;
@@ -158,7 +158,7 @@ public class FunctionInlinePass {
             }
             newTacList.addAll(replacement);
             last = indexOfCallSite - 1;
-            while (last >= 0 && targetTacList.get(last) instanceof PushParameter)
+            while (last >= 0 && targetTacList.get(last) instanceof PushArgument)
                 last--;
             indexOfReplacementBody--;
         }
