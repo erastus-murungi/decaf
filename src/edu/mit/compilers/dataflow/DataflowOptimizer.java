@@ -25,7 +25,7 @@ public class DataflowOptimizer {
 
     Integer numberOfRuns = MAX_RUNS;
     Set<AbstractName> globalNames;
-    private List<MethodBegin> allMethods;
+    private final List<MethodBegin> allMethods;
     private List<MethodBegin> toOptimizeMethods;
     List<OptimizationPass> optimizationPassList = new ArrayList<>();
 

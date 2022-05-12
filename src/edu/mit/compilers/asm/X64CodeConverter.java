@@ -410,7 +410,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
     private void callerSave(X64Builder x64Builder, X64Register returnAddressRegister) {
         var instruction = instructionList.get(currentInstructionIndex);
-        Set<X64Register> x64Registers = methodToLiveRegistersInfo.getOrDefault(currentMethod, Collections.emptyMap())
+        var x64Registers = methodToLiveRegistersInfo.getOrDefault(currentMethod, Collections.emptyMap())
                 .getOrDefault(instruction, Collections.emptySet());
         int startIndex = x64Builder.currentIndex();
         for (var x64Register : x64Registers) {
@@ -418,7 +418,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                 continue;
             if (x64Register != returnAddressRegister) {
                 String location = getNextStackLocation(x64Register.toString());
-                x64Builder.addAtIndex(startIndex - pushArguments.size(), x64InstructionLine(X64Instruction.movq, x64Register, location));
+                x64Builder.addAtIndex(startIndex, x64InstructionLine(X64Instruction.movq, x64Register, location));
             }
         }
     }
