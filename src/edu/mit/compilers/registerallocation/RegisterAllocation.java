@@ -2,6 +2,7 @@ package edu.mit.compilers.registerallocation;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -257,7 +258,7 @@ public class RegisterAllocation {
     }
 
     private Set<AbstractName> getLive(Instruction instruction) {
-        return instructionToLiveVariablesMap.get(instruction);
+        return instructionToLiveVariablesMap.getOrDefault(instruction, Collections.emptySet());
     }
 
     private int findFirstDefinition(InstructionList instructionList, AbstractName variable) {
