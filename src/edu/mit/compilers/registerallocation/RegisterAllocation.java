@@ -30,8 +30,7 @@ import edu.mit.compilers.utils.Utils;
 
 public class RegisterAllocation {
     private final ProgramIr programIr;
-    private final Map<Instruction, InstructionList> instructionToInstructionListMap = new HashMap<>();
-    private final Map<InstructionList, Set<AbstractName>> blockToLiveOut = new HashMap<>();
+    private final Map<Instruction, Set<AbstractName>> instructionToLiveVariablesMap = new HashMap<>();
     private final Map<MethodBegin, List<LiveInterval>> methodToLiveIntervalsMap = new HashMap<>();
     private final Map<MethodBegin, Map<AbstractName, X64Register>> variableToRegisterMap = new HashMap<>();
     private final Map<MethodBegin, Map<Instruction, Set<X64Register>>> methodToLiveRegistersInfo = new HashMap<>();
@@ -83,7 +82,6 @@ public class RegisterAllocation {
         this.programIr = programIr;
         getGlobals();
         linearizeCfg();
-        computeInstructionBasicBlock();
         computeLiveness();
         computeLiveIntervals();
         if (CLI.debug) {
@@ -111,7 +109,12 @@ public class RegisterAllocation {
         for (MethodBegin methodBegin : programIr.methodBeginList) {
             var liveVariableAnalysis = new LiveVariableAnalysis(methodBegin.entryBlock);
             var basicBlocks = DataFlowAnalysis.getReversePostOrder(methodBegin.entryBlock);
-            basicBlocks.forEach(basicBlock -> blockToLiveOut.put(basicBlock.instructionList, liveVariableAnalysis.liveOut(basicBlock)));
+            basicBlocks.forEach(basicBlock -> {
+                if (basicBlock.instructionList.size() > 1)
+                    throw new IllegalStateException("failed linearization of " + basicBlock.getLabel());
+                if (basicBlock.instructionList.size() == 1)
+                    instructionToLiveVariablesMap.put(basicBlock.instructionList.get(0), liveVariableAnalysis.liveOut(basicBlock));
+            });
         }
     }
 
@@ -125,7 +128,7 @@ public class RegisterAllocation {
         int index = 0;
         for (Instruction instruction : instructionList) {
             // live out
-            var liveOut = blockToLiveOut.get(instructionToInstructionListMap.get(instruction));
+            var liveOut = instructionToLiveVariablesMap.get(instruction);
             if (liveOut != null) {
                 var s = instruction.repr()
                         .split("#")[0];
@@ -253,20 +256,8 @@ public class RegisterAllocation {
         return prevBasicBlock;
     }
 
-    private void computeInstructionBasicBlock() {
-        for (MethodBegin methodBegin : programIr.methodBeginList) {
-            for (BasicBlock basicBlock : DataFlowAnalysis.getReversePostOrder(methodBegin.entryBlock)) {
-                for (InstructionList instructionList : basicBlock.instructionList.getListOfInstructionLists()) {
-                    for (Instruction instruction : instructionList) {
-                        instructionToInstructionListMap.put(instruction, instructionList);
-                    }
-                }
-            }
-        }
-    }
-
     private Set<AbstractName> getLive(Instruction instruction) {
-        return blockToLiveOut.get(instructionToInstructionListMap.get(instruction));
+        return instructionToLiveVariablesMap.get(instruction);
     }
 
     private int findFirstDefinition(InstructionList instructionList, AbstractName variable) {
@@ -358,7 +349,7 @@ public class RegisterAllocation {
         // get all variables
         int maxIntervalLength = methodBegin.entryBlock.instructionList.flatten().size();
         var liveIntervals = this.methodToLiveIntervalsMap.get(methodBegin);
-        int maxVariableLength = liveIntervals.stream().map(liveInterval -> liveInterval.variable).map(AssignableName::repr).mapToInt(String::length).max().getAsInt() + 2;
+        int maxVariableLength = liveIntervals.stream().map(liveInterval -> liveInterval.variable).map(AssignableName::repr).mapToInt(String::length).max().orElse(0) + 2;
         String[] colors = {Utils.ANSIColorConstants.ANSI_GREEN, Utils.ANSIColorConstants.ANSI_CYAN, Utils.ANSIColorConstants.ANSI_PURPLE, Utils.ANSIColorConstants.ANSI_YELLOW,  Utils.ANSIColorConstants.ANSI_RED};
         int indexOfLiveInterval = 0;
         var toPrint = new ArrayList<String>();
