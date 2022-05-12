@@ -94,7 +94,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
      */
     private final X64Register COPY_TEMP_REGISTER = X64Register.R10;
 
-    private Map<MethodBegin, Map<Instruction, Set<X64Register>>> methodToLiveRegistersInfo;
+    private Map<MethodBegin, Map<Instruction, Set<X64Register>>> methodToLiveRegistersInfo = new HashMap<>();
 
     public X64CodeConverter(Map<MethodBegin,
             Map<AbstractName, X64Register>> abstractNameToX64RegisterMap,
@@ -400,7 +400,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         return x64builder;
     }
 
-    private X64Builder callerSave(X64Builder x64Builder, Instruction instruction, X64Register returnAddressRegister) {
+    private void callerSave(X64Builder x64Builder, Instruction instruction, X64Register returnAddressRegister) {
         Set<X64Register> x64Registers = methodToLiveRegistersInfo.getOrDefault(currentMethod, Collections.emptyMap())
                 .getOrDefault(instruction, Collections.emptySet());
         int startIndex = x64Builder.currentIndex();
@@ -412,7 +412,6 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                 x64Builder.addAtIndex(startIndex - pushParameters.size(), x64InstructionLine(X64Instruction.movq, x64Register, location));
             }
         }
-        return x64Builder;
     }
 
     private X64Builder callerRestore(X64Builder x64Builder, Instruction instruction, X64Register returnAddressRegister) {
@@ -443,8 +442,9 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                 .addLine(x64InstructionLine(X64Instruction.callq, methodCall.getMethodName()))
                 .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, resolveLoadLocation(methodCall
                         .getStore())));
-        return callerRestore(x64builder, methodCall, currentMapping.get(methodCall.store));
-//        return x64builder;
+        callerRestore(x64builder, methodCall, currentMapping.get(methodCall.store));
+        pushParameters.clear();
+        return x64builder;
     }
 
     @Override
@@ -453,8 +453,9 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         (methodCall.isImported() ? x64builder.addLine((x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX))) : x64builder)
                 .addLine(x64InstructionLine(X64Instruction.callq,
                         methodCall.getMethodName()));
-        return callerRestore(x64builder, methodCall, null);
-//        return x64builder;
+         callerRestore(x64builder, methodCall, null);
+        pushParameters.clear();
+        return x64builder;
 
     }
 

@@ -94,7 +94,8 @@ public class RegisterAllocation {
             printLiveVariables();
             printLinearizedCfg();
             programIr.methodBeginList.forEach(this::printLiveIntervals);
-            System.out.println(methodToLiveRegistersInfo);
+            variableToRegisterMap.forEach(((methodBegin, registerMap) ->
+                    System.out.println(registerMap)));
         }
     }
 
@@ -128,7 +129,6 @@ public class RegisterAllocation {
         var output = new ArrayList<String>();
         int index = 0;
         for (Instruction instruction : instructionList) {
-            // live out
             var liveOut = instructionToLiveVariablesMap.get(instruction);
             if (liveOut != null) {
                 var s = instruction.repr()
@@ -285,6 +285,9 @@ public class RegisterAllocation {
             var liveIntervalList = new ArrayList<LiveInterval>();
             InstructionList instructionList = methodBegin.entryBlock.instructionList.flatten();
             var allVariables = getLive(methodBegin.entryBlock.instructionList.get(0));
+
+            // remove global variables
+            allVariables.removeAll(globalVariables);
             // all the variables later used will be on the first line of the program
             for (var variable : allVariables) {
                 liveIntervalList.add(new LiveInterval((AssignableName) variable,
