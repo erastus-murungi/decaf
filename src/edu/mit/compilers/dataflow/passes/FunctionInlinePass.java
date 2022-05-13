@@ -9,6 +9,7 @@ import java.util.stream.IntStream;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
+import edu.mit.compilers.codegen.codes.ArrayAccess;
 import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.FunctionCall;
 import edu.mit.compilers.codegen.codes.HasOperand;
@@ -231,12 +232,18 @@ public class FunctionInlinePass {
                 .contains("if");
     }
 
+    private boolean hasArrayAccesses(MethodBegin methodBegin) {
+        return methodBegin.entryBlock.instructionList.stream().anyMatch(instruction -> instruction instanceof ArrayAccess);
+    }
+
     private boolean shouldBeInlined(MethodBegin methodBegin) {
         if (methodBegin.isMain())
             return false;
         if (isRecursive(methodBegin))
             return false;
         if (hasBranching(methodBegin))
+            return false;
+        if (hasArrayAccesses(methodBegin))
             return false;
         final var functionName = methodBegin.methodName();
         final int programSize = getProgramSize();
