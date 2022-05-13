@@ -6,16 +6,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
 
-import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.ast.BinaryOpExpression;
-import edu.mit.compilers.ast.BooleanLiteral;
-import edu.mit.compilers.ast.DecimalLiteral;
-import edu.mit.compilers.ast.Expression;
-import edu.mit.compilers.ast.HasExpression;
-import edu.mit.compilers.ast.IntLiteral;
-import edu.mit.compilers.ast.LocationArray;
-import edu.mit.compilers.ast.Return;
-import edu.mit.compilers.ast.UnaryOpExpression;
+import edu.mit.compilers.ast.*;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
 
@@ -141,6 +132,8 @@ public class InstructionSimplifyIrPass {
     }
 
     public static Expression tryFoldConstantExpression(Expression expression) {
+        if (expression instanceof Literal)
+            return expression;
         var maybeEvaluatedLong = symbolicallyEvaluate(expression.getSourceCode());
         if (maybeEvaluatedLong.isPresent())
             return new DecimalLiteral(expression.tokenPosition, maybeEvaluatedLong.get().toString());
@@ -192,7 +185,7 @@ public class InstructionSimplifyIrPass {
         }
         var expression = new com.udojava.evalex.Expression(string);
         try {
-            var res = expression.eval();
+            var res = expression.setPrecision(100).eval();
             return Optional.of(res.longValue());
         } catch (Exception e) {
             return Optional.empty();
