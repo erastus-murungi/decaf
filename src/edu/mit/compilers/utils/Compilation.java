@@ -197,10 +197,7 @@ public class Compilation {
     }
 
     private boolean shouldOptimize() {
-        for (boolean opt : CLI.opts)
-            if (opt)
-                return true;
-        return false;
+        return true;
     }
 
     private void generateSymbolTablePdfs() {
@@ -282,7 +279,7 @@ public class Compilation {
         assert compilationState == CompilationState.DATAFLOW_OPTIMIZED;
 
         X64CodeConverter x64CodeConverter;
-        if (CLI.opts[4]) {
+        if (shouldOptimize()) {
             var registerAllocation = new RegisterAllocation(programIr);
             x64CodeConverter = new X64CodeConverter(programIr.mergeProgram(), registerAllocation.getVariableToRegisterMap(), registerAllocation.getMethodToLiveRegistersInfo());
         } else {
