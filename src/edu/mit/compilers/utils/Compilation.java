@@ -255,7 +255,7 @@ public class Compilation {
         assert compilationState == CompilationState.IR_GENERATED;
         double oldNLinesOfCode;
         oldNLinesOfCode = countLinesOfCode();
-        if (CLI.opts[0] || CLI.opts[1] || CLI.opts[2] || CLI.opts[3]) {
+        if (shouldOptimize()) {
             if (CLI.debug) {
                 System.out.println("Before optimization");
                 System.out.println(mergeProgram());
