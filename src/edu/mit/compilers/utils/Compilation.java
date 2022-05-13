@@ -258,12 +258,12 @@ public class Compilation {
         assert compilationState == CompilationState.IR_GENERATED;
         double oldNLinesOfCode;
         oldNLinesOfCode = countLinesOfCode();
-        if (shouldOptimize()) {
+        if (CLI.opts[0] || CLI.opts[1] || CLI.opts[2] || CLI.opts[3]) {
             if (CLI.debug) {
                 System.out.println("Before optimization");
                 System.out.println(mergeProgram());
             }
-            var dataflowOptimizer = new DataflowOptimizer(programIr.methodBeginList, instructionListConverter.globalNames);
+            var dataflowOptimizer = new DataflowOptimizer(programIr.methodBeginList, instructionListConverter.globalNames, CLI.opts);
             dataflowOptimizer.initialize();
             dataflowOptimizer.optimize();
             programIr.methodBeginList = dataflowOptimizer.getOptimizedMethods();
@@ -282,7 +282,7 @@ public class Compilation {
         assert compilationState == CompilationState.DATAFLOW_OPTIMIZED;
 
         X64CodeConverter x64CodeConverter;
-        if (true) {
+        if (CLI.opts[4]) {
             var registerAllocation = new RegisterAllocation(programIr);
             x64CodeConverter = new X64CodeConverter(programIr.mergeProgram(), registerAllocation.getVariableToRegisterMap(), registerAllocation.getMethodToLiveRegistersInfo());
         } else {
