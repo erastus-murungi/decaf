@@ -214,6 +214,8 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
 
             if (!computationFound) {
                 queue.addAll(current.getPredecessors());
+            } else {
+                break;
             }
         }
         Objects.requireNonNull(uniqueName, "uniqueName is null");
