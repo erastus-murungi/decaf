@@ -720,7 +720,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
             case "/":
             case "%": {
                 // If we are planning to use RDX, we spill it first
-                if (binaryInstruction.operator.equals("%") && !resolveLoadLocation(binaryInstruction.store).equals(X64Register.RDX.toString()))
+                if (!resolveLoadLocation(binaryInstruction.store).equals(X64Register.RDX.toString()))
                     x64builder.addLine(x64InstructionLine(X64Instruction.movq, X64Register.RDX, getNextStackLocation(X64Register.RDX.toString())));
                 if (binaryInstruction.sndOperand instanceof ConstantName) {
                     x64builder
@@ -736,7 +736,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                 }
                 x64builder.addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", binaryInstruction.store.repr(), binaryInstruction.fstOperand.repr(), binaryInstruction.operator, binaryInstruction.sndOperand.repr()), X64Instruction.movq, (binaryInstruction.operator.equals("%") ? X64Register.RDX : X64Register.RAX), resolveLoadLocation(binaryInstruction.store)));
                 // restore RDX
-                if (binaryInstruction.operator.equals("%") && !resolveLoadLocation(binaryInstruction.store).equals(X64Register.RDX.toString()))
+                if (!resolveLoadLocation(binaryInstruction.store).equals(X64Register.RDX.toString()))
                     x64builder.addLine(x64InstructionLine(X64Instruction.movq, getNextStackLocation(X64Register.RDX.toString()), X64Register.RDX));
                 return x64builder;
             }
