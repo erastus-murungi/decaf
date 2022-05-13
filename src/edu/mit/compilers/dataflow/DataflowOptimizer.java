@@ -31,6 +31,8 @@ public class DataflowOptimizer {
 
     Factory optimizationPassesFactory = new Factory();
 
+    private boolean[] cliOpts;
+
     public enum OptimizationPassType {
         CommonSubExpression,
         CopyPropagation,
@@ -100,15 +102,23 @@ public class DataflowOptimizer {
     }
 
     public void initialize() {
-        runInterProceduralPasses();
-        addPass(OptimizationPassType.PeepHoleOptimization);
-        addPass(OptimizationPassType.CommonSubExpression);
-        addPass(OptimizationPassType.CopyPropagation);
-        addPass(OptimizationPassType.DeadCodeElimination);
-        addPass(OptimizationPassType.DeadStoreElimination);
-        addPass(OptimizationPassType.ConstantPropagation);
-        addPass(OptimizationPassType.InstructionSimplification);
-        // addPass(OptimizationPassType.BranchSimplification);
+        if (cliOpts[1]) {
+            addPass(OptimizationPassType.CopyPropagation);
+        }
+        if (cliOpts[2]) {
+            addPass(OptimizationPassType.CommonSubExpression);
+        }
+        if (cliOpts[3]) {
+            addPass(OptimizationPassType.DeadCodeElimination);
+        }
+        if (cliOpts[0]) {
+            runInterProceduralPasses();
+            addPass(OptimizationPassType.PeepHoleOptimization);
+            addPass(OptimizationPassType.DeadStoreElimination);
+            addPass(OptimizationPassType.ConstantPropagation);
+            addPass(OptimizationPassType.InstructionSimplification);
+            // addPass(OptimizationPassType.BranchSimplification);
+        }
     }
 
     public List<MethodBegin> getOptimizedMethods() {
@@ -119,9 +129,10 @@ public class DataflowOptimizer {
         }
     }
 
-    public DataflowOptimizer(List<MethodBegin> allMethods, Set<AbstractName> globalNames) {
+    public DataflowOptimizer(List<MethodBegin> allMethods, Set<AbstractName> globalNames, boolean[] cliOpts) {
         this.globalNames = globalNames;
         this.allMethods = allMethods;
+        this.cliOpts = cliOpts;
         // ignore all methods with a runtime
         if (allMethods.stream().anyMatch(MethodBegin::hasRuntimeException))
             this.toOptimizeMethods = Collections.emptyList();
