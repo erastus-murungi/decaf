@@ -585,7 +585,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                 }
             }
         }
-       x64Builder.addAllAtIndex(x64Builder.currentIndex(), instructions);
+        x64Builder.addAllAtIndex(x64Builder.currentIndex(), instructions);
     }
 
 
@@ -610,7 +610,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         (methodCall.isImported() ? x64builder.addLine((x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX))) : x64builder)
                 .addLine(x64InstructionLine(X64Instruction.callq,
                         methodCall.getMethodName()));
-         callerRestore(x64builder, null);
+        callerRestore(x64builder, null);
         pushArguments.clear();
         return x64builder;
 
@@ -702,8 +702,8 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         }
         X64Register register = currentMapping.get(name);
         if (register != null && register != X64Register.STACK) {
-                return currentMapping.get(name)
-                        .toString();
+            return currentMapping.get(name)
+                    .toString();
         } else if (register == X64Register.STACK) {
             return getNextStackLocation(name.toString());
         }
@@ -779,19 +779,6 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
             default:
                 return null;
         }
-        var storeLocation = resolveLoadLocation(binaryInstruction.store);
-        var comment = String.format("%s = %s %s %s",
-                binaryInstruction.store.repr(),
-                binaryInstruction.fstOperand.repr(),
-                binaryInstruction.operator,
-                binaryInstruction.sndOperand.repr());
-        x64builder.addLine(
-                x64InstructionLineWithComment(
-                        comment,
-                        X64Instruction.movq, binaryInstruction.operator.equals("%") ? X64Register.RDX : X64Register.RAX, storeLocation));
-        return x64builder;
-
-
     }
 
     @Override
@@ -805,4 +792,3 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         return x64Builder.addLine(x64InstructionLine(String.format(".comm %s, %s, %s", globalAllocation.variableName, globalAllocation.variableName.size, 64)));
     }
 }
-
