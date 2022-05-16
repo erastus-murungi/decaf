@@ -25,14 +25,20 @@ public enum BuiltinType {
 //    }
 
     public String getSourceCode() {
-        return switch (this) {
-            case Bool -> RESERVED_BOOL;
-            case BoolArray -> RESERVED_BOOL + "*";
-            case Int -> RESERVED_INT;
-            case IntArray -> RESERVED_INT + "*";
-            case Void -> RESERVED_VOID;
-            default -> throw new IllegalStateException("Unexpected value: " + this);
-        };
+        switch (this) {
+            case Bool:
+                return RESERVED_BOOL;
+            case BoolArray:
+                return RESERVED_BOOL + "*";
+            case Int:
+                return RESERVED_INT;
+            case IntArray:
+                return RESERVED_INT + "*";
+            case Void:
+                return RESERVED_VOID;
+            default:
+                throw new IllegalStateException("Unexpected value: " + this);
+        }
     }
 
     public String getColoredSourceCode() {

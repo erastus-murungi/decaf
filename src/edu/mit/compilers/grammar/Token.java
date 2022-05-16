@@ -31,7 +31,7 @@ public class Token {
     @Override
     public String toString() {
         return "Token{" + "type=" + tokenType +
-                ", lexeme='" + lexeme.translateEscapes() + '\'' +
+                ", lexeme='" + lexeme + '\'' +
                 '}';
     }
 }
