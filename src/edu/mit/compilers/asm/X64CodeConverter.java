@@ -251,7 +251,8 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     public X64Builder visit(ArrayBoundsCheck arrayBoundsCheck, X64Builder x64builder) {
         final var getAddress = arrayBoundsCheck.getAddress;
         final var index = getAddress.getIndex();
-        final var arrayLength = getAddress.getLength().orElseThrow();
+        final var arrayLength = getAddress.getLength()
+                .orElseThrow();
         final var indexRegister = indexToIndexRegister.get(index);
         indexToIndexRegister.remove(index);
         // the index is stored in a register
@@ -292,32 +293,15 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         String sourceStackLocation = resolveLoadLocation(assign.operand);
         String destStackLocation = resolveLoadLocation(assign.store);
 
-        switch (assign.assignmentOperator) {
-            case "--":
-            case "++":
-                return x64Builder
-                        .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, COPY_TEMP_REGISTER))
-                        .addLine(x64InstructionLine(X64Instruction.getCorrectIncrementInstruction(assign.assignmentOperator), COPY_TEMP_REGISTER))
-                        .addLine(x64InstructionLine(X64Instruction.movq, COPY_TEMP_REGISTER, destStackLocation));
-            case "+=":
-            case "-=":
-            case "*=":
-                return x64Builder
-                        .addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, COPY_TEMP_REGISTER))
-                        .addLine(x64InstructionLineWithComment(String.format("%s += %s", assign.store, assign.operand.repr()), X64Instruction.getX64OperatorCode(assign.assignmentOperator.substring(0, 1)), COPY_TEMP_REGISTER, destStackLocation));
-            case "=":
-                if (sourceStackLocation.equals(destStackLocation))
-                    return x64Builder;
-                else if (isRegister(sourceStackLocation) || isConstant(sourceStackLocation))
-                    return x64Builder.addLine(x64InstructionLineWithComment(
-                            String.format("%s = %s", assign.store.repr(), assign.operand.repr()), X64Instruction.movq, sourceStackLocation, destStackLocation));
-                else
-                    return x64Builder.addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, COPY_TEMP_REGISTER))
-                            .addLine(x64InstructionLineWithComment(
-                                    String.format("%s = %s", assign.store.repr(), assign.operand.repr()), X64Instruction.movq, COPY_TEMP_REGISTER, destStackLocation));
-            default:
-                return null;
-        }
+        if (sourceStackLocation.equals(destStackLocation))
+            return x64Builder;
+        else if (isRegister(sourceStackLocation) || isConstant(sourceStackLocation))
+            return x64Builder.addLine(x64InstructionLineWithComment(
+                    String.format("%s = %s", assign.store.repr(), assign.operand.repr()), X64Instruction.movq, sourceStackLocation, destStackLocation));
+        else
+            return x64Builder.addLine(x64InstructionLine(X64Instruction.movq, sourceStackLocation, COPY_TEMP_REGISTER))
+                    .addLine(x64InstructionLineWithComment(
+                            String.format("%s = %s", assign.store.repr(), assign.operand.repr()), X64Instruction.movq, COPY_TEMP_REGISTER, destStackLocation));
     }
 
     @Override
@@ -502,6 +486,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     /**
      * Splices push arguments into the correct position in the XBuilder
      * while avoiding overwrites
+     *
      * @param x64Builder the X64Builder to modify
      */
 
@@ -560,7 +545,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         // instructions we will splice into the builder
         var instructions = new ArrayList<X64Code>();
 
-        for (X64Register x64Register: registerToResidentArgument.keySet()) {
+        for (X64Register x64Register : registerToResidentArgument.keySet()) {
             if (setOfParameterRegisters.contains(x64Register)) {
                 potentiallyOverwrittenParameterRegisters.put(registerToResidentArgument.get(x64Register), x64Register);
                 // this is the stack location storing the argument resident register
@@ -569,7 +554,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
             }
         }
 
-        for (PushArgument argument: argumentsToStoreInParameterRegisters) {
+        for (PushArgument argument : argumentsToStoreInParameterRegisters) {
             var argumentResidentRegister = residentArgumentToRegister.getOrDefault(argument, null);
             // if the argument is stored in the stack, just move it from the stack to parameter register
             if (argumentResidentRegister == X64Register.STACK) {
@@ -587,7 +572,6 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         }
         x64Builder.addAllAtIndex(x64Builder.currentIndex(), instructions);
     }
-
 
 
     @Override

@@ -18,6 +18,13 @@ public class Operators {
     public static final String CONDITIONAL_OR = "||";
     public static final String CONDITIONAL_AND = "&&";
 
+    public static final String ADD_ASSIGN = "+=";
+    public static final String MINUS_ASSIGN = "-=";
+    public static final String MULTIPLY_ASSIGN = "*=";
+
+    public static final String INCREMENT = "++";
+    public static final String DECREMENT = "--";
+
     public static String getOperatorName(String operator) {
         switch (operator) {
             case PLUS:

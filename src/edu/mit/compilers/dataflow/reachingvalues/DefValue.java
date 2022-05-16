@@ -38,6 +38,6 @@ public class DefValue {
 
     @Override
     public String toString() {
-        return "(Variable Name {\"" + variableName.toString() + "\"}, Operand {\"" + operand.toString() + "\"}";
+        return String.format("%s %s[%s]", "def", variableName.repr(), operand);
     }
 }

@@ -15,7 +15,7 @@ public class VariableName extends AssignableName {
 
     @Override
     public String repr() {
-        return String.format("%s", value);
+        return String.format("%s %s", builtinType.getColoredSourceCode(), value);
 //        return Utils.coloredPrint(String.format("%s", value), Utils.ANSIColorConstants.ANSI_BLUE);
     }
 }

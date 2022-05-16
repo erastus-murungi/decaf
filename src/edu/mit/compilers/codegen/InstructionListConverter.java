@@ -1,25 +1,99 @@
 package edu.mit.compilers.codegen;
 
-import edu.mit.compilers.ast.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.Stack;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+
+import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.ast.Array;
+import edu.mit.compilers.ast.AssignOpExpr;
 import edu.mit.compilers.ast.Assignment;
+import edu.mit.compilers.ast.BinaryOpExpression;
+import edu.mit.compilers.ast.Block;
+import edu.mit.compilers.ast.BooleanLiteral;
+import edu.mit.compilers.ast.Break;
+import edu.mit.compilers.ast.BuiltinType;
+import edu.mit.compilers.ast.CharLiteral;
+import edu.mit.compilers.ast.CompoundAssignOpExpr;
+import edu.mit.compilers.ast.Continue;
+import edu.mit.compilers.ast.DecimalLiteral;
+import edu.mit.compilers.ast.Decrement;
+import edu.mit.compilers.ast.Expression;
+import edu.mit.compilers.ast.ExpressionParameter;
+import edu.mit.compilers.ast.FieldDeclaration;
+import edu.mit.compilers.ast.For;
+import edu.mit.compilers.ast.HexLiteral;
+import edu.mit.compilers.ast.If;
+import edu.mit.compilers.ast.ImportDeclaration;
+import edu.mit.compilers.ast.Increment;
+import edu.mit.compilers.ast.Initialization;
+import edu.mit.compilers.ast.IntLiteral;
+import edu.mit.compilers.ast.Len;
+import edu.mit.compilers.ast.Location;
+import edu.mit.compilers.ast.LocationArray;
+import edu.mit.compilers.ast.LocationAssignExpr;
+import edu.mit.compilers.ast.LocationVariable;
 import edu.mit.compilers.ast.MethodCall;
-import edu.mit.compilers.cfg.*;
-import edu.mit.compilers.codegen.codes.*;
+import edu.mit.compilers.ast.MethodCallParameter;
+import edu.mit.compilers.ast.MethodCallStatement;
+import edu.mit.compilers.ast.MethodDefinition;
+import edu.mit.compilers.ast.MethodDefinitionParameter;
+import edu.mit.compilers.ast.Name;
+import edu.mit.compilers.ast.ParenthesizedExpression;
+import edu.mit.compilers.ast.Program;
+import edu.mit.compilers.ast.Return;
+import edu.mit.compilers.ast.Statement;
+import edu.mit.compilers.ast.StringLiteral;
+import edu.mit.compilers.ast.UnaryOpExpression;
+import edu.mit.compilers.ast.While;
+import edu.mit.compilers.cfg.BasicBlock;
+import edu.mit.compilers.cfg.BasicBlockBranchLess;
+import edu.mit.compilers.cfg.BasicBlockVisitor;
+import edu.mit.compilers.cfg.BasicBlockWithBranch;
+import edu.mit.compilers.cfg.CFGGenerator;
+import edu.mit.compilers.cfg.NOP;
+import edu.mit.compilers.cfg.SymbolTableFlattener;
+import edu.mit.compilers.cfg.iCFGVisitor;
+import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
+import edu.mit.compilers.codegen.codes.Assign;
+import edu.mit.compilers.codegen.codes.BinaryInstruction;
+import edu.mit.compilers.codegen.codes.ConditionalJump;
+import edu.mit.compilers.codegen.codes.FunctionCallNoResult;
+import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
+import edu.mit.compilers.codegen.codes.GetAddress;
+import edu.mit.compilers.codegen.codes.GlobalAllocation;
+import edu.mit.compilers.codegen.codes.Instruction;
+import edu.mit.compilers.codegen.codes.Label;
+import edu.mit.compilers.codegen.codes.MethodBegin;
+import edu.mit.compilers.codegen.codes.MethodEnd;
+import edu.mit.compilers.codegen.codes.MethodReturn;
+import edu.mit.compilers.codegen.codes.PopParameter;
+import edu.mit.compilers.codegen.codes.PushArgument;
 import edu.mit.compilers.codegen.codes.RuntimeException;
-import edu.mit.compilers.codegen.names.*;
+import edu.mit.compilers.codegen.codes.StringLiteralStackAllocation;
+import edu.mit.compilers.codegen.codes.UnaryInstruction;
+import edu.mit.compilers.codegen.codes.UnconditionalJump;
+import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.ConstantName;
+import edu.mit.compilers.codegen.names.MemoryAddressName;
+import edu.mit.compilers.codegen.names.StringConstantName;
+import edu.mit.compilers.codegen.names.TemporaryName;
+import edu.mit.compilers.codegen.names.VariableName;
 import edu.mit.compilers.descriptors.ArrayDescriptor;
 import edu.mit.compilers.exceptions.DecafException;
-import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
+import edu.mit.compilers.utils.Operators;
 import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.Utils;
-
-
-import java.util.*;
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 
 public class InstructionListConverter implements BasicBlockVisitor<InstructionList> {
     private final List<DecafException> errors;
@@ -42,7 +116,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             var place = resolveStoreLocation(BuiltinType.Bool);
             return new InstructionList(
                     place,
-                    Collections.singletonList(new Assign(place, "=", ConstantName.fromBooleanLiteral(booleanLiteral), booleanLiteral, place + " = " + booleanLiteral)));
+                    Collections.singletonList(new Assign(place, ConstantName.fromBooleanLiteral(booleanLiteral), booleanLiteral, place + " = " + booleanLiteral)));
         }
 
         @Override
@@ -50,7 +124,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             var place = resolveStoreLocation(BuiltinType.Int);
             return new InstructionList(
                     place,
-                    Collections.singletonList(new Assign(place, "=", ConstantName.fromIntLiteral(decimalLiteral), decimalLiteral, place + " = " + decimalLiteral)));
+                    Collections.singletonList(new Assign(place, ConstantName.fromIntLiteral(decimalLiteral), decimalLiteral, place + " = " + decimalLiteral)));
         }
 
         @Override
@@ -58,7 +132,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             var place = resolveStoreLocation(BuiltinType.Int);
             return new InstructionList(
                     place,
-                    Collections.singletonList(new Assign(place, "=", ConstantName.fromIntLiteral(hexLiteral), hexLiteral, place + " = " + hexLiteral)));
+                    Collections.singletonList(new Assign(place, ConstantName.fromIntLiteral(hexLiteral), hexLiteral, place + " = " + hexLiteral)));
         }
 
         @Override
@@ -66,7 +140,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             InstructionList instructionList = new InstructionList();
             for (Name name: fieldDeclaration.names) {
                 if (fieldDeclaration.builtinType.equals(BuiltinType.Int) || fieldDeclaration.builtinType.equals(BuiltinType.Bool)) {
-                    instructionList.add(new Assign(new VariableName(name.id, Utils.WORD_SIZE, BuiltinType.Int), "=", ConstantName.zero(), name, name.id + " = " + 0));
+                    instructionList.add(new Assign(new VariableName(name.id, Utils.WORD_SIZE, BuiltinType.Int), ConstantName.zero(), name, name.id + " = " + 0));
                 }
 
             }
@@ -199,7 +273,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
                 TemporaryName temporaryVariable = TemporaryName.generateTemporaryName(expressionParameter.expression.builtinType);
                 InstructionList expressionTACList = expressionParameter.expression.accept(this, symbolTable);
                 expressionParameterTACList.addAll(expressionTACList);
-                expressionParameterTACList.add(new Assign(temporaryVariable, "=", expressionTACList.place, expressionParameter, temporaryVariable + " = " + expressionTACList.place));
+                expressionParameterTACList.add(new Assign(temporaryVariable, expressionTACList.place, expressionParameter, temporaryVariable + " = " + expressionTACList.place));
                 expressionParameterTACList.place = temporaryVariable;
             }
             return expressionParameterTACList;
@@ -287,7 +361,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             final InstructionList rhs = locationAssignExpr.assignExpr.accept(this, symbolTable);
             AbstractName valueVariable = rhs.place;
             lhs.addAll(rhs);
-            lhs.add(new Assign(locationVariable, locationAssignExpr.getSourceCode(), valueVariable, locationAssignExpr, locationAssignExpr.assignExpr.getSourceCode()));
+            lhs.add(flattenCompoundAssign(locationVariable, valueVariable, locationAssignExpr.getSourceCode(), locationAssignExpr));
             return lhs;
         }
 
@@ -354,7 +428,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
         public InstructionList visit(Initialization initialization, SymbolTable symbolTable) {
             InstructionList initIdThreeAddressList = initialization.initId.accept(this, symbolTable);
             InstructionList initExpressionThreeAddressList = initialization.initExpression.accept(this, symbolTable);
-            Assign copyInstruction = new Assign((AssignableName) initIdThreeAddressList.place, "=", initExpressionThreeAddressList.place, initialization, initialization.getSourceCode());
+            Assign copyInstruction = new Assign((AssignableName) initIdThreeAddressList.place, initExpressionThreeAddressList.place, initialization, initialization.getSourceCode());
 
             InstructionList initializationInstructionList = new InstructionList(initIdThreeAddressList.place);
             initializationInstructionList.addAll(initIdThreeAddressList);
@@ -363,30 +437,39 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             return initializationInstructionList;
         }
 
+        private Instruction flattenCompoundAssign(AssignableName lhs, AbstractName rhs, String op, AST assignment) {
+            switch (op) {
+                case Operators.ADD_ASSIGN:
+                    return new BinaryInstruction(lhs, lhs, Operators.PLUS, rhs, assignment.getSourceCode(), assignment);
+                case Operators.MULTIPLY_ASSIGN:
+                    return new BinaryInstruction(lhs, lhs, Operators.MULTIPLY, rhs, assignment.getSourceCode(), assignment);
+                case Operators.MINUS_ASSIGN:
+                    return new BinaryInstruction(lhs, lhs, Operators.MINUS, rhs, assignment.getSourceCode(), assignment);
+                case Operators.DECREMENT:
+                    return new BinaryInstruction(lhs, lhs, Operators.MINUS, new ConstantName(1L, BuiltinType.Int), assignment.getSourceCode(), assignment);
+                case Operators.INCREMENT:
+                    return new BinaryInstruction(lhs, lhs, Operators.PLUS, new ConstantName(1L, BuiltinType.Int), assignment.getSourceCode(), assignment);
+                default:
+                    return new Assign(lhs, rhs, assignment, assignment.getSourceCode());
+            }
+        }
+
         @Override
         public InstructionList visit(Assignment assignment, SymbolTable symbolTable) {
-            InstructionList returnTACList = new InstructionList();
-            InstructionList lhs = assignment.location.accept(this, symbolTable);
-            InstructionList rhs;
+            var instructionList = new InstructionList();
+            var lhsInstructionList = assignment.location.accept(this, symbolTable);
+            InstructionList rhsInstructionList;
             if (assignment.assignExpr.expression != null) {
-                rhs = assignment.assignExpr.expression.accept(this, symbolTable);
+                rhsInstructionList = assignment.assignExpr.expression.accept(this, symbolTable);
             } else {
-                rhs = new InstructionList();
+                rhsInstructionList = new InstructionList();
             }
-            returnTACList.addAll(rhs);
-            returnTACList.addAll(lhs);
+            instructionList.addAll(rhsInstructionList);
+            instructionList.addAll(lhsInstructionList);
 
-            if (assignment.assignExpr instanceof AssignOpExpr) {
-                returnTACList.add(new Assign((AssignableName) lhs.place, ((AssignOpExpr) assignment.assignExpr).assignOp.getSourceCode(), rhs.place, assignment, assignment.getSourceCode()));
-            } else if (assignment.assignExpr instanceof CompoundAssignOpExpr) {
-                returnTACList.add(new Assign((AssignableName) lhs.place, ((CompoundAssignOpExpr) assignment.assignExpr).compoundAssignOp.getSourceCode(), rhs.place, assignment, assignment.getSourceCode()));
-            } else if (assignment.assignExpr instanceof Decrement || assignment.assignExpr instanceof Increment) {
-                returnTACList.add(new Assign((AssignableName) lhs.place, assignment.assignExpr.getSourceCode(), lhs.place, assignment.assignExpr, assignment.getSourceCode()));
-            } else {
-                returnTACList.add(new Assign((AssignableName) lhs.place, DecafScanner.ASSIGN, rhs.place, assignment, assignment.getSourceCode()));
-            }
-            returnTACList.place = lhs.place;
-            return returnTACList;
+            instructionList.add(flattenCompoundAssign((AssignableName) lhsInstructionList.place, rhsInstructionList.place, ((AssignOpExpr) assignment.assignExpr).assignOp.getSourceCode(), assignment));
+            instructionList.place = lhsInstructionList.place;
+            return instructionList;
         }
     }
 

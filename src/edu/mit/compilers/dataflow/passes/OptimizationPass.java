@@ -37,9 +37,7 @@ public abstract class OptimizationPass {
             var assign = (Assign) instruction;
 //            if (assign.operand instanceof ArrayName && assign.store instanceof ArrayName)
 //                return ((ArrayName) assign.operand).arrayAccess.equals(((ArrayName) assign.store).arrayAccess);
-            if (assign.assignmentOperator.equals(DecafScanner.ASSIGN)) {
-                return assign.store.equals(assign.operand);
-            }
+            return assign.store.equals(assign.operand);
         }
         return false;
     }

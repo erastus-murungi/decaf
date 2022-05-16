@@ -108,11 +108,6 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
                 // remove any copy's where u, or v are being reassigned by "resultLocation"
                 copyQuadruples.removeIf(copyQuadruple -> copyQuadruple.contains(resulLocation));
             }
-            if (store instanceof Assign) {
-                Assign assign = (Assign) store;
-                if ((!assign.assignmentOperator.equals(DecafScanner.ASSIGN)) || assign.operand instanceof MemoryAddressName)
-                    continue;
-            }
             var computation = store.getOperandNoArray();
             computation.ifPresent(value -> copyQuadruples.add(new CopyQuadruple(store.getStore(), value,
                     basicBlock
