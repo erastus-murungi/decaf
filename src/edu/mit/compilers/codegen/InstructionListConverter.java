@@ -467,7 +467,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             instructionList.addAll(rhsInstructionList);
             instructionList.addAll(lhsInstructionList);
 
-            instructionList.add(flattenCompoundAssign((AssignableName) lhsInstructionList.place, rhsInstructionList.place, ((AssignOpExpr) assignment.assignExpr).assignOp.getSourceCode(), assignment));
+            instructionList.add(flattenCompoundAssign((AssignableName) lhsInstructionList.place, rhsInstructionList.place, assignment.getOperator(), assignment));
             instructionList.place = lhsInstructionList.place;
             return instructionList;
         }
