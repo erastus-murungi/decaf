@@ -1,6 +1,6 @@
 package edu.mit.compilers.codegen.codes;
 
-import edu.mit.compilers.codegen.TemporaryNameGenerator;
+import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.utils.Utils;
@@ -15,7 +15,7 @@ public class StringLiteralStackAllocation extends Instruction {
 
     public StringLiteralStackAllocation(String stringConstant) {
         super(null);
-        this.label = TemporaryNameGenerator.getNextStringLiteralIndex();
+        this.label = TemporaryNameIndexGenerator.getNextStringLiteralIndex();
         this.stringConstant = stringConstant;
         this.stringConstantEscaped = Utils.translateEscapes(stringConstant.substring(1, stringConstant.length() - 1));
     }

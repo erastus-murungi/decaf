@@ -38,12 +38,11 @@ public class RegisterAllocation {
     private Set<AbstractName> globalVariables;
 
     private void getGlobals() {
-        globalVariables = programIr.mergeProgram()
+        globalVariables = programIr.headerInstructions
                 .stream()
                 .filter(instruction -> instruction instanceof GlobalAllocation)
                 .map(instruction -> (GlobalAllocation) instruction)
                 .map(globalAllocation -> globalAllocation.variableName)
-                .filter(abstractName -> abstractName.size == Utils.WORD_SIZE)
                 .collect(Collectors.toUnmodifiableSet());
     }
 
@@ -133,7 +132,7 @@ public class RegisterAllocation {
             if (liveOut != null) {
                 var s = instruction.repr()
                         .split("#")[0];
-                output.add(String.format("%3d:    ", index) + s + "\t// live out =  " + prettyPrintLive(liveOut));
+                output.add(String.format("%3d:    ", index) + s + "\t        // live out =  " + prettyPrintLive(liveOut));
             } else {
                 output.add(String.format("%3d:    ", index) + instruction.repr());
             }
@@ -376,7 +375,7 @@ public class RegisterAllocation {
             // pick a color
             String color = colors[indexOfLiveInterval % colors.length];
             String repr = liveInterval.variable.repr();
-            toPrint.add(String.format("%s%s%s", repr + " ".repeat(maxVariableLength - repr.length()), "    ".repeat(liveInterval.startPoint + sizeOfHeaderInstructions), Utils.coloredPrint(" *  ", color).repeat(liveInterval.endPoint - liveInterval.startPoint + sizeOfHeaderInstructions)));
+            toPrint.add(String.format("%s%s%s", repr + " ".repeat(maxVariableLength - repr.length()), "  ".repeat(liveInterval.startPoint + sizeOfHeaderInstructions), Utils.coloredPrint("----", color).repeat(liveInterval.endPoint - liveInterval.startPoint + 1)));
             indexOfLiveInterval += 1;
         }
         System.out.println(String.join("\n", toPrint));

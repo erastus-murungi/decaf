@@ -22,7 +22,7 @@ public class InstructionSimplifyPass extends OptimizationPass {
     static final ConstantName mOne = new ConstantName(1L, BuiltinType.Int);
 
     private static ConstantName getZero() {
-        return new ConstantName(0L, BuiltinType.Int);
+        return new ConstantName(0L, BuiltinType.Bool);
     }
 
     private static ConstantName getOne() {

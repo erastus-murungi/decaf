@@ -1,7 +1,7 @@
 package edu.mit.compilers.codegen;
 
 
-public class TemporaryNameGenerator {
+public class TemporaryNameIndexGenerator {
     private static int variableIndex = -1;
     private static int labelIndex = -1;
     public static int boundsCheckIndex = -1;
@@ -9,12 +9,12 @@ public class TemporaryNameGenerator {
     public static int highestValue = 0;
 
 
-    public static String getNextBoundsCheckLabel() {
+    public static int getNextBoundsCheckLabel() {
         ++boundsCheckIndex;
-        return String.valueOf(boundsCheckIndex);
+        return boundsCheckIndex;
     }
 
-    private TemporaryNameGenerator() {}
+    private TemporaryNameIndexGenerator() {}
 
     public static void setTempVariableIndexToHighestValue() {
         highestValue = Math.max(highestValue, variableIndex);

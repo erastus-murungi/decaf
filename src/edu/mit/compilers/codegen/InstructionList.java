@@ -1,6 +1,5 @@
 package edu.mit.compilers.codegen;
 
-import edu.mit.compilers.codegen.codes.ArrayAccess;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.names.*;
 
@@ -119,13 +118,12 @@ public class InstructionList extends ArrayList<Instruction> {
     @Override
     public String toString() {
         return flatten().stream()
-                .filter(code -> !(code instanceof ArrayAccess))
                 .map(Instruction::repr)
                 .collect(Collectors.joining("\n"));
     }
 
     public String toStringLocal() {
-        return stream().filter(code -> !(code instanceof ArrayAccess)).map(Instruction::repr).collect(Collectors.joining("\n"));
+        return stream().map(Instruction::repr).collect(Collectors.joining("\n"));
     }
     public InstructionList copy() {
         return new InstructionList(place, this);

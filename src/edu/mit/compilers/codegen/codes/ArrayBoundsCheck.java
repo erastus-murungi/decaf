@@ -1,23 +1,28 @@
 package edu.mit.compilers.codegen.codes;
 
-import edu.mit.compilers.ast.AST;
+import java.util.List;
+
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.dataflow.operand.Operand;
-import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
-
-import java.util.List;
+import edu.mit.compilers.utils.Utils;
 
 public class ArrayBoundsCheck extends Instruction implements HasOperand {
-    public Label indexIsLessThanArraySize;
-    public Label indexIsGTEZero;
-    public ArrayAccess arrayAccess;
+    public GetAddress getAddress;
+    public Integer boundsIndex;
 
-    public ArrayBoundsCheck(AST source, ArrayAccess arrayAccess, String comment, Label indexIsLessThanArraySize, Label indexIsGTEZero) {
-        super(source, comment);
-        this.indexIsLessThanArraySize = indexIsLessThanArraySize;
-        this.indexIsGTEZero = indexIsGTEZero;
-        this.arrayAccess = arrayAccess;
+    public ArrayBoundsCheck(GetAddress getAddress, Integer boundsIndex) {
+        super(null);
+        this.getAddress = getAddress;
+        this.boundsIndex = boundsIndex;
+    }
+
+    public String getIndexIsLessThanArraySizeLabel() {
+        return "index_less_than_array_length_check_done_" + boundsIndex;
+    }
+
+    public String getIndexIsNonNegativeLabel() {
+        return "index_non_negative_check_done_" + boundsIndex;
     }
 
     @Override
@@ -27,7 +32,7 @@ public class ArrayBoundsCheck extends Instruction implements HasOperand {
 
     @Override
     public List<AbstractName> getAllNames() {
-        return List.of(arrayAccess.accessIndex);
+        return getAddress.getAllNames();
     }
 
     @Override
@@ -37,56 +42,27 @@ public class ArrayBoundsCheck extends Instruction implements HasOperand {
 
     @Override
     public Instruction copy() {
-        return new ArrayBoundsCheck(source, arrayAccess, getComment().orElse(null), indexIsLessThanArraySize, indexIsGTEZero);
+        return new ArrayBoundsCheck(getAddress, boundsIndex);
     }
 
     @Override
     public String toString() {
-        return String.format("%scheck bounds *%s ", DOUBLE_INDENT, arrayAccess);
+        final var checkBoundsString = Utils.coloredPrint("checkbounds", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
+        return String.format("%s%s %s %s, %s, %s", DOUBLE_INDENT, checkBoundsString, getAddress.getStore().toString(), getAddress.getBaseAddress().builtinType.getColoredSourceCode(), getAddress.getIndex().repr(), getAddress.getLength().orElseThrow().repr());
     }
 
     @Override
     public Operand getOperand() {
-        return new UnmodifiedOperand(arrayAccess.accessIndex);
+        return getAddress.getOperand();
     }
 
     @Override
     public List<AbstractName> getOperandNames() {
-        return List.of(arrayAccess.accessIndex);
+        return getAddress.getOperandNames();
     }
 
     @Override
     public boolean replace(AbstractName oldName, AbstractName newName) {
-        var replaced = false;
-        if (arrayAccess.accessIndex.equals(oldName)) {
-            arrayAccess.accessIndex = newName;
-            replaced = true;
-        }
-        return replaced;
+        return getAddress.replace(oldName, newName);
     }
-
-//    @Override
-//    public boolean hasUnModifiedOperand() {
-//        return true;
-//    }
-//
-//    @Override
-//    public Operand getOperand() {
-//        return new UnmodifiedOperand(arrayAccess.accessIndex);
-//    }
-//
-//    @Override
-//    public List<AbstractName> getOperandNames() {
-//        return List.of(arrayAccess.accessIndex);
-//    }
-//
-//    @Override
-//    public boolean replace(AbstractName oldName, AbstractName newName) {
-//        var replaced = false;
-//        if (arrayAccess.accessIndex.equals(oldName)) {
-//            arrayAccess.accessIndex = newName;
-//            replaced = true;
-//        }
-//        return replaced;
-//    }
 }

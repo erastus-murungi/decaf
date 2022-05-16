@@ -3,8 +3,8 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.MethodCallOperand;
 import edu.mit.compilers.utils.Utils;
@@ -39,8 +39,8 @@ public class FunctionCallWithResult extends Store implements HasOperand, Functio
 
     @Override
     public String repr() {
-        //        var callString =  Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
-        var callString = "call";
+        var callString =  Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
+//        var callString = "call";
         return String.format("%s%s: %s = %s @%s %s%s", DOUBLE_INDENT, getStore().repr(), getMethodReturnType(), callString, getMethodName() , DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
     }
 
@@ -51,7 +51,7 @@ public class FunctionCallWithResult extends Store implements HasOperand, Functio
 
     @Override
     public Optional<Operand> getOperandNoArray() {
-        if (store instanceof ArrayName)
+        if (store instanceof MemoryAddressName)
             return Optional.empty();
         return Optional.of(new MethodCallOperand(this));
     }

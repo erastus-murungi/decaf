@@ -9,7 +9,7 @@ import java.util.stream.IntStream;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
-import edu.mit.compilers.codegen.codes.ArrayAccess;
+import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
 import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.FunctionCall;
 import edu.mit.compilers.codegen.codes.HasOperand;
@@ -233,7 +233,7 @@ public class FunctionInlinePass {
     }
 
     private boolean hasArrayAccesses(MethodBegin methodBegin) {
-        return methodBegin.entryBlock.instructionList.stream().anyMatch(instruction -> instruction instanceof ArrayAccess);
+        return methodBegin.entryBlock.instructionList.stream().anyMatch(instruction -> instruction instanceof ArrayBoundsCheck);
     }
 
     private boolean shouldBeInlined(MethodBegin methodBegin) {

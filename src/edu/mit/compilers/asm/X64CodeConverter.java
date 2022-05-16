@@ -1,18 +1,50 @@
 package edu.mit.compilers.asm;
 
+import static edu.mit.compilers.asm.X64Register.N_ARG_REGISTERS;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
+import java.util.stream.Collectors;
+
 import edu.mit.compilers.ast.BuiltinType;
 import edu.mit.compilers.ast.MethodDefinition;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.codes.*;
+import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
+import edu.mit.compilers.codegen.codes.Assign;
+import edu.mit.compilers.codegen.codes.BinaryInstruction;
+import edu.mit.compilers.codegen.codes.ConditionalJump;
+import edu.mit.compilers.codegen.codes.FunctionCallNoResult;
+import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
+import edu.mit.compilers.codegen.codes.GetAddress;
+import edu.mit.compilers.codegen.codes.GlobalAllocation;
+import edu.mit.compilers.codegen.codes.Instruction;
+import edu.mit.compilers.codegen.codes.Label;
+import edu.mit.compilers.codegen.codes.MethodBegin;
+import edu.mit.compilers.codegen.codes.MethodEnd;
+import edu.mit.compilers.codegen.codes.MethodReturn;
+import edu.mit.compilers.codegen.codes.PopParameter;
+import edu.mit.compilers.codegen.codes.PushArgument;
 import edu.mit.compilers.codegen.codes.RuntimeException;
-import edu.mit.compilers.codegen.names.*;
-import edu.mit.compilers.utils.Pair;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static edu.mit.compilers.asm.X64Register.N_ARG_REGISTERS;
+import edu.mit.compilers.codegen.codes.StringLiteralStackAllocation;
+import edu.mit.compilers.codegen.codes.UnaryInstruction;
+import edu.mit.compilers.codegen.codes.UnconditionalJump;
+import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.ConstantName;
+import edu.mit.compilers.codegen.names.MemoryAddressName;
+import edu.mit.compilers.codegen.names.StringConstantName;
+import edu.mit.compilers.utils.Operators;
 
 public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Builder> {
     /**
@@ -38,15 +70,21 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
      *
      * <pre> {@code
      * 	    mov    a(,%r11,8), %r10
-     * 	    subq	a(,%rdx,8), %r10
+     * 	    subq	a(,%r12,8), %r10
      * }</pre>
      */
-    private final X64Register[] arrayIndexRegisters = {X64Register.R11, X64Register.R12};
+    private final Stack<X64Register> freeIndexRegisters = new Stack<>();
 
     /**
      * Provides a mapping of an array to its index register
      */
-    private final Stack<Pair<ArrayName, X64Register>> stackArrays = new Stack<>();
+    private final Map<MemoryAddressName, X64Register> memoryAddressToIndexRegister = new HashMap<>();
+
+    /**
+     * Provides a mapping of an index to its register
+     */
+    private final Map<AbstractName, X64Register> indexToIndexRegister = new HashMap<>();
+
     /**
      * The amount of stack space we are using for local variables
      */
@@ -58,10 +96,6 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
      * a variable;
      */
     public String lastComparisonOperator = null;
-    /**
-     * used to alternate between array access indices
-     */
-    private int arrayAccessCount = 0;
     /**
      * mapping of variables to registers
      * filled in the constructor
@@ -86,7 +120,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
      *   }
      *  </pre>
      * <p>
-     * If instead {@code a} is allocated the some register, for instance register <pre>{@code %rcx}</pre>
+     * If instead {@code a} is allocated some register, for instance register <pre>{@code %rcx}</pre>
      * We use
      * <pre>{@code
      *      movq $0, %rcx
@@ -95,6 +129,8 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     private final X64Register COPY_TEMP_REGISTER = X64Register.R10;
 
     private Map<MethodBegin, Map<Instruction, Set<X64Register>>> methodToLiveRegistersInfo = new HashMap<>();
+
+    private Map<MemoryAddressName, AbstractName> memoryAddressToArrayMap = new HashMap<>();
 
     private InstructionList instructionList;
 
@@ -107,6 +143,8 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         this.instructionList = instructionList;
         this.registerMapping = abstractNameToX64RegisterMap;
         this.methodToLiveRegistersInfo = methodToLiveRegistersInfo;
+        freeIndexRegisters.add(X64Register.R11);
+        freeIndexRegisters.add(X64Register.R12);
     }
 
     public X64CodeConverter(InstructionList instructionList) {
@@ -122,7 +160,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
         for (Instruction instruction : flattened) {
             for (AbstractName name : instruction.getAllNames()) {
-                if (name instanceof ArrayName && !globals.contains(name)) {
+                if (name instanceof MemoryAddressName && !globals.contains(name)) {
                     uniqueNames.add(name);
                 }
             }
@@ -130,7 +168,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
         for (Instruction instruction : flattened) {
             for (AbstractName name : instruction.getAllNames()) {
-                if (!(name instanceof ArrayName) && !globals.contains(name)) {
+                if (!(name instanceof MemoryAddressName) && !globals.contains(name)) {
                     uniqueNames.add(name);
                 }
             }
@@ -211,34 +249,27 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
     @Override
     public X64Builder visit(ArrayBoundsCheck arrayBoundsCheck, X64Builder x64builder) {
+        final var getAddress = arrayBoundsCheck.getAddress;
+        final var index = getAddress.getIndex();
+        final var arrayLength = getAddress.getLength().orElseThrow();
+        final var indexRegister = indexToIndexRegister.get(index);
+        indexToIndexRegister.remove(index);
+        // the index is stored in a register
         return x64builder
-                .addLine(x64InstructionLine(X64Instruction.movq, resolveLoadLocation(arrayBoundsCheck.arrayAccess.accessIndex), COPY_TEMP_REGISTER))
-                .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, COPY_TEMP_REGISTER))
-                .addLine(x64InstructionLine(X64Instruction.jge, x64Label(arrayBoundsCheck.indexIsGTEZero)))
+                .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, indexRegister))
+                .addLine(x64InstructionLine(X64Instruction.jge, x64Label(arrayBoundsCheck.getIndexIsNonNegativeLabel())))
                 .addLine(x64InstructionLine(X64Instruction.movl, ONE, "%edi"))
                 .addLine(x64InstructionLine(X64Instruction.call, "exit"))
 
-                .addLine(new X64Code("." + arrayBoundsCheck.indexIsGTEZero.label + ":"))
+                .addLine(new X64Code("." + arrayBoundsCheck.getIndexIsNonNegativeLabel() + ":"))
 
-                .addLine(x64InstructionLine(X64Instruction.cmp, arrayBoundsCheck.arrayAccess.arrayLength, COPY_TEMP_REGISTER))
-                .addLine(x64InstructionLine(X64Instruction.jl, x64Label(arrayBoundsCheck.indexIsLessThanArraySize)))
+                .addLine(x64InstructionLine(X64Instruction.cmp, arrayLength, indexRegister))
+                .addLine(x64InstructionLine(X64Instruction.jl, x64Label(arrayBoundsCheck.getIndexIsLessThanArraySizeLabel())))
 
                 .addLine(x64InstructionLine(X64Instruction.movl, ONE, "%edi"))
                 .addLine(x64InstructionLine(X64Instruction.call, "exit"))
 
-                .addLine(new X64Code("." + arrayBoundsCheck.indexIsLessThanArraySize.label + ":"));
-    }
-
-    @Override
-    public X64Builder visit(ArrayAccess arrayAccess, X64Builder x64Builder) {
-        // we keep alternating between array index registers
-        final X64Register register = arrayIndexRegisters[arrayAccessCount & 1];
-        arrayAccessCount += 1;
-        stackArrays.push(new Pair<>(arrayAccess.arrayName, register));
-        return x64Builder.addLine(
-                x64InstructionLine(X64Instruction.movq,
-                        COPY_TEMP_REGISTER,
-                        register));
+                .addLine(new X64Code("." + arrayBoundsCheck.getIndexIsLessThanArraySizeLabel() + ":"));
     }
 
     @Override
@@ -290,6 +321,17 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     }
 
     @Override
+    public X64Builder visit(GetAddress getAddress, X64Builder x64Builder) {
+        memoryAddressToArrayMap.put(getAddress.getStore(), getAddress.getBaseAddress());
+        final AbstractName index = getAddress.getIndex();
+        final String resolvedIndex = resolveLoadLocation(index);
+        final X64Register indexRegister = freeIndexRegisters.pop();
+        memoryAddressToIndexRegister.put(getAddress.getStore(), indexRegister);
+        indexToIndexRegister.put(index, indexRegister);
+        return x64Builder.addLine(x64InstructionLine(X64Instruction.movq, resolvedIndex, indexRegister));
+    }
+
+    @Override
     public X64Builder visit(Label label, X64Builder x64builder) {
         return x64builder.addLine(new X64Code("." + label.label + ":"));
     }
@@ -313,6 +355,10 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         return new X64Code("." + label.label);
     }
 
+    public X64Code x64Label(String label) {
+        return new X64Code("." + label);
+    }
+
     public X64Code x64InstructionLineWithComment(String comment, Object instruction, Object... args) {
         return new X64Code(tabSpaced(instruction) + commaSeparated(args), comment);
     }
@@ -330,7 +376,6 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                 x64InstructionLine(X64Instruction.movq, X64Register.RSP, X64Register.RBP));
         x64builder.addAtIndex(loc,
                 x64InstructionLine(X64Instruction.pushq, X64Register.RBP));
-        // x64builder.addAtIndex(loc, x64InstructionLine(X64Instruction.pushq, ZERO));
 
         x64builder = (methodEnd.isMain() ? x64builder
                 .addLine(x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX)) : x64builder);
@@ -339,7 +384,6 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         }
         x64builder.addLine(x64InstructionLine(X64Instruction.movq, X64Register.RBP, X64Register.RSP))
                 .addLine(x64InstructionLine(X64Instruction.popq, X64Register.RBP))
-                //     .addLine(x64InstructionLine(X64Instruction.popq, X64Register.RCX))
                 .addLine(x64InstructionLine(X64Instruction.ret));
         return x64builder;
     }
@@ -423,7 +467,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         }
     }
 
-    private X64Builder callerRestore(X64Builder x64Builder, X64Register returnAddressRegister) {
+    private void callerRestore(X64Builder x64Builder, X64Register returnAddressRegister) {
         var instruction = instructionList.get(currentInstructionIndex);
         Set<X64Register> x64Registers = methodToLiveRegistersInfo.getOrDefault(currentMethod, Collections.emptyMap())
                 .getOrDefault(instruction, Collections.emptySet());
@@ -435,11 +479,10 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                 x64Builder.addLine(x64InstructionLine(X64Instruction.movq, location, x64Register));
             }
         }
-        return x64Builder;
     }
 
     /**
-     * round n up to nearest multiple of m
+     * round n up to the nearest multiple of m
      */
     private static long roundUp16(long n) {
         return n >= 0 ? ((n + (long) 16 - 1) / (long) 16) * (long) 16 : (n / (long) 16) * (long) 16;
@@ -641,49 +684,28 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         return String.format("%s(%s)", index, X64Register.RBP);
     }
 
-    private X64Register findLatestOccurrence(AbstractName name) {
-        for (Pair<ArrayName, X64Register> nameX64RegisterPair : stackArrays) {
-            if (nameX64RegisterPair.first() == name) {
-                return nameX64RegisterPair.second();
-            }
-        }
-        return null;
-    }
-
-    private void removeStackOccurrence(AbstractName name) {
-        Pair<ArrayName, X64Register> nameX64RegisterPairToRemove = null;
-        for (Pair<ArrayName, X64Register> nameX64RegisterPair : stackArrays) {
-            if (nameX64RegisterPair.first() == name) {
-                nameX64RegisterPairToRemove = nameX64RegisterPair;
-            }
-        }
-        stackArrays.remove(nameX64RegisterPairToRemove);
-    }
-
-    public String resolveStackLocation(AbstractName name, X64Register reg) {
-        if (globals.contains(name)) {
-            String toReturn = String.format("%s(,%s,%s)", name, reg, 8);
-            removeStackOccurrence(name);
-            return toReturn;
-        } else {
-            Integer offset = currentMethod.nameToStackOffset.get(name.toString());
-            String toReturn = String.format("-%s(%s,%s,%s)", offset, X64Register.RBP, reg, 8);
-            removeStackOccurrence(name);
-            return toReturn;
-        }
-    }
 
     public String resolveLoadLocation(AbstractName name) {
+        if (name instanceof MemoryAddressName) {
+            var base = memoryAddressToArrayMap.get(name);
+            var indexRegister = Objects.requireNonNull(memoryAddressToIndexRegister.get(name));
+            String address;
+            if (globals.contains(base)) {
+                address = String.format("%s(,%s,%s)", base, indexRegister, 8);
+            } else {
+                var offset = currentMethod.nameToStackOffset.get(base.toString());
+                address = String.format("-%s(%s,%s,%s)", offset, X64Register.RBP, indexRegister, 8);
+            }
+            freeIndexRegisters.push(indexRegister);
+            memoryAddressToIndexRegister.remove(name);
+            return address;
+        }
         X64Register register = currentMapping.get(name);
         if (register != null && register != X64Register.STACK) {
                 return currentMapping.get(name)
                         .toString();
         } else if (register == X64Register.STACK) {
             return getNextStackLocation(name.toString());
-        }
-        var reg = findLatestOccurrence(name);
-        if (reg != null) {
-            return resolveStackLocation(name, reg);
         }
         if (globals.contains(name)) {
             return String.format("%s(%s)", name.toString(), "%rip");
@@ -708,17 +730,17 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     @Override
     public X64Builder visit(BinaryInstruction binaryInstruction, X64Builder x64builder) {
         switch (binaryInstruction.operator) {
-            case "+":
-            case "-":
-            case "*":
-            case "||":
-            case "&&":
+            case Operators.PLUS:
+            case Operators.MINUS:
+            case Operators.MULTIPLY:
+            case Operators.CONDITIONAL_OR:
+            case Operators.CONDITIONAL_AND:
                 return x64builder
                         .addLine(x64InstructionLine(X64Instruction.mov, resolveLoadLocation(binaryInstruction.fstOperand), COPY_TEMP_REGISTER))
                         .addLine(x64InstructionLine(X64Instruction.getX64OperatorCode(binaryInstruction.operator), resolveLoadLocation(binaryInstruction.sndOperand), COPY_TEMP_REGISTER))
                         .addLine(x64InstructionLineWithComment(String.format("%s = %s %s %s", binaryInstruction.store.repr(), binaryInstruction.fstOperand.repr(), binaryInstruction.operator, binaryInstruction.sndOperand.repr()), X64Instruction.movq, COPY_TEMP_REGISTER, resolveLoadLocation(binaryInstruction.store)));
-            case "/":
-            case "%": {
+            case Operators.DIVIDE:
+            case Operators.MOD: {
                 // If we are planning to use RDX, we spill it first
                 if (!resolveLoadLocation(binaryInstruction.store).equals(X64Register.RDX.toString()))
                     x64builder.addLine(x64InstructionLine(X64Instruction.movq, X64Register.RDX, getNextStackLocation(X64Register.RDX.toString())));
@@ -740,12 +762,13 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                     x64builder.addLine(x64InstructionLine(X64Instruction.movq, getNextStackLocation(X64Register.RDX.toString()), X64Register.RDX));
                 return x64builder;
             }
-            case "==":
-            case "!=":
-            case "<":
-            case ">":
-            case "<=":
-            case ">=":
+            // comparison operators
+            case Operators.EQ:
+            case Operators.NEQ:
+            case Operators.LT:
+            case Operators.GT:
+            case Operators.LEQ:
+            case Operators.GEQ:
                 lastComparisonOperator = binaryInstruction.operator;
                 return x64builder
                         .addLine(x64InstructionLine(X64Instruction.mov, resolveLoadLocation(binaryInstruction.fstOperand), COPY_TEMP_REGISTER))

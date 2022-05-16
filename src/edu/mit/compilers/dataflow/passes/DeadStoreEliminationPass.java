@@ -16,8 +16,8 @@ import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.ConstantName;
+import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.codegen.names.StringConstantName;
 import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
 
@@ -79,7 +79,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                 continue;
 
             if (possibleStoreInstruction instanceof HasOperand) {
-                if (((HasOperand) possibleStoreInstruction).getOperandNames().stream().anyMatch(abstractName -> abstractName instanceof ArrayName)) {
+                if (((HasOperand) possibleStoreInstruction).getOperandNames().stream().anyMatch(abstractName -> abstractName instanceof MemoryAddressName)) {
                     instructionListToUpdate.add(possibleStoreInstruction);
                     namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandNames());
                     continue;
@@ -92,7 +92,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                 var store = ((Store) possibleStoreInstruction).getStore();
 
                 // ignore arrays for now
-                if (!(store instanceof ArrayName)) {
+                if (!(store instanceof MemoryAddressName)) {
                     // do not eliminate global variables and store instructions where the
                     // right-hand side is composed of all constants, for example a = 1 + 2 or a = 3
                     // if (we are in the main method then we can afford to ignore global variables)
@@ -138,7 +138,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                     continue;
                 }
                 if (possibleStoreInstruction instanceof HasOperand) {
-                    if (((HasOperand) possibleStoreInstruction).getOperandNames().stream().anyMatch(abstractName -> abstractName instanceof ArrayName)) {
+                    if (((HasOperand) possibleStoreInstruction).getOperandNames().stream().anyMatch(abstractName -> abstractName instanceof MemoryAddressName)) {
                         instructionListToUpdate.add(possibleStoreInstruction);
                         continue;
                     }
@@ -147,7 +147,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                 var storeInstruction = ((Store) possibleStoreInstruction);
                 var store = storeInstruction.getStore();
 
-                if (!(store instanceof ArrayName)) {
+                if (!(store instanceof MemoryAddressName)) {
                     if (globalVariables.contains(store) && (!methodBegin.isMain()) || anySubsequentFunctionCalls(copyOfInstructionList.subList(0, copyOfInstructionList.indexOf(possibleStoreInstruction)))) {
                         instructionListToUpdate.add(possibleStoreInstruction);
                         continue;
