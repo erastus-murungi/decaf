@@ -779,6 +779,19 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
             default:
                 return null;
         }
+        var storeLocation = resolveLoadLocation(binaryInstruction.store);
+        var comment = String.format("%s = %s %s %s",
+                binaryInstruction.store.repr(),
+                binaryInstruction.fstOperand.repr(),
+                binaryInstruction.operator,
+                binaryInstruction.sndOperand.repr());
+        x64builder.addLine(
+                x64InstructionLineWithComment(
+                        comment,
+                        X64Instruction.movq, binaryInstruction.operator.equals("%") ? X64Register.RDX : X64Register.RAX, storeLocation));
+        return x64builder;
+
+
     }
 
     @Override

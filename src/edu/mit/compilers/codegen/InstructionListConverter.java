@@ -253,7 +253,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             }
         }
 
-
         private AssignableName resolveStoreLocation(BuiltinType builtinType) {
             return TemporaryName.generateTemporaryName(builtinType);
         }
