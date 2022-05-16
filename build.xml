@@ -68,8 +68,8 @@
                 <attribute name="Class-Path" value="${lib}/EvalEx-2.7.jar" />
             </manifest>
         </jar>
-        <symlink link="${dist}/EvalEx-2.7.jar" resource="${lib}/EvalEx-2.7.jar"
-        overwrite="true" />
+<!--        <symlink link="${dist}/EvalEx-2.7.jar" resource="${lib}/EvalEx-2.7.jar"-->
+<!--        overwrite="true" />-->
     </target>
 
     <!-- to clean, delete everything in the autogen, classes, and dist

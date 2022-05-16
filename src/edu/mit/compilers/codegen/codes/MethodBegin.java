@@ -27,6 +27,16 @@ public class MethodBegin extends Instruction {
      */
     public BasicBlock entryBlock;
 
+    private boolean hasRuntimeException;
+
+    public boolean hasRuntimeException() {
+        return hasRuntimeException;
+    }
+
+    public void setHasRuntimeException(boolean hasRuntimeException) {
+        this.hasRuntimeException = hasRuntimeException;
+    }
+
     public boolean isMain() {
         return methodDefinition.methodName.id.equals("main");
     }
@@ -35,10 +45,10 @@ public class MethodBegin extends Instruction {
         return methodDefinition.methodName.id;
     }
 
-    public Set<AssignableName> getParameterNames() {
+    public List<AssignableName> getParameterNames() {
         return methodDefinition.methodDefinitionParameterList.stream()
                 .map(methodDefinitionParameter -> new VariableName(methodDefinitionParameter.id.id, Utils.WORD_SIZE, methodDefinitionParameter.builtinType))
-                .collect(Collectors.toUnmodifiableSet());
+                .collect(Collectors.toList());
     }
 
     // to be filled in later by the X64Converter
@@ -66,7 +76,7 @@ public class MethodBegin extends Instruction {
 
     @Override
     public String repr() {
-        return String.format("\n%s: -> %s {%s", methodDefinition.methodName.id, methodDefinition.returnType.getSourceCode(), DOUBLE_INDENT);
+        return String.format("%s: -> %s {%s", methodDefinition.methodName.id, methodDefinition.returnType.getSourceCode(), DOUBLE_INDENT);
     }
 
     @Override

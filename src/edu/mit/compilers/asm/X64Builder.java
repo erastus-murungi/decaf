@@ -30,6 +30,11 @@ public class X64Builder {
         return this;
     }
 
+    public X64Builder addAllAtIndex(int index, Collection<X64Code> lines) {
+        x64CodeList.addAll(index, lines);
+        return this;
+    }
+
     public X64Builder addLines(Collection<X64Code> lines) {
         x64CodeList.addAll(lines);
         return this;

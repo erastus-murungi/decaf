@@ -9,6 +9,7 @@ import java.util.stream.IntStream;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
+import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
 import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.FunctionCall;
 import edu.mit.compilers.codegen.codes.HasOperand;
@@ -18,7 +19,7 @@ import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
 import edu.mit.compilers.codegen.codes.MethodEnd;
 import edu.mit.compilers.codegen.codes.MethodReturn;
 import edu.mit.compilers.codegen.codes.PopParameter;
-import edu.mit.compilers.codegen.codes.PushParameter;
+import edu.mit.compilers.codegen.codes.PushArgument;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.codegen.names.AbstractName;
@@ -82,9 +83,9 @@ public class FunctionInlinePass {
         assert instructionList.get(indexOfFunctionCall) instanceof FunctionCall;
         var arguments = new ArrayList<AbstractName>();
         int indexOfPushParameter = indexOfFunctionCall - 1;
-        while (indexOfPushParameter >= 0 && instructionList.get(indexOfPushParameter) instanceof PushParameter) {
-            PushParameter pushParameter = (PushParameter) instructionList.get(indexOfPushParameter);
-            arguments.add(pushParameter.parameterName);
+        while (indexOfPushParameter >= 0 && instructionList.get(indexOfPushParameter) instanceof PushArgument) {
+            PushArgument pushArgument = (PushArgument) instructionList.get(indexOfPushParameter);
+            arguments.add(pushArgument.parameterName);
             indexOfPushParameter--;
         }
         return arguments;
@@ -158,7 +159,7 @@ public class FunctionInlinePass {
             }
             newTacList.addAll(replacement);
             last = indexOfCallSite - 1;
-            while (last >= 0 && targetTacList.get(last) instanceof PushParameter)
+            while (last >= 0 && targetTacList.get(last) instanceof PushArgument)
                 last--;
             indexOfReplacementBody--;
         }
@@ -231,12 +232,18 @@ public class FunctionInlinePass {
                 .contains("if");
     }
 
+    private boolean hasArrayAccesses(MethodBegin methodBegin) {
+        return methodBegin.entryBlock.instructionList.stream().anyMatch(instruction -> instruction instanceof ArrayBoundsCheck);
+    }
+
     private boolean shouldBeInlined(MethodBegin methodBegin) {
         if (methodBegin.isMain())
             return false;
         if (isRecursive(methodBegin))
             return false;
         if (hasBranching(methodBegin))
+            return false;
+        if (hasArrayAccesses(methodBegin))
             return false;
         final var functionName = methodBegin.methodName();
         final int programSize = getProgramSize();

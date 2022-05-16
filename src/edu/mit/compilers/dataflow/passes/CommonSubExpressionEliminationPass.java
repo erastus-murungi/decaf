@@ -10,7 +10,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.TemporaryNameGenerator;
+import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.Store;
@@ -28,7 +28,7 @@ import edu.mit.compilers.dataflow.operand.Operand;
 public class CommonSubExpressionEliminationPass extends OptimizationPass {
     public CommonSubExpressionEliminationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
         super(globalVariables, methodBegin);
-        TemporaryNameGenerator.setTempVariableIndexToHighestValue();
+        TemporaryNameIndexGenerator.setTempVariableIndexToHighestValue();
     }
 
     private static void swapOut(InstructionList tacList,
@@ -214,6 +214,8 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
 
             if (!computationFound) {
                 queue.addAll(current.getPredecessors());
+            } else {
+                break;
             }
         }
         Objects.requireNonNull(uniqueName, "uniqueName is null");

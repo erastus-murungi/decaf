@@ -4,8 +4,8 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.Store;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.copy.CopyQuadruple;
@@ -103,14 +103,14 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
 
         for (Store store : basicBlock.getStores()) {
             // check to see whether any existing assignments are invalidated by this one
-            if (!(store.getStore() instanceof ArrayName)) {
+            if (!(store.getStore() instanceof MemoryAddressName)) {
                 final AssignableName resulLocation = store.getStore();
                 // remove any copy's where u, or v are being reassigned by "resultLocation"
                 copyQuadruples.removeIf(copyQuadruple -> copyQuadruple.contains(resulLocation));
             }
             if (store instanceof Assign) {
                 Assign assign = (Assign) store;
-                if ((!assign.assignmentOperator.equals(DecafScanner.ASSIGN)) || assign.operand instanceof ArrayName)
+                if ((!assign.assignmentOperator.equals(DecafScanner.ASSIGN)) || assign.operand instanceof MemoryAddressName)
                     continue;
             }
             var computation = store.getOperandNoArray();
@@ -128,7 +128,7 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
         var superSet = new HashSet<>(allValues);
         var killedCopyQuadruples = new HashSet<CopyQuadruple>();
         for (Store store : basicBlock.getStores()) {
-            if (!(store.getStore() instanceof ArrayName)) {
+            if (!(store.getStore() instanceof MemoryAddressName)) {
                 final AssignableName resulLocation = store.getStore();
                 for (CopyQuadruple copyQuadruple : superSet) {
                     if (copyQuadruple.basicBlock != basicBlock && copyQuadruple.contains(resulLocation)) {

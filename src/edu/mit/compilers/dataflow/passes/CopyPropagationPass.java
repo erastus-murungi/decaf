@@ -3,7 +3,7 @@ package edu.mit.compilers.dataflow.passes;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.*;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.ArrayName;
+import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.dataflow.analyses.AvailableCopies;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
@@ -17,6 +17,8 @@ public class CopyPropagationPass extends OptimizationPass {
 
 
     private static void propagateCopy(HasOperand hasOperand, HashMap<AbstractName, Operand> copies) {
+        if (copies.isEmpty())
+            return;
         boolean notConverged = true;
         while (notConverged) {
             // we have to do this in a while loop because of how copy replacements propagate
@@ -25,6 +27,8 @@ public class CopyPropagationPass extends OptimizationPass {
             // we want to eventually propagate so that a = $0
             notConverged = false;
             for (var toBeReplaced : hasOperand.getOperandNamesNoArray()) {
+                if (hasOperand instanceof Store && ((Store) hasOperand).getStore().equals(toBeReplaced))
+                    continue;
                 if (copies.get(toBeReplaced) instanceof UnmodifiedOperand) {
                     var replacer = ((UnmodifiedOperand) copies.get(toBeReplaced)).abstractName;
                     if (!isTrivialAssignment((Instruction) hasOperand)) {
@@ -60,7 +64,7 @@ public class CopyPropagationPass extends OptimizationPass {
             if (instruction instanceof Store) {
                 var hasResult = (Store) instruction;
                 var resultLocation = hasResult.getStore();
-                if (!(resultLocation instanceof ArrayName)) {
+                if (!(resultLocation instanceof MemoryAddressName)) {
                     for (var assignableName : new ArrayList<>(copies.keySet())) {
                         var replacer = copies.get(assignableName);
                         if (assignableName.equals(resultLocation) ||

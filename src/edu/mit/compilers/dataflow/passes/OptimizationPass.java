@@ -35,6 +35,8 @@ public abstract class OptimizationPass {
     protected static boolean isTrivialAssignment(Instruction instruction) {
         if (instruction instanceof Assign) {
             var assign = (Assign) instruction;
+//            if (assign.operand instanceof ArrayName && assign.store instanceof ArrayName)
+//                return ((ArrayName) assign.operand).arrayAccess.equals(((ArrayName) assign.store).arrayAccess);
             if (assign.assignmentOperator.equals(DecafScanner.ASSIGN)) {
                 return assign.store.equals(assign.operand);
             }

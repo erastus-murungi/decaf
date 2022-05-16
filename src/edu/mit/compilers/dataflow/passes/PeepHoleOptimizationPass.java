@@ -6,12 +6,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
 import edu.mit.compilers.codegen.codes.ConditionalJump;
 import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.ConstantName;
 
 public class PeepHoleOptimizationPass extends OptimizationPass {
     public PeepHoleOptimizationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
@@ -103,6 +105,34 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
         }
     }
 
+    private void removeTrivialBoundsChecks() {
+        for (var basicBlock : basicBlocks) {
+            var indicesToRemove = new ArrayList<Integer>();
+            for (var indexOfInstruction = 0; indexOfInstruction < basicBlock.instructionList.size(); indexOfInstruction++) {
+                var instruction = basicBlock.instructionList.get(indexOfInstruction);
+                if (instruction instanceof ArrayBoundsCheck) {
+                    ArrayBoundsCheck arrayBoundsCheck = (ArrayBoundsCheck) instruction;
+                    if (arrayBoundsCheck.getAddress.getIndex() instanceof ConstantName) {
+                        var index = Long.parseLong(arrayBoundsCheck.getAddress.getIndex().value);
+                        var length = Long.parseLong(arrayBoundsCheck.getAddress.getLength().orElseThrow().value);
+                        if (index >= 0 && index < length) {
+                            indicesToRemove.add(indexOfInstruction);
+                        }
+                    }
+                }
+            }
+
+            for (var index : indicesToRemove) {
+                basicBlock.instructionList
+                        .set(index, null);
+            }
+            basicBlock.instructionList.reset(basicBlock.getCopyOfInstructionList()
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList()));
+        }
+    }
+
 
 
     @Override
@@ -110,6 +140,7 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
         final var oldCodes = entryBlock.getCopyOfInstructionList();
         eliminateRedundantJumps();
         eliminateUnUsedJumps();
+        removeTrivialBoundsChecks();
         return oldCodes.equals(entryBlock.instructionList);
     }
 }

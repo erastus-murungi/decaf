@@ -1,11 +1,10 @@
 package edu.mit.compilers.codegen.names;
 
+import java.util.Objects;
+
 import edu.mit.compilers.ast.BooleanLiteral;
 import edu.mit.compilers.ast.BuiltinType;
 import edu.mit.compilers.ast.IntLiteral;
-import edu.mit.compilers.utils.Utils;
-
-import java.util.Objects;
 
 public class ConstantName extends AbstractName {
     public ConstantName(Long value, BuiltinType builtinType) {
@@ -40,9 +39,10 @@ public class ConstantName extends AbstractName {
 
     @Override
     public String repr() {
-//        var constString = Utils.coloredPrint("const", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
-        var constString = "const";
-        return String.format("%s %s", constString, value);
+        String val = value;
+        if (builtinType.equals(BuiltinType.Bool))
+            val = value.equals("1") ? "true" : "false";
+        return String.format("%s %s", builtinType.getColoredSourceCode(), val);
     }
 
     @Override

@@ -60,6 +60,8 @@ public class MethodReturn extends Instruction implements HasOperand {
 
     @Override
     public List<AbstractName> getOperandNames() {
+        if (returnAddress == null)
+            return Collections.emptyList();
         return List.of(returnAddress);
     }
 

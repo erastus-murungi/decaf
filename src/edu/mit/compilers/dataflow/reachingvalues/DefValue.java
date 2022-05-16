@@ -22,12 +22,6 @@ public class DefValue {
         }
     }
 
-    public boolean isConstantDefinition(){
-        return operand instanceof UnmodifiedOperand ||
-                (operand instanceof UnaryOperand && Objects.equals(((UnaryOperand) operand).operator, "-")
-                        && ((UnaryOperand) operand).operand instanceof ConstantName);
-    }
-
     @Override
     public int hashCode() {
         return variableName.hashCode() ^ operand.hashCode();
