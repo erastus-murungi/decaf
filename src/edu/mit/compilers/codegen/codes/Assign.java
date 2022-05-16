@@ -3,18 +3,17 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.AssignableName;
-import edu.mit.compilers.codegen.names.ConstantName;
+import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.dataflow.operand.AugmentedOperand;
 import edu.mit.compilers.dataflow.operand.IncDecOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 import edu.mit.compilers.grammar.DecafScanner;
-import edu.mit.compilers.utils.Utils;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class Assign extends Store implements Cloneable, HasOperand {
     public String assignmentOperator;
@@ -42,10 +41,7 @@ public class Assign extends Store implements Cloneable, HasOperand {
 
     @Override
     public String repr() {
-        if (operand instanceof ConstantName)
-            return String.format("%s%s: %s %s %s", DOUBLE_INDENT, store.repr(), store.builtinType.getSourceCode(), assignmentOperator, operand.repr());
-        var load =  Utils.coloredPrint("load", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
-        return String.format("%s%s: %s %s %s %s", DOUBLE_INDENT, store.repr(), store.builtinType.getSourceCode(), assignmentOperator, load, operand.repr());
+        return String.format("%s%s: %s %s %s", DOUBLE_INDENT, store.repr(), store.builtinType.getSourceCode(), assignmentOperator, operand.repr());
     }
 
     @Override
@@ -60,7 +56,7 @@ public class Assign extends Store implements Cloneable, HasOperand {
 
     @Override
     public Optional<Operand> getOperandNoArray() {
-        if (operand instanceof ArrayName)
+        if (operand instanceof MemoryAddressName)
             return Optional.empty();
         switch (assignmentOperator) {
             case DecafScanner.ADD_ASSIGN:
@@ -106,7 +102,9 @@ public class Assign extends Store implements Cloneable, HasOperand {
 
     @Override
     public List<AbstractName> getOperandNames() {
-        return List.of(operand);
+        if (Set.of("++", "--", "=").contains(assignmentOperator))
+            return List.of(operand);
+        return List.of(operand, getStore());
     }
 
     public boolean replace(AbstractName oldVariable, AbstractName replacer) {

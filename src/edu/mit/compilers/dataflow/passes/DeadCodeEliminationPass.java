@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.FunctionCall;
 import edu.mit.compilers.codegen.codes.MethodBegin;
-import edu.mit.compilers.codegen.codes.PushParameter;
+import edu.mit.compilers.codegen.codes.PushArgument;
 import edu.mit.compilers.codegen.names.AbstractName;
 
 public class DeadCodeEliminationPass extends OptimizationPass {
@@ -28,7 +28,7 @@ public class DeadCodeEliminationPass extends OptimizationPass {
             if (tac instanceof FunctionCall) {
                 int numberOfArguments = ((FunctionCall) tac).numberOfArguments();
                 int indexToStartCheck = indexOfCode - numberOfArguments - 1;
-                while (indexToStartCheck >= 0 && basicBlock.instructionList.get(indexToStartCheck) instanceof PushParameter) {
+                while (indexToStartCheck >= 0 && basicBlock.instructionList.get(indexToStartCheck) instanceof PushArgument) {
                     indicesToRemove.add(indexToStartCheck);
                     indexToStartCheck--;
                     changed = true;
@@ -51,11 +51,11 @@ public class DeadCodeEliminationPass extends OptimizationPass {
         var indicesToRemove = new ArrayList<Integer>();
         for (int indexOfCode = 0; indexOfCode < basicBlock.instructionList.size(); indexOfCode++) {
             var tac = basicBlock.instructionList.get(indexOfCode);
-            if (changed && tac instanceof PushParameter) {
+            if (changed && tac instanceof PushArgument) {
                 var prevCode = basicBlock.instructionList.get(indexOfCode - 1);
                 var nextCode = basicBlock.instructionList.get(indexOfCode + 1);
-                boolean firstCondition = prevCode instanceof MethodBegin || prevCode instanceof PushParameter || prevCode instanceof FunctionCall;
-                boolean secondCondition = nextCode instanceof PushParameter || nextCode instanceof FunctionCall;
+                boolean firstCondition = prevCode instanceof MethodBegin || prevCode instanceof PushArgument || prevCode instanceof FunctionCall;
+                boolean secondCondition = nextCode instanceof PushArgument || nextCode instanceof FunctionCall;
                 if (!(firstCondition && secondCondition)) {
                     indicesToRemove.add(indexOfCode);
                 }

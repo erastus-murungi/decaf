@@ -1,13 +1,11 @@
 package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.ArrayName;
 import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.dataflow.operand.Operand;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public interface HasOperand {
@@ -20,7 +18,7 @@ public interface HasOperand {
     default List<AbstractName> getOperandNamesNoArray() {
         return getOperandNames()
                 .stream()
-                .filter(abstractName -> !(abstractName instanceof ArrayName))
+                .filter(abstractName -> !(abstractName instanceof MemoryAddressName))
                 .collect(Collectors.toList());
     }
 

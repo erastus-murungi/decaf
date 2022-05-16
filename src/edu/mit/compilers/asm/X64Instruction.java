@@ -13,6 +13,10 @@ public enum X64Instruction {
                 return subq;
             case DecafScanner.DIVIDE:
                 return idivq;
+            case DecafScanner.CONDITIONAL_AND:
+                return andq;
+            case DecafScanner.CONDITIONAL_OR:
+                return orq;
             case DecafScanner.GEQ:
             case DecafScanner.GT:
             case DecafScanner.LT:
@@ -42,6 +46,12 @@ public enum X64Instruction {
                 return setne;
         }
         throw new IllegalStateException("operator " + operator + " not found");
+    }
+
+    public static X64Instruction getCorrectIncrementInstruction(String operator) {
+        if (operator.equals(DecafScanner.INCREMENT))
+            return inc;
+        else return dec;
     }
 
     public static X64Instruction getCorrectJumpIfFalseInstruction(String operator) {

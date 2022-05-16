@@ -36,7 +36,7 @@ public class MethodEnd extends Instruction {
 
     @Override
     public String repr() {
-        return "}";
+        return "}\n";
     }
 
     @Override

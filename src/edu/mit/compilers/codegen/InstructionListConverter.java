@@ -40,7 +40,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
         @Override
         public InstructionList visit(BooleanLiteral booleanLiteral, SymbolTable symbolTable) {
             var place = resolveStoreLocation(BuiltinType.Bool);
-            resetStoreLocation();
             return new InstructionList(
                     place,
                     Collections.singletonList(new Assign(place, "=", ConstantName.fromBooleanLiteral(booleanLiteral), booleanLiteral, place + " = " + booleanLiteral)));
@@ -49,7 +48,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
         @Override
         public InstructionList visit(DecimalLiteral decimalLiteral, SymbolTable symbolTable) {
             var place = resolveStoreLocation(BuiltinType.Int);
-            resetStoreLocation();
             return new InstructionList(
                     place,
                     Collections.singletonList(new Assign(place, "=", ConstantName.fromIntLiteral(decimalLiteral), decimalLiteral, place + " = " + decimalLiteral)));
@@ -58,7 +56,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
         @Override
         public InstructionList visit(HexLiteral hexLiteral, SymbolTable symbolTable) {
             var place = resolveStoreLocation(BuiltinType.Int);
-            resetStoreLocation();
             return new InstructionList(
                     place,
                     Collections.singletonList(new Assign(place, "=", ConstantName.fromIntLiteral(hexLiteral), hexLiteral, place + " = " + hexLiteral)));
@@ -118,7 +115,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             final var retTACList = new InstructionList();
             retTACList.addAll(operandTACList);
             var place = resolveStoreLocation(unaryOpExpression.builtinType);
-            resetStoreLocation();
             retTACList.add(new UnaryInstruction(place, unaryOpExpression.op.getSourceCode(), operandTACList.place, unaryOpExpression));
             retTACList.place = place;
             return retTACList;
@@ -126,9 +122,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
 
         @Override
         public InstructionList visit(BinaryOpExpression binaryOpExpression, SymbolTable symbolTable) {
-            final var cachedPlace = methodSetResultLocation;
-            resetStoreLocation();
-
             final var leftTACList = binaryOpExpression.lhs.accept(this, symbolTable);
             final var rightTACList = binaryOpExpression.rhs.accept(this, symbolTable);
 
@@ -137,11 +130,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             binOpExpressionTACList.addAll(rightTACList);
 
             AssignableName place;
-            if (cachedPlace == null)
-                place = resolveStoreLocation(binaryOpExpression.builtinType);
-            else
-                place = cachedPlace;
-            resetStoreLocation();
+            place = resolveStoreLocation(binaryOpExpression.builtinType);
 
             binOpExpressionTACList.add(
                     new BinaryInstruction(
@@ -153,8 +142,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
                             binaryOpExpression
                     ));
             binOpExpressionTACList.place = place;
-
-            methodSetResultLocation = cachedPlace;
             return binOpExpressionTACList;
         }
 
@@ -174,39 +161,29 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
         }
 
 
-        private void addArrayAccessBoundsCheck(
-                InstructionList instructionList,
-                ArrayAccess arrayAccess
-        ) {
-
-            final String boundsIndex = TemporaryNameGenerator.getNextBoundsCheckLabel();
-            Label boundsBad = new Label("IndexIsLessThanArrayLengthCheckDone_" + boundsIndex, null);
-            Label boundsGood = new Label("IndexIsNotNegativeCheckDone_" + boundsIndex, null);
-            instructionList.add(new ArrayBoundsCheck(null, arrayAccess, null, boundsBad, boundsGood));
+        private void addArrayAccessBoundsCheck(InstructionList instructionList, GetAddress getAddress) {
+            final int boundsIndex = TemporaryNameIndexGenerator.getNextBoundsCheckLabel();
+            instructionList.add(new ArrayBoundsCheck(getAddress, boundsIndex));
         }
 
         @Override
         public InstructionList visit(LocationArray locationArray, SymbolTable symbolTable) {
-            final var locationThreeAddressCodeList = locationArray.expression.accept(this, symbolTable);
-            final var threeAddressCodeList = new InstructionList();
-            threeAddressCodeList.addAll(locationThreeAddressCodeList);
+            final var indexInstructionList = locationArray.expression.accept(this, symbolTable);
+            final var locationArrayInstructionList = new InstructionList();
+            locationArrayInstructionList.addAll(indexInstructionList);
 
             final var descriptorFromValidScopes = symbolTable.getDescriptorFromValidScopes(locationArray.name.id);
             final var arrayDescriptor = (ArrayDescriptor) descriptorFromValidScopes.orElseThrow(
                     () -> new IllegalStateException("expected to find array " + locationArray.name.id + " in scope")
             );
+            final var arrayName = new VariableName(locationArray.name.id, arrayDescriptor.size * Utils.WORD_SIZE, arrayDescriptor.type);
+            final var getAddressInstruction = new GetAddress(locationArray, arrayName, indexInstructionList.place, generateAddressName(arrayDescriptor.type), new ConstantName(arrayDescriptor.size, BuiltinType.Int));
+            locationArrayInstructionList.add(getAddressInstruction);
 
-            final var arrayName = new ArrayName(locationArray.name.id, arrayDescriptor.size * Utils.WORD_SIZE, arrayDescriptor.type, null);
-            final var arrayAccess = new ArrayAccess(
-                    locationArray, locationArray.getSourceCode(),
-                    arrayName,
-                    new ConstantName(arrayDescriptor.size, arrayDescriptor.type),
-                    locationThreeAddressCodeList.place);
-            arrayName.arrayAccess = arrayAccess;
-            addArrayAccessBoundsCheck(threeAddressCodeList, arrayAccess);
-            threeAddressCodeList.add(arrayAccess);
-            threeAddressCodeList.place = arrayAccess.arrayName;
-            return threeAddressCodeList;
+            if (!(indexInstructionList.place instanceof ConstantName))
+                addArrayAccessBoundsCheck(locationArrayInstructionList, getAddressInstruction);
+            locationArrayInstructionList.place = getAddressInstruction.store;
+            return locationArrayInstructionList;
         }
 
         @Override
@@ -271,22 +248,17 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
                                           List<AbstractName> newParamNames,
                                           List<? extends AST> methodCallOrDefinitionArguments) {
             for (int i = newParamNames.size() - 1; i >= 0; i--) {
-                final var pushParameter = new PushParameter(newParamNames.get(i), i, methodCallOrDefinitionArguments.get(i));
+                final var pushParameter = new PushArgument(newParamNames.get(i), i, methodCallOrDefinitionArguments.get(i));
                 instructionList.add(pushParameter);
             }
         }
 
         private AssignableName resolveStoreLocation(BuiltinType builtinType) {
-            return Objects.requireNonNullElseGet(methodSetResultLocation, () -> TemporaryName.generateTemporaryName(builtinType));
+            return TemporaryName.generateTemporaryName(builtinType);
         }
 
-        private void resetStoreLocation() {
-            methodSetResultLocation = null;
-        }
-
-        private void setStoreLocation(AssignableName place) {
-            if (place != null && (!(place instanceof ArrayName)))
-                methodSetResultLocation = place;
+        private AssignableName generateAddressName(BuiltinType builtinType) {
+            return new MemoryAddressName(TemporaryNameIndexGenerator.getNextTemporaryVariable(), Utils.WORD_SIZE, builtinType);
         }
 
         @Override
@@ -294,7 +266,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             final InstructionList instructionList = new InstructionList();
             flattenMethodCallArguments(instructionList, methodCall.methodCallParameterList, symbolTable);
             var place = resolveStoreLocation(methodCall.builtinType);
-            resetStoreLocation();
             instructionList.add(new FunctionCallWithResult(methodCall, place, methodCall.getSourceCode()));
             instructionList.place = place;
             return instructionList;
@@ -382,7 +353,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
         @Override
         public InstructionList visit(Initialization initialization, SymbolTable symbolTable) {
             InstructionList initIdThreeAddressList = initialization.initId.accept(this, symbolTable);
-            setStoreLocation((AssignableName) initIdThreeAddressList.place);
             InstructionList initExpressionThreeAddressList = initialization.initExpression.accept(this, symbolTable);
             Assign copyInstruction = new Assign((AssignableName) initIdThreeAddressList.place, "=", initExpressionThreeAddressList.place, initialization, initialization.getSourceCode());
 
@@ -390,7 +360,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             initializationInstructionList.addAll(initIdThreeAddressList);
             initializationInstructionList.addAll(initExpressionThreeAddressList);
             initializationInstructionList.add(copyInstruction);
-            resetStoreLocation();
             return initializationInstructionList;
         }
 
@@ -400,9 +369,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             InstructionList lhs = assignment.location.accept(this, symbolTable);
             InstructionList rhs;
             if (assignment.assignExpr.expression != null) {
-                if (assignment.getOperator()
-                        .equals("="))
-                    setStoreLocation((AssignableName) lhs.place);
                 rhs = assignment.assignExpr.expression.accept(this, symbolTable);
             } else {
                 rhs = new InstructionList();
@@ -419,7 +385,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             } else {
                 returnTACList.add(new Assign((AssignableName) lhs.place, DecafScanner.ASSIGN, rhs.place, assignment, assignment.getSourceCode()));
             }
-            resetStoreLocation();
             returnTACList.place = lhs.place;
             return returnTACList;
         }
@@ -432,7 +397,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
     Set<BasicBlock> visited = new HashSet<>();
     HashMap<BasicBlock, Label> blockToLabelHashMap = new HashMap<>();
     HashMap<BasicBlock, InstructionList> blockToCodeHashMap = new HashMap<>();
-    static AssignableName methodSetResultLocation;
     public HashMap<String, SymbolTable> cfgSymbolTables;
 
 
@@ -450,6 +414,8 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
                 errors.stream()
                         .map(error -> new RuntimeException(error.getMessage(), -2, error))
                         .collect(Collectors.toList()));
+        // if the errors list is non-empty, set hasRuntimeException to true
+        methodBegin.setHasRuntimeException(!errors.isEmpty());
 
         flattenMethodDefinitionArguments(instructions, methodDefinition.methodDefinitionParameterList);
 
@@ -498,7 +464,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             for (Array array : fieldDeclaration.arrays) {
                 long size = (fieldDeclaration.builtinType.getFieldSize() * array.size.convertToLong());
                 instructionList.add(new GlobalAllocation(array, "# " + array.getSourceCode(),
-                        new ArrayName(array.id.id,
+                        new VariableName(array.id.id,
                                 size, fieldDeclaration.builtinType), size, fieldDeclaration.builtinType));
             }
         }
@@ -522,7 +488,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
         globalNames = new HashSet<>();
         for (Instruction instruction : instructionList) {
             for (AbstractName name : instruction.getAllNames()) {
-                if (name instanceof VariableName || name instanceof ArrayName)
+                if (name instanceof VariableName || name instanceof MemoryAddressName)
                     globalNames.add(name);
             }
         }
@@ -603,7 +569,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
         }
         BiFunction<BasicBlock, Label, Label> function = (cfgBlock1, label) -> {
             if (label == null) {
-                return new Label(TemporaryNameGenerator.getNextLabel(), cfgBlock1);
+                return new Label(TemporaryNameIndexGenerator.getNextLabel(), cfgBlock1);
             } else {
                 label.aliasLabels.add(from == null ? "haha" : from.label + "_False");
             }

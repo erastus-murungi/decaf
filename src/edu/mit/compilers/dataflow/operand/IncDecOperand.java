@@ -1,5 +1,7 @@
 package edu.mit.compilers.dataflow.operand;
 
+import java.util.Objects;
+
 import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.Store;
 import edu.mit.compilers.codegen.names.AbstractName;
@@ -27,5 +29,18 @@ public class IncDecOperand extends Operand {
     @Override
     public Store getStoreInstructionFromOperand(AssignableName store) {
         return new Assign(store, operator, operand, null, null);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        IncDecOperand that = (IncDecOperand) o;
+        return Objects.equals(operator, that.operator) && Objects.equals(operand, that.operand);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(operator, operand);
     }
 }

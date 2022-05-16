@@ -45,6 +45,8 @@ public class Return extends Statement implements HasExpression {
 
   @Override
   public List<Expression> getExpression() {
+    if (retExpression == null)
+      return Collections.emptyList();
     return List.of(retExpression);
   }
 
