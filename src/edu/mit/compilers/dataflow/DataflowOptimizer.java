@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.dataflow.passes.BranchSimplificationPass;
@@ -147,7 +148,7 @@ public class DataflowOptimizer {
                     System.out.format("%s<%s> run = %s\n", optimizationPass.getClass()
                             .getSimpleName(), optimizationPass.getMethod()
                             .methodName(), run);
-                    System.out.println(optimizationPass.getMethod().entryBlock.instructionList.flatten());
+                    System.out.println(TraceScheduler.flattenIr(optimizationPass.getMethod()));
                     System.out.println(Utils.coloredPrint(String.valueOf(changesHappened), Utils.ANSIColorConstants.ANSI_RED));
                 }
                 if (run % toOptimizeMethods.size() == 0)

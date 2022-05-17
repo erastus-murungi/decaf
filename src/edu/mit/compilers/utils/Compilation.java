@@ -6,15 +6,16 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.stream.Collectors;
 
 import edu.mit.compilers.asm.X64CodeConverter;
 import edu.mit.compilers.asm.X64Program;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.cfg.CFGGenerator;
-import edu.mit.compilers.cfg.iCFGVisitor;
+import edu.mit.compilers.cfg.CFGVisitor;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.InstructionListConverter;
-import edu.mit.compilers.codegen.codes.MethodBegin;
+import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.dataflow.DataflowOptimizer;
 import edu.mit.compilers.dataflow.passes.InstructionSimplifyIrPass;
 import edu.mit.compilers.grammar.DecafParser;
@@ -31,7 +32,7 @@ public class Compilation {
     private DecafSemanticChecker semanticChecker;
     private CFGGenerator cfgGenerator;
     private InstructionListConverter instructionListConverter;
-    private iCFGVisitor iCFGVisitor;
+    private CFGVisitor CFGVisitor;
 
     private ProgramIr programIr;
 
@@ -190,8 +191,8 @@ public class Compilation {
     }
 
     private void generateCFGVisualizationPdfs() {
-        var copy = new HashMap<>(iCFGVisitor.methodCFGBlocks);
-        copy.put("globals", iCFGVisitor.initialGlobalBlock);
+        var copy = new HashMap<>(CFGVisitor.methodCFGBlocks);
+        copy.put("globals", CFGVisitor.initialGlobalBlock);
 //        GraphVizPrinter.printGraph(copy, (basicBlock -> basicBlock.threeAddressCodeList.getCodes().stream().map(ThreeAddressCode::repr).collect(Collectors.joining("\n"))));
         GraphVizPrinter.printGraph(copy);
     }
@@ -221,34 +222,31 @@ public class Compilation {
         }
 
         cfgGenerator = new CFGGenerator(parser.getRoot(), semanticChecker.globalDescriptor);
-        iCFGVisitor = cfgGenerator.buildiCFG();
+        CFGVisitor = cfgGenerator.buildiCFG();
         compilationState = CompilationState.CFG_GENERATED;
-    }
-
-    private InstructionList mergeProgram() {
-        var programHeader = programIr.headerInstructions.copy();
-        var tacList = programHeader.copy();
-        for (MethodBegin methodBegin : programIr.methodBeginList) {
-            tacList.addAll(methodBegin.entryBlock.instructionList.flatten());
-        }
-        return tacList;
     }
 
     private void generateIr() {
         assert compilationState == CompilationState.CFG_GENERATED;
         instructionListConverter = new InstructionListConverter(cfgGenerator);
-        programIr = instructionListConverter.fill(iCFGVisitor, parser.getRoot());
+        programIr = instructionListConverter.fill(CFGVisitor, parser.getRoot());
         if (CLI.debug) {
             generateSymbolTablePdfs();
         }
         if (CLI.debug) {
             generateCFGVisualizationPdfs();
         }
+        programIr.methodBeginList.forEach(methodBegin ->
+                System.out.println(
+                        new TraceScheduler(methodBegin).getInstructionTrace()
+                                .stream()
+                                .map(InstructionList::toStringLocal)
+                                .collect(Collectors.joining("\n"))));
         compilationState = CompilationState.IR_GENERATED;
     }
 
     private int countLinesOfCode() {
-        return mergeProgram().size();
+        return programIr.mergeProgram().size();
     }
 
     private void runDataflowOptimizationPasses() {
@@ -258,7 +256,7 @@ public class Compilation {
         if (shouldOptimize()) {
             if (CLI.debug) {
                 System.out.println("Before optimization");
-                System.out.println(mergeProgram());
+                System.out.println(programIr.mergeProgram());
             }
             var dataflowOptimizer = new DataflowOptimizer(programIr.methodBeginList, instructionListConverter.globalNames, CLI.opts);
             dataflowOptimizer.initialize();
@@ -267,7 +265,7 @@ public class Compilation {
             nLinesOfCodeReductionFactor = (oldNLinesOfCode - countLinesOfCode()) / oldNLinesOfCode;
             if (CLI.debug) {
                 System.out.println("After optimization");
-                System.out.println(mergeProgram());
+                System.out.println(programIr.mergeProgram());
                 System.out.format("lines of code reduced by a factor of: %f\n", nLinesOfCodeReductionFactor);
             }
 
@@ -280,10 +278,11 @@ public class Compilation {
 
         X64CodeConverter x64CodeConverter;
         if (shouldOptimize()) {
+            programIr.findGlobals();
             var registerAllocation = new RegisterAllocation(programIr);
-            x64CodeConverter = new X64CodeConverter(programIr.mergeProgram(), registerAllocation.getVariableToRegisterMap(), registerAllocation.getMethodToLiveRegistersInfo());
+            x64CodeConverter = new X64CodeConverter(registerAllocation.unModified, programIr, registerAllocation.getVariableToRegisterMap(), registerAllocation.getMethodToLiveRegistersInfo());
         } else {
-            x64CodeConverter = new X64CodeConverter(programIr.mergeProgram());
+            x64CodeConverter = new X64CodeConverter(programIr.mergeProgram(), programIr);
         }
         X64Program x64program = x64CodeConverter.convert();
         if (shouldOptimize()) {
@@ -299,7 +298,7 @@ public class Compilation {
         if (compilationState != CompilationState.IR_GENERATED && compilationState != CompilationState.ASSEMBLED) {
             throw new IllegalStateException("instruction list has not been created yet");
         }
-        return mergeProgram();
+        return programIr.mergeProgram();
     }
 
     private void patternMatchTest() {

@@ -9,21 +9,9 @@ import java.util.stream.Collectors;
 public class InstructionList extends ArrayList<Instruction> {
     public AbstractName place;
 
-    public InstructionList nextInstructionList;
-
     public InstructionList(AbstractName place, List<Instruction> codes) {
         this.place = place;
         addAll(codes);
-    }
-
-    public List<InstructionList> getListOfInstructionLists() {
-        var flattened = new ArrayList<InstructionList>();
-        InstructionList tacList = this;
-        while (tacList != null) {
-            flattened.add(tacList);
-            tacList = tacList.nextInstructionList;
-        }
-        return flattened;
     }
 
     public InstructionList(List<Instruction> codes) {
@@ -38,28 +26,10 @@ public class InstructionList extends ArrayList<Instruction> {
         this(null, Collections.emptyList());
     }
 
-    public int flattenedSize() {
-        return flatten().size();
-    }
-
-    public Optional<InstructionList> getNextInstructionList() {
-        return Optional.ofNullable(nextInstructionList);
-    }
-
     public Optional<Instruction> lastCode() {
         if (isEmpty())
             return Optional.empty();
         return Optional.of(get(size() - 1));
-    }
-
-    public InstructionList flatten() {
-        InstructionList flattened = new InstructionList();
-        InstructionList tacList = this;
-        while (tacList != null) {
-            flattened.addAll(tacList);
-            tacList = tacList.nextInstructionList;
-        }
-        return flattened;
     }
 
     public void reset(Collection<Instruction> newCodes) {
@@ -87,37 +57,13 @@ public class InstructionList extends ArrayList<Instruction> {
         return instructionList;
     }
 
-    public Instruction lastCodeInLinkedList() {
-        InstructionList flattened = flatten();
-        return flattened.get(flattened.size() - 1);
-    }
-
     public Instruction firstCode() {
         return get(0);
     }
 
-    public InstructionList appendInInstructionListLinkedList(InstructionList instructionList) {
-        InstructionList head = this;
-        while (head.nextInstructionList != null)
-            head = head.nextInstructionList;
-        head.nextInstructionList = instructionList;
-        return instructionList;
-    }
-
-    public void addToTail(Instruction tac)  {
-        var head = this;
-        while (head
-                .getNextInstructionList()
-                .isPresent())
-            head = head
-                    .getNextInstructionList()
-                    .get();
-        head.add(tac);
-    }
-
     @Override
     public String toString() {
-        return flatten().stream()
+        return stream()
                 .map(Instruction::repr)
                 .collect(Collectors.joining("\n"));
     }

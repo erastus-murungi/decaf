@@ -8,7 +8,7 @@ import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 
 
-public class iCFGVisitor implements Visitor<BasicBlocksPair> {
+public class CFGVisitor implements Visitor<BasicBlocksPair> {
     public BasicBlockBranchLess initialGlobalBlock = new BasicBlockBranchLess();
     public HashMap<String, BasicBlock> methodCFGBlocks = new HashMap<>();
     public HashMap<String, NOP> methodToExitNOP = new HashMap<>();
@@ -21,7 +21,7 @@ public class iCFGVisitor implements Visitor<BasicBlocksPair> {
      */
     private NOP exitNOP;
 
-    public iCFGVisitor() {
+    public CFGVisitor() {
     }
 
     @Override

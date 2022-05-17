@@ -2,6 +2,7 @@ package edu.mit.compilers.cfg;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionList;
+import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.Store;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.symbolTable.SymbolTable;
@@ -17,6 +18,19 @@ public abstract class BasicBlock {
     public InstructionList instructionList;
 
     public ArrayList<AST> lines;
+
+    private Label label;
+
+    public void setLabel(Label label) {
+        if (label == null) {
+            throw new IllegalStateException();
+        }
+        this.label = label;
+    }
+
+    public Label getLabel() {
+        return label;
+    }
 
     public String getLeader() {
         return lines.isEmpty() ? "None" : lines.get(0).getSourceCode();
@@ -60,7 +74,7 @@ public abstract class BasicBlock {
 
     public abstract <T> T accept(BasicBlockVisitor<T> visitor, SymbolTable symbolTable);
 
-    public String getLabel() {
+    public String getLinesOfCodeString() {
         if (lines.isEmpty()) {
             if (!instructionList.isEmpty()) {
                 return instructionList.get(0).repr();
@@ -74,7 +88,7 @@ public abstract class BasicBlock {
 
     @Override
     public String toString() {
-        return getLabel();
+        return getLinesOfCodeString();
     }
 
     /**

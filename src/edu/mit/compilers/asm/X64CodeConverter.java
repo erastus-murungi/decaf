@@ -21,6 +21,7 @@ import edu.mit.compilers.ast.BuiltinType;
 import edu.mit.compilers.ast.MethodDefinition;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.InstructionVisitor;
+import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
 import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
@@ -46,6 +47,7 @@ import edu.mit.compilers.codegen.names.ConstantName;
 import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.codegen.names.StringConstantName;
 import edu.mit.compilers.utils.Operators;
+import edu.mit.compilers.utils.ProgramIr;
 
 public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Builder> {
     /**
@@ -139,86 +141,34 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
      */
     private final X64Register COPY_TEMP_REGISTER = X64Register.R10;
 
-    private Map<MethodBegin, Map<Instruction, Set<X64Register>>> methodToLiveRegistersInfo = new HashMap<>();
+    private final Map<MethodBegin, Map<Instruction, Set<X64Register>>> methodToLiveRegistersInfo;
 
     private final Map<MemoryAddressName, AbstractName> memoryAddressToArrayMap = new HashMap<>();
 
     private final Map<AbstractName, String> resolvedLocationCache = new HashMap<>();
 
+    private final HashMap<X64Register, Long> argRegisterToStackOffset = new HashMap<>();
+
     private Integer currentInstructionIndex;
 
-    public X64CodeConverter(InstructionList instructionList, Map<MethodBegin,
-            Map<AbstractName, X64Register>> abstractNameToX64RegisterMap,
+    private ProgramIr programIr;
+
+    public X64CodeConverter(InstructionList instructionList,
+                            ProgramIr programIr,
+                            Map<MethodBegin, Map<AbstractName, X64Register>> abstractNameToX64RegisterMap,
                             Map<MethodBegin, Map<Instruction, Set<X64Register>>> methodToLiveRegistersInfo
     ) {
         this.instructionList = instructionList;
         this.registerMapping = abstractNameToX64RegisterMap;
         this.methodToLiveRegistersInfo = methodToLiveRegistersInfo;
+        this.programIr = programIr;
         freeIndexRegisters.add(X64Register.R11);
         freeIndexRegisters.add(X64Register.R12);
     }
 
-    public X64CodeConverter(InstructionList instructionList) {
-        this(instructionList, Collections.emptyMap(), Collections.emptyMap());
+    public X64CodeConverter(InstructionList instructionList, ProgramIr programIr) {
+        this(instructionList, programIr, Collections.emptyMap(), Collections.emptyMap());
     }
-
-    private X64CodeConverter() {
-    }
-
-    private List<AbstractName> getLocals(InstructionList instructionList) {
-        Set<AbstractName> uniqueNames = new HashSet<>();
-        var flattened = instructionList.flatten();
-
-        for (Instruction instruction : flattened) {
-            for (AbstractName name : instruction.getAllNames()) {
-                if (name instanceof MemoryAddressName && !globals.contains(name)) {
-                    uniqueNames.add(name);
-                }
-            }
-        }
-
-        for (Instruction instruction : flattened) {
-            for (AbstractName name : instruction.getAllNames()) {
-                if (!(name instanceof MemoryAddressName) && !globals.contains(name)) {
-                    uniqueNames.add(name);
-                }
-            }
-        }
-        return uniqueNames
-                .stream()
-                .filter((name -> ((name instanceof AssignableName))))
-                .distinct()
-                .sorted(Comparator.comparing(Object::toString))
-                .collect(Collectors.toList());
-    }
-
-
-    private void reorderLocals(List<AbstractName> locals, MethodDefinition methodDefinition) {
-        List<AbstractName> methodParametersNames = new ArrayList<>();
-
-        Set<String> methodParameters = methodDefinition.methodDefinitionParameterList
-                .stream()
-                .map(methodDefinitionParameter -> methodDefinitionParameter.id.id)
-                .collect(Collectors.toSet());
-
-        List<AbstractName> methodParamNamesList = new ArrayList<>();
-        for (AbstractName name : locals) {
-            if (methodParameters.contains(name.toString())) {
-                methodParamNamesList.add(name);
-            }
-        }
-        for (AbstractName local : locals) {
-            if (methodParameters.contains(local.toString())) {
-                methodParametersNames.add(local);
-            }
-        }
-        locals.removeAll(methodParametersNames);
-        locals.addAll(0, methodParamNamesList
-                .stream()
-                .sorted(Comparator.comparing(AbstractName::toString))
-                .collect(Collectors.toList()));
-    }
-
 
     public X64Program convert() {
         X64Builder x64Builder = initializeDataSection();
@@ -245,11 +195,11 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                 return x64builder
                         .addLine(x64InstructionLine(X64Instruction.movq, jumpIfFalse.condition, COPY_TEMP_REGISTER))
                         .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, COPY_TEMP_REGISTER))
-                        .addLine(x64InstructionLineWithComment(jumpIfFalse.condition.toString(), X64Instruction.je, x64Label(jumpIfFalse.trueLabel)));
+                        .addLine(x64InstructionLineWithComment(jumpIfFalse.condition.toString(), X64Instruction.je, x64Label(jumpIfFalse.trueLabel.getLabelForAsm())));
             }
             return x64builder
                     .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, resolveName(jumpIfFalse.condition)))
-                    .addLine(x64InstructionLineWithComment(jumpIfFalse.condition.toString(), X64Instruction.je, x64Label(jumpIfFalse.trueLabel)));
+                    .addLine(x64InstructionLineWithComment(jumpIfFalse.condition.toString(), X64Instruction.je, x64Label(jumpIfFalse.trueLabel.getLabelForAsm())));
         } else {
             x64builder.addLine(
                     x64InstructionLineWithComment("jump if false " + jumpIfFalse.condition.repr(), X64Instruction.getCorrectJumpIfFalseInstruction(lastComparisonOperator), x64Label(jumpIfFalse.trueLabel)));
@@ -328,7 +278,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
     @Override
     public X64Builder visit(Label label, X64Builder x64builder) {
-        return x64builder.addLine(new X64Code("." + label.label + ":"));
+        return x64builder.addLine(new X64Code("." + label.getLabelForAsm() + ":"));
     }
 
     public static String tabSpaced(Object s) {
@@ -347,7 +297,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     }
 
     public X64Code x64Label(Label label) {
-        return new X64Code("." + label.label);
+        return new X64Code("." + label.getLabelForAsm());
     }
 
     public X64Code x64Label(String label) {
@@ -360,8 +310,6 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
     @Override
     public X64Builder visit(MethodEnd methodEnd, X64Builder x64builder) {
-        // apparently we need a return code of zero
-//        calleeRestore(x64builder,);
         int loc = subqLocs.pop();
         if (stackSpace != 0) {
             stackSpace = roundUp16(stackSpace);
@@ -402,8 +350,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         int stackOffsetIndex = 0;
         List<X64Code> codes = new ArrayList<>();
 
-        List<AbstractName> locals = getLocals(methodBegin.entryBlock.instructionList);
-        reorderLocals(locals, methodBegin.methodDefinition);
+        List<AbstractName> locals = programIr.getLocals(methodBegin);
 
         for (var variableName : locals) {
             if (!globals.contains(variableName)) {
@@ -482,8 +429,6 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     private static long roundUp16(long n) {
         return n >= 0 ? ((n + (long) 16 - 1) / (long) 16) * (long) 16 : (n / (long) 16) * (long) 16;
     }
-
-    private final HashMap<X64Register, Long> argRegisterToStackOffset = new HashMap<>();
 
     private String getStackLocationOfParameterRegisterFromCache(X64Register argumentRegister) {
         if (!argRegisterToStackOffset.containsKey(argumentRegister)) {
@@ -589,8 +534,10 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     public X64Builder visit(FunctionCallWithResult methodCall, X64Builder x64builder) {
         callerSave(x64builder, currentMapping.get(methodCall.store));
         orderFunctionCallArguments(x64builder);
-        (methodCall.isImported() ? x64builder.addLine((x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX))) : x64builder)
-                .addLine(x64InstructionLine(X64Instruction.callq, methodCall.getMethodName()))
+        if (methodCall.isImported()) {
+            x64builder.addLine((x64InstructionLine(X64Instruction.xorl, X64Register.EAX, X64Register.EAX)));
+        }
+        x64builder.addLine(x64InstructionLine(X64Instruction.callq, methodCall.getMethodName()))
                 .addLine(x64InstructionLine(X64Instruction.movq, X64Register.RAX, resolveName(methodCall
                         .getStore())));
         callerRestore(x64builder, currentMapping.get(methodCall.store));
@@ -808,7 +755,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
     @Override
     public X64Builder visit(UnconditionalJump unconditionalJump, X64Builder x64builder) {
-        return x64builder.addLine(x64InstructionLine(X64Instruction.jmp, x64Label(unconditionalJump.goToLabel)));
+        return x64builder.addLine(x64InstructionLine(X64Instruction.jmp, x64Label(unconditionalJump.goToLabel.getLabelForAsm())));
     }
 
     @Override

@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import edu.mit.compilers.ast.AST;
@@ -57,9 +56,9 @@ import edu.mit.compilers.cfg.BasicBlockBranchLess;
 import edu.mit.compilers.cfg.BasicBlockVisitor;
 import edu.mit.compilers.cfg.BasicBlockWithBranch;
 import edu.mit.compilers.cfg.CFGGenerator;
+import edu.mit.compilers.cfg.CFGVisitor;
 import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.cfg.SymbolTableFlattener;
-import edu.mit.compilers.cfg.iCFGVisitor;
 import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
 import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
@@ -78,7 +77,6 @@ import edu.mit.compilers.codegen.codes.PushArgument;
 import edu.mit.compilers.codegen.codes.RuntimeException;
 import edu.mit.compilers.codegen.codes.StringLiteralStackAllocation;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
-import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.codegen.names.ConstantName;
@@ -476,18 +474,16 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
     final private static HashMap<String, StringLiteralStackAllocation> literalStackAllocationHashMap = new HashMap<>();
 
     InstructionConverter visitor;
-    Label endLabelGlobal;
     Set<BasicBlock> visited = new HashSet<>();
-    HashMap<BasicBlock, Label> blockToLabelHashMap = new HashMap<>();
-    HashMap<BasicBlock, InstructionList> blockToCodeHashMap = new HashMap<>();
     public HashMap<String, SymbolTable> cfgSymbolTables;
 
+    NOP nop;
 
     private MethodBegin convertMethodDefinition(MethodDefinition methodDefinition,
                                                 BasicBlock methodStart,
                                                 SymbolTable symbolTable) {
 
-        endLabelGlobal = new Label("exit_" + methodDefinition.methodName.id, methodStart);
+        Label methodExitLabel = new Label("exit_" + methodDefinition.methodName.id);
 
         var instructions = new InstructionList();
         var methodBegin = new MethodBegin(methodDefinition);
@@ -505,12 +501,13 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
         final var firstBasicBlockTacList = methodStart.accept(this, symbolTable);
         firstBasicBlockTacList.addAll(0, instructions);
 
-        firstBasicBlockTacList.addToTail(endLabelGlobal);
+        nop.setLabel(methodExitLabel);
+        nop.instructionList.add(methodExitLabel);
+        nop.instructionList.add(new MethodEnd(methodDefinition));
 
-        firstBasicBlockTacList.addToTail(new MethodEnd(methodDefinition));
         methodStart.instructionList = firstBasicBlockTacList;
-        methodBegin.unoptimized = firstBasicBlockTacList.flatten();
         methodBegin.entryBlock = methodStart;
+        methodBegin.unoptimized = TraceScheduler.flattenIr(methodBegin);
         return methodBegin;
     }
 
@@ -594,8 +591,8 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
         return literalList;
     }
 
-    public ProgramIr fill(iCFGVisitor visitor,
-                                                         Program program) {
+    public ProgramIr fill(CFGVisitor visitor,
+                          Program program) {
         var programStartTacList = initProgram(program);
 
         var methodsTacLists = new ArrayList<MethodBegin>();
@@ -623,126 +620,54 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
 
     @Override
     public InstructionList visit(BasicBlockBranchLess basicBlockBranchLess, SymbolTable symbolTable) {
+        if (visited.contains(basicBlockBranchLess))
+            return basicBlockBranchLess.instructionList;
         visited.add(basicBlockBranchLess);
-        InstructionList universalInstructionList = new InstructionList();
-        for (AST line : basicBlockBranchLess.lines) {
-            universalInstructionList.addAll(line.accept(visitor, symbolTable));
-        }
-        blockToCodeHashMap.put(basicBlockBranchLess, universalInstructionList);
-        if (!(basicBlockBranchLess instanceof NOP) && !(basicBlockBranchLess.autoChild instanceof NOP)) {
-            if (visited.contains(basicBlockBranchLess.autoChild)) {
-		        var label = blockToLabelHashMap.get(basicBlockBranchLess.autoChild);
-                if (label == null) {
-                    label = getLabel(basicBlockBranchLess.autoChild, null);
-                }
-                universalInstructionList.appendInInstructionListLinkedList(InstructionList.of(new UnconditionalJump(label)));
-             } else {
-                universalInstructionList.appendInInstructionListLinkedList(basicBlockBranchLess.autoChild.accept(this, symbolTable));
-            }
-        } else {
-            universalInstructionList.addToTail(new UnconditionalJump(endLabelGlobal));
-        }
-        basicBlockBranchLess.instructionList = universalInstructionList;
-        return universalInstructionList;
-    }
-
-    private Label getLabel(BasicBlock cfgBlock, Label from) {
-        if (cfgBlock instanceof NOP) {
-            return endLabelGlobal;
-        }
-        BiFunction<BasicBlock, Label, Label> function = (cfgBlock1, label) -> {
-            if (label == null) {
-                return new Label(TemporaryNameIndexGenerator.getNextLabel(), cfgBlock1);
-            } else {
-                label.aliasLabels.add(from == null ? "haha" : from.label + "_False");
-            }
-            return label;
-        };
-        return blockToLabelHashMap.compute(cfgBlock, function);
+        basicBlockBranchLess.setLabel(getNewLabel());
+        InstructionList instructionList = new InstructionList();
+        instructionList.add(basicBlockBranchLess.getLabel());
+        for (var line : basicBlockBranchLess.lines)
+            instructionList.addAll(line.accept(visitor, symbolTable));
+        basicBlockBranchLess.autoChild.accept(this, symbolTable);
+        basicBlockBranchLess.instructionList = instructionList;
+        return instructionList;
     }
 
     private InstructionList getConditionTACList(Expression condition, SymbolTable symbolTable) {
         return condition.accept(this.visitor, symbolTable);
     }
-
-    private InstructionList getConditionalChildBlock(
-            BasicBlock child,
-            Label conditionalLabel,
-            SymbolTable symbolTable) {
-
-        InstructionList codeList;
-        InstructionList trueBlock;
-
-        if (!(child instanceof NOP)) {
-            if (visited.contains(child)) {
-                codeList = blockToCodeHashMap.get(child);
-                Label label;
-                if (codeList.get(0) instanceof Label)
-                    label = (Label) codeList.get(0);
-                else {
-                    label = getLabel(child, conditionalLabel);
-                    codeList.add(0, label);
-                }
-                trueBlock = InstructionList.of(new UnconditionalJump(label));
-            } else
-                trueBlock = child.accept(this, symbolTable);
-        } else {
-            trueBlock = InstructionList.of(new UnconditionalJump(endLabelGlobal));
-        }
-        return trueBlock;
+    private Label getNewLabel() {
+        return new Label(TemporaryNameIndexGenerator.getNextLabel());
     }
 
     @Override
     public InstructionList visit(BasicBlockWithBranch basicBlockWithBranch, SymbolTable symbolTable) {
+        if (visited.contains(basicBlockWithBranch))
+            return basicBlockWithBranch.instructionList;
+
         visited.add(basicBlockWithBranch);
+        basicBlockWithBranch.setLabel(getNewLabel());
 
         final Expression condition = basicBlockWithBranch.condition;
-        final InstructionList testConditionThreeAddressList = getConditionTACList(condition, symbolTable);
-        final Label conditionLabel = getLabel(basicBlockWithBranch, null);
+        InstructionList conditionInstructionList = getConditionTACList(condition, symbolTable);
+        conditionInstructionList.add(0, basicBlockWithBranch.getLabel());
 
-        final InstructionList conditionLabelTACList = InstructionList.of(conditionLabel);
-        conditionLabelTACList.addAll(testConditionThreeAddressList);
-
-        blockToCodeHashMap.put(basicBlockWithBranch, conditionLabelTACList);
-
-        final InstructionList trueBlock = getConditionalChildBlock(basicBlockWithBranch.trueChild, conditionLabel, symbolTable);
-        final InstructionList falseBlock = getConditionalChildBlock(basicBlockWithBranch.falseChild, conditionLabel, symbolTable);
-
-        final Label falseLabel = getLabel(basicBlockWithBranch.falseChild, conditionLabel);
-        final Label endLabel = new Label(conditionLabel.label + "end", null);
+        basicBlockWithBranch.trueChild.accept(this, symbolTable);
+        basicBlockWithBranch.falseChild.accept(this, symbolTable);
 
         ConditionalJump jumpIfFalse =
                 new ConditionalJump(condition,
-                        testConditionThreeAddressList.place,
-                        falseLabel, "if !(" + basicBlockWithBranch.condition.getSourceCode() + ")");
-        conditionLabelTACList.add(jumpIfFalse);
-        if (!(trueBlock.lastCodeInLinkedList() instanceof UnconditionalJump))
-            trueBlock.addToTail(new UnconditionalJump(endLabel));
-
-        // no need for consecutive similar labels
-        if (!falseBlock.isEmpty() && falseBlock.firstCode() instanceof UnconditionalJump) {
-            UnconditionalJump unconditionalJump = (UnconditionalJump) falseBlock.firstCode();
-            if (!unconditionalJump.goToLabel.label.equals(falseLabel.label))
-                falseBlock.add(0, falseLabel);
-        } else if (!falseBlock.firstCode()
-                .equals(falseLabel))
-            falseBlock.add(0, falseLabel);
-        if (!(falseBlock.lastCodeInLinkedList() instanceof UnconditionalJump) && !(trueBlock.lastCodeInLinkedList() instanceof UnconditionalJump))
-            falseBlock.addToTail(new UnconditionalJump(endLabel));
-        if (falseBlock.flattenedSize() == 1 && falseBlock.firstCode() instanceof UnconditionalJump) {
-            conditionLabelTACList.appendInInstructionListLinkedList(trueBlock);
-            basicBlockWithBranch.instructionList = conditionLabelTACList;
-            return conditionLabelTACList;
-        }
-        conditionLabelTACList
-                .appendInInstructionListLinkedList(trueBlock)
-                .appendInInstructionListLinkedList(falseBlock);
-        basicBlockWithBranch.instructionList = conditionLabelTACList;
-        return conditionLabelTACList;
+                        conditionInstructionList.place,
+                        basicBlockWithBranch.falseChild.getLabel(), "if !(" + basicBlockWithBranch.condition.getSourceCode() + ")");
+        conditionInstructionList.add(jumpIfFalse);
+        basicBlockWithBranch.instructionList = conditionInstructionList;
+        return conditionInstructionList;
     }
 
     @Override
     public InstructionList visit(NOP nop, SymbolTable symbolTable) {
+        this.nop = nop;
+        visited.add(nop);
         nop.instructionList = new InstructionList();
         return nop.instructionList;
     }

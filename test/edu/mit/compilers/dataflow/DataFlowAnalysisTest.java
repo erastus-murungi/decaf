@@ -3,7 +3,7 @@ package edu.mit.compilers.dataflow;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.CFGGenerator;
 import edu.mit.compilers.cfg.NOP;
-import edu.mit.compilers.cfg.iCFGVisitor;
+import edu.mit.compilers.cfg.CFGVisitor;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
@@ -30,7 +30,7 @@ public class DataFlowAnalysisTest {
         DecafSemanticChecker semChecker = new DecafSemanticChecker(parser.getRoot());
         semChecker.runChecks(decafExceptionProcessor);
         CFGGenerator cfgGenerator = new CFGGenerator(parser.getRoot(), semChecker.globalDescriptor);
-        iCFGVisitor visitor = cfgGenerator.buildiCFG();
+        CFGVisitor visitor = cfgGenerator.buildiCFG();
         basicBlockList = DataFlowAnalysis.getReversePostOrder(visitor.methodCFGBlocks.get("main"));
     }
 

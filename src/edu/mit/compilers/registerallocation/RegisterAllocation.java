@@ -14,10 +14,13 @@ import edu.mit.compilers.asm.X64Register;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.BasicBlockBranchLess;
 import edu.mit.compilers.cfg.BasicBlockWithBranch;
+import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.codegen.InstructionList;
+import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
+import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.ConditionalJump;
-import edu.mit.compilers.codegen.codes.GlobalAllocation;
 import edu.mit.compilers.codegen.codes.Instruction;
+import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.MethodBegin;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
@@ -35,17 +38,7 @@ public class RegisterAllocation {
     private final Map<MethodBegin, List<LiveInterval>> methodToLiveIntervalsMap = new HashMap<>();
     private final Map<MethodBegin, Map<AbstractName, X64Register>> variableToRegisterMap = new HashMap<>();
     private final Map<MethodBegin, Map<Instruction, Set<X64Register>>> methodToLiveRegistersInfo = new HashMap<>();
-    private Set<AbstractName> globalVariables;
-
-    private void getGlobals() {
-        globalVariables = programIr.headerInstructions
-                .stream()
-                .filter(instruction -> instruction instanceof GlobalAllocation)
-                .map(instruction -> (GlobalAllocation) instruction)
-                .map(globalAllocation -> globalAllocation.variableName)
-                .collect(Collectors.toUnmodifiableSet());
-    }
-
+    public InstructionList unModified;
 
     private Map<Instruction, Set<X64Register>> computeInstructionToLiveRegistersMap(List<LiveInterval> liveIntervals, Map<AbstractName, X64Register> registerMap) {
         var instructionToLiveRegistersMap = new HashMap<Instruction, Set<X64Register>>();
@@ -80,7 +73,7 @@ public class RegisterAllocation {
 
     public RegisterAllocation(ProgramIr programIr) {
         this.programIr = programIr;
-        getGlobals();
+        this.unModified = programIr.mergeProgram();
         linearizeCfg();
         computeLiveness();
         computeLiveIntervals();
@@ -112,7 +105,7 @@ public class RegisterAllocation {
             var basicBlocks = DataFlowAnalysis.getReversePostOrder(methodBegin.entryBlock);
             basicBlocks.forEach(basicBlock -> {
                 if (basicBlock.instructionList.size() > 1)
-                    throw new IllegalStateException("failed linearization of " + basicBlock.getLabel());
+                    throw new IllegalStateException("failed linearization of " + basicBlock.getLinesOfCodeString());
                 if (basicBlock.instructionList.size() == 1)
                     instructionToLiveVariablesMap.put(basicBlock.instructionList.get(0), liveVariableAnalysis.liveOut(basicBlock));
             });
@@ -149,6 +142,28 @@ public class RegisterAllocation {
 
     }
 
+    private void correctSuccessors(BasicBlock oldBlock, BasicBlock newBlock, MethodBegin methodBegin) {
+        var predecessors = oldBlock.getPredecessors();
+        for (BasicBlock predecessor : predecessors) {
+            if (predecessor instanceof BasicBlockBranchLess) {
+                var branchLess = (BasicBlockBranchLess) predecessor;
+                branchLess.autoChild = newBlock;
+            } else {
+                var withBranch = (BasicBlockWithBranch) predecessor;
+                if (withBranch.trueChild == oldBlock) {
+                    withBranch.trueChild = newBlock;
+                } else {
+                    if (withBranch.falseChild != oldBlock)
+                        throw new IllegalStateException();
+                    withBranch.falseChild = newBlock;
+                }
+            }
+        }
+        if (methodBegin.entryBlock.instructionList == oldBlock.instructionList) {
+            methodBegin.entryBlock.instructionList = newBlock.instructionList;
+        }
+    }
+
     /**
      * flattens the CFG so that each basic block contains only one instruction which has an operand
      * this makes dataflow analysis easier for register allocation
@@ -157,10 +172,21 @@ public class RegisterAllocation {
     private void linearizeCfg() {
         for (MethodBegin methodBegin : programIr.methodBeginList) {
             DataFlowAnalysis.correctPredecessors(methodBegin.entryBlock);
-            final var string = methodBegin.entryBlock.instructionList.toString();
             var basicBlocks = DataFlowAnalysis.getReversePostOrder(methodBegin.entryBlock);
             for (BasicBlock basicBlock : basicBlocks) {
                 int indexOfInstruction = 0;
+                if (basicBlock instanceof NOP) {
+                    indexOfInstruction = (basicBlock.instructionList.size() - 2);
+                    if (basicBlock.instructionList.size() > 1) {
+                        var prevInstructions = basicBlock.instructionList.subList(0, 1);
+                        var rest = new ArrayList<>(basicBlock.instructionList.subList(1, basicBlock.instructionList.size() - 1));
+                        var block = new BasicBlockBranchLess();
+                        block.instructionList = new InstructionList(prevInstructions);
+                        basicBlock.instructionList.reset(new ArrayList<>(basicBlock.instructionList.subList(basicBlock.instructionList.size() - 1, basicBlock.instructionList.size())));
+                        splitBasicBlock(rest, block, basicBlock);
+                        correctSuccessors(basicBlock, block, methodBegin);
+                    }
+                }
                 if (basicBlock instanceof BasicBlockBranchLess) {
                     indexOfInstruction += 1;
                     if (!basicBlock.instructionList.isEmpty()) {
@@ -171,7 +197,7 @@ public class RegisterAllocation {
 
                         basicBlock.instructionList.reset(new ArrayList<>(prevInstructions));
 
-                        prevBasicBlock = splitBasicBlock(rest, prevBasicBlock, beforeAutoChild, basicBlock.instructionList.nextInstructionList);
+                        prevBasicBlock = splitBasicBlock(rest, prevBasicBlock, beforeAutoChild);
                         if (beforeAutoChild != null) {
                             beforeAutoChild.addPredecessor(prevBasicBlock);
                             beforeAutoChild.removePredecessor(basicBlock);
@@ -194,58 +220,14 @@ public class RegisterAllocation {
                         var rest = new ArrayList<>(instructionsToSplit.subList(1, instructionsToSplit.size()));
 
                         prevBasicBlock = new BasicBlockBranchLess();
+                        prevBasicBlock.setLabel(new Label(TemporaryNameIndexGenerator.getNextLabel()));
                         prevBasicBlock.instructionList.addAll(prevInstructions);
                         block = prevBasicBlock;
 
-                        splitBasicBlock(rest, prevBasicBlock, basicBlock, basicBlock.instructionList);
+                        splitBasicBlock(rest, prevBasicBlock, basicBlock);
                     }
-                    var predecessors = basicBlock.getPredecessors();
+                    correctSuccessors(basicBlock, block, methodBegin);
 
-                    var toUpdate = new ArrayList<InstructionList>();
-                    for (BasicBlock predecessor : predecessors) {
-                        if (predecessor instanceof BasicBlockBranchLess) {
-                            var branchLess = (BasicBlockBranchLess) predecessor;
-                            branchLess.autoChild = block;
-                            if (branchLess.instructionList.nextInstructionList == (basicBlock.instructionList)) {
-                                toUpdate.add(branchLess.instructionList);
-                            }
-                        } else {
-                            var withBranch = (BasicBlockWithBranch) predecessor;
-                            if (withBranch.trueChild == basicBlock) {
-                                withBranch.trueChild = block;
-                                var bb = withBranch.instructionList;
-                                while (bb.nextInstructionList != null && bb.nextInstructionList != (basicBlock.instructionList)) {
-                                    bb = bb.nextInstructionList;
-                                }
-                                if (bb.nextInstructionList == (basicBlock.instructionList)) {
-                                    toUpdate.add(bb);
-                                }
-                            } else {
-                                if (withBranch.falseChild != basicBlock)
-                                    throw new IllegalStateException();
-                                withBranch.falseChild = block;
-                                var bb = withBranch.instructionList;
-                                while (bb.nextInstructionList != null && bb.nextInstructionList != (basicBlock.instructionList)) {
-                                    bb = bb.nextInstructionList;
-                                }
-                                if (bb.nextInstructionList == basicBlock.instructionList)
-                                    toUpdate.add(bb);
-                            }
-                        }
-                    }
-                    BasicBlock finalBlock = block;
-                    toUpdate.forEach(instructionList -> instructionList.nextInstructionList = finalBlock.instructionList);
-
-                    if (methodBegin.entryBlock.instructionList == basicBlock.instructionList) {
-                        methodBegin.entryBlock.instructionList = block.instructionList;
-                    }
-                }
-                if (!methodBegin.entryBlock.instructionList.toString()
-                        .equals(string)) {
-                    System.out.println(string);
-                    System.out.println("*******");
-                    System.out.println(methodBegin.entryBlock.instructionList.toString());
-                    throw new IllegalStateException();
                 }
             }
             DataFlowAnalysis.correctPredecessors(methodBegin.entryBlock);
@@ -254,17 +236,16 @@ public class RegisterAllocation {
 
     private BasicBlockBranchLess splitBasicBlock(ArrayList<Instruction> rest,
                                                  BasicBlockBranchLess prevBasicBlock,
-                                                 BasicBlock beforeAutoChild, InstructionList nextInstructionList) {
+                                                 BasicBlock beforeAutoChild) {
         for (var instruction : rest) {
             var bb = new BasicBlockBranchLess();
+            bb.setLabel(new Label(TemporaryNameIndexGenerator.getNextLabel()));
             bb.instructionList = InstructionList.of(instruction);
             bb.addPredecessor(prevBasicBlock);
             prevBasicBlock.autoChild = bb;
-            prevBasicBlock.instructionList.nextInstructionList = bb.instructionList;
             prevBasicBlock = bb;
         }
         prevBasicBlock.autoChild = beforeAutoChild;
-        prevBasicBlock.instructionList.nextInstructionList = nextInstructionList;
         return prevBasicBlock;
     }
 
@@ -294,11 +275,11 @@ public class RegisterAllocation {
     private void computeLiveIntervals() {
         for (var methodBegin : programIr.methodBeginList) {
             var liveIntervalList = new ArrayList<LiveInterval>();
-            InstructionList instructionList = methodBegin.entryBlock.instructionList.flatten();
+            InstructionList instructionList = TraceScheduler.flattenIr(methodBegin, false);
             var allVariables = getLive(methodBegin.entryBlock.instructionList.get(0));
 
             // remove global variables
-            allVariables.removeAll(globalVariables);
+            allVariables.removeAll(programIr.getGlobals());
             // all the variables later used will be on the first line of the program
             for (var variable : allVariables) {
                 liveIntervalList.add(new LiveInterval((AssignableName) variable,
@@ -331,7 +312,7 @@ public class RegisterAllocation {
         return liveIntervals.stream()
                 .filter(liveInterval -> liveInterval.startPoint <= index && liveInterval.endPoint >= index)
                 .map(liveInterval -> liveInterval.variable)
-                .filter(name -> !globalVariables.contains(name))
+                .filter(name -> !programIr.getGlobals().contains(name))
                 .map(registerMap::get)
                 .collect(Collectors.toUnmodifiableSet());
     }
@@ -362,7 +343,7 @@ public class RegisterAllocation {
 
     private void printLiveIntervals(MethodBegin methodBegin) {
         // get all variables
-        int maxIntervalLength = methodBegin.entryBlock.instructionList.flatten().size();
+        int maxIntervalLength = TraceScheduler.flattenIr(methodBegin, false).size();
         var liveIntervals = this.methodToLiveIntervalsMap.get(methodBegin);
         int maxVariableLength = liveIntervals.stream().map(liveInterval -> liveInterval.variable).map(AssignableName::repr).mapToInt(String::length).max().orElse(0) + 2;
         String[] colors = {Utils.ANSIColorConstants.ANSI_GREEN, Utils.ANSIColorConstants.ANSI_CYAN, Utils.ANSIColorConstants.ANSI_PURPLE, Utils.ANSIColorConstants.ANSI_YELLOW,  Utils.ANSIColorConstants.ANSI_RED};

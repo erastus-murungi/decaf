@@ -31,9 +31,9 @@ public class TemporaryNameIndexGenerator {
         return variableIndex;
     }
 
-    public static String getNextLabel() {
+    public static int getNextLabel() {
         ++labelIndex;
-        return "L" + labelIndex;
+        return labelIndex;
     }
 
     public static String getNextStringLiteralIndex() {

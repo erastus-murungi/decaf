@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
 import edu.mit.compilers.codegen.codes.ConditionalJump;
 import edu.mit.compilers.codegen.codes.Label;
@@ -21,7 +22,7 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
     }
 
     private void eliminateRedundantJumps() {
-        for (var basicBlock: basicBlocks) {
+        for (var basicBlock : basicBlocks) {
             var indicesToRemove = new ArrayList<Integer>();
             for (var indexOfCode = 0; indexOfCode < basicBlock.instructionList.size(); indexOfCode++) {
                 var tac = basicBlock.instructionList.get(indexOfCode);
@@ -34,23 +35,6 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
                             var label = (Label) nextTac;
                             if (unconditionalJump.goToLabel.equals(label)) {
                                 indicesToRemove.add(indexOfCode);
-                            }
-                        }
-                    }
-                }
-            }
-            if (basicBlock.instructionList.lastCode().isPresent()) {
-                var last = basicBlock.instructionList.lastCode().get();
-                var nextBlock = basicBlock.instructionList.nextInstructionList;
-                while (nextBlock != null && nextBlock.isEmpty())
-                    nextBlock = nextBlock.nextInstructionList;
-                if (nextBlock != null && nextBlock.isEmpty()) {
-                    var first = nextBlock.firstCode();
-                    if (last instanceof UnconditionalJump) {
-                        if (first instanceof Label) {
-                            if (((UnconditionalJump) last).goToLabel.label.equals(((Label) first).label)) {
-                                basicBlock.instructionList.remove(basicBlock.instructionList.size() - 1);
-                                nextBlock.remove(0);
                             }
                         }
                     }
@@ -69,15 +53,12 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
 
     private Set<Label> findAllLabelsJumpedTo() {
         var allLabelsJumpedTo = new HashSet<Label>();
-        for (var basicBlock : basicBlocks) {
-            for (Instruction tac : basicBlock.instructionList.flatten()) {
-                if (tac instanceof ConditionalJump) {
-                    allLabelsJumpedTo.add(((ConditionalJump) tac).trueLabel);
-                } else if (tac instanceof UnconditionalJump) {
-                    allLabelsJumpedTo.add(((UnconditionalJump) tac).goToLabel);
-                }
+        for (Instruction instruction : TraceScheduler.flattenIr(methodBegin))
+            if (instruction instanceof ConditionalJump) {
+                allLabelsJumpedTo.add(((ConditionalJump) instruction).trueLabel);
+            } else if (instruction instanceof UnconditionalJump) {
+                allLabelsJumpedTo.add(((UnconditionalJump) instruction).goToLabel);
             }
-        }
         return allLabelsJumpedTo;
     }
 
@@ -114,7 +95,8 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
                     ArrayBoundsCheck arrayBoundsCheck = (ArrayBoundsCheck) instruction;
                     if (arrayBoundsCheck.getAddress.getIndex() instanceof ConstantName) {
                         var index = Long.parseLong(arrayBoundsCheck.getAddress.getIndex().value);
-                        var length = Long.parseLong(arrayBoundsCheck.getAddress.getLength().orElseThrow().value);
+                        var length = Long.parseLong(arrayBoundsCheck.getAddress.getLength()
+                                .orElseThrow().value);
                         if (index >= 0 && index < length) {
                             indicesToRemove.add(indexOfInstruction);
                         }
@@ -132,7 +114,6 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
                     .collect(Collectors.toList()));
         }
     }
-
 
 
     @Override

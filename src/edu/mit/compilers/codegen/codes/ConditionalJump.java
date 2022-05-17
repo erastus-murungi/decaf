@@ -21,7 +21,7 @@ public class ConditionalJump extends Instruction implements HasOperand {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, "if", condition.repr(), "is false goto", trueLabel.label, DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
+        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, "if", condition.repr(), "is false goto", trueLabel.getLabel(), DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
     }
 
     @Override
@@ -40,7 +40,7 @@ public class ConditionalJump extends Instruction implements HasOperand {
 //        var ifString =  "if false";
         var goTo =  Utils.coloredPrint("goto", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
 //        var goTo =  "goto";
-        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, ifString, condition.repr(), goTo, trueLabel.label, DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
+        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, ifString, condition.repr(), goTo, trueLabel.getLabel(), DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
     }
 
     @Override

@@ -33,7 +33,7 @@ public class NOP extends BasicBlockBranchLess {
     }
 
     @Override
-    public String getLabel() {
+    public String getLinesOfCodeString() {
         return String.format("NOP{%s}", getNopLabel().orElse(""));
     }
 }

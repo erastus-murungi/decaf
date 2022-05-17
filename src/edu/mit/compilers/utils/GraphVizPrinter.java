@@ -499,7 +499,7 @@ public class GraphVizPrinter {
     }
 
     public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks) {
-        printGraph(methodCFGBlocks, (BasicBlock::getLabel), "cfg");
+        printGraph(methodCFGBlocks, (BasicBlock::getLinesOfCodeString), "cfg");
     }
 
     public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks, Function<BasicBlock, String> labelFunction, String graphFilename) {

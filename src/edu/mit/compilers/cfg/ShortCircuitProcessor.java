@@ -4,7 +4,7 @@ import edu.mit.compilers.ast.*;
 import edu.mit.compilers.ast.ConditionalOperator;
 import edu.mit.compilers.ast.UnaryOperator;
 
-import static edu.mit.compilers.cfg.iCFGVisitor.rotateBinaryOpExpression;
+import static edu.mit.compilers.cfg.CFGVisitor.rotateBinaryOpExpression;
 import static edu.mit.compilers.grammar.DecafScanner.*;
 
 public class ShortCircuitProcessor {

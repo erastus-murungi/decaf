@@ -14,11 +14,14 @@ public class UnconditionalJump extends Instruction {
     public UnconditionalJump(Label goToLabel) {
         super(null);
         this.goToLabel = goToLabel;
+        if (goToLabel == null) {
+            System.out.println("stop");
+        }
     }
 
     @Override
     public String toString() {
-        return String.format("%s%s %s", DOUBLE_INDENT, "goto", goToLabel.label);
+        return String.format("%s%s %s", DOUBLE_INDENT, "goto", goToLabel.getLabel());
     }
 
     @Override
@@ -35,8 +38,9 @@ public class UnconditionalJump extends Instruction {
     public String repr() {
 //        var goTo =  Utils.coloredPrint("goto", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
         var goTo =  "goto";
-
-        return String.format("%s%s %s", DOUBLE_INDENT, goTo, goToLabel.label);
+        if (goToLabel == null)
+            System.out.println("stop");
+        return String.format("%s%s %s", DOUBLE_INDENT, goTo, goToLabel.getLabel());
     }
 
     @Override

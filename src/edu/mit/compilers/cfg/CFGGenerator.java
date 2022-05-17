@@ -8,7 +8,6 @@ import edu.mit.compilers.descriptors.GlobalDescriptor;
 import edu.mit.compilers.descriptors.MethodDescriptor;
 import edu.mit.compilers.exceptions.DecafException;
 import edu.mit.compilers.symbolTable.SymbolTable;
-import edu.mit.compilers.utils.GraphVizPrinter;
 import edu.mit.compilers.utils.Utils;
 
 import java.util.*;
@@ -60,8 +59,8 @@ public class CFGGenerator {
         }
     }
 
-    public iCFGVisitor buildiCFG() {
-        final iCFGVisitor visitor = new iCFGVisitor();
+    public CFGVisitor buildiCFG() {
+        final CFGVisitor visitor = new CFGVisitor();
         final MaximalVisitor maximalVisitor = new MaximalVisitor();
         final NopVisitor nopVisitor = new NopVisitor();
 
@@ -85,7 +84,7 @@ public class CFGGenerator {
         HashMap<String, BasicBlock> methodBlocksCFG = new HashMap<>();
         visitor.methodCFGBlocks.forEach((k, v) -> {
             if (v
-                    .getLabel()
+                    .getLinesOfCodeString()
                     .isBlank()) {
                 if (((BasicBlockBranchLess) v).autoChild != null) {
                     ((BasicBlockBranchLess) v).autoChild.removePredecessor(v);
@@ -111,9 +110,9 @@ public class CFGGenerator {
                 continue;
             }
             seen.add(block);
-            System.out.println(Utils.coloredPrint(block.getLabel(), Utils.ANSIColorConstants.ANSI_PURPLE) + "  >>>>   ");
+            System.out.println(Utils.coloredPrint(block.getLinesOfCodeString(), Utils.ANSIColorConstants.ANSI_PURPLE) + "  >>>>   ");
             for (BasicBlock parent : block.getPredecessors()) {
-                System.out.println(Utils.indentBlock(parent.getLabel()));
+                System.out.println(Utils.indentBlock(parent.getLinesOfCodeString()));
                 System.out.println();
             }
             if (block instanceof BasicBlockWithBranch) {
@@ -135,7 +134,7 @@ public class CFGGenerator {
                 continue;
             }
             seen.add(block);
-            System.out.println(Utils.coloredPrint(block.getLabel(), Utils.ANSIColorConstants.ANSI_BLUE) + "  <<<<   ");
+            System.out.println(Utils.coloredPrint(block.getLinesOfCodeString(), Utils.ANSIColorConstants.ANSI_BLUE) + "  <<<<   ");
 
             if (block instanceof BasicBlockWithBranch) {
                 BasicBlock falseChild = ((BasicBlockWithBranch) block).falseChild;
@@ -144,12 +143,12 @@ public class CFGGenerator {
                 toVisit.add(trueChild);
                 if (trueChild != null) {
                     System.out.print("T ---- ");
-                    System.out.println(Utils.coloredPrint(trueChild.getLabel(), Utils.ANSIColorConstants.ANSI_GREEN));
+                    System.out.println(Utils.coloredPrint(trueChild.getLinesOfCodeString(), Utils.ANSIColorConstants.ANSI_GREEN));
                 }
                 System.out.println();
                 if (falseChild != null) {
                     System.out.print("F ---- ");
-                    System.out.println(Utils.coloredPrint(falseChild.getLabel(), Utils.ANSIColorConstants.ANSI_RED));
+                    System.out.println(Utils.coloredPrint(falseChild.getLinesOfCodeString(), Utils.ANSIColorConstants.ANSI_RED));
                 }
                 System.out.println();
 
@@ -158,7 +157,7 @@ public class CFGGenerator {
                 toVisit.add(autoChild);
                 if (autoChild != null) {
                     System.out.print("A ---- ");
-                    System.out.println(autoChild.getLabel());
+                    System.out.println(autoChild.getLinesOfCodeString());
                     System.out.println();
                 }
             }

@@ -9,6 +9,7 @@ import java.util.stream.IntStream;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
+import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
 import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.FunctionCall;
@@ -96,13 +97,12 @@ public class FunctionInlinePass {
         for (MethodBegin targetMethodBegin : methodBeginList) {
             if (methodBegin == targetMethodBegin)
                 continue;
-            findCallSites(targetMethodBegin, functionName).forEach(((threeAddressCodeList, indicesOfCallSites) -> inlineCallSite(threeAddressCodeList, indicesOfCallSites, methodBegin.entryBlock.instructionList)));
+            findCallSites(targetMethodBegin, functionName).forEach(((threeAddressCodeList, indicesOfCallSites) -> inlineCallSite(threeAddressCodeList, indicesOfCallSites, TraceScheduler.flattenIr(methodBegin))));
         }
     }
 
     private List<Instruction> findReplacementBody(List<AbstractName> arguments,
                                                   InstructionList functionBody) {
-        functionBody = functionBody.flatten();
         // replace all instances of arguments with
         // find my actual parameter names
         List<Instruction> newTacList = new ArrayList<>();
@@ -194,7 +194,7 @@ public class FunctionInlinePass {
     private int getProgramSize() {
         int programSize = 0;
         for (MethodBegin methodBegin : methodBeginList) {
-            programSize += methodBegin.entryBlock.instructionList.flattenedSize();
+            programSize += TraceScheduler.flattenIr(methodBegin).size();
         }
         return programSize;
     }
@@ -204,26 +204,12 @@ public class FunctionInlinePass {
     }
 
     private boolean isRecursive(MethodBegin methodBegin) {
-        for (Instruction instruction : methodBegin.entryBlock.instructionList.flatten()) {
+        for (Instruction instruction : TraceScheduler.flattenIr(methodBegin)) {
             if (isMethodCallAndNameMatches(instruction, methodBegin.methodName())) {
                 return true;
             }
         }
         return false;
-    }
-
-    private InstructionList getNonEmpty(InstructionList tacList) {
-        if (!tacList.isEmpty())
-            return tacList;
-        while (tacList.getNextInstructionList()
-                .isPresent()) {
-            tacList = tacList
-                    .getNextInstructionList()
-                    .get();
-            if (!tacList.isEmpty())
-                return tacList;
-        }
-        throw new IllegalArgumentException("all ThreeAddressCodeList's are empty");
     }
 
 
