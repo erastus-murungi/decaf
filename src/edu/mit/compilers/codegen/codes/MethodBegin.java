@@ -45,12 +45,6 @@ public class MethodBegin extends Instruction {
         return methodDefinition.methodName.id;
     }
 
-    public List<AssignableName> getParameterNames() {
-        return methodDefinition.methodDefinitionParameterList.stream()
-                .map(methodDefinitionParameter -> new VariableName(methodDefinitionParameter.id.id, Utils.WORD_SIZE, methodDefinitionParameter.builtinType))
-                .collect(Collectors.toList());
-    }
-
     // to be filled in later by the X64Converter
     public HashMap<String, Integer> nameToStackOffset = new HashMap<>();
 
@@ -76,7 +70,8 @@ public class MethodBegin extends Instruction {
 
     @Override
     public String repr() {
-        return String.format("%s: -> %s {%s", methodDefinition.methodName.id, methodDefinition.returnType.getSourceCode(), DOUBLE_INDENT);
+        var defineString = Utils.coloredPrint("define", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
+        return String.format("%s @%s -> %s {%s", defineString, methodDefinition.methodName.id, methodDefinition.returnType.getSourceCode(), DOUBLE_INDENT);
     }
 
     @Override

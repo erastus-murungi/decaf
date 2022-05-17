@@ -176,7 +176,6 @@ public class RegisterAllocation {
             for (BasicBlock basicBlock : basicBlocks) {
                 int indexOfInstruction = 0;
                 if (basicBlock instanceof NOP) {
-                    indexOfInstruction = (basicBlock.instructionList.size() - 2);
                     if (basicBlock.instructionList.size() > 1) {
                         var prevInstructions = basicBlock.instructionList.subList(0, 1);
                         var rest = new ArrayList<>(basicBlock.instructionList.subList(1, basicBlock.instructionList.size() - 1));
@@ -187,7 +186,7 @@ public class RegisterAllocation {
                         correctSuccessors(basicBlock, block, methodBegin);
                     }
                 }
-                if (basicBlock instanceof BasicBlockBranchLess) {
+                else if (basicBlock instanceof BasicBlockBranchLess) {
                     indexOfInstruction += 1;
                     if (!basicBlock.instructionList.isEmpty()) {
                         var prevInstructions = basicBlock.instructionList.subList(0, indexOfInstruction);

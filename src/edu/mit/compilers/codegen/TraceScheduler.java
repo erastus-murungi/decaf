@@ -67,6 +67,8 @@ public class TraceScheduler {
         trace.add(basicBlock.instructionList);
         tracedBasicBlocksSet.add(basicBlock);
         // note: basicBlock.getSuccessors().get(0) is either an autoChild or the trueChild
+        if (basicBlock.getSuccessors().isEmpty() && !(basicBlock instanceof NOP))
+            System.out.println("stop");
         if (!(basicBlock instanceof NOP))
             traceBasicBlock(basicBlock.getSuccessors()
                     .get(0), tracedBasicBlocksSet);
