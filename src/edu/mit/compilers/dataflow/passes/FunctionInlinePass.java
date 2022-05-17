@@ -210,12 +210,11 @@ public class FunctionInlinePass {
             }
         }
         return false;
-    }
+        }
 
 
     private boolean hasBranching(MethodBegin methodBegin) {
-        return methodBegin.entryBlock.instructionList.toString()
-                .contains("if");
+        return TraceScheduler.flattenIr(methodBegin).toString().contains("if");
     }
 
     private boolean hasArrayAccesses(MethodBegin methodBegin) {
