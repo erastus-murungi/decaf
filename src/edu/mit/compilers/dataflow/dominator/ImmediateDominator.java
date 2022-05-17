@@ -4,6 +4,7 @@ import static edu.mit.compilers.dataflow.analyses.DataFlowAnalysis.correctPredec
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.NOP;
+import edu.mit.compilers.utils.GraphVizPrinter;
 
 import java.util.*;
 
@@ -14,11 +15,12 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
      * A map of a basic block to the set of nodes which dominate it
      */
 
-    private final Map<BasicBlock, Set<BasicBlock>> dominators;
+    private final Map<BasicBlock, List<BasicBlock>> dominators;
 
     public ImmediateDominator(BasicBlock basicBlock) {
         immediateDominatorsImpl(basicBlock);
         dominators = computeBlockToDoms();
+        GraphVizPrinter.printDominatorTree(this);
     }
 
 
@@ -27,6 +29,10 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
         entry.autoChild = entryBlock;
         correctPredecessors(entry);
         return entry;
+    }
+
+    public List<BasicBlock> getDominators(BasicBlock basicBlock) {
+        return dominators.get(basicBlock);
     }
 
     public void immediateDominators(BasicBlock entryBlock) {
@@ -86,13 +92,13 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
     }
 
 
-    public Map<BasicBlock, Set<BasicBlock>> computeBlockToDoms() {
-        var dominatorTree = new HashMap<BasicBlock, Set<BasicBlock>>();
+    public Map<BasicBlock, List<BasicBlock>> computeBlockToDoms() {
+        var dominatorTree = new HashMap<BasicBlock, List<BasicBlock>>();
         for (var edge : entrySet()) {
             var block = edge.getKey();
             var dominatorBlock = edge.getValue();
 
-            var dominators = new HashSet<BasicBlock>();
+            var dominators = new ArrayList<BasicBlock>();
 
             BasicBlock currentBlock;
             do {

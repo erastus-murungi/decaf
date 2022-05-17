@@ -390,6 +390,27 @@ public class GraphVizPrinter {
         gv.writeGraphToFile(gv.getGraph(gv.getDotSource(), type), out);
     }
 
+
+    public static String writeDominatorGraph(Map<BasicBlock, BasicBlock> immediateDominators) {
+        List<String> nodes = new ArrayList<>();
+        List<String> edges = new ArrayList<>();
+        for (Map.Entry<BasicBlock, BasicBlock> entry: immediateDominators.entrySet()) {
+            nodes.add(String.format("   %s [shape=record, label=%s, color=blue];", entry.getKey().hashCode(), "\"<from_node>" + escape(entry.getKey().toString()).replace(" ", "\u2007") + "\""));
+            edges.add(String.format("   %s -> %s;", entry.getValue().hashCode() + ":from_node", entry.getKey().hashCode() + ":from_node"));
+        }
+
+        nodes.addAll(edges);
+        return String.join("\n", nodes);
+    }
+
+    public void printDominatorTree(Map<BasicBlock, BasicBlock> immediateDominators, String fileName) {
+        createDotGraph(writeDominatorGraph(immediateDominators), fileName);
+    }
+
+    public static void printDominatorTree(Map<BasicBlock, BasicBlock> immediateDominators) {
+        createDotGraph(writeDominatorGraph(immediateDominators), "dom");
+    }
+
     public static String writeSymbolTable(AST root,
                                           HashMap<String, SymbolTable> methods) {
         List<String> subGraphs = new ArrayList<>();// add this node
