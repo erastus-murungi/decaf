@@ -149,7 +149,6 @@ public class DataflowOptimizer {
                             .getSimpleName(), optimizationPass.getMethod()
                             .methodName(), run);
                     System.out.println(TraceScheduler.flattenIr(optimizationPass.getMethod()));
-                    System.out.println(Utils.coloredPrint(String.valueOf(changesHappened), Utils.ANSIColorConstants.ANSI_RED));
                 }
                 if (run % toOptimizeMethods.size() == 0)
                     runInterProceduralPasses();

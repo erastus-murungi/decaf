@@ -507,6 +507,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
 
         methodStart.instructionList = firstBasicBlockTacList;
         methodBegin.entryBlock = methodStart;
+        methodBegin.exitBlock = nop;
         methodBegin.unoptimized = TraceScheduler.flattenIr(methodBegin);
         return methodBegin;
     }
@@ -623,7 +624,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
         if (visited.contains(basicBlockBranchLess))
             return basicBlockBranchLess.instructionList;
         visited.add(basicBlockBranchLess);
-        basicBlockBranchLess.setLabel(getNewLabel());
         InstructionList instructionList = new InstructionList();
         instructionList.add(basicBlockBranchLess.getLabel());
         for (var line : basicBlockBranchLess.lines)
@@ -646,7 +646,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
             return basicBlockWithBranch.instructionList;
 
         visited.add(basicBlockWithBranch);
-        basicBlockWithBranch.setLabel(getNewLabel());
 
         final Expression condition = basicBlockWithBranch.condition;
         InstructionList conditionInstructionList = getConditionTACList(condition, symbolTable);

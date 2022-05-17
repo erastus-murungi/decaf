@@ -27,6 +27,8 @@ public class MethodBegin extends Instruction {
      */
     public BasicBlock entryBlock;
 
+    public BasicBlock exitBlock;
+
     private boolean hasRuntimeException;
 
     public boolean hasRuntimeException() {

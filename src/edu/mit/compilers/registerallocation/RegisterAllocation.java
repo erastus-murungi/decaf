@@ -219,7 +219,6 @@ public class RegisterAllocation {
                         var rest = new ArrayList<>(instructionsToSplit.subList(1, instructionsToSplit.size()));
 
                         prevBasicBlock = new BasicBlockBranchLess();
-                        prevBasicBlock.setLabel(new Label(TemporaryNameIndexGenerator.getNextLabel()));
                         prevBasicBlock.instructionList.addAll(prevInstructions);
                         block = prevBasicBlock;
 
@@ -238,7 +237,6 @@ public class RegisterAllocation {
                                                  BasicBlock beforeAutoChild) {
         for (var instruction : rest) {
             var bb = new BasicBlockBranchLess();
-            bb.setLabel(new Label(TemporaryNameIndexGenerator.getNextLabel()));
             bb.instructionList = InstructionList.of(instruction);
             bb.addPredecessor(prevBasicBlock);
             prevBasicBlock.autoChild = bb;

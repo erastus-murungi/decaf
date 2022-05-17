@@ -236,12 +236,6 @@ public class Compilation {
         if (CLI.debug) {
             generateCFGVisualizationPdfs();
         }
-        programIr.methodBeginList.forEach(methodBegin ->
-                System.out.println(
-                        new TraceScheduler(methodBegin).getInstructionTrace()
-                                .stream()
-                                .map(InstructionList::toStringLocal)
-                                .collect(Collectors.joining("\n"))));
         compilationState = CompilationState.IR_GENERATED;
     }
 

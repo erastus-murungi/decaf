@@ -21,6 +21,7 @@ public class TraceScheduler {
     private List<BasicBlock> basicBlocks;
     private LinkedList<InstructionList> trace;
     private final boolean addJumps;
+    private MethodBegin methodBegin;
 
     public LinkedList<InstructionList> getInstructionTrace() {
         return trace;
@@ -43,6 +44,7 @@ public class TraceScheduler {
 
     public TraceScheduler(MethodBegin methodBegin, boolean addJumps) {
         this.addJumps = addJumps;
+        this.methodBegin = methodBegin;
         findBasicBlocks(methodBegin);
         computeTrace();
     }
@@ -67,8 +69,6 @@ public class TraceScheduler {
         trace.add(basicBlock.instructionList);
         tracedBasicBlocksSet.add(basicBlock);
         // note: basicBlock.getSuccessors().get(0) is either an autoChild or the trueChild
-        if (basicBlock.getSuccessors().isEmpty() && !(basicBlock instanceof NOP))
-            System.out.println("stop");
         if (!(basicBlock instanceof NOP))
             traceBasicBlock(basicBlock.getSuccessors()
                     .get(0), tracedBasicBlocksSet);
@@ -77,6 +77,7 @@ public class TraceScheduler {
     public void computeTrace() {
         trace = new LinkedList<>();
         Set<BasicBlock> tracedBasicBlocksSet = new HashSet<>();
+        tracedBasicBlocksSet.add(methodBegin.exitBlock);
 
         var notTracedBasicBlock = getNotTracedBlock(tracedBasicBlocksSet);
         while (notTracedBasicBlock.isPresent()) {
@@ -86,5 +87,6 @@ public class TraceScheduler {
             traceBasicBlock(basicBlock, tracedBasicBlocksSet);
             notTracedBasicBlock = getNotTracedBlock(tracedBasicBlocksSet);
         }
+        trace.add(methodBegin.exitBlock.instructionList);
     }
 }

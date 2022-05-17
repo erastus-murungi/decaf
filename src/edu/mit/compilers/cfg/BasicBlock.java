@@ -2,6 +2,7 @@ package edu.mit.compilers.cfg;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionList;
+import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
 import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.Store;
 import edu.mit.compilers.codegen.codes.Instruction;
@@ -70,6 +71,7 @@ public abstract class BasicBlock {
         predecessors = new ArrayList<>();
         lines = new ArrayList<>();
         instructionList = new InstructionList();
+        setLabel(new Label(TemporaryNameIndexGenerator.getNextLabel()));
     }
 
     public abstract <T> T accept(BasicBlockVisitor<T> visitor, SymbolTable symbolTable);

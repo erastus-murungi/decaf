@@ -82,7 +82,7 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
         loopToBreak.push(new ArrayList<>());
         // If false, end with NOP, also end of for_statement
         NOP falseBlock = new NOP("For Loop (false) " + forStatement.terminatingCondition.getSourceCode());
-        NOP exit = new NOP("Exit For");
+        NOP exit = new NOP("exit_for");
         falseBlock.autoChild = exit;
         exit.addPredecessor(falseBlock);
 
@@ -202,7 +202,7 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
             curPair = placeholder;
         }
         for (MethodDefinition method : program.methodDefinitionList) {
-            exitNOP = new NOP("Exit " +  method.methodName.id);
+            exitNOP = new NOP("exit_" +  method.methodName.id);
             methodCFGBlocks.put(method.methodName.id, method.accept(this, symbolTable).startBlock);
             methodToExitNOP.put(method.methodName.id, exitNOP);
         }
