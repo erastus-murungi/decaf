@@ -3,6 +3,8 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.dataflow.operand.MethodCallOperand;
+import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.utils.Utils;
 
 import java.util.Collections;
@@ -43,5 +45,4 @@ public class FunctionCallNoResult extends Instruction implements FunctionCall {
     public Instruction copy() {
         return new FunctionCallNoResult((MethodCall) source, getComment().orElse(null));
     }
-
 }

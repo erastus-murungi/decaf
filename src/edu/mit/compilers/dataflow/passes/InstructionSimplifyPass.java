@@ -143,7 +143,7 @@ public class InstructionSimplifyPass extends OptimizationPass {
     private void simplifyInstructions() {
         for (BasicBlock basicBlock : basicBlocks) {
             var newTacList = new ArrayList<Instruction>();
-            for (var tac : basicBlock.instructionList) {
+            for (var tac : basicBlock.getInstructionList()) {
                 Instruction newTac;
                 if (tac instanceof BinaryInstruction) {
                     newTac = simplifyQuadruple((BinaryInstruction) tac);
@@ -154,7 +154,7 @@ public class InstructionSimplifyPass extends OptimizationPass {
                 }
                 newTacList.add(newTac);
             }
-            basicBlock.instructionList.reset(newTacList);
+            basicBlock.getInstructionList().reset(newTacList);
         }
     }
 
@@ -162,6 +162,6 @@ public class InstructionSimplifyPass extends OptimizationPass {
     public boolean run() {
         final var oldCodes = entryBlock.getCopyOfInstructionList();
         simplifyInstructions();
-        return oldCodes.equals(entryBlock.instructionList);
+        return !oldCodes.equals(entryBlock.getInstructionList());
     }
 }

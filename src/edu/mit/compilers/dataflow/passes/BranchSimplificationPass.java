@@ -40,7 +40,7 @@ public class BranchSimplificationPass extends OptimizationPass {
     private void buildBlockPath() {
         nextBlockInPath = new HashMap<>();
         for (BasicBlock basicBlock : basicBlocks) {
-            var tacList = basicBlock.instructionList;
+            var tacList = basicBlock.getInstructionList();
             if (!tacList.isEmpty()) {
                 Instruction tac = tacList.firstCode();
                 if (tac instanceof Label)
@@ -68,7 +68,7 @@ public class BranchSimplificationPass extends OptimizationPass {
     }
 
     private Boolean getStateOfBlockCondition(BasicBlockWithBranch basicBlockWithBranch) {
-        Optional<ConditionalJump> conditionalJump = getConditional(basicBlockWithBranch.instructionList);
+        Optional<ConditionalJump> conditionalJump = getConditional(basicBlockWithBranch.getInstructionList());
         if (conditionalJump.isPresent()) {
             if (isTrue(conditionalJump.get())) {
                 return true;
@@ -83,15 +83,15 @@ public class BranchSimplificationPass extends OptimizationPass {
 //        // just reduce this to the true branch
 //        var trueChild = basicBlockWithBranch.trueChild;
 //        var falseChild = basicBlockWithBranch.falseChild;
-//        basicBlockWithBranch.instructionList.reset(Collections.emptyList());
-//        Label label = (Label) falseChild.instructionList.get(0);
+//        basicBlockWithBranch.getInstructionList().reset(Collections.emptyList());
+//        Label label = (Label) falseChild.getInstructionList().get(0);
 //        if (label.aliasLabels.isEmpty()) {
-//            var collect = falseChild.instructionList
+//            var collect = falseChild.getInstructionList()
 //                    .stream()
 //                    .dropWhile(BranchSimplificationPass::isNotExitLabel)
 //                    .collect(Collectors.toList());
-//            trueChild.instructionList.addAll(collect);
-//            falseChild.instructionList.reset(Collections.emptyList());
+//            trueChild.getInstructionList().addAll(collect);
+//            falseChild.getInstructionList().reset(Collections.emptyList());
 //        } else {
 //            label.aliasLabels.remove(0);
 //        }
@@ -102,12 +102,12 @@ public class BranchSimplificationPass extends OptimizationPass {
 //        // if (false) || if (0)
 //        // just reduce this to the true branch
 //        var trueChild = basicBlockWithBranch.trueChild;
-//        basicBlockWithBranch.instructionList.reset(Collections.emptyList());
-//        trueChild.instructionList.reset(Collections.emptyList());
+//        basicBlockWithBranch.getInstructionList().reset(Collections.emptyList());
+//        trueChild.getInstructionList().reset(Collections.emptyList());
 //
 //        var visited = new HashSet<InstructionList>();
-//        visited.add(trueChild.instructionList);
-//        var nextTacList = trueChild.instructionList.nextInstructionList;
+//        visited.add(trueChild.getInstructionList());
+//        var nextTacList = trueChild.getInstructionList().nextInstructionList;
 //        var labelToUnconditionalJump = new HashMap<Label, InstructionList>();
 //        while (nextTacList != null) {
 //            if (visited.contains(nextTacList))

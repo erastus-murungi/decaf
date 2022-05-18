@@ -7,7 +7,7 @@ import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.utils.Utils;
 
-public class ArrayBoundsCheck extends Instruction implements HasOperand {
+public class ArrayBoundsCheck extends HasOperand {
     public GetAddress getAddress;
     public Integer boundsIndex;
 

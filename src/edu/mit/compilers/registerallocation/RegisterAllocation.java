@@ -41,7 +41,7 @@ public class RegisterAllocation {
     private Map<Instruction, Set<X64Register>> computeInstructionToLiveRegistersMap(List<LiveInterval> liveIntervals, Map<AbstractName, X64Register> registerMap) {
         var instructionToLiveRegistersMap = new HashMap<Instruction, Set<X64Register>>();
         if (!liveIntervals.isEmpty()) {
-            var instructionList = liveIntervals.get(0).instructionList;
+            var instructionList = liveIntervals.get(0).getInstructionList();
             IntStream.range(0, instructionList.size())
                     .forEach(indexOfInstruction -> instructionToLiveRegistersMap.put(instructionList.get(indexOfInstruction),
                             getLiveRegistersAtPoint(liveIntervals, indexOfInstruction, registerMap)));
@@ -62,7 +62,7 @@ public class RegisterAllocation {
         var copy = new HashMap<String, BasicBlock>();
         programIr.methodBeginList.forEach(methodBegin -> copy.put(methodBegin.methodName(), methodBegin.entryBlock));
         GraphVizPrinter.printGraph(copy,
-                (basicBlock -> basicBlock.instructionList.stream()
+                (basicBlock -> basicBlock.getInstructionList().stream()
                         .map(Instruction::repr)
                         .collect(Collectors.joining("\n"))),
                 "cfg_ir"
@@ -102,17 +102,17 @@ public class RegisterAllocation {
             var liveVariableAnalysis = new LiveVariableAnalysis(methodBegin.entryBlock);
             var basicBlocks = DataFlowAnalysis.getReversePostOrder(methodBegin.entryBlock);
             basicBlocks.forEach(basicBlock -> {
-                if (basicBlock.instructionList.size() > 1)
+                if (basicBlock.getInstructionList().size() > 1)
                     throw new IllegalStateException("failed linearization of " + basicBlock.getLinesOfCodeString());
-                if (basicBlock.instructionList.size() == 1)
-                    instructionToLiveVariablesMap.put(basicBlock.instructionList.get(0), liveVariableAnalysis.liveOut(basicBlock));
+                if (basicBlock.getInstructionList().size() == 1)
+                    instructionToLiveVariablesMap.put(basicBlock.getInstructionList().get(0), liveVariableAnalysis.liveOut(basicBlock));
             });
         }
     }
 
 
     void printLiveVariables() {
-        printLiveVariables(programIr.mergeProgram());
+        programIr.methodBeginList.forEach(methodBegin -> printLiveVariables(TraceScheduler.flattenIr(methodBegin)));
     }
 
     void printLiveVariables(InstructionList instructionList) {
@@ -157,8 +157,8 @@ public class RegisterAllocation {
                 }
             }
         }
-        if (methodBegin.entryBlock.instructionList == oldBlock.instructionList) {
-            methodBegin.entryBlock.instructionList = newBlock.instructionList;
+        if (methodBegin.entryBlock.getInstructionList() == oldBlock.getInstructionList()) {
+            methodBegin.entryBlock.setInstructionList(newBlock.getInstructionList());
         }
     }
 
@@ -174,25 +174,25 @@ public class RegisterAllocation {
             for (BasicBlock basicBlock : basicBlocks) {
                 int indexOfInstruction = 0;
                 if (basicBlock instanceof NOP) {
-                    if (basicBlock.instructionList.size() > 1) {
-                        var prevInstructions = basicBlock.instructionList.subList(0, 1);
-                        var rest = new ArrayList<>(basicBlock.instructionList.subList(1, basicBlock.instructionList.size() - 1));
+                    if (basicBlock.getInstructionList().size() > 1) {
+                        var prevInstructions = basicBlock.getInstructionList().subList(0, 1);
+                        var rest = new ArrayList<>(basicBlock.getInstructionList().subList(1, basicBlock.getInstructionList().size() - 1));
                         var block = new BasicBlockBranchLess();
-                        block.instructionList = new InstructionList(prevInstructions);
-                        basicBlock.instructionList.reset(new ArrayList<>(basicBlock.instructionList.subList(basicBlock.instructionList.size() - 1, basicBlock.instructionList.size())));
+                        block.setInstructionList(new InstructionList(prevInstructions));
+                        basicBlock.getInstructionList().reset(new ArrayList<>(basicBlock.getInstructionList().subList(basicBlock.getInstructionList().size() - 1, basicBlock.getInstructionList().size())));
                         splitBasicBlock(rest, block, basicBlock);
                         correctSuccessors(basicBlock, block, methodBegin);
                     }
                 }
                 else if (basicBlock instanceof BasicBlockBranchLess) {
                     indexOfInstruction += 1;
-                    if (!basicBlock.instructionList.isEmpty()) {
-                        var prevInstructions = basicBlock.instructionList.subList(0, indexOfInstruction);
-                        var rest = new ArrayList<>(basicBlock.instructionList.subList(indexOfInstruction, basicBlock.instructionList.size()));
+                    if (!basicBlock.getInstructionList().isEmpty()) {
+                        var prevInstructions = basicBlock.getInstructionList().subList(0, indexOfInstruction);
+                        var rest = new ArrayList<>(basicBlock.getInstructionList().subList(indexOfInstruction, basicBlock.getInstructionList().size()));
                         var prevBasicBlock = (BasicBlockBranchLess) basicBlock;
                         var beforeAutoChild = prevBasicBlock.autoChild;
 
-                        basicBlock.instructionList.reset(new ArrayList<>(prevInstructions));
+                        basicBlock.getInstructionList().reset(new ArrayList<>(prevInstructions));
 
                         prevBasicBlock = splitBasicBlock(rest, prevBasicBlock, beforeAutoChild);
                         if (beforeAutoChild != null) {
@@ -202,13 +202,13 @@ public class RegisterAllocation {
                     }
                 } else {
                     // take the branch
-                    while (indexOfInstruction < basicBlock.instructionList.size()) {
-                        if (basicBlock.instructionList.get(indexOfInstruction) instanceof ConditionalJump)
+                    while (indexOfInstruction < basicBlock.getInstructionList().size()) {
+                        if (basicBlock.getInstructionList().get(indexOfInstruction) instanceof ConditionalJump)
                             break;
                         indexOfInstruction += 1;
                     }
-                    var instructionsToSplit = new InstructionList(basicBlock.instructionList.subList(0, indexOfInstruction));
-                    basicBlock.instructionList.reset(new ArrayList<>(basicBlock.instructionList.subList(indexOfInstruction, basicBlock.instructionList.size())));
+                    var instructionsToSplit = new InstructionList(basicBlock.getInstructionList().subList(0, indexOfInstruction));
+                    basicBlock.getInstructionList().reset(new ArrayList<>(basicBlock.getInstructionList().subList(indexOfInstruction, basicBlock.getInstructionList().size())));
 
                     var block = basicBlock;
                     BasicBlockBranchLess prevBasicBlock;
@@ -217,7 +217,7 @@ public class RegisterAllocation {
                         var rest = new ArrayList<>(instructionsToSplit.subList(1, instructionsToSplit.size()));
 
                         prevBasicBlock = new BasicBlockBranchLess();
-                        prevBasicBlock.instructionList.addAll(prevInstructions);
+                        prevBasicBlock.getInstructionList().addAll(prevInstructions);
                         block = prevBasicBlock;
 
                         splitBasicBlock(rest, prevBasicBlock, basicBlock);
@@ -235,7 +235,7 @@ public class RegisterAllocation {
                                                  BasicBlock beforeAutoChild) {
         for (var instruction : rest) {
             var bb = new BasicBlockBranchLess();
-            bb.instructionList = InstructionList.of(instruction);
+            bb.setInstructionList(InstructionList.of(instruction));
             bb.addPredecessor(prevBasicBlock);
             prevBasicBlock.autoChild = bb;
             prevBasicBlock = bb;
@@ -271,7 +271,7 @@ public class RegisterAllocation {
         for (var methodBegin : programIr.methodBeginList) {
             var liveIntervalList = new ArrayList<LiveInterval>();
             InstructionList instructionList = TraceScheduler.flattenIr(methodBegin, false);
-            var allVariables = getLive(methodBegin.entryBlock.instructionList.get(0));
+            var allVariables = getLive(methodBegin.entryBlock.getInstructionList().get(0));
 
             // remove global variables
             allVariables.removeAll(programIr.getGlobals());
@@ -290,7 +290,7 @@ public class RegisterAllocation {
     private void checkStartComesBeforeEnd(Collection<LiveInterval> liveIntervals) {
         for (var liveInterval : liveIntervals) {
             if (liveInterval.startPoint > liveInterval.endPoint) {
-                printLiveVariables(liveInterval.instructionList);
+                printLiveVariables(liveInterval.getInstructionList());
                 throw new IllegalStateException(liveInterval.toString());
             }
         }

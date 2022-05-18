@@ -13,7 +13,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public class FunctionCallWithResult extends Store implements HasOperand, FunctionCall {
+public class FunctionCallWithResult extends Store implements FunctionCall {
     public FunctionCallWithResult(MethodCall methodCall, AssignableName resultLocation, String comment) {
         super(resultLocation, methodCall, comment);
     }

@@ -312,10 +312,7 @@ public class TypeCheckVisitor implements Visitor<BuiltinType> {
 
     private void visitMethodCallParameters(List<MethodCallParameter> methodCallParameterList, SymbolTable symbolTable) {
         for (MethodCallParameter methodCallParameter : methodCallParameterList) {
-            if (methodCallParameter instanceof ExpressionParameter)
-                visit(((ExpressionParameter) methodCallParameter), symbolTable);
-            else
-                visit((StringLiteral) methodCallParameter, symbolTable);
+            methodCallParameter.accept(this, symbolTable);
         }
     }
 

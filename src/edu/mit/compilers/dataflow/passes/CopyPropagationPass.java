@@ -51,7 +51,7 @@ public class CopyPropagationPass extends OptimizationPass {
     private boolean performLocalCopyPropagation(BasicBlock basicBlock, HashMap<AbstractName, Operand> copies) {
         // we need a reference tac list to know whether any changes occurred
         final var tacList = basicBlock.getCopyOfInstructionList();
-        final var newTacList = basicBlock.instructionList;
+        final var newTacList = basicBlock.getInstructionList();
 
         newTacList.clear();
 
@@ -112,6 +112,6 @@ public class CopyPropagationPass extends OptimizationPass {
     public boolean run() {
         final var oldCodes = entryBlock.getCopyOfInstructionList();
         performGlobalCopyPropagation();
-        return oldCodes.equals(entryBlock.instructionList);
+        return !oldCodes.equals(entryBlock.getInstructionList());
     }
 }

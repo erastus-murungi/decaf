@@ -12,7 +12,7 @@ import edu.mit.compilers.utils.Utils;
 import java.util.List;
 import java.util.Optional;
 
-public class Assign extends Store implements Cloneable, HasOperand {
+public class Assign extends Store implements Cloneable {
     public AbstractName operand;
 
     public Assign(AssignableName dst, AbstractName operand, AST source, String comment) {

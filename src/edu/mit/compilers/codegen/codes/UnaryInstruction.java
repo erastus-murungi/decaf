@@ -11,7 +11,7 @@ import edu.mit.compilers.dataflow.operand.UnaryOperand;
 import java.util.List;
 import java.util.Optional;
 
-public class UnaryInstruction extends Store implements Cloneable, HasOperand {
+public class UnaryInstruction extends Store implements Cloneable {
     public AbstractName operand;
     public String operator;
 

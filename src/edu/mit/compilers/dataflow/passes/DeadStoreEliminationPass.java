@@ -68,7 +68,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
 
         // this is the list we will be updating, we don't use a new arraylist because we want to maintain all the other
         // internal members of the basicBlock, such as `nextInstruction`
-        final var instructionListToUpdate = basicBlock.instructionList;
+        final var instructionListToUpdate = basicBlock.getInstructionList();
         instructionListToUpdate.clear();
 
         final var namesUsedSoFar = new HashSet<AbstractName>();
@@ -124,9 +124,9 @@ public class DeadStoreEliminationPass extends OptimizationPass {
     }
 
     private void forwardRun(BasicBlock basicBlock, Set<AbstractName> basicBlockLiveOut) {
-        var copyOfInstructionList = new ArrayList<>(basicBlock.instructionList);
+        var copyOfInstructionList = new ArrayList<>(basicBlock.getInstructionList());
         Collections.reverse(copyOfInstructionList);
-        final var instructionListToUpdate = basicBlock.instructionList;
+        final var instructionListToUpdate = basicBlock.getInstructionList();
         instructionListToUpdate.clear();
 
         int indexOfInstruction = -1;
@@ -281,6 +281,6 @@ public class DeadStoreEliminationPass extends OptimizationPass {
     public boolean run() {
         final var oldCodes = entryBlock.getCopyOfInstructionList();
         performDeadStoreElimination();
-        return oldCodes.equals(entryBlock.instructionList);
+        return !oldCodes.equals(entryBlock.getInstructionList());
     }
 }

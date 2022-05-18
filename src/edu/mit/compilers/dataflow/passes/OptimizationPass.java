@@ -32,11 +32,9 @@ public abstract class OptimizationPass {
     public abstract boolean run();
 
     // return whether an instruction of the form x = x
-    protected static boolean isTrivialAssignment(Instruction instruction) {
+    public static boolean isTrivialAssignment(Instruction instruction) {
         if (instruction instanceof Assign) {
             var assign = (Assign) instruction;
-//            if (assign.operand instanceof ArrayName && assign.store instanceof ArrayName)
-//                return ((ArrayName) assign.operand).arrayAccess.equals(((ArrayName) assign.store).arrayAccess);
             return assign.store.equals(assign.operand);
         }
         return false;

@@ -8,7 +8,7 @@ import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 
 import java.util.List;
 
-public class PushArgument extends Instruction implements HasOperand {
+public class PushArgument extends HasOperand {
     public AbstractName parameterName;
     public final int parameterIndex;
 

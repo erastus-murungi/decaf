@@ -179,14 +179,14 @@ public abstract class DataFlowAnalysis<Value> {
         return index;
     }
 
-    public static Map<Instruction, Integer> getTacToPosMapping(InstructionList instructionList) {
-        var tacToPositionInList = new LinkedHashMap<Instruction, Integer>();
+    public static Map<Instruction, Integer> getInstructionToIndexMapping(InstructionList instructionList) {
+        var instructionToIndexMapping = new LinkedHashMap<Instruction, Integer>();
         var index = 0;
-        for (Instruction tac : instructionList) {
-            tacToPositionInList.put(tac, index);
+        for (Instruction instruction : instructionList) {
+            instructionToIndexMapping.put(instruction, index);
             ++index;
         }
-        return tacToPositionInList;
+        return instructionToIndexMapping;
     }
 
     public String getResultForPrint() {

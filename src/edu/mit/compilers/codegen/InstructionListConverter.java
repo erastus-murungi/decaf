@@ -503,10 +503,10 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
         firstBasicBlockTacList.addAll(0, instructions);
 
         nop.setLabel(methodExitLabel);
-        nop.instructionList.add(methodExitLabel);
-        nop.instructionList.add(new MethodEnd(methodDefinition));
+        nop.getInstructionList().add(methodExitLabel);
+        nop.getInstructionList().add(new MethodEnd(methodDefinition));
 
-        methodStart.instructionList = firstBasicBlockTacList;
+        methodStart.setInstructionList(firstBasicBlockTacList);
         methodBegin.entryBlock = methodStart;
         methodBegin.exitBlock = nop;
         methodBegin.unoptimized = TraceScheduler.flattenIr(methodBegin);
@@ -623,14 +623,14 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
     @Override
     public InstructionList visit(BasicBlockBranchLess basicBlockBranchLess, SymbolTable symbolTable) {
         if (visited.contains(basicBlockBranchLess))
-            return basicBlockBranchLess.instructionList;
+            return basicBlockBranchLess.getInstructionList();
         visited.add(basicBlockBranchLess);
         InstructionList instructionList = new InstructionList();
         instructionList.add(basicBlockBranchLess.getLabel());
         for (var line : basicBlockBranchLess.lines)
             instructionList.addAll(line.accept(visitor, symbolTable));
         basicBlockBranchLess.autoChild.accept(this, symbolTable);
-        basicBlockBranchLess.instructionList = instructionList;
+        basicBlockBranchLess.setInstructionList(instructionList);
         return instructionList;
     }
 
@@ -644,7 +644,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
     @Override
     public InstructionList visit(BasicBlockWithBranch basicBlockWithBranch, SymbolTable symbolTable) {
         if (visited.contains(basicBlockWithBranch))
-            return basicBlockWithBranch.instructionList;
+            return basicBlockWithBranch.getInstructionList();
 
         visited.add(basicBlockWithBranch);
 
@@ -660,7 +660,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
                         conditionInstructionList.place,
                         basicBlockWithBranch.falseChild.getLabel(), "if !(" + basicBlockWithBranch.condition.getSourceCode() + ")");
         conditionInstructionList.add(jumpIfFalse);
-        basicBlockWithBranch.instructionList = conditionInstructionList;
+        basicBlockWithBranch.setInstructionList(conditionInstructionList);
         return conditionInstructionList;
     }
 
@@ -668,7 +668,6 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
     public InstructionList visit(NOP nop, SymbolTable symbolTable) {
         this.nop = nop;
         visited.add(nop);
-        nop.instructionList = new InstructionList();
-        return nop.instructionList;
+        return nop.getInstructionList();
     }
 }

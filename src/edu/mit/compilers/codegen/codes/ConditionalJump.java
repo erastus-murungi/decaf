@@ -9,7 +9,7 @@ import edu.mit.compilers.utils.Utils;
 
 import java.util.List;
 
-public class ConditionalJump extends Instruction implements HasOperand {
+public class ConditionalJump extends HasOperand {
     public AbstractName condition;
     public final Label trueLabel;
 

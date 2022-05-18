@@ -8,7 +8,7 @@ import edu.mit.compilers.dataflow.operand.Operand;
 import java.util.Optional;
 import java.util.Set;
 
-public abstract class Store extends Instruction implements Cloneable {
+public abstract class Store extends HasOperand implements Cloneable {
     public AssignableName store;
 
     public Store(AssignableName store, AST source) {

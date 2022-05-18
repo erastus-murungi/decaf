@@ -18,7 +18,7 @@ import java.util.Optional;
  * For instance, the three address instruction x = y + z is represented by placing + in op, y in arg1, z in arg2 and x in result.
  */
 
-public class BinaryInstruction extends Store implements HasOperand {
+public class BinaryInstruction extends Store {
     public AbstractName fstOperand;
     public String operator;
     public AbstractName sndOperand;

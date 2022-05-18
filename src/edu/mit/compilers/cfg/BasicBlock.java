@@ -16,8 +16,15 @@ import java.util.stream.Collectors;
 public abstract class BasicBlock {
     private final ArrayList<BasicBlock> predecessors;
     // to be set by a visitor
-    public InstructionList instructionList;
+    private InstructionList instructionList;
 
+    public InstructionList getInstructionList() {
+        return instructionList;
+    }
+
+    public void setInstructionList(InstructionList instructionList) {
+        this.instructionList = instructionList;
+    }
 
     public ArrayList<AST> lines;
 

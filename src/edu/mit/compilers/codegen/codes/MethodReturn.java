@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public class MethodReturn extends Instruction implements HasOperand {
+public class MethodReturn extends HasOperand {
     private AbstractName returnAddress;
 
     public MethodReturn(AST source) {

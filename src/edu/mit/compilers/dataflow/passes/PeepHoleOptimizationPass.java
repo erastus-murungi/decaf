@@ -25,13 +25,13 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
     private void eliminateRedundantJumps() {
         for (var basicBlock : basicBlocks) {
             var indicesToRemove = new ArrayList<Integer>();
-            for (var indexOfCode = 0; indexOfCode < basicBlock.instructionList.size(); indexOfCode++) {
-                var tac = basicBlock.instructionList.get(indexOfCode);
+            for (var indexOfCode = 0; indexOfCode < basicBlock.getInstructionList().size(); indexOfCode++) {
+                var tac = basicBlock.getInstructionList().get(indexOfCode);
                 if (tac instanceof UnconditionalJump) {
                     var unconditionalJump = (UnconditionalJump) tac;
 
-                    if (indexOfCode + 1 < basicBlock.instructionList.size()) {
-                        var nextTac = basicBlock.instructionList.get(indexOfCode + 1);
+                    if (indexOfCode + 1 < basicBlock.getInstructionList().size()) {
+                        var nextTac = basicBlock.getInstructionList().get(indexOfCode + 1);
                         if (nextTac instanceof Label) {
                             var label = (Label) nextTac;
                             if (unconditionalJump.goToLabel.equals(label)) {
@@ -42,10 +42,10 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
                 }
             }
             for (var index : indicesToRemove) {
-                basicBlock.instructionList
+                basicBlock.getInstructionList()
                         .set(index, null);
             }
-            basicBlock.instructionList.reset(basicBlock.getCopyOfInstructionList()
+            basicBlock.getInstructionList().reset(basicBlock.getCopyOfInstructionList()
                     .stream()
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList()));
@@ -67,8 +67,8 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
         final var allLabelsJumpedTo = findAllLabelsJumpedTo();
         for (var basicBlock : basicBlocks) {
             var indicesToRemove = new ArrayList<Integer>();
-            for (var indexOfCode = 0; indexOfCode < basicBlock.instructionList.size(); indexOfCode++) {
-                var tac = basicBlock.instructionList.get(indexOfCode);
+            for (var indexOfCode = 0; indexOfCode < basicBlock.getInstructionList().size(); indexOfCode++) {
+                var tac = basicBlock.getInstructionList().get(indexOfCode);
                 if (tac instanceof Label) {
                     var label = (Label) tac;
                     if (!allLabelsJumpedTo.contains(label)) {
@@ -77,10 +77,10 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
                 }
             }
             for (var index : indicesToRemove) {
-                basicBlock.instructionList
+                basicBlock.getInstructionList()
                         .set(index, null);
             }
-            basicBlock.instructionList.reset(basicBlock.getCopyOfInstructionList()
+            basicBlock.getInstructionList().reset(basicBlock.getCopyOfInstructionList()
                     .stream()
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList()));
@@ -90,8 +90,8 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
     private void removeTrivialBoundsChecks() {
         for (var basicBlock : basicBlocks) {
             var indicesToRemove = new ArrayList<Integer>();
-            for (var indexOfInstruction = 0; indexOfInstruction < basicBlock.instructionList.size(); indexOfInstruction++) {
-                var instruction = basicBlock.instructionList.get(indexOfInstruction);
+            for (var indexOfInstruction = 0; indexOfInstruction < basicBlock.getInstructionList().size(); indexOfInstruction++) {
+                var instruction = basicBlock.getInstructionList().get(indexOfInstruction);
                 if (instruction instanceof ArrayBoundsCheck) {
                     ArrayBoundsCheck arrayBoundsCheck = (ArrayBoundsCheck) instruction;
                     if (arrayBoundsCheck.getAddress.getIndex() instanceof ConstantName) {
@@ -106,10 +106,10 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
             }
 
             for (var index : indicesToRemove) {
-                basicBlock.instructionList
+                basicBlock.getInstructionList()
                         .set(index, null);
             }
-            basicBlock.instructionList.reset(basicBlock.getCopyOfInstructionList()
+            basicBlock.getInstructionList().reset(basicBlock.getCopyOfInstructionList()
                     .stream()
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList()));
@@ -123,6 +123,6 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
         eliminateRedundantJumps();
         eliminateUnUsedJumps();
         removeTrivialBoundsChecks();
-        return oldCodes.equals(entryBlock.instructionList);
+        return !oldCodes.equals(entryBlock.getInstructionList());
     }
 }

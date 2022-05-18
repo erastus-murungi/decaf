@@ -67,7 +67,7 @@ public class FunctionInlinePass {
     private Map<InstructionList, List<Integer>> findCallSites(MethodBegin methodBegin, String functionName) {
         var callSites = new HashMap<InstructionList, List<Integer>>();
         for (BasicBlock basicBlock : DataFlowAnalysis.getReversePostOrder(methodBegin.entryBlock)) {
-            var threeAddressCodeList = basicBlock.instructionList;
+            var threeAddressCodeList = basicBlock.getInstructionList();
             callSites.put(threeAddressCodeList, new ArrayList<>());
             IntStream.range(0, threeAddressCodeList.size())
                     .forEach(indexOfTac -> {
@@ -182,7 +182,7 @@ public class FunctionInlinePass {
     private int getNumberOfCallsToFunction(String functionName) {
         int numberOfCalls = 0;
         for (MethodBegin methodBegin : methodBeginList) {
-            for (Instruction instruction : methodBegin.entryBlock.instructionList) {
+            for (Instruction instruction : methodBegin.entryBlock.getInstructionList()) {
                 if (isMethodCallAndNameMatches(instruction, functionName)) {
                     numberOfCalls += 1;
                 }
@@ -200,7 +200,7 @@ public class FunctionInlinePass {
     }
 
     private int getMethodSize(MethodBegin functionName) {
-        return functionName.entryBlock.instructionList.size();
+        return functionName.entryBlock.getInstructionList().size();
     }
 
     private boolean isRecursive(MethodBegin methodBegin) {
@@ -218,7 +218,7 @@ public class FunctionInlinePass {
     }
 
     private boolean hasArrayAccesses(MethodBegin methodBegin) {
-        return methodBegin.entryBlock.instructionList.stream().anyMatch(instruction -> instruction instanceof ArrayBoundsCheck);
+        return methodBegin.entryBlock.getInstructionList().stream().anyMatch(instruction -> instruction instanceof ArrayBoundsCheck);
     }
 
     private boolean shouldBeInlined(MethodBegin methodBegin) {

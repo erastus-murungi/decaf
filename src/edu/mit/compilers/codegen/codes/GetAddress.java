@@ -15,7 +15,7 @@ import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.utils.Utils;
 
 
-public class GetAddress extends Store implements HasOperand {
+public class GetAddress extends Store {
     private AbstractName baseAddress;
     private AbstractName index;
     private final ConstantName length;

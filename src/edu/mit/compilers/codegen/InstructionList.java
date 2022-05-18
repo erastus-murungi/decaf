@@ -37,7 +37,7 @@ public class InstructionList extends ArrayList<Instruction> {
         addAll(newCodes);
     }
 
-    public void replaceIfContainsOldCodeAtIndex(int indexOfOldCode, Instruction oldCode, Instruction newCode) {
+    public void replaceIfContainsInstuctionAtIndex(int indexOfOldCode, Instruction oldCode, Instruction newCode) {
         if (get(indexOfOldCode) != oldCode) {
             throw new IllegalArgumentException(oldCode + "not found in Instruction List");
         }

@@ -19,6 +19,7 @@ import edu.mit.compilers.dataflow.passes.InstructionSimplifyPass;
 import edu.mit.compilers.dataflow.passes.OptimizationPass;
 import edu.mit.compilers.dataflow.passes.PeepHoleOptimizationPass;
 import edu.mit.compilers.tools.CLI;
+import edu.mit.compilers.utils.Utils;
 
 public class DataflowOptimizer {
     private static final int MAX_RUNS = 20;
@@ -142,12 +143,13 @@ public class DataflowOptimizer {
                 if (!toOptimizeMethods.contains(optimizationPass.getMethod()))
                     continue;
                 var changesHappenedForOpt = optimizationPass.run();
-                changesHappened = changesHappened | !changesHappenedForOpt;
+                changesHappened = changesHappened | changesHappenedForOpt;
                 if (CLI.debug) {
                     System.out.format("%s<%s> run = %s\n", optimizationPass.getClass()
                             .getSimpleName(), optimizationPass.getMethod()
                             .methodName(), run);
                     System.out.println(TraceScheduler.flattenIr(optimizationPass.getMethod()));
+                    System.out.println(Utils.coloredPrint(String.valueOf(changesHappenedForOpt), Utils.ANSIColorConstants.ANSI_GREEN_BOLD));
                 }
                 if (run % toOptimizeMethods.size() == 0)
                     runInterProceduralPasses();

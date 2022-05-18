@@ -23,12 +23,12 @@ public class DeadCodeEliminationPass extends OptimizationPass {
         // remove all push parameters which don't have a method call afterwards
         var indicesToRemove = new ArrayList<Integer>();
         boolean changed = false;
-        for (int indexOfCode = 0; indexOfCode < basicBlock.instructionList.size(); indexOfCode++) {
-            var tac = basicBlock.instructionList.get(indexOfCode);
+        for (int indexOfCode = 0; indexOfCode < basicBlock.getInstructionList().size(); indexOfCode++) {
+            var tac = basicBlock.getInstructionList().get(indexOfCode);
             if (tac instanceof FunctionCall) {
                 int numberOfArguments = ((FunctionCall) tac).numberOfArguments();
                 int indexToStartCheck = indexOfCode - numberOfArguments - 1;
-                while (indexToStartCheck >= 0 && basicBlock.instructionList.get(indexToStartCheck) instanceof PushArgument) {
+                while (indexToStartCheck >= 0 && basicBlock.getInstructionList().get(indexToStartCheck) instanceof PushArgument) {
                     indicesToRemove.add(indexToStartCheck);
                     indexToStartCheck--;
                     changed = true;
@@ -36,10 +36,10 @@ public class DeadCodeEliminationPass extends OptimizationPass {
             }
         }
         for (var index : indicesToRemove) {
-            basicBlock.instructionList
+            basicBlock.getInstructionList()
                     .set(index, null);
         }
-        basicBlock.instructionList.reset(basicBlock.getCopyOfInstructionList()
+        basicBlock.getInstructionList().reset(basicBlock.getCopyOfInstructionList()
                 .stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList()));
@@ -49,11 +49,11 @@ public class DeadCodeEliminationPass extends OptimizationPass {
     // remove pushes which do not follow a function call
     private void removeDanglingPushes(BasicBlock basicBlock, boolean changed) {
         var indicesToRemove = new ArrayList<Integer>();
-        for (int indexOfCode = 0; indexOfCode < basicBlock.instructionList.size(); indexOfCode++) {
-            var tac = basicBlock.instructionList.get(indexOfCode);
+        for (int indexOfCode = 0; indexOfCode < basicBlock.getInstructionList().size(); indexOfCode++) {
+            var tac = basicBlock.getInstructionList().get(indexOfCode);
             if (changed && tac instanceof PushArgument) {
-                var prevCode = basicBlock.instructionList.get(indexOfCode - 1);
-                var nextCode = basicBlock.instructionList.get(indexOfCode + 1);
+                var prevCode = basicBlock.getInstructionList().get(indexOfCode - 1);
+                var nextCode = basicBlock.getInstructionList().get(indexOfCode + 1);
                 boolean firstCondition = prevCode instanceof MethodBegin || prevCode instanceof PushArgument || prevCode instanceof FunctionCall;
                 boolean secondCondition = nextCode instanceof PushArgument || nextCode instanceof FunctionCall;
                 if (!(firstCondition && secondCondition)) {
@@ -62,9 +62,9 @@ public class DeadCodeEliminationPass extends OptimizationPass {
             }
         }
         for (var index : indicesToRemove) {
-            basicBlock.instructionList.set(index, null);
+            basicBlock.getInstructionList().set(index, null);
         }
-        basicBlock.instructionList.reset(basicBlock.getCopyOfInstructionList()
+        basicBlock.getInstructionList().reset(basicBlock.getCopyOfInstructionList()
                 .stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList()));
@@ -81,6 +81,6 @@ public class DeadCodeEliminationPass extends OptimizationPass {
     public boolean run() {
         final var oldCodes = entryBlock.getCopyOfInstructionList();
         performGlobalDeadCodeElimination();
-        return oldCodes.equals(entryBlock.instructionList);
+        return !oldCodes.equals(entryBlock.getInstructionList());
     }
 }

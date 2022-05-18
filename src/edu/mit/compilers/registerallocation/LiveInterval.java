@@ -4,11 +4,15 @@ import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.names.AssignableName;
 
 public class LiveInterval {
-    InstructionList instructionList;
+    private InstructionList instructionList;
     AssignableName variable;
     int startPoint;
     int endPoint;
     String methodName;
+
+    public InstructionList getInstructionList() {
+        return instructionList;
+    }
 
     public LiveInterval(AssignableName variable, int startPoint, int endPoint, InstructionList instructionList, String methodName) {
         this.variable = variable;

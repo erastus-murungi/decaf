@@ -66,7 +66,7 @@ public class TraceScheduler {
                 trace.add(InstructionList.of(new UnconditionalJump(basicBlock.getLabel())));
             return;
         }
-        trace.add(basicBlock.instructionList);
+        trace.add(basicBlock.getInstructionList());
         tracedBasicBlocksSet.add(basicBlock);
         // note: basicBlock.getSuccessors().get(0) is either an autoChild or the trueChild
         if (!(basicBlock instanceof NOP))
@@ -87,6 +87,6 @@ public class TraceScheduler {
             traceBasicBlock(basicBlock, tracedBasicBlocksSet);
             notTracedBasicBlock = getNotTracedBlock(tracedBasicBlocksSet);
         }
-        trace.add(methodBegin.exitBlock.instructionList);
+        trace.add(methodBegin.exitBlock.getInstructionList());
     }
 }

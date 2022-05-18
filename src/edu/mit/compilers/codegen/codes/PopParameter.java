@@ -10,7 +10,7 @@ import edu.mit.compilers.utils.Utils;
 
 import java.util.List;
 
-public class PopParameter extends Instruction implements HasOperand {
+public class PopParameter extends HasOperand {
     public AssignableName parameterName;
     public int parameterIndex;
 
