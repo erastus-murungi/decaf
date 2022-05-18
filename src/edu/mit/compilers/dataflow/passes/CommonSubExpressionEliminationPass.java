@@ -172,10 +172,10 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
         return false;
     }
 
-    private static AbstractName findExpressionAmongDominators(BasicBlock basicBlock,
+    private static AbstractName findExpressionAmongDominators(BasicBlock B,
                                                               Operand operand,
                                                               ImmediateDominator dominatorTree) {
-        for (BasicBlock dominator : dominatorTree.getDominators(basicBlock)) {
+        for (BasicBlock dominator : dominatorTree.getDominators(B)) {
             for (Instruction instruction : dominator.instructionList) {
                 if (instruction instanceof BinaryInstruction || instruction instanceof UnaryInstruction) {
                     final var storeInstruction = (Store) instruction;
@@ -185,6 +185,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
                 }
             }
         }
+        // find first block which dominates B and doesn't
         throw new IllegalStateException("expression not found");
     }
 

@@ -19,7 +19,6 @@ import edu.mit.compilers.dataflow.passes.InstructionSimplifyPass;
 import edu.mit.compilers.dataflow.passes.OptimizationPass;
 import edu.mit.compilers.dataflow.passes.PeepHoleOptimizationPass;
 import edu.mit.compilers.tools.CLI;
-import edu.mit.compilers.utils.Utils;
 
 public class DataflowOptimizer {
     private static final int MAX_RUNS = 20;

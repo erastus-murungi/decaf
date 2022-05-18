@@ -4,6 +4,7 @@ import static edu.mit.compilers.dataflow.analyses.DataFlowAnalysis.correctPredec
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.NOP;
+import edu.mit.compilers.tools.CLI;
 import edu.mit.compilers.utils.GraphVizPrinter;
 
 import java.util.*;
@@ -20,7 +21,8 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
     public ImmediateDominator(BasicBlock basicBlock) {
         immediateDominatorsImpl(basicBlock);
         dominators = computeBlockToDoms();
-        GraphVizPrinter.printDominatorTree(this);
+        if (CLI.debug)
+            GraphVizPrinter.printDominatorTree(this);
     }
 
 

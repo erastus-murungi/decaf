@@ -18,6 +18,7 @@ public abstract class BasicBlock {
     // to be set by a visitor
     public InstructionList instructionList;
 
+
     public ArrayList<AST> lines;
 
     private Label label;
@@ -47,6 +48,10 @@ public abstract class BasicBlock {
 
     public void removePredecessor(BasicBlock predecessor) {
         predecessors.remove(predecessor);
+    }
+
+    public void clearPredecessors() {
+        predecessors.clear();
     }
 
     public boolean isRoot() {

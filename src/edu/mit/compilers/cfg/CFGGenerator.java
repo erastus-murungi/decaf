@@ -4,6 +4,7 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.BuiltinType;
 import edu.mit.compilers.ast.MethodDefinition;
 import edu.mit.compilers.ast.Return;
+import edu.mit.compilers.dataflow.passes.BranchFoldingPass;
 import edu.mit.compilers.descriptors.GlobalDescriptor;
 import edu.mit.compilers.descriptors.MethodDescriptor;
 import edu.mit.compilers.exceptions.DecafException;
@@ -96,7 +97,7 @@ public class CFGGenerator {
         visitor.methodCFGBlocks = methodBlocksCFG;
         maximalVisitor.exitNOP = (NOP) visitor.initialGlobalBlock.autoChild;
         visitor.initialGlobalBlock.accept(maximalVisitor, theSymbolWeCareAbout);
-
+        BranchFoldingPass.run(methodBlocksCFG.values());
         return visitor;
     }
 

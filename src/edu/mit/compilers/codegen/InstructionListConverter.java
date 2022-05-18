@@ -436,6 +436,7 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
         }
 
         private Instruction flattenCompoundAssign(AssignableName lhs, AbstractName rhs, String op, AST assignment) {
+            final var constant = new ConstantName(1L, BuiltinType.Int);
             switch (op) {
                 case Operators.ADD_ASSIGN:
                     return new BinaryInstruction(lhs, lhs, Operators.PLUS, rhs, assignment.getSourceCode(), assignment);
@@ -444,9 +445,9 @@ public class InstructionListConverter implements BasicBlockVisitor<InstructionLi
                 case Operators.MINUS_ASSIGN:
                     return new BinaryInstruction(lhs, lhs, Operators.MINUS, rhs, assignment.getSourceCode(), assignment);
                 case Operators.DECREMENT:
-                    return new BinaryInstruction(lhs, lhs, Operators.MINUS, new ConstantName(1L, BuiltinType.Int), assignment.getSourceCode(), assignment);
+                    return new BinaryInstruction(lhs, lhs, Operators.MINUS, constant, assignment.getSourceCode(), assignment);
                 case Operators.INCREMENT:
-                    return new BinaryInstruction(lhs, lhs, Operators.PLUS, new ConstantName(1L, BuiltinType.Int), assignment.getSourceCode(), assignment);
+                    return new BinaryInstruction(lhs, lhs, Operators.PLUS, constant, assignment.getSourceCode(), assignment);
                 default:
                     return new Assign(lhs, rhs, assignment, assignment.getSourceCode());
             }
