@@ -15,7 +15,7 @@ import java.util.*;
 
 public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
     // each basicBlock maps to another map of (u -> v) pairs
-    public HashMap<BasicBlock, HashMap<AbstractName, Operand>> availableCopies;
+    public HashMap<BasicBlock, HashMap<AbstractName, AbstractName>> availableCopies;
 
     @Override
     public void computeUniversalSetsOfValues() {
@@ -33,7 +33,7 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
         availableCopies = new HashMap<>();
         for (BasicBlock basicBlock : basicBlocks) {
             if (basicBlock.equals(entryBlock)) continue;
-            var copiesForBasicBlock = new HashMap<AbstractName, Operand>();
+            var copiesForBasicBlock = new HashMap<AbstractName, AbstractName>();
             for (CopyQuadruple copyQuadruple : in(basicBlock)) {
                 copiesForBasicBlock.put(copyQuadruple.u, copyQuadruple.v);
             }
@@ -108,8 +108,8 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
                 // remove any copy's where u, or v are being reassigned by "resultLocation"
                 copyQuadruples.removeIf(copyQuadruple -> copyQuadruple.contains(resulLocation));
             }
-            var computation = store.getOperandNoArray();
-            computation.ifPresent(value -> copyQuadruples.add(new CopyQuadruple(store.getStore(), value,
+            var computation = store.getOperandNamesNoArrayNoConstants();
+            computation.forEach(value -> copyQuadruples.add(new CopyQuadruple(store.getStore(), value,
                     basicBlock
                             .getCopyOfInstructionList()
                             .indexOf(store), basicBlock)));

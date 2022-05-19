@@ -13,11 +13,11 @@ import java.util.Objects;
 // adapted from page 358 of the whale book
 public class CopyQuadruple {
     public final AssignableName u;
-    public final Operand v;
+    public final AbstractName v;
     public final int position;
     public final BasicBlock basicBlock;
 
-    public CopyQuadruple(AssignableName u, Operand v, int position, BasicBlock basicBlock) {
+    public CopyQuadruple(AssignableName u, AbstractName v, int position, BasicBlock basicBlock) {
         this.u = u;
         this.v = v;
         this.position = position;

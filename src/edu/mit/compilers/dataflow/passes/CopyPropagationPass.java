@@ -3,6 +3,7 @@ package edu.mit.compilers.dataflow.passes;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.*;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.dataflow.analyses.AvailableCopies;
 import edu.mit.compilers.dataflow.operand.Operand;
@@ -16,7 +17,7 @@ public class CopyPropagationPass extends OptimizationPass {
     }
 
 
-    private static void propagateCopy(HasOperand hasOperand, HashMap<AbstractName, Operand> copies) {
+    private static void propagateCopy(HasOperand hasOperand, HashMap<AbstractName, AbstractName> copies) {
         if (copies.isEmpty())
             return;
         boolean notConverged = true;
@@ -27,11 +28,12 @@ public class CopyPropagationPass extends OptimizationPass {
             // we want to eventually propagate so that a = $0
             notConverged = false;
             for (var toBeReplaced : hasOperand.getOperandNamesNoArray()) {
-                if (hasOperand instanceof Store && ((Store) hasOperand).getStore().equals(toBeReplaced))
+                if (hasOperand instanceof Store && ((Store) hasOperand).getStore()
+                                                                       .equals(toBeReplaced))
                     continue;
-                if (copies.get(toBeReplaced) instanceof UnmodifiedOperand) {
-                    var replacer = ((UnmodifiedOperand) copies.get(toBeReplaced)).abstractName;
-                    if (!isTrivialAssignment((Instruction) hasOperand)) {
+                if (copies.containsKey(toBeReplaced)) {
+                    var replacer = copies.get(toBeReplaced);
+                    if (!isTrivialAssignment(hasOperand)) {
                         hasOperand.replace(toBeReplaced, replacer);
                     } else {
                         continue;
@@ -48,7 +50,7 @@ public class CopyPropagationPass extends OptimizationPass {
         }
     }
 
-    private boolean performLocalCopyPropagation(BasicBlock basicBlock, HashMap<AbstractName, Operand> copies) {
+    private boolean performLocalCopyPropagation(BasicBlock basicBlock, HashMap<AbstractName, AbstractName> copies) {
         // we need a reference tac list to know whether any changes occurred
         final var tacList = basicBlock.getCopyOfInstructionList();
         final var newTacList = basicBlock.getInstructionList();
@@ -68,15 +70,21 @@ public class CopyPropagationPass extends OptimizationPass {
                     for (var assignableName : new ArrayList<>(copies.keySet())) {
                         var replacer = copies.get(assignableName);
                         if (assignableName.equals(resultLocation) ||
-                                ((replacer instanceof UnmodifiedOperand) && ((UnmodifiedOperand) replacer).abstractName.equals(resultLocation))) {
+                                replacer.equals(resultLocation)) {
                             // delete all assignments that are invalidated by this current instruction
                             // if it is an assignment
                             copies.remove(assignableName);
                         }
                     }
                     // insert this new pair into copies
-                        var operand = hasResult.getOperandNoArrayNoGlobals(globalVariables);
-                        operand.ifPresent(value -> copies.put(resultLocation, value));
+                    var operand = hasResult.getOperandNoArrayNoGlobals(globalVariables);
+                    if (operand.isPresent()) {
+                        Operand op = operand.get();
+                        if (op instanceof UnmodifiedOperand) {
+                            AbstractName name = ((UnmodifiedOperand)operand.get()).abstractName;
+                            copies.put(resultLocation, name);
+                        }
+                    }
                 }
             }
             newTacList.add(instruction);
