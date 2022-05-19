@@ -49,10 +49,10 @@ public class ReachingDefinitions extends DataFlowAnalysis<Store> {
                       .isEmpty())
             return Collections.emptySet();
 
-        var inSet = new HashSet<Store>();
+        var inSet = new HashSet<>(allValues);
 
         for (BasicBlock block : basicBlock.getPredecessors())
-            inSet.addAll(out(block));
+            inSet.retainAll(out(block));
 
         return inSet;
     }
