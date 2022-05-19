@@ -9,6 +9,7 @@ import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.copy.CopyQuadruple;
+import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 import edu.mit.compilers.grammar.DecafScanner;
 
 import java.util.*;
@@ -108,11 +109,14 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
                 // remove any copy's where u, or v are being reassigned by "resultLocation"
                 copyQuadruples.removeIf(copyQuadruple -> copyQuadruple.contains(resulLocation));
             }
-            var computation = store.getOperandNamesNoArrayNoConstants();
-            computation.forEach(value -> copyQuadruples.add(new CopyQuadruple(store.getStore(), value,
-                    basicBlock
-                            .getCopyOfInstructionList()
-                            .indexOf(store), basicBlock)));
+            var computation = store.getOperand();
+            if (computation instanceof UnmodifiedOperand) {
+                AbstractName name = ((UnmodifiedOperand) computation).abstractName;
+                copyQuadruples.add(new CopyQuadruple(store.getStore(), name,
+                        basicBlock
+                                .getCopyOfInstructionList()
+                                .indexOf(store), basicBlock));
+            }
 
         }
         return copyQuadruples;

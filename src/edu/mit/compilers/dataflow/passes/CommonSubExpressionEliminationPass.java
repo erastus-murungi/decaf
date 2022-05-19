@@ -192,6 +192,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
 
     @Override
     public boolean run() {
+        changeHappened = false;
         performGlobalCSE();
         return changeHappened;
     }

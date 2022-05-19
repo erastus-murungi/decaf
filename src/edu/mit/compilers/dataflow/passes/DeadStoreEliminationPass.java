@@ -51,8 +51,8 @@ public class DeadStoreEliminationPass extends OptimizationPass {
     private boolean allOperandNamesConstant(Instruction instruction) {
         if (instruction instanceof HasOperand)
             return ((HasOperand) instruction).getOperandNames()
-                    .stream()
-                    .allMatch(this::isConstant);
+                                             .stream()
+                                             .allMatch(this::isConstant);
         return false;
     }
 
@@ -79,7 +79,9 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                 continue;
 
             if (possibleStoreInstruction instanceof HasOperand) {
-                if (((HasOperand) possibleStoreInstruction).getOperandNames().stream().anyMatch(abstractName -> abstractName instanceof MemoryAddressName)) {
+                if (((HasOperand) possibleStoreInstruction).getOperandNames()
+                                                           .stream()
+                                                           .anyMatch(abstractName -> abstractName instanceof MemoryAddressName)) {
                     instructionListToUpdate.add(possibleStoreInstruction);
                     namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandNames());
                     continue;
@@ -96,9 +98,9 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                     // do not eliminate global variables and store instructions where the
                     // right-hand side is composed of all constants, for example a = 1 + 2 or a = 3
                     // if (we are in the main method then we can afford to ignore global variables)
-                    if ((globalVariables.contains(store) && 
-					    (!methodBegin.isMain()) || anySubsequentFunctionCalls(copyOfInstructionList.subList(0, copyOfInstructionList.indexOf(possibleStoreInstruction)))) 
-				    || allOperandNamesConstant(possibleStoreInstruction)) {
+                    if ((globalVariables.contains(store) &&
+                            (!methodBegin.isMain()) || anySubsequentFunctionCalls(copyOfInstructionList.subList(0, copyOfInstructionList.indexOf(possibleStoreInstruction))))
+                            || allOperandNamesConstant(possibleStoreInstruction)) {
                         if (possibleStoreInstruction instanceof HasOperand)
                             namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandNames());
                         instructionListToUpdate.add(possibleStoreInstruction);
@@ -120,7 +122,8 @@ public class DeadStoreEliminationPass extends OptimizationPass {
     }
 
     private boolean anySubsequentFunctionCalls(Collection<Instruction> instructionList) {
-        return instructionList.stream().anyMatch(instruction -> instruction instanceof FunctionCall);
+        return instructionList.stream()
+                              .anyMatch(instruction -> instruction instanceof FunctionCall);
     }
 
     private void forwardRun(BasicBlock basicBlock, Set<AbstractName> basicBlockLiveOut) {
@@ -137,11 +140,11 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                     instructionListToUpdate.add(possibleStoreInstruction);
                     continue;
                 }
-                if (possibleStoreInstruction instanceof HasOperand) {
-                    if (((HasOperand) possibleStoreInstruction).getOperandNames().stream().anyMatch(abstractName -> abstractName instanceof MemoryAddressName)) {
-                        instructionListToUpdate.add(possibleStoreInstruction);
-                        continue;
-                    }
+                if (((HasOperand) possibleStoreInstruction).getOperandNames()
+                                                           .stream()
+                                                           .anyMatch(abstractName -> abstractName instanceof MemoryAddressName)) {
+                    instructionListToUpdate.add(possibleStoreInstruction);
+                    continue;
                 }
 
                 var storeInstruction = ((Store) possibleStoreInstruction);
@@ -196,7 +199,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
             if (possibleStoreInstruction instanceof Store) {
                 var candidateStoreInstruction = (Store) possibleStoreInstruction;
                 if (candidateStoreInstruction.getStore()
-                        .equals(storeInstruction.getStore())) {
+                                             .equals(storeInstruction.getStore())) {
                     /* add the operands
                      * Before breaking, we add the operands of this assignment too
                      * we add this extra check because of stores of inputs like:
@@ -261,7 +264,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
         // Because blockInstructionList[indexOfStoreInstructionInBlock] == storeInstruction = `some operand`
         // we start our check from indexOfStoreInstructionInBlock + 1
         assert blockInstructionList.get(indexOfStoreInstructionInBlock)
-                .equals(storeInstruction);
+                                   .equals(storeInstruction);
 
         for (var indexOfInstruction = indexOfStoreInstructionInBlock + 1; indexOfInstruction < blockInstructionList.size(); indexOfInstruction++) {
             var possibleStoreInstruction = blockInstructionList.get(indexOfInstruction);
@@ -269,7 +272,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                 var candidateStoreInstruction = (Store) possibleStoreInstruction;
                 // check if we are indeed overwriting the store
                 if (candidateStoreInstruction.getStore()
-                        .equals(storeInstruction.getStore())) {
+                                             .equals(storeInstruction.getStore())) {
                     return false;
                 }
             }
