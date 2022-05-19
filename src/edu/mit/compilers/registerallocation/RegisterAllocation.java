@@ -72,7 +72,11 @@ public class RegisterAllocation {
     public RegisterAllocation(ProgramIr programIr) {
         this.programIr = programIr;
         this.unModified = programIr.mergeProgram();
+        System.out.println("BEFORE linearize CFG");
+        programIr.methodBeginList.forEach(methodBegin -> System.out.println(TraceScheduler.flattenIr(methodBegin)));
         linearizeCfg();
+        System.out.println("After linearize CFG");
+        programIr.methodBeginList.forEach(methodBegin -> System.out.println(TraceScheduler.flattenIr(methodBegin)));
         computeLiveness();
         computeLiveIntervals();
         LinearScan linearScan = new LinearScan(List.of(X64Register.regsToAllocate), methodToLiveIntervalsMap);
@@ -158,7 +162,7 @@ public class RegisterAllocation {
             }
         }
         if (methodBegin.entryBlock.getInstructionList() == oldBlock.getInstructionList()) {
-            methodBegin.entryBlock.setInstructionList(newBlock.getInstructionList());
+            methodBegin.entryBlock = newBlock;
         }
     }
 
