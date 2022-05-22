@@ -42,7 +42,7 @@ public class ConstantName extends AbstractName {
         String val = value;
         if (builtinType.equals(BuiltinType.Bool))
             val = value.equals("1") ? "true" : "false";
-        return String.format("%s %s", builtinType.getColoredSourceCode(), val);
+        return String.format("%s", val);
     }
 
     @Override

@@ -1,15 +1,19 @@
 package edu.mit.compilers.dataflow.passes;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Set;
+
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.codes.*;
+import edu.mit.compilers.codegen.codes.HasOperand;
+import edu.mit.compilers.codegen.codes.Instruction;
+import edu.mit.compilers.codegen.codes.MethodBegin;
+import edu.mit.compilers.codegen.codes.Store;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.dataflow.analyses.AvailableCopies;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
-
-import java.util.*;
 
 public class CopyPropagationPass extends OptimizationPass {
     public CopyPropagationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {

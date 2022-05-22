@@ -51,8 +51,8 @@ public class BinaryInstruction extends Store {
     @Override
     public String repr() {
         if (getComment().isPresent())
-            return String.format("%s%s = %s %s, %s %s%s", DOUBLE_INDENT, store.repr(), Operators.getColoredOperatorName(operator), fstOperand.repr(), sndOperand.repr(), DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s = %s %s, %s", DOUBLE_INDENT, store.repr(), Operators.getColoredOperatorName(operator), fstOperand.repr(), sndOperand.repr());
+            return String.format("%s%s: %s = %s %s, %s %s%s", DOUBLE_INDENT, store.repr(), store.builtinType.getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand.repr(), sndOperand.repr(), DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s: %s = %s %s, %s", DOUBLE_INDENT, store.repr(), store.builtinType.getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand.repr(), sndOperand.repr());
     }
 
     @Override
