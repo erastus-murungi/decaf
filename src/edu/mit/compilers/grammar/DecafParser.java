@@ -287,7 +287,7 @@ public class DecafParser {
         }
     }
 
-    private void parseFieldDeclarationGroup(Program program, Name nameId, BuiltinType builtinType, TokenPosition tokenPosition) throws DecafParserException {
+    private void parseFieldDeclarationGroup(Program program, Name nameId, Type type, TokenPosition tokenPosition) throws DecafParserException {
         // dealing with fieldDeclarations
         List<Name> variables = new ArrayList<>();
         List<Array> arrays = new ArrayList<>();
@@ -298,14 +298,14 @@ public class DecafParser {
             parseFieldDeclarationGroup(variables, arrays, nameId);
         }
         consumeToken(SEMICOLON, DecafScanner.SEMICOLON);
-        program.fieldDeclarationList.add(new FieldDeclaration(tokenPosition, builtinType, variables, arrays));
+        program.fieldDeclarationList.add(new FieldDeclaration(tokenPosition, type, variables, arrays));
         processFieldOrMethod(program);
     }
 
-    private void parseMethodDeclaration(List<MethodDefinition> methodDefinitionList, Name id, BuiltinType builtinType) throws DecafParserException {
+    private void parseMethodDeclaration(List<MethodDefinition> methodDefinitionList, Name id, Type type) throws DecafParserException {
         List<MethodDefinitionParameter> methodDefinitionParameterList = parseMethodArguments();
         final Block block = parseBlock();
-        methodDefinitionList.add(new MethodDefinition(id.tokenPosition, builtinType, methodDefinitionParameterList, id, block));
+        methodDefinitionList.add(new MethodDefinition(id.tokenPosition, type, methodDefinitionParameterList, id, block));
         parseMethodDeclarations(methodDefinitionList);
     }
 
@@ -313,13 +313,13 @@ public class DecafParser {
         if (getCurrentTokenType() == RESERVED_INT || getCurrentTokenType() == RESERVED_BOOL) {
             // could be an int or bool
             final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
-            final BuiltinType builtinType = parseBuiltinFieldType();
+            final Type type = parseBuiltinFieldType();
             final Name id = parseName(DecafScanner.IDENTIFIER, ExprContext.DECLARE);
             if (getCurrentTokenType() == LEFT_PARENTHESIS) {
                 // dealing with methodDeclarations
-                parseMethodDeclaration(program.methodDefinitionList, id, builtinType);
+                parseMethodDeclaration(program.methodDefinitionList, id, type);
             } else {
-                parseFieldDeclarationGroup(program, id, builtinType, tokenPosition);
+                parseFieldDeclarationGroup(program, id, type, tokenPosition);
             }
         } else if (getCurrentTokenType() == RESERVED_VOID) {
             parseMethodDeclarations(program.methodDefinitionList);
@@ -346,15 +346,15 @@ public class DecafParser {
         }
     }
 
-    private BuiltinType parseMethodReturnType() throws DecafParserException {
+    private Type parseMethodReturnType() throws DecafParserException {
         final Token token = consumeTokenNoCheck();
         switch (token.tokenType()) {
             case RESERVED_BOOL:
-                return BuiltinType.Bool;
+                return Type.Bool;
             case RESERVED_INT:
-                return BuiltinType.Int;
+                return Type.Int;
             case RESERVED_VOID:
-                return BuiltinType.Void;
+                return Type.Void;
             default:
                 throw new DecafParserException(getCurrentToken(), "expected method return type");
         }
@@ -362,9 +362,9 @@ public class DecafParser {
 
     private MethodDefinitionParameter parseMethodArgument() throws DecafParserException {
         final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
-        final BuiltinType builtinType = parseBuiltinFieldType();
+        final Type type = parseBuiltinFieldType();
         final Name nameId = parseName(DecafScanner.IDENTIFIER, ExprContext.DECLARE);
-        return new MethodDefinitionParameter(tokenPosition, nameId, builtinType);
+        return new MethodDefinitionParameter(tokenPosition, nameId.getLabel(), type);
     }
 
     private void parseMethodArguments(List<MethodDefinitionParameter> methodDefinitionParameterList) throws DecafParserException {
@@ -399,7 +399,7 @@ public class DecafParser {
 
     private MethodDefinition parseMethodDeclaration() throws DecafParserException {
         final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
-        final BuiltinType methodReturnType = parseMethodReturnType();
+        final Type methodReturnType = parseMethodReturnType();
         final Name nameId = parseName("expected method to have an identifier", ExprContext.DECLARE);
 
         List<MethodDefinitionParameter> methodDefinitionParameterList = parseMethodArguments();
@@ -750,7 +750,7 @@ public class DecafParser {
 
     private FieldDeclaration parseFieldDeclaration() throws DecafParserException {
         final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
-        BuiltinType builtinType = parseBuiltinFieldType();
+        Type type = parseBuiltinFieldType();
         List<Name> variables = new ArrayList<>();
         List<Array> arrays = new ArrayList<>();
         Name nameId = parseName(DecafScanner.IDENTIFIER, ExprContext.DECLARE);
@@ -761,7 +761,7 @@ public class DecafParser {
             nameId = parseName(DecafScanner.IDENTIFIER, ExprContext.DECLARE);
             parseFieldDeclarationGroup(variables, arrays, nameId);
         }
-        return new FieldDeclaration(tokenPosition, builtinType, variables, arrays);
+        return new FieldDeclaration(tokenPosition, type, variables, arrays);
     }
 
     private Name parseName(String expected, ExprContext context) throws DecafParserException {
@@ -774,13 +774,13 @@ public class DecafParser {
         return new Name(token.lexeme(), token.tokenPosition(), ExprContext.LOAD);
     }
 
-    private BuiltinType parseBuiltinFieldType() throws DecafParserException {
+    private Type parseBuiltinFieldType() throws DecafParserException {
         final Token token = consumeTokenNoCheck();
         switch (token.tokenType()) {
             case RESERVED_INT:
-                return BuiltinType.Int;
+                return Type.Int;
             case RESERVED_BOOL:
-                return BuiltinType.Bool;
+                return Type.Bool;
             default:
                 throw getContextualException("expected " + "\"" + DecafScanner.RESERVED_INT + "\"" + " or " + "\"" + DecafScanner.RESERVED_BOOL + "\"");
         }

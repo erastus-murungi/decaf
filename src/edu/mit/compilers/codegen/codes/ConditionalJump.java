@@ -11,17 +11,17 @@ import java.util.List;
 
 public class ConditionalJump extends HasOperand {
     public AbstractName condition;
-    public final Label trueLabel;
+    public final Label falseLabel;
 
-    public ConditionalJump(AST source, AbstractName condition, Label trueLabel, String comment) {
+    public ConditionalJump(AST source, AbstractName condition, Label falseLabel, String comment) {
         super(source, comment);
         this.condition = condition;
-        this.trueLabel = trueLabel;
+        this.falseLabel = falseLabel;
     }
 
     @Override
     public String toString() {
-        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, "if", condition.repr(), "is false goto", trueLabel.getLabel(), DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
+        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, "if", condition.repr(), "is false goto", falseLabel.getLabel(), DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
     }
 
     @Override
@@ -40,12 +40,12 @@ public class ConditionalJump extends HasOperand {
 //        var ifString =  "if false";
         var goTo =  Utils.coloredPrint("goto", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
 //        var goTo =  "goto";
-        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, ifString, condition.repr(), goTo, trueLabel.getLabel(), DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
+        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, ifString, condition.repr(), goTo, falseLabel.getLabel(), DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
     }
 
     @Override
     public Instruction copy() {
-        return new ConditionalJump(source, condition, trueLabel, getComment().orElse(null));
+        return new ConditionalJump(source, condition, falseLabel, getComment().orElse(null));
     }
 
     @Override

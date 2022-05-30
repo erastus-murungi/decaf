@@ -35,10 +35,11 @@ public abstract class HasOperand extends Instruction {
                 .collect(Collectors.toList());
     }
 
-    public List<AbstractName> getOperandNamesNoArrayNoConstants() {
+    public List<AssignableName> getAssignables() {
         return getOperandNamesNoArray()
                 .stream()
                 .filter(abstractName -> (abstractName instanceof AssignableName))
+                .map(abstractName -> (AssignableName) abstractName)
                 .collect(Collectors.toList());
     }
 }

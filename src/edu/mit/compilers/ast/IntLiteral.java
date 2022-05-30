@@ -24,4 +24,9 @@ public abstract class IntLiteral extends Literal {
     public int hashCode() {
         return Objects.hash(convertToLong());
     }
+
+    @Override
+    public Type getType() {
+        return Type.Int;
+    }
 }

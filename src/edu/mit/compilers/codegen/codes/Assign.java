@@ -12,7 +12,7 @@ import edu.mit.compilers.utils.Utils;
 import java.util.List;
 import java.util.Optional;
 
-public class Assign extends Store implements Cloneable {
+public class Assign extends StoreInstruction implements Cloneable {
     public AbstractName operand;
 
     public Assign(AssignableName dst, AbstractName operand, AST source, String comment) {
@@ -31,18 +31,18 @@ public class Assign extends Store implements Cloneable {
 
     @Override
     public List<AbstractName> getAllNames() {
-        return List.of(store, operand);
+        return List.of(getStore(), operand);
     }
 
     @Override
     public String repr() {
         var storeString = Utils.coloredPrint("store", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s%s %s, %s", DOUBLE_INDENT, storeString, operand.repr(), store.repr());
+        return String.format("%s%s %s, %s", DOUBLE_INDENT, storeString, operand.repr(), getStore().repr());
     }
 
     @Override
     public Instruction copy() {
-        return new Assign(store, operand, source, getComment().orElse(null));
+        return new Assign(getStore(), operand, source, getComment().orElse(null));
     }
 
     @Override
@@ -58,7 +58,7 @@ public class Assign extends Store implements Cloneable {
     }
 
     public boolean contains(AbstractName name) {
-        return store.equals(name) || operand.equals(name);
+        return getStore().equals(name) || operand.equals(name);
     }
 
     @Override
@@ -67,7 +67,7 @@ public class Assign extends Store implements Cloneable {
         // TODO: copy mutable state here, so the clone can't change the internals of the original
         clone.operand = operand;
         clone.setComment(getComment().orElse(null));
-        clone.store = store;
+        clone.setStore(getStore());
         clone.source = source;
         return clone;
     }

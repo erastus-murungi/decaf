@@ -8,4 +8,9 @@ public abstract class Statement extends AST {
     public Statement(TokenPosition tokenPosition) {
         this.tokenPosition = tokenPosition;
     }
+
+    @Override
+    public Type getType() {
+        return Type.Undefined;
+    }
 }

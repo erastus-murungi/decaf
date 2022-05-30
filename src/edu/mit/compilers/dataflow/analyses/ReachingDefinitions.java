@@ -8,22 +8,22 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.codes.Store;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.dataflow.Direction;
 
 /**
  * A definition d_x : x = e reaches a program point p if it appears without a redefinition on some path
  * from program entry to p
  */
-public class ReachingDefinitions extends DataFlowAnalysis<Store> {
+public class ReachingDefinitions extends DataFlowAnalysis<StoreInstruction> {
     public ReachingDefinitions(BasicBlock basicBlock) {
         super(basicBlock);
     }
 
-    private Set<Store> gen(BasicBlock basicBlock) {
+    private Set<StoreInstruction> gen(BasicBlock basicBlock) {
         var seenStoreVariables = new HashSet<>();
         var seenAgain = new HashSet<>();
-        for (Store storeInstruction : basicBlock.getStores()) {
+        for (StoreInstruction storeInstruction : basicBlock.getStores()) {
             if (seenStoreVariables.contains(storeInstruction.getStore())) {
                 seenAgain.add(storeInstruction.getStore());
             }
@@ -44,7 +44,7 @@ public class ReachingDefinitions extends DataFlowAnalysis<Store> {
     }
 
     @Override
-    public Set<Store> meet(BasicBlock basicBlock) {
+    public Set<StoreInstruction> meet(BasicBlock basicBlock) {
         if (basicBlock.getPredecessors()
                       .isEmpty())
             return Collections.emptySet();
@@ -58,7 +58,7 @@ public class ReachingDefinitions extends DataFlowAnalysis<Store> {
     }
 
     @Override
-    public Set<Store> transferFunction(Store domainElement) {
+    public Set<StoreInstruction> transferFunction(StoreInstruction domainElement) {
         return null;
     }
 
@@ -102,12 +102,12 @@ public class ReachingDefinitions extends DataFlowAnalysis<Store> {
         }
     }
 
-    public Set<Store> kill(BasicBlock basicBlock) {
+    public Set<StoreInstruction> kill(BasicBlock basicBlock) {
         // we kill any definition
         var genSet = gen(basicBlock);
         var defined = basicBlock.getStores()
                                 .stream()
-                                .map(Store::getStore)
+                                .map(StoreInstruction::getStore)
                                 .collect(Collectors.toUnmodifiableSet());
         return allValues.stream()
                         .filter(store -> !genSet.contains(store) && defined.contains(store.getStore()))

@@ -20,7 +20,7 @@ public class MethodDescriptor extends Descriptor {
     public SymbolTable localSymbolTable;
 
     public MethodDescriptor(MethodDefinition methodDefinition, SymbolTable parameterSymbolTable, SymbolTable localSymbolTable) {
-        super(methodDefinition.returnType, methodDefinition.methodName.id);
+        super(methodDefinition.returnType, methodDefinition.methodName.getLabel());
         this.methodDefinition = methodDefinition;
         this.parameterSymbolTable = parameterSymbolTable;
         this.localSymbolTable = localSymbolTable;

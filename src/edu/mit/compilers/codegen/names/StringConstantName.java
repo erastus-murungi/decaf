@@ -1,16 +1,15 @@
 package edu.mit.compilers.codegen.names;
 
-import edu.mit.compilers.ast.BuiltinType;
-import edu.mit.compilers.codegen.codes.StringLiteralStackAllocation;
-import edu.mit.compilers.utils.Utils;
+import edu.mit.compilers.ast.Type;
+import edu.mit.compilers.codegen.codes.StringLiteralAllocation;
 
 import java.util.Objects;
 
 public class StringConstantName extends AbstractName {
-    StringLiteralStackAllocation stringConstant;
+    StringLiteralAllocation stringConstant;
 
-    public StringConstantName(StringLiteralStackAllocation stringConstant) {
-        super(Utils.WORD_SIZE, BuiltinType.String, stringConstant.label);
+    public StringConstantName(StringLiteralAllocation stringConstant) {
+        super(Type.String, stringConstant.label);
         this.stringConstant = stringConstant;
     }
 
@@ -26,6 +25,11 @@ public class StringConstantName extends AbstractName {
         if (!super.equals(o)) return false;
         StringConstantName that = (StringConstantName) o;
         return Objects.equals(stringConstant.stringConstant, that.stringConstant.stringConstant);
+    }
+
+    @Override
+    public AbstractName copy() {
+        return new StringConstantName((StringLiteralAllocation) stringConstant.copy());
     }
 
     @Override

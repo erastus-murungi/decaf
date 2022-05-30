@@ -1,8 +1,7 @@
 package edu.mit.compilers.dataflow.operand;
 
-import edu.mit.compilers.codegen.codes.Store;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.grammar.DecafScanner;
 
 import java.util.Collection;
@@ -30,7 +29,6 @@ public abstract class Operand {
         return index;
     }
 
-    public abstract boolean isContainedIn(Store store);
+    public abstract boolean isContainedIn(StoreInstruction storeInstruction);
 
-    public abstract Store getStoreInstructionFromOperand(AssignableName store);
 }

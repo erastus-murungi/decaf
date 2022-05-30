@@ -6,7 +6,7 @@ import static edu.mit.compilers.grammar.DecafScanner.RESERVED_INT;
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_BOOL;
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_VOID;
 
-public enum BuiltinType {
+public enum Type {
     Int,
     Void,
     Bool,

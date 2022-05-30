@@ -1,12 +1,11 @@
 package edu.mit.compilers.dataflow.usedef;
 
 import edu.mit.compilers.codegen.codes.PopParameter;
-import edu.mit.compilers.codegen.codes.Store;
-import edu.mit.compilers.dataflow.operand.Operand;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
 
 public class Def extends UseDef {
-    public Def(Store store) {
-        super(store.getStore(), store);
+    public Def(StoreInstruction storeInstruction) {
+        super(storeInstruction.getStore(), storeInstruction);
     }
 
     public Def(PopParameter popParameter) {

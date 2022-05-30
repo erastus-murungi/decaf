@@ -25,7 +25,9 @@ public class DecafExceptionProcessor {
         final int after = Math.min(lineToPrint.length() - tokenPosition.column(), MAX_NUM_CHARS);
 
         final String inputSub = lineToPrint.substring(tokenPosition.column() - before, tokenPosition.column() + after);
-        final String spaces = Utils.SPACE.repeat(String.valueOf(tokenPosition.line()).length() + String.valueOf(tokenPosition.column()).length() + 3);
+        final String spaces = Utils.SPACE.repeat(String.valueOf(tokenPosition.line())
+                                                       .length() + String.valueOf(tokenPosition.column())
+                                                                         .length() + 3);
 
         return NEW_LINE + errMessage + NEW_LINE + spaces + inputSub + NEW_LINE + tokenPosition.line() + TERNARY_COLON + tokenPosition.column() + TERNARY_COLON + Utils.SPACE + Utils.coloredPrint(TILDE.repeat(before), Utils.ANSIColorConstants.ANSI_GREEN) + Utils.coloredPrint("^", Utils.ANSIColorConstants.ANSI_CYAN) + Utils.coloredPrint(TILDE.repeat(after), Utils.ANSIColorConstants.ANSI_GREEN);
     }

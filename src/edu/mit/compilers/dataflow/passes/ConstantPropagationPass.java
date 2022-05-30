@@ -12,25 +12,25 @@ import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
-import edu.mit.compilers.codegen.codes.MethodBegin;
-import edu.mit.compilers.codegen.codes.Store;
+import edu.mit.compilers.codegen.codes.Method;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.ConstantName;
 import edu.mit.compilers.dataflow.analyses.ReachingDefinitions;
 
 public class ConstantPropagationPass extends OptimizationPass {
-    public ConstantPropagationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
-        super(globalVariables, methodBegin);
+    public ConstantPropagationPass(Set<AbstractName> globalVariables, Method method) {
+        super(globalVariables, method);
     }
 
     private List<HasOperand> reachingDefinitions(int indexOfDefinition, InstructionList instructionList) {
         var rds = new ArrayList<HasOperand>();
-        var store = ((Store) instructionList.get(indexOfDefinition)).getStore();
+        var store = ((StoreInstruction) instructionList.get(indexOfDefinition)).getStore();
         for (int indexOfInstruction = indexOfDefinition + 1; indexOfInstruction < instructionList.size(); indexOfInstruction++) {
             var instruction = instructionList.get(indexOfInstruction);
-            if (instruction instanceof Store) {
-                if (((Store) instruction).getStore()
-                                         .equals(store))
+            if (instruction instanceof StoreInstruction) {
+                if (((StoreInstruction) instruction).getStore()
+                                                    .equals(store))
                     break;
             } else {
                 if (instruction instanceof HasOperand)
@@ -49,16 +49,16 @@ public class ConstantPropagationPass extends OptimizationPass {
                 if (((Assign) instruction).operand instanceof ConstantName) {
                     ConstantName constant = (ConstantName) ((Assign) instruction).operand;
                     for (HasOperand hasOperand : reachingDefinitions(indexOfInstruction, basicBlock.getInstructionList())) {
-                        hasOperand.replace(((Assign) instruction).store, constant);
+                        hasOperand.replace(((Assign) instruction).getStore(), constant);
                     }
                 }
             }
         }
     }
 
-    private static Map<AbstractName, ConstantName> getStoreToConstantMapping(Collection<Store> storeInstructions) {
+    private static Map<AbstractName, ConstantName> getStoreToConstantMapping(Collection<StoreInstruction> storeInstructionInstructions) {
         var storeNameToStoreInstructionMap = new HashMap<AbstractName, ConstantName>();
-        for (Store storeInstruction : storeInstructions) {
+        for (StoreInstruction storeInstruction : storeInstructionInstructions) {
             if (storeInstruction instanceof Assign) {
                 var assignment = (Assign) storeInstruction;
                 if (assignment.operand instanceof ConstantName) {

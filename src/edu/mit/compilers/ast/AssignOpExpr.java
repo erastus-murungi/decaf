@@ -1,5 +1,7 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
@@ -15,6 +17,11 @@ public class AssignOpExpr extends AssignExpr implements HasExpression {
         super(tokenPosition, expression);
         this.assignOp = assignOp;
         this.expression = expression;
+    }
+
+    @Override
+    public Type getType() {
+        return Type.Undefined;
     }
 
     @Override
@@ -42,9 +49,13 @@ public class AssignOpExpr extends AssignExpr implements HasExpression {
         return visitor.visit(this, curSymbolTable);
     }
 
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+        return null;
+    }
+
     @Override
     public String getOperator() {
-        return assignOp.op;
+        return assignOp.label;
     }
 
     @Override

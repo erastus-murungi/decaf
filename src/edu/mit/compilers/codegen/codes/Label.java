@@ -34,6 +34,10 @@ public class Label extends Instruction {
         this.labelIndex = null;
     }
 
+    public boolean isExitLabel() {
+        return getLabel().startsWith("exit");
+    }
+
     @Override
     public String toString() {
         return String.format("%s%s:", INDENT, getLabel());

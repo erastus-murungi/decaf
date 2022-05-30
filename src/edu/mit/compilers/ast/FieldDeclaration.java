@@ -1,5 +1,7 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable; 
 import edu.mit.compilers.grammar.TokenPosition;
@@ -7,17 +9,16 @@ import edu.mit.compilers.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 public class FieldDeclaration extends Declaration {
     final public TokenPosition tokenPosition;
-    final public BuiltinType builtinType;
+    final private Type type;
     final public List<Name> names;
     final public List<Array> arrays;
 
-    public FieldDeclaration(TokenPosition tokenPosition, BuiltinType builtinType, List<Name> names, List<Array> arrays) {
+    public FieldDeclaration(TokenPosition tokenPosition, Type type, List<Name> names, List<Array> arrays) {
         this.tokenPosition = tokenPosition;
-        this.builtinType = builtinType;
+        this.type = type;
         this.names = names;
         this.arrays = arrays;
     }
@@ -25,7 +26,7 @@ public class FieldDeclaration extends Declaration {
     @Override
     public List<Pair<String, AST>> getChildren() {
         ArrayList<Pair<String, AST>> pairArrayList = new ArrayList<>();
-        pairArrayList.add(new Pair<>("type", new Name(builtinType.toString(), tokenPosition, ExprContext.DECLARE)));
+        pairArrayList.add(new Pair<>("type", new Name(type.toString(), tokenPosition, ExprContext.DECLARE)));
         for (Name name : names)
             pairArrayList.add(new Pair<>("var", name));
         for (Array array : arrays)
@@ -40,7 +41,7 @@ public class FieldDeclaration extends Declaration {
 
     @Override
     public String toString() {
-        return "FieldDeclaration{" + "type=" + builtinType + ", names=" + names + ", arrays=" + arrays + '}';
+        return "FieldDeclaration{" + "type=" + type + ", names=" + names + ", arrays=" + arrays + '}';
     }
 
     @Override
@@ -51,11 +52,20 @@ public class FieldDeclaration extends Declaration {
         for (Array array: arrays)
             stringList.add(array.getSourceCode());
         String args = String.join(", ", stringList);
-        return String.format("%s %s", builtinType.getSourceCode(), args);
+        return String.format("%s %s", type.getSourceCode(), args);
     }
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
       return visitor.visit(this, curSymbolTable);
+    }
+
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+        return codegenAstVisitor.visit(this, resultLocation);
+    }
+
+    @Override
+    public Type getType() {
+        return type;
     }
 }

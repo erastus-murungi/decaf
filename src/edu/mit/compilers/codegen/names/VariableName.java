@@ -1,20 +1,24 @@
 package edu.mit.compilers.codegen.names;
 
-import edu.mit.compilers.ast.BuiltinType;
+import edu.mit.compilers.ast.Type;
 
 public class VariableName extends AssignableName {
-    public VariableName(String label, long size, BuiltinType builtinType) {
-        super(label, size, builtinType);
+    public VariableName(String label, Type type) {
+        super(label, type);
     }
 
     @Override
     public String toString() {
-        return value;
+        return getLabel();
+    }
+
+    @Override
+    public VariableName copy() {
+        return new VariableName(label, type);
     }
 
     @Override
     public String repr() {
-        return String.format("%s", value);
-//        return Utils.coloredPrint(String.format("%s", value), Utils.ANSIColorConstants.ANSI_BLUE);
+        return String.format("%s", getLabel());
     }
 }

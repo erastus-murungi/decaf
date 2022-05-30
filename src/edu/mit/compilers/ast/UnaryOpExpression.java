@@ -1,5 +1,7 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
@@ -7,18 +9,22 @@ import edu.mit.compilers.utils.Pair;
 import java.util.List;
 
 public class UnaryOpExpression extends Expression implements HasExpression  {
-    final public UnaryOperator op;
+    private UnaryOperator unaryOperator;
     public Expression operand;
 
-    public UnaryOpExpression(UnaryOperator op, Expression operand) {
-        super(op.tokenPosition);
-        this.op = op;
+    public UnaryOperator getUnaryOperator() {
+        return unaryOperator;
+    }
+
+    public UnaryOpExpression(UnaryOperator unaryOperator, Expression operand) {
+        super(unaryOperator.tokenPosition);
+        this.unaryOperator = unaryOperator;
         this.operand = operand;
     }
 
     @Override
     public List<Pair<String, AST>> getChildren() {
-        return List.of(new Pair<>("op", op), new Pair<>("operand", operand));
+        return List.of(new Pair<>("op", unaryOperator), new Pair<>("operand", operand));
     }
 
     @Override
@@ -28,17 +34,21 @@ public class UnaryOpExpression extends Expression implements HasExpression  {
 
     @Override
     public String toString() {
-        return "UnaryOpExpression{" + "op=" + op + ", operand=" + operand + '}';
+        return "UnaryOpExpression{" + "op=" + unaryOperator + ", operand=" + operand + '}';
     }
 
     @Override
     public String getSourceCode() {
-        return String.format("%s(%s)", op.getSourceCode(), operand.getSourceCode());
+        return String.format("%s(%s)", unaryOperator.getSourceCode(), operand.getSourceCode());
     }
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
+    }
+
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+        return codegenAstVisitor.visit(this, resultLocation);
     }
 
     @Override

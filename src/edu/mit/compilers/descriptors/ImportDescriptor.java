@@ -1,10 +1,10 @@
 package edu.mit.compilers.descriptors;
 
-import edu.mit.compilers.ast.BuiltinType;
+import edu.mit.compilers.ast.Type;
 
 public class ImportDescriptor extends Descriptor {
 
-    public ImportDescriptor(BuiltinType type, String id) {
+    public ImportDescriptor(Type type, String id) {
         super(type, id);
     }
     

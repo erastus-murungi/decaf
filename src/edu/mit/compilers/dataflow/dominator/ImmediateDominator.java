@@ -17,16 +17,26 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
      */
 
     private final Map<BasicBlock, List<BasicBlock>> dominators;
+    private final NOP entry;
+    private final Map<BasicBlock, Set<BasicBlock>> basicBlockToChildrenMap;
+    private final Map<BasicBlock, Set<BasicBlock>> basicBlockToDominanceFrontierMap;
+
+    public Set<BasicBlock> getChildren(BasicBlock basicBlock) {
+        return basicBlockToChildrenMap.getOrDefault(basicBlock, Collections.emptySet());
+    }
 
     public ImmediateDominator(BasicBlock basicBlock) {
-        immediateDominatorsImpl(basicBlock);
+        entry = preprocess(basicBlock);
+        immediateDominatorsImpl(entry);
+        basicBlockToChildrenMap = computeChildren();
         dominators = computeBlockToDoms();
         if (CLI.debug)
             GraphVizPrinter.printDominatorTree(this);
+        basicBlockToDominanceFrontierMap = computeDominanceFrontier();
     }
 
 
-    private BasicBlock preprocess(BasicBlock entryBlock) {
+    private NOP preprocess(BasicBlock entryBlock) {
         NOP entry = new NOP(ENTRY_BLOCK_LABEL);
         entry.autoChild = entryBlock;
         correctPredecessors(entry);
@@ -37,8 +47,8 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
         return dominators.get(basicBlock);
     }
 
-    public void immediateDominators(BasicBlock entryBlock) {
-        immediateDominatorsImpl(preprocess(entryBlock));
+    public Set<BasicBlock> getDominanceFrontier(BasicBlock basicBlock) {
+        return basicBlockToDominanceFrontierMap.getOrDefault(basicBlock, Collections.emptySet());
     }
 
     private void immediateDominatorsImpl(BasicBlock entryBlock) {
@@ -63,7 +73,9 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
 
                 // choose an already-processed predecessor (there must be one)
                 var ps = b.getPredecessors();
-                var processed = ps.stream().filter(this::containsKey).findFirst();
+                var processed = ps.stream()
+                                  .filter(this::containsKey)
+                                  .findFirst();
                 // the idom tree is built in reverse post-order to ensure already-processed predecessor(s) exist
                 var fresh = processed.orElseThrow();
 
@@ -74,7 +86,8 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
                         var v2 = fresh;
 
                         // traverse partial idom tree in post-order to find (least) common ancestor
-                        while (!order.get(v1).equals(order.get(v2))) {
+                        while (!order.get(v1)
+                                     .equals(order.get(v2))) {
                             // greater than because order is in reverse
                             while (order.get(v1) > order.get(v2)) v1 = get(v1);
                             while (order.get(v2) > order.get(v1)) v2 = get(v2);
@@ -128,7 +141,8 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
             throw new IllegalArgumentException(m + " not found in tree");
         if (!containsKey(n))
             throw new IllegalArgumentException(n + " not found in tree");
-        return dominators.get(m).contains(n);
+        return dominators.get(m)
+                         .contains(n);
     }
 
     /**
@@ -147,9 +161,20 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
         return get(m).equals(n);
     }
 
-    public Map<BasicBlock, Set<BasicBlock>> computeDominanceFrontier(BasicBlock entryBlock) {
+    private Map<BasicBlock, Set<BasicBlock>> computeChildren() {
+        var basicBlockToChildrenMap = new HashMap<BasicBlock, Set<BasicBlock>>();
+        for (BasicBlock B : keySet()) {
+            var immediateDom = get(B);
+            basicBlockToChildrenMap.putIfAbsent(immediateDom, new HashSet<>());
+            basicBlockToChildrenMap.get(immediateDom)
+                                   .add(B);
+        }
+        return basicBlockToChildrenMap;
+    }
+
+    public Map<BasicBlock, Set<BasicBlock>> computeDominanceFrontier() {
         var dominanceFrontier = new HashMap<BasicBlock, Set<BasicBlock>>();
-        computeDominanceFrontier(entryBlock, dominanceFrontier);
+        computeDominanceFrontier(entry.autoChild, dominanceFrontier);
         return dominanceFrontier;
     }
 
@@ -157,29 +182,27 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
      * The dominance frontier of a node d is the set of all nodes ni such that d dominates an immediate predecessor of ni,
      * but d does not strictly dominate ni. It is the set of nodes where d's dominance stops.
      *
-     * @param basicBlock the node n
-     * @param dominanceFrontier a map of a block to a dominance frontier
-     *
-     * @return the dominance frontier of basicBlock
+     * @param basicBlock                       the node n
+     * @param basicBlockToDominanceFrontierMap a map of a basic block to its dominance frontier
      */
-    public Set<BasicBlock> computeDominanceFrontier(BasicBlock basicBlock, Map<BasicBlock, Set<BasicBlock>> dominanceFrontier) {
-        if (dominanceFrontier.get(basicBlock) == null)
-            return dominanceFrontier.get(basicBlock);
-
-        var frontier = new HashSet<BasicBlock>();
-
-        for (var child : dominators.get(basicBlock)) {
-            for (var node : dominanceFrontier.get(child)) {
-                if (!strictDom(basicBlock, node))
-                    frontier.add(node);
-            }
-            for (var successor : basicBlock.getSuccessors()) {
-                if (!strictDom(basicBlock, successor))
-                    frontier.add(successor);
+    public void computeDominanceFrontier(BasicBlock basicBlock, Map<BasicBlock, Set<BasicBlock>> basicBlockToDominanceFrontierMap) {
+        var dominanceFrontier = new HashSet<BasicBlock>();
+        for (var successor : basicBlock.getSuccessors()) {
+            if (!get(successor).equals(basicBlock)) {
+                dominanceFrontier.add(successor);
             }
         }
-        dominanceFrontier.put(basicBlock, frontier);
-        return frontier;
+        final var children = basicBlockToChildrenMap.getOrDefault(basicBlock, Collections.emptySet());
+        for (var child : children) {
+            computeDominanceFrontier(child, basicBlockToDominanceFrontierMap);
+            for (var w : basicBlockToDominanceFrontierMap.get(child)) {
+                if (!dom(w, basicBlock) || basicBlock == w) {
+                    dominanceFrontier.add(w);
+                }
+            }
+        }
+
+        basicBlockToDominanceFrontierMap.put(basicBlock, dominanceFrontier);
     }
 
     private static List<BasicBlock> reversePostOrder(BasicBlock entryBlock) {

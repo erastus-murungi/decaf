@@ -1,6 +1,9 @@
 package edu.mit.compilers.codegen.codes;
 
+import java.util.Stack;
+
 import edu.mit.compilers.ast.MethodCall;
+import edu.mit.compilers.codegen.names.AbstractName;
 
 public interface FunctionCall {
     MethodCall getMethod();
@@ -14,14 +17,13 @@ public interface FunctionCall {
     }
 
     default String getMethodName() {
-        return getMethod().nameId.id;
+        return getMethod().nameId.getLabel();
     }
 
     default String getMethodReturnType() {
-        return getMethod().builtinType.getSourceCode();
+        return getMethod().getType().getSourceCode();
     }
 
-
-
+    public Stack<AbstractName> getArguments();
 }
 

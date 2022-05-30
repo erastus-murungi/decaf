@@ -1,5 +1,6 @@
 package edu.mit.compilers.asm;
 
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -67,7 +68,8 @@ public enum X64Register {
     public static final X64Register[] usedAsTemps = {R10, RAX, R11, R12};
     public static final X64Register[] parameterRegisters = {RDI, RSI, RDX, RCX, R8, R9};
     public static final X64Register[] calleeSaved = {RBX, R12, R13, R14, R15}; //
-    public static final X64Register[] callerSaved = {R10, R11, RDI, RSI, RDX, RCX, R8, R9, RAX};
+    public static final EnumSet<X64Register> callerSaved = EnumSet.of(R10, R11, RDI, RSI, RDX, RCX, R8, R9, RAX);
+
     // this is the order to allocate registers
     // note the argument registers are accessed in reverse order
     public static final X64Register[] regsToAllocate = {RBX, R13, R14, R15, RDX, RCX, R9, R8, RSI, RDI}; // use in this order

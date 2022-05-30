@@ -1,5 +1,7 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
@@ -7,18 +9,18 @@ import edu.mit.compilers.utils.Pair;
 import java.util.List;
 
 public class Initialization extends Statement implements HasExpression  {
-    public final Name initId;
+    public final Name initLocation;
     public Expression initExpression;
 
-    public Initialization(Name initId, Expression initExpression) {
-        super(initId.tokenPosition);
-        this.initId = initId;
+    public Initialization(Name initLocation, Expression initExpression) {
+        super(initLocation.tokenPosition);
+        this.initLocation = initLocation;
         this.initExpression = initExpression;
     }
 
     @Override
     public List<Pair<String, AST>> getChildren() {
-        return List.of(new Pair<>("initId", initId), new Pair<>("initExpression", initExpression));
+        return List.of(new Pair<>("initLocation", initLocation), new Pair<>("initExpression", initExpression));
     }
 
     @Override
@@ -31,15 +33,19 @@ public class Initialization extends Statement implements HasExpression  {
         return visitor.visit(this, currentSymbolTable);
     }
 
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+        return codegenAstVisitor.visit(this, resultLocation);
+    }
+
     @Override
     public String getSourceCode() {
-        return String.format("%s = %s", initId.getSourceCode(), initExpression.getSourceCode());
+        return String.format("%s = %s", initLocation.getSourceCode(), initExpression.getSourceCode());
     }
 
     @Override
     public String toString() {
         return "Initialization{" +
-                "initId=" + initId +
+                "initLocation=" + initLocation +
                 ", initExpression=" + initExpression +
                 '}';
     }

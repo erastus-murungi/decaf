@@ -1,6 +1,8 @@
 
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
@@ -13,11 +15,11 @@ public class CompoundAssignOperator extends Operator {
 
     @Override
     public String opRep() {
-        switch (op) {
+        switch (label) {
             case DecafScanner.ADD_ASSIGN: return "AugmentedAdd";
             case DecafScanner.MINUS_ASSIGN: return  "AugmentedSub";
             case DecafScanner.MULTIPLY_ASSIGN: return "AugmentedMul";
-            default: throw new IllegalArgumentException("please register compound assign operator: " + op);
+            default: throw new IllegalArgumentException("please register compound assign operator: " + label);
         }
     }
 
@@ -26,13 +28,18 @@ public class CompoundAssignOperator extends Operator {
         return null;
     }
 
+
     @Override
     public String getSourceCode() {
-        switch (op) {
+        switch (label) {
             case DecafScanner.ADD_ASSIGN: return  "+=";
             case DecafScanner.MINUS_ASSIGN: return  "-=";
             case DecafScanner.MULTIPLY_ASSIGN: return  "*=";
-            default: throw new IllegalArgumentException("please register compound assign operator: " + op);
+            default: throw new IllegalArgumentException("please register compound assign operator: " + label);
         }
+    }
+
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+        return null;
     }
 }

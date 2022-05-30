@@ -1,23 +1,22 @@
 package edu.mit.compilers.codegen.names;
 
-import edu.mit.compilers.ast.BuiltinType;
-import edu.mit.compilers.utils.Utils;
-
-import java.util.Objects;
+import edu.mit.compilers.ast.Type;
 
 public abstract class AbstractName {
-    public long size;
-    public BuiltinType builtinType;
-    public final String value;
+    protected Type type;
+    protected String label;
 
-    public AbstractName(BuiltinType builtinType, String value) {
-        this(Utils.WORD_SIZE, builtinType, value);
+    public Type getType() {
+        return type;
     }
 
-    public AbstractName(long size, BuiltinType builtinType, String value) {
-        this.builtinType = builtinType;
-        this.size = size;
-        this.value = value;
+    public String getLabel() {
+        return label;
+    }
+
+    public AbstractName(Type type, String label) {
+        this.type = type;
+        this.label = label;
     }
 
     @Override
@@ -30,5 +29,8 @@ public abstract class AbstractName {
         return toString().equals(that.toString());
     }
 
+    public abstract <T extends AbstractName> T copy();
+
     public abstract String repr();
+
 }

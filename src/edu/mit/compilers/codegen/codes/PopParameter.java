@@ -14,8 +14,8 @@ public class PopParameter extends HasOperand {
     public AssignableName parameterName;
     public int parameterIndex;
 
-    public PopParameter(AssignableName parameterName, AST source, int parameterIndex) {
-        super(source);
+    public PopParameter(AssignableName parameterName, int parameterIndex) {
+        super(null);
         this.parameterName = parameterName;
         this.parameterIndex = parameterIndex;
     }
@@ -44,7 +44,7 @@ public class PopParameter extends HasOperand {
 
     @Override
     public Instruction copy() {
-        return new PopParameter(parameterName, source, parameterIndex);
+        return new PopParameter(parameterName, parameterIndex);
     }
 
     @Override

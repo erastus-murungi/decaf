@@ -58,7 +58,7 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
         BasicBlocksPair curPair = new BasicBlocksPair(initial, new NOP());
         initial.autoChild = curPair.endBlock;
         ((BasicBlockBranchLess) curPair.startBlock).autoChild = curPair.endBlock;
-        for (MethodDefinitionParameter param : methodDefinition.methodDefinitionParameterList) {
+        for (MethodDefinitionParameter param : methodDefinition.parameterList) {
             BasicBlocksPair placeholder = param.accept(this, symbolTable);
             curPair.endBlock.autoChild = placeholder.startBlock;
             placeholder.startBlock.addPredecessor(curPair.endBlock);
@@ -202,9 +202,9 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
             curPair = placeholder;
         }
         for (MethodDefinition method : program.methodDefinitionList) {
-            exitNOP = new NOP("exit_" +  method.methodName.id);
-            methodCFGBlocks.put(method.methodName.id, method.accept(this, symbolTable).startBlock);
-            methodToExitNOP.put(method.methodName.id, exitNOP);
+            exitNOP = new NOP("exit_" +  method.methodName.getLabel());
+            methodCFGBlocks.put(method.methodName.getLabel(), method.accept(this, symbolTable).startBlock);
+            methodToExitNOP.put(method.methodName.getLabel(), exitNOP);
         }
         // don't need to return pair bc only need start block
         return null;
@@ -371,10 +371,10 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
         String op;
         if (locationAssignExpr.assignExpr instanceof AssignOpExpr) {
             final AssignOpExpr assignOpExpr = (AssignOpExpr) locationAssignExpr.assignExpr;
-            op = assignOpExpr.assignOp.op;
+            op = assignOpExpr.assignOp.label;
         } else if (locationAssignExpr.assignExpr instanceof CompoundAssignOpExpr) {
             final CompoundAssignOpExpr assignOpExpr = (CompoundAssignOpExpr) locationAssignExpr.assignExpr;
-            op = assignOpExpr.compoundAssignOp.op;
+            op = assignOpExpr.compoundAssignOp.label;
         } else if (locationAssignExpr.assignExpr instanceof Decrement) {
             op = DecafScanner.DECREMENT;
         } else if (locationAssignExpr.assignExpr instanceof Increment) {

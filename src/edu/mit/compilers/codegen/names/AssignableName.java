@@ -2,11 +2,11 @@ package edu.mit.compilers.codegen.names;
 
 import java.util.Objects;
 
-import edu.mit.compilers.ast.BuiltinType;
+import edu.mit.compilers.ast.Type;
 
 public abstract class AssignableName extends AbstractName {
-    public AssignableName(String label, long size, BuiltinType builtinType) {
-        super(size, builtinType, label);
+    public AssignableName(String label, Type type) {
+        super(type, label);
     }
 
     @Override
@@ -15,11 +15,19 @@ public abstract class AssignableName extends AbstractName {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         AssignableName that = (AssignableName) o;
-        return Objects.equals(value, that.value);
+        return Objects.equals(getLabel(), that.getLabel());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(value);
+        return Objects.hash(getLabel());
+    }
+
+    public void renameForSsa(int versionNumber) {
+        label = label + "." + versionNumber;
+    }
+
+    public void unRenameForSsa() {
+        label = label.split("\\.")[0];
     }
 }

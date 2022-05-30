@@ -1,7 +1,11 @@
 package edu.mit.compilers.ast;
 
 
-public abstract class MethodCallParameter extends AST {
-    public BuiltinType builtinType;
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 
+public abstract class MethodCallParameter extends AST {
+    public Type type;
+
+    public abstract <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation);
 }

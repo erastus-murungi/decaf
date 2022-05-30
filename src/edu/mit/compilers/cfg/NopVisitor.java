@@ -16,33 +16,33 @@ public class NopVisitor implements BasicBlockVisitor<Void> {
     }
 
     @Override
-    public Void visit(BasicBlockBranchLess basicBlockBranchLess, SymbolTable symbolTable) {
+    public Void visit(BasicBlockBranchLess basicBlockBranchLess) {
         if (!seen.contains(basicBlockBranchLess)) {
             seen.add(basicBlockBranchLess);
             // we assume this is the first instance of the
             if (basicBlockBranchLess.autoChild != null) {
-                basicBlockBranchLess.autoChild.accept(this, symbolTable);
+                basicBlockBranchLess.autoChild.accept(this);
             }
         }
         return null;
     }
 
     @Override
-    public Void visit(BasicBlockWithBranch basicBlockWithBranch, SymbolTable symbolTable) {
+    public Void visit(BasicBlockWithBranch basicBlockWithBranch) {
         if (!seen.contains(basicBlockWithBranch)) {
             seen.add(basicBlockWithBranch);
             if (basicBlockWithBranch.trueChild != null) {
-                basicBlockWithBranch.trueChild.accept(this, symbolTable);
+                basicBlockWithBranch.trueChild.accept(this);
             }
             if (basicBlockWithBranch.falseChild != null) {
-                basicBlockWithBranch.falseChild.accept(this, symbolTable);
+                basicBlockWithBranch.falseChild.accept(this);
             }
         }
         return null;
     }
 
     @Override
-    public Void visit(NOP nop, SymbolTable symbolTable) {
+    public Void visit(NOP nop) {
         if (!seen.contains(nop)) {
             List<BasicBlock> parentsCopy = new ArrayList<>(nop.getPredecessors());
             seen.add(nop);
@@ -52,7 +52,7 @@ public class NopVisitor implements BasicBlockVisitor<Void> {
                 return null;
             }
             if (nop.autoChild != null) {
-                nop.autoChild.accept(this, symbolTable);
+                nop.autoChild.accept(this);
                 endBlock = nop.autoChild;
             } else {
                 endBlock = exit;

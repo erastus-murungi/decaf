@@ -1,5 +1,7 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable; 
 import edu.mit.compilers.utils.Pair;
@@ -17,6 +19,11 @@ public class Program extends AST {
     this.importDeclarationList = new ArrayList<>();
     this.fieldDeclarationList = new ArrayList<>();
     this.methodDefinitionList = new ArrayList<>();
+  }
+
+  @Override
+  public Type getType() {
+    return Type.Undefined;
   }
 
   @Override
@@ -82,5 +89,9 @@ public class Program extends AST {
   @Override
   public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
     return visitor.visit(this, curSymbolTable);
+  }
+
+  public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+    return null;
   }
 }

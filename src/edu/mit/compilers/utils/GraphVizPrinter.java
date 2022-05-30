@@ -435,10 +435,10 @@ public class GraphVizPrinter {
                     }
                 }
                 if (child instanceof MethodDefinition) {
-                    SymbolTable blockSymbolTable = methods.get(((MethodDefinition) child).methodName.id);
+                    SymbolTable blockSymbolTable = methods.get(((MethodDefinition) child).methodName.getLabel());
                     if (blockSymbolTable.isEmpty())
                         continue;
-                    nodes.add(String.format("   %s [shape=record, label=%s, color=blue];", blockSymbolTable.hashCode(), "\"<from_node>" + escape(blockSymbolTable.myToString(((MethodDefinition) child).methodName.id)).replace(" ", "\u2007") + "\""));
+                    nodes.add(String.format("   %s [shape=record, label=%s, color=blue];", blockSymbolTable.hashCode(), "\"<from_node>" + escape(blockSymbolTable.myToString(((MethodDefinition) child).methodName.getLabel())).replace(" ", "\u2007") + "\""));
                     for (SymbolTable symbolTable: blockSymbolTable.children) {
                         if (symbolTable.isEmpty())
                             continue;

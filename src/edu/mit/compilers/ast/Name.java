@@ -1,5 +1,7 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable; 
@@ -11,24 +13,37 @@ import java.util.List;
 
 /* A variable name. id holds the name as a string, and ctx is one of the following types. (Load, Store) */
 public class Name extends AST {
-    public String id;
+    private String label;
     public final TokenPosition tokenPosition;
     public final ExprContext context;
 
-    public Name(String id, TokenPosition tokenPosition, ExprContext context) {
-        this.id = id;
+    public Name(String label, TokenPosition tokenPosition, ExprContext context) {
+        this.label = label;
         this.tokenPosition = tokenPosition;
         this.context = context;
     }
 
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
     @Override
     public String toString() {
-        return "Name{" + "id='" + id + '\'' + ", context=" + context + '}';
+        return "Name{" + "label='" + label + '\'' + ", context=" + context + '}';
     }
 
     @Override
     public String getSourceCode() {
-        return id;
+        return label;
+    }
+
+    @Override
+    public Type getType() {
+        return Type.Undefined;
     }
 
     @Override
@@ -44,5 +59,9 @@ public class Name extends AST {
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
+    }
+
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+        return codegenAstVisitor.visit(this, resultLocation);
     }
 }

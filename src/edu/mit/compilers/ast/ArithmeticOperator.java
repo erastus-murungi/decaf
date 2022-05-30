@@ -1,6 +1,8 @@
 package edu.mit.compilers.ast;
 
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
@@ -13,14 +15,19 @@ public class ArithmeticOperator extends BinOperator {
 
     @Override
     public String opRep() {
-        switch (op) {
+        switch (label) {
             case DecafScanner.PLUS: return "Add";
             case DecafScanner.MINUS: return "Sub";
             case DecafScanner.MULTIPLY: return "Multiply";
             case DecafScanner.DIVIDE: return "Divide";
             case DecafScanner.MOD: return "Mod";
-            default: throw new IllegalArgumentException("please register a display string for: " + op);
+            default: throw new IllegalArgumentException("please register a display string for: " + label);
         }
+    }
+
+    @Override
+    public Type getType() {
+        return Type.Undefined;
     }
 
     @Override
@@ -30,13 +37,17 @@ public class ArithmeticOperator extends BinOperator {
 
     @Override
     public String getSourceCode() {
-        switch (op) {
+        switch (label) {
             case DecafScanner.PLUS: return "+";
             case DecafScanner.MINUS: return "-";
             case DecafScanner.MULTIPLY: return "*";
             case DecafScanner.DIVIDE: return "/";
             case DecafScanner.MOD: return "%";
-            default: throw new IllegalArgumentException("please register a display string for: " + op);
+            default: throw new IllegalArgumentException("please register a display string for: " + label);
         }
+    }
+
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+        return null;
     }
 }

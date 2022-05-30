@@ -1,16 +1,15 @@
 package edu.mit.compilers.dataflow.operand;
 
-import edu.mit.compilers.codegen.codes.Store;
-import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
+import edu.mit.compilers.codegen.codes.FunctionCall;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
 
 import java.util.Objects;
 
 public class MethodCallOperand extends Operand {
-    public FunctionCallWithResult functionCallWithResult;
+    public FunctionCall functionCallWithResult;
 
-    public MethodCallOperand(FunctionCallWithResult functionCallWithResult) {
+    public MethodCallOperand(FunctionCall functionCallWithResult) {
         this.functionCallWithResult = functionCallWithResult;
     }
 
@@ -20,15 +19,8 @@ public class MethodCallOperand extends Operand {
     }
 
     @Override
-    public boolean isContainedIn(Store store) {
+    public boolean isContainedIn(StoreInstruction storeInstruction) {
         return false;
-    }
-
-    @Override
-    public Store getStoreInstructionFromOperand(AssignableName store) {
-        var methodCallSetResultCopy = functionCallWithResult.clone();
-        methodCallSetResultCopy.setStore(store);
-        return methodCallSetResultCopy;
     }
 
     @Override

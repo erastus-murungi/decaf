@@ -5,26 +5,25 @@ import java.util.Set;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.Assign;
-import edu.mit.compilers.codegen.codes.MethodBegin;
+import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
-import edu.mit.compilers.grammar.DecafScanner;
 
 public abstract class OptimizationPass {
     Set<AbstractName> globalVariables;
     BasicBlock entryBlock;
-    MethodBegin methodBegin;
+    Method method;
     List<BasicBlock> basicBlocks;
 
-    public MethodBegin getMethod() {
-        return methodBegin;
+    public Method getMethod() {
+        return method;
     }
 
-    public OptimizationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
+    public OptimizationPass(Set<AbstractName> globalVariables, Method method) {
         this.globalVariables = globalVariables;
-        this.methodBegin = methodBegin;
-        this.entryBlock = methodBegin.entryBlock;
+        this.method = method;
+        this.entryBlock = method.entryBlock;
         this.basicBlocks = DataFlowAnalysis.getReversePostOrder(entryBlock);
     }
 
@@ -35,7 +34,7 @@ public abstract class OptimizationPass {
     public static boolean isTrivialAssignment(Instruction instruction) {
         if (instruction instanceof Assign) {
             var assign = (Assign) instruction;
-            return assign.store.equals(assign.operand);
+            return assign.getStore().equals(assign.operand);
         }
         return false;
     }

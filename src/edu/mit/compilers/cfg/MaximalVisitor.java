@@ -10,13 +10,13 @@ public class MaximalVisitor implements BasicBlockVisitor<BasicBlock> {
     public NOP exitNOP;
 
     @Override
-    public BasicBlock visit(BasicBlockBranchLess basicBlockBranchLess, SymbolTable symbolTable) {
+    public BasicBlock visit(BasicBlockBranchLess basicBlockBranchLess) {
         // viewpoint of child
         if (!visited.containsKey(basicBlockBranchLess)) {
             visited.put(basicBlockBranchLess, 1);
 
             if (basicBlockBranchLess.autoChild != null) {
-                basicBlockBranchLess.autoChild.accept(this, symbolTable);
+                basicBlockBranchLess.autoChild.accept(this);
             }
 
             if (basicBlockBranchLess.autoChild instanceof BasicBlockBranchLess) {
@@ -62,18 +62,18 @@ public class MaximalVisitor implements BasicBlockVisitor<BasicBlock> {
     }
 
     @Override
-    public BasicBlock visit(BasicBlockWithBranch basicBlockWithBranch, SymbolTable symbolTable) {
+    public BasicBlock visit(BasicBlockWithBranch basicBlockWithBranch) {
         if (!visited.containsKey(basicBlockWithBranch)) {
             visited.put(basicBlockWithBranch, 1);
-            basicBlockWithBranch.trueChild = basicBlockWithBranch.trueChild.accept(this, symbolTable);
-            basicBlockWithBranch.falseChild = basicBlockWithBranch.falseChild.accept(this, symbolTable);
+            basicBlockWithBranch.trueChild = basicBlockWithBranch.trueChild.accept(this);
+            basicBlockWithBranch.falseChild = basicBlockWithBranch.falseChild.accept(this);
         }
         visited.put(basicBlockWithBranch, visited.get(basicBlockWithBranch) + 1);
         return basicBlockWithBranch;
     }
 
     @Override
-    public BasicBlock visit(NOP nop, SymbolTable symbolTable) {
+    public BasicBlock visit(NOP nop) {
         if (nop == exitNOP) {
             if (nop.autoChild != null) {
                 throw new IllegalStateException("expected exit NOP to have no child");
@@ -88,7 +88,7 @@ public class MaximalVisitor implements BasicBlockVisitor<BasicBlock> {
             block = blockNOP.autoChild;
         }
         if (block instanceof BasicBlockBranchLess)
-            return visit((BasicBlockBranchLess) block, symbolTable);
+            return visit((BasicBlockBranchLess) block);
         return block;
     }
 }

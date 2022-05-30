@@ -9,7 +9,7 @@ public interface InstructionVisitor<ReturnType, ExtraInfoType> {
 
     ReturnType visit(Label label, ExtraInfoType extraInfo);
 
-    ReturnType visit(MethodBegin methodBegin, ExtraInfoType extraInfo);
+    ReturnType visit(Method method, ExtraInfoType extraInfo);
 
     ReturnType visit(FunctionCallWithResult functionCallWithResult, ExtraInfoType extraInfo);
 
@@ -25,7 +25,7 @@ public interface InstructionVisitor<ReturnType, ExtraInfoType> {
 
     ReturnType visit(PushArgument pushArgument, ExtraInfoType extraInfo);
 
-    ReturnType visit(StringLiteralStackAllocation stringLiteralStackAllocation, ExtraInfoType extraInfo);
+    ReturnType visit(StringLiteralAllocation stringLiteralAllocation, ExtraInfoType extraInfo);
 
     ReturnType visit(BinaryInstruction binaryInstruction, ExtraInfoType extraInfo);
 

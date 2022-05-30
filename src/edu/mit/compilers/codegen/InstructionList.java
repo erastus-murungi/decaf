@@ -14,8 +14,8 @@ public class InstructionList extends ArrayList<Instruction> {
         addAll(codes);
     }
 
-    public InstructionList(List<Instruction> codes) {
-        this(null, codes);
+    public InstructionList(List<Instruction> instructions) {
+        this(null, instructions);
     }
 
     public InstructionList(AbstractName place) {
@@ -26,7 +26,7 @@ public class InstructionList extends ArrayList<Instruction> {
         this(null, Collections.emptyList());
     }
 
-    public Optional<Instruction> lastCode() {
+    public Optional<Instruction> lastInstruction() {
         if (isEmpty())
             return Optional.empty();
         return Optional.of(get(size() - 1));
@@ -37,7 +37,7 @@ public class InstructionList extends ArrayList<Instruction> {
         addAll(newCodes);
     }
 
-    public void replaceIfContainsInstuctionAtIndex(int indexOfOldCode, Instruction oldCode, Instruction newCode) {
+    public void replaceIfContainsInstructionAtIndex(int indexOfOldCode, Instruction oldCode, Instruction newCode) {
         if (get(indexOfOldCode) != oldCode) {
             throw new IllegalArgumentException(oldCode + "not found in Instruction List");
         }
@@ -51,14 +51,16 @@ public class InstructionList extends ArrayList<Instruction> {
         return instructionList;
     }
 
-    public static InstructionList of(Instruction code, AssignableName place) {
+    public static InstructionList of(Instruction instruction, AssignableName place) {
         var instructionList = new InstructionList(place);
-        instructionList.add(code);
+        instructionList.add(instruction);
         return instructionList;
     }
 
-    public Instruction firstCode() {
-        return get(0);
+    public Optional<Instruction> firstInstruction() {
+        if (isEmpty())
+            return Optional.empty();
+        return Optional.of(get(0));
     }
 
     @Override
@@ -68,9 +70,6 @@ public class InstructionList extends ArrayList<Instruction> {
                 .collect(Collectors.joining("\n"));
     }
 
-    public String toStringLocal() {
-        return stream().map(Instruction::repr).collect(Collectors.joining("\n"));
-    }
     public InstructionList copy() {
         return new InstructionList(place, this);
     }

@@ -11,8 +11,8 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.codes.FunctionCall;
 import edu.mit.compilers.codegen.codes.HasOperand;
-import edu.mit.compilers.codegen.codes.Store;
-import edu.mit.compilers.codegen.codes.MethodBegin;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
+import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.names.AbstractName;
@@ -27,8 +27,8 @@ import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
  */
 
 public class DeadStoreEliminationPass extends OptimizationPass {
-    public DeadStoreEliminationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
-        super(globalVariables, methodBegin);
+    public DeadStoreEliminationPass(Set<AbstractName> globalVariables, Method method) {
+        super(globalVariables, method);
     }
 
     /**
@@ -89,9 +89,9 @@ public class DeadStoreEliminationPass extends OptimizationPass {
             }
 
             // check if this a possible store instruction
-            if (possibleStoreInstruction instanceof Store) {
+            if (possibleStoreInstruction instanceof StoreInstruction) {
                 // grab the store location
-                var store = ((Store) possibleStoreInstruction).getStore();
+                var store = ((StoreInstruction) possibleStoreInstruction).getStore();
 
                 // ignore arrays for now
                 if (!(store instanceof MemoryAddressName)) {
@@ -99,7 +99,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                     // right-hand side is composed of all constants, for example a = 1 + 2 or a = 3
                     // if (we are in the main method then we can afford to ignore global variables)
                     if ((globalVariables.contains(store) &&
-                            (!methodBegin.isMain()) || anySubsequentFunctionCalls(copyOfInstructionList.subList(0, copyOfInstructionList.indexOf(possibleStoreInstruction))))
+                            (!method.isMain()) || anySubsequentFunctionCalls(copyOfInstructionList.subList(0, copyOfInstructionList.indexOf(possibleStoreInstruction))))
                             || allOperandNamesConstant(possibleStoreInstruction)) {
                         if (possibleStoreInstruction instanceof HasOperand)
                             namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandNames());
@@ -135,7 +135,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
         int indexOfInstruction = -1;
         for (var possibleStoreInstruction : copyOfInstructionList) {
             ++indexOfInstruction;
-            if (possibleStoreInstruction instanceof Store) {
+            if (possibleStoreInstruction instanceof StoreInstruction) {
                 if (possibleStoreInstruction instanceof FunctionCallWithResult) {
                     instructionListToUpdate.add(possibleStoreInstruction);
                     continue;
@@ -147,11 +147,11 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                     continue;
                 }
 
-                var storeInstruction = ((Store) possibleStoreInstruction);
+                var storeInstruction = ((StoreInstruction) possibleStoreInstruction);
                 var store = storeInstruction.getStore();
 
                 if (!(store instanceof MemoryAddressName)) {
-                    if (globalVariables.contains(store) && (!methodBegin.isMain()) || anySubsequentFunctionCalls(copyOfInstructionList.subList(0, copyOfInstructionList.indexOf(possibleStoreInstruction)))) {
+                    if (globalVariables.contains(store) && (!method.isMain()) || anySubsequentFunctionCalls(copyOfInstructionList.subList(0, copyOfInstructionList.indexOf(possibleStoreInstruction)))) {
                         instructionListToUpdate.add(possibleStoreInstruction);
                         continue;
                     }
@@ -185,7 +185,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
      * @return true if {@code storeInstruction} is used on some right-hand-side before its next reassignment in the same block
      * @implNote if there is no other reassignment of the store, this method returns true
      */
-    private boolean storeIsUsedBeforeNextReassignmentInBlock(Store storeInstruction,
+    private boolean storeIsUsedBeforeNextReassignmentInBlock(StoreInstruction storeInstruction,
                                                              List<Instruction> blockInstructionList,
                                                              int indexOfStoreInstructionInBlock) {
         // this set stores all the names used in the right hands sides of instructions starting from
@@ -196,8 +196,8 @@ public class DeadStoreEliminationPass extends OptimizationPass {
         // we start our check from indexOfStoreInstructionInBlock + 1
         for (var indexOfInstruction = indexOfStoreInstructionInBlock + 1; indexOfInstruction < blockInstructionList.size(); indexOfInstruction++) {
             var possibleStoreInstruction = blockInstructionList.get(indexOfInstruction);
-            if (possibleStoreInstruction instanceof Store) {
-                var candidateStoreInstruction = (Store) possibleStoreInstruction;
+            if (possibleStoreInstruction instanceof StoreInstruction) {
+                var candidateStoreInstruction = (StoreInstruction) possibleStoreInstruction;
                 if (candidateStoreInstruction.getStore()
                                              .equals(storeInstruction.getStore())) {
                     /* add the operands
@@ -260,7 +260,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
      * <pre> {@code isLastStoreInBlock(a, fooTacList, 1) == false}</pre>
      * <pre> {@code isLastStoreInBlock(c, fooTacList, 3) == true}</pre>
      */
-    private boolean isLastStoreInstructionInBlock(Store storeInstruction, List<Instruction> blockInstructionList, int indexOfStoreInstructionInBlock) {
+    private boolean isLastStoreInstructionInBlock(StoreInstruction storeInstruction, List<Instruction> blockInstructionList, int indexOfStoreInstructionInBlock) {
         // Because blockInstructionList[indexOfStoreInstructionInBlock] == storeInstruction = `some operand`
         // we start our check from indexOfStoreInstructionInBlock + 1
         assert blockInstructionList.get(indexOfStoreInstructionInBlock)
@@ -268,8 +268,8 @@ public class DeadStoreEliminationPass extends OptimizationPass {
 
         for (var indexOfInstruction = indexOfStoreInstructionInBlock + 1; indexOfInstruction < blockInstructionList.size(); indexOfInstruction++) {
             var possibleStoreInstruction = blockInstructionList.get(indexOfInstruction);
-            if (possibleStoreInstruction instanceof Store) {
-                var candidateStoreInstruction = (Store) possibleStoreInstruction;
+            if (possibleStoreInstruction instanceof StoreInstruction) {
+                var candidateStoreInstruction = (StoreInstruction) possibleStoreInstruction;
                 // check if we are indeed overwriting the store
                 if (candidateStoreInstruction.getStore()
                                              .equals(storeInstruction.getStore())) {

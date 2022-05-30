@@ -17,11 +17,11 @@ public class MethodEnd extends Instruction {
     }
 
     public String methodName() {
-        return ((MethodDefinition) source).methodName.id;
+        return ((MethodDefinition) source).methodName.getLabel();
     }
     @Override
     public String toString() {
-        return String.format("%s%s %s", DOUBLE_INDENT, "exit method", ((MethodDefinition)source).methodName.id);
+        return String.format("%s%s %s", DOUBLE_INDENT, "exit method", ((MethodDefinition)source).methodName.getLabel());
     }
 
     @Override

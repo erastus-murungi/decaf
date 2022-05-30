@@ -15,7 +15,7 @@ import edu.mit.compilers.codegen.codes.Assign;
 import edu.mit.compilers.codegen.codes.FunctionCall;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Label;
-import edu.mit.compilers.codegen.codes.MethodBegin;
+import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
 import edu.mit.compilers.codegen.codes.MethodEnd;
 import edu.mit.compilers.codegen.codes.MethodReturn;
@@ -28,22 +28,22 @@ import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 
 
 public class FunctionInlinePass {
-    List<MethodBegin> methodBeginList;
+    List<Method> methodList;
 
-    public FunctionInlinePass(List<MethodBegin> methodBeginList) {
-        this.methodBeginList = methodBeginList;
+    public FunctionInlinePass(List<Method> methodList) {
+        this.methodList = methodList;
     }
 
-    public List<MethodBegin> run() {
-        List<MethodBegin> newMethodBeginList = new ArrayList<>();
-        for (var methodBegin : methodBeginList) {
+    public List<Method> run() {
+        List<Method> newMethodList = new ArrayList<>();
+        for (var methodBegin : methodList) {
             if (shouldBeInlined(methodBegin)) {
                 inlineMethodBegin(methodBegin);
                 continue;
             }
-            newMethodBeginList.add(methodBegin);
+            newMethodList.add(methodBegin);
         }
-        return newMethodBeginList;
+        return newMethodList;
     }
 
     private Map<AbstractName, AbstractName> mapParametersToArguments(InstructionList functionTacList,
@@ -64,9 +64,9 @@ public class FunctionInlinePass {
         return map;
     }
 
-    private Map<InstructionList, List<Integer>> findCallSites(MethodBegin methodBegin, String functionName) {
+    private Map<InstructionList, List<Integer>> findCallSites(Method method, String functionName) {
         var callSites = new HashMap<InstructionList, List<Integer>>();
-        for (BasicBlock basicBlock : DataFlowAnalysis.getReversePostOrder(methodBegin.entryBlock)) {
+        for (BasicBlock basicBlock : DataFlowAnalysis.getReversePostOrder(method.entryBlock)) {
             var threeAddressCodeList = basicBlock.getInstructionList();
             callSites.put(threeAddressCodeList, new ArrayList<>());
             IntStream.range(0, threeAddressCodeList.size())
@@ -92,12 +92,12 @@ public class FunctionInlinePass {
         return arguments;
     }
 
-    private void inlineMethodBegin(MethodBegin methodBegin) {
-        var functionName = methodBegin.methodName();
-        for (MethodBegin targetMethodBegin : methodBeginList) {
-            if (methodBegin == targetMethodBegin)
+    private void inlineMethodBegin(Method method) {
+        var functionName = method.methodName();
+        for (Method targetMethod : methodList) {
+            if (method == targetMethod)
                 continue;
-            findCallSites(targetMethodBegin, functionName).forEach(((threeAddressCodeList, indicesOfCallSites) -> inlineCallSite(threeAddressCodeList, indicesOfCallSites, TraceScheduler.flattenIr(methodBegin))));
+            findCallSites(targetMethod, functionName).forEach(((threeAddressCodeList, indicesOfCallSites) -> inlineCallSite(threeAddressCodeList, indicesOfCallSites, TraceScheduler.flattenIr(method))));
         }
     }
 
@@ -108,7 +108,7 @@ public class FunctionInlinePass {
         List<Instruction> newTacList = new ArrayList<>();
         Map<AbstractName, AbstractName> paramToArg = mapParametersToArguments(functionBody, arguments);
         for (var tac : functionBody) {
-            if (tac instanceof PopParameter || tac instanceof MethodEnd || tac instanceof Label || tac instanceof UnconditionalJump || tac instanceof MethodBegin)
+            if (tac instanceof PopParameter || tac instanceof MethodEnd || tac instanceof Label || tac instanceof UnconditionalJump || tac instanceof Method)
                 continue;
             if (tac instanceof HasOperand) {
                 tac = tac.copy();
@@ -152,7 +152,7 @@ public class FunctionInlinePass {
                 assert replacement.get(0) instanceof MethodReturn;
                 var methodReturn = (MethodReturn) replacement.get(0);
                 var methodCallSetResult = (FunctionCallWithResult) targetTacList.get(indexOfCallSite);
-                newTacList.add(Assign.ofRegularAssign(methodCallSetResult.store, methodReturn.getReturnAddress()
+                newTacList.add(Assign.ofRegularAssign(methodCallSetResult.getStore(), methodReturn.getReturnAddress()
                         .orElseThrow()));
 
                 replacement.remove(0);
@@ -181,8 +181,8 @@ public class FunctionInlinePass {
 
     private int getNumberOfCallsToFunction(String functionName) {
         int numberOfCalls = 0;
-        for (MethodBegin methodBegin : methodBeginList) {
-            for (Instruction instruction : methodBegin.entryBlock.getInstructionList()) {
+        for (Method method : methodList) {
+            for (Instruction instruction : method.entryBlock.getInstructionList()) {
                 if (isMethodCallAndNameMatches(instruction, functionName)) {
                     numberOfCalls += 1;
                 }
@@ -193,19 +193,19 @@ public class FunctionInlinePass {
 
     private int getProgramSize() {
         int programSize = 0;
-        for (MethodBegin methodBegin : methodBeginList) {
-            programSize += TraceScheduler.flattenIr(methodBegin).size();
+        for (Method method : methodList) {
+            programSize += TraceScheduler.flattenIr(method).size();
         }
         return programSize;
     }
 
-    private int getMethodSize(MethodBegin functionName) {
+    private int getMethodSize(Method functionName) {
         return functionName.entryBlock.getInstructionList().size();
     }
 
-    private boolean isRecursive(MethodBegin methodBegin) {
-        for (Instruction instruction : TraceScheduler.flattenIr(methodBegin)) {
-            if (isMethodCallAndNameMatches(instruction, methodBegin.methodName())) {
+    private boolean isRecursive(Method method) {
+        for (Instruction instruction : TraceScheduler.flattenIr(method)) {
+            if (isMethodCallAndNameMatches(instruction, method.methodName())) {
                 return true;
             }
         }
@@ -213,26 +213,26 @@ public class FunctionInlinePass {
         }
 
 
-    private boolean hasBranching(MethodBegin methodBegin) {
-        return TraceScheduler.flattenIr(methodBegin).toString().contains("if");
+    private boolean hasBranching(Method method) {
+        return TraceScheduler.flattenIr(method).toString().contains("if");
     }
 
-    private boolean hasArrayAccesses(MethodBegin methodBegin) {
-        return methodBegin.entryBlock.getInstructionList().stream().anyMatch(instruction -> instruction instanceof ArrayBoundsCheck);
+    private boolean hasArrayAccesses(Method method) {
+        return method.entryBlock.getInstructionList().stream().anyMatch(instruction -> instruction instanceof ArrayBoundsCheck);
     }
 
-    private boolean shouldBeInlined(MethodBegin methodBegin) {
-        if (methodBegin.isMain())
+    private boolean shouldBeInlined(Method method) {
+        if (method.isMain())
             return false;
-        if (isRecursive(methodBegin))
+        if (isRecursive(method))
             return false;
-        if (hasBranching(methodBegin))
+        if (hasBranching(method))
             return false;
-        if (hasArrayAccesses(methodBegin))
+        if (hasArrayAccesses(method))
             return false;
-        final var functionName = methodBegin.methodName();
+        final var functionName = method.methodName();
         final int programSize = getProgramSize();
-        final int methodSize = getMethodSize(methodBegin);
+        final int methodSize = getMethodSize(method);
         final int numberOfCalls = getNumberOfCallsToFunction(functionName);
 
         return methodSize * numberOfCalls < programSize;

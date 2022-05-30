@@ -1,5 +1,7 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
@@ -8,8 +10,21 @@ import java.util.Collections;
 import java.util.List;
 
 public class Array extends AST {
-    public final IntLiteral size;
-    public final Name id;
+    private final IntLiteral size;
+    private final Name id;
+
+    public IntLiteral getSize() {
+        return size;
+    }
+
+    public Name getId() {
+        return id;
+    }
+
+    @Override
+    public Type getType() {
+        return Type.Undefined;
+    }
 
     @Override
     public List<Pair<String, AST>> getChildren() {
@@ -33,11 +48,15 @@ public class Array extends AST {
 
     @Override
     public String getSourceCode() {
-        return String.format("%s[%s]", id.id, size.literal);
+        return String.format("%s[%s]", id.getLabel(), size.literal);
     }
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
+    }
+
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+        return null;
     }
 }

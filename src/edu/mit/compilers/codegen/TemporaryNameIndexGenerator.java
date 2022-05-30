@@ -9,7 +9,7 @@ public class TemporaryNameIndexGenerator {
     public static int highestValue = 0;
 
 
-    public static int getNextBoundsCheckLabel() {
+    public static int getNextArrayBoundsCheckLabelIndex() {
         ++boundsCheckIndex;
         return boundsCheckIndex;
     }

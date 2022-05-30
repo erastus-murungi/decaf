@@ -1,8 +1,8 @@
 package edu.mit.compilers.codegen;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -10,7 +10,10 @@ import java.util.stream.Collectors;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.NOP;
-import edu.mit.compilers.codegen.codes.MethodBegin;
+import edu.mit.compilers.codegen.codes.ConditionalJump;
+import edu.mit.compilers.codegen.codes.Instruction;
+import edu.mit.compilers.codegen.codes.Label;
+import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 
@@ -18,45 +21,109 @@ import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
  * Finds a greedy trace of the basic blocks in a CFG
  */
 public class TraceScheduler {
+    public static final int MAX_JUMP_REDUCTION_TRIES = 10;
     private List<BasicBlock> basicBlocks;
-    private LinkedList<InstructionList> trace;
+    private List<InstructionList> trace;
     private final boolean addJumps;
-    private MethodBegin methodBegin;
+    private final Method method;
 
-    public LinkedList<InstructionList> getInstructionTrace() {
-        return trace;
+    public List<InstructionList> getInstructionTrace() {
+        return reduceNumberOfJumps(trace);
     }
 
-    public static InstructionList flattenIr(MethodBegin methodBegin, boolean addJumps) {
-        return new InstructionList(new TraceScheduler(methodBegin, addJumps).getInstructionTrace()
-                .stream()
-                .flatMap(Collection::stream)
-                .collect(Collectors.toUnmodifiableList()));
+    private static int findBasicBlockWithLabel(List<InstructionList> basicBlocks, Label targetLabel) {
+        for (int indexOfBasicBlock = 0; indexOfBasicBlock < basicBlocks.size(); indexOfBasicBlock++) {
+            var instructionList = basicBlocks.get(indexOfBasicBlock);
+            if (!instructionList.isEmpty() && instructionList.get(0) instanceof Label) {
+                Label label = (Label) (instructionList.get(0));
+                if (label.equals(targetLabel)) {
+                    return indexOfBasicBlock;
+                }
+            }
+        }
+        return -1;
     }
 
-    public static InstructionList flattenIr(MethodBegin methodBegin) {
-        return flattenIr(methodBegin, true);
+    private static Label getLabelFromInstructionsWithJumps(Instruction instruction) {
+        if (instruction instanceof UnconditionalJump) {
+            return ((UnconditionalJump) instruction).goToLabel;
+        } else {
+            return ((ConditionalJump) instruction).falseLabel;
+        }
     }
 
-    private void findBasicBlocks(MethodBegin methodBegin) {
-        basicBlocks = DataFlowAnalysis.getReversePostOrder(methodBegin.entryBlock);
+    private static List<InstructionList> reduceNumberOfJumps(List<InstructionList> basicBlocks) {
+//        boolean changesHappened;
+//        for (int i = 0; i < MAX_JUMP_REDUCTION_TRIES; i++) {
+//            changesHappened = false;
+//            for (int indexOfBasicBlock = 0; indexOfBasicBlock < basicBlocks.size(); indexOfBasicBlock++) {
+//                var instructionList = basicBlocks.get(indexOfBasicBlock);
+//                if (instructionList.lastInstruction()
+//                                   .isPresent()) {
+//                    Instruction instruction = instructionList.lastInstruction()
+//                                                             .get();
+//                    if (instruction instanceof UnconditionalJump || instruction instanceof ConditionalJump) {
+//                        var goToLabel = getLabelFromInstructionsWithJumps(instruction);
+//                        if (!goToLabel.isExitLabel()) {
+//                            int indexOfJumpedTo = findBasicBlockWithLabel(basicBlocks, goToLabel);
+//                            var subList = new ArrayList<>(basicBlocks.subList(indexOfJumpedTo, basicBlocks.size()));
+//                            basicBlocks.subList(indexOfJumpedTo, basicBlocks.size())
+//                                       .clear();
+//                            if (instruction instanceof ConditionalJump)
+//                                basicBlocks.addAll(indexOfBasicBlock + 2, subList);
+//                            else
+//                                basicBlocks.addAll(Math.min(indexOfBasicBlock, indexOfJumpedTo), subList);
+//                            changesHappened = true;
+//                        }
+//                    }
+//                }
+//            }
+//            for (int indexOfBasicBlock = 0; indexOfBasicBlock < basicBlocks.size(); indexOfBasicBlock++) {
+//                var instructionList = basicBlocks.get(indexOfBasicBlock);
+//                if (!instructionList.isEmpty() && instructionList.get(0) instanceof Label) {
+//                    Label goToLabel = (Label) (instructionList.get(0));
+//                    if (goToLabel.isExitLabel()) {
+//                        basicBlocks.add(basicBlocks.remove(indexOfBasicBlock));
+//                    }
+//                }
+//            }
+//            if (!changesHappened)
+//                break;
+//        }
+
+        return basicBlocks;
     }
 
-    public TraceScheduler(MethodBegin methodBegin, boolean addJumps) {
+    public static InstructionList flattenIr(Method method, boolean addJumps) {
+        return new InstructionList(new TraceScheduler(method, addJumps).getInstructionTrace()
+                                                                       .stream()
+                                                                       .flatMap(Collection::stream)
+                                                                       .collect(Collectors.toUnmodifiableList()));
+    }
+
+    public static InstructionList flattenIr(Method method) {
+        return flattenIr(method, true);
+    }
+
+    private void findBasicBlocks(Method method) {
+        basicBlocks = DataFlowAnalysis.getReversePostOrder(method.entryBlock);
+    }
+
+    public TraceScheduler(Method method, boolean addJumps) {
         this.addJumps = addJumps;
-        this.methodBegin = methodBegin;
-        findBasicBlocks(methodBegin);
+        this.method = method;
+        findBasicBlocks(method);
         computeTrace();
     }
 
-    public TraceScheduler(MethodBegin methodBegin) {
-        this(methodBegin, true /*addJumps*/);
+    public TraceScheduler(Method method) {
+        this(method, true /*addJumps*/);
     }
 
     private Optional<BasicBlock> getNotTracedBlock(Set<BasicBlock> seenBlocks) {
         return basicBlocks.stream()
-                .filter(basicBlock -> !seenBlocks.contains(basicBlock))
-                .findFirst();
+                          .filter(basicBlock -> !seenBlocks.contains(basicBlock))
+                          .findFirst();
     }
 
     private void traceBasicBlock(BasicBlock basicBlock,
@@ -71,13 +138,13 @@ public class TraceScheduler {
         // note: basicBlock.getSuccessors().get(0) is either an autoChild or the trueChild
         if (!(basicBlock instanceof NOP))
             traceBasicBlock(basicBlock.getSuccessors()
-                    .get(0), tracedBasicBlocksSet);
+                                      .get(0), tracedBasicBlocksSet);
     }
 
     public void computeTrace() {
-        trace = new LinkedList<>();
+        trace = new ArrayList<>();
         Set<BasicBlock> tracedBasicBlocksSet = new HashSet<>();
-        tracedBasicBlocksSet.add(methodBegin.exitBlock);
+        tracedBasicBlocksSet.add(method.exitBlock);
 
         var notTracedBasicBlock = getNotTracedBlock(tracedBasicBlocksSet);
         while (notTracedBasicBlock.isPresent()) {
@@ -87,6 +154,6 @@ public class TraceScheduler {
             traceBasicBlock(basicBlock, tracedBasicBlocksSet);
             notTracedBasicBlock = getNotTracedBlock(tracedBasicBlocksSet);
         }
-        trace.add(methodBegin.exitBlock.getInstructionList());
+        trace.add(method.exitBlock.getInstructionList());
     }
 }

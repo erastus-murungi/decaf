@@ -23,7 +23,7 @@ public class BasicBlockBranchLess extends BasicBlock {
     }
 
     @Override
-    public <T> T accept(BasicBlockVisitor<T> visitor, SymbolTable symbolTable) {
-        return visitor.visit(this, symbolTable);
+    public <T> T accept(BasicBlockVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

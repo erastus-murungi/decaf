@@ -7,13 +7,13 @@ import java.util.stream.Collectors;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.FunctionCall;
-import edu.mit.compilers.codegen.codes.MethodBegin;
+import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.PushArgument;
 import edu.mit.compilers.codegen.names.AbstractName;
 
 public class DeadCodeEliminationPass extends OptimizationPass {
-    public DeadCodeEliminationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
-        super(globalVariables, methodBegin);
+    public DeadCodeEliminationPass(Set<AbstractName> globalVariables, Method method) {
+        super(globalVariables, method);
     }
 
     /**
@@ -54,7 +54,7 @@ public class DeadCodeEliminationPass extends OptimizationPass {
             if (changed && tac instanceof PushArgument) {
                 var prevCode = basicBlock.getInstructionList().get(indexOfCode - 1);
                 var nextCode = basicBlock.getInstructionList().get(indexOfCode + 1);
-                boolean firstCondition = prevCode instanceof MethodBegin || prevCode instanceof PushArgument || prevCode instanceof FunctionCall;
+                boolean firstCondition = prevCode instanceof Method || prevCode instanceof PushArgument || prevCode instanceof FunctionCall;
                 boolean secondCondition = nextCode instanceof PushArgument || nextCode instanceof FunctionCall;
                 if (!(firstCondition && secondCondition)) {
                     indicesToRemove.add(indexOfCode);

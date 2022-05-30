@@ -8,23 +8,24 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import edu.mit.compilers.ast.MethodDefinition;
+import edu.mit.compilers.ast.MethodDefinitionParameter;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.GlobalAllocation;
 import edu.mit.compilers.codegen.codes.Instruction;
-import edu.mit.compilers.codegen.codes.MethodBegin;
+import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.codegen.names.MemoryAddressName;
 
 public class ProgramIr {
     public InstructionList headerInstructions;
-    public List<MethodBegin> methodBeginList;
+    public List<Method> methodList;
     Set<AbstractName> globals;
 
-    public ProgramIr(InstructionList headerInstructions, List<MethodBegin> methodBeginList) {
+    public ProgramIr(InstructionList headerInstructions, List<Method> methodList) {
         this.headerInstructions = headerInstructions;
-        this.methodBeginList = methodBeginList;
+        this.methodList = methodList;
     }
 
     public int getSizeOfHeaderInstructions() {
@@ -34,8 +35,8 @@ public class ProgramIr {
     public InstructionList mergeProgram() {
         var programHeader = headerInstructions.copy();
         var tacList = programHeader.copy();
-        for (MethodBegin methodBegin : methodBeginList) {
-            for (InstructionList instructionList: new TraceScheduler(methodBegin).getInstructionTrace())
+        for (Method method : methodList) {
+            for (InstructionList instructionList: new TraceScheduler(method).getInstructionTrace())
                 tacList.addAll(instructionList);
         }
         return tacList;
@@ -54,9 +55,9 @@ public class ProgramIr {
         return globals;
     }
 
-    public List<AbstractName> getLocals(MethodBegin methodBegin) {
+    public List<AbstractName> getLocals(Method method) {
         Set<AbstractName> uniqueNames = new HashSet<>();
-        var flattened = TraceScheduler.flattenIr(methodBegin);
+        var flattened = TraceScheduler.flattenIr(method);
 
         for (Instruction instruction : flattened) {
             for (AbstractName name : instruction.getAllNames()) {
@@ -79,7 +80,7 @@ public class ProgramIr {
                 .distinct()
                 .sorted(Comparator.comparing(Object::toString))
                 .collect(Collectors.toList());
-        reorderLocals(locals, methodBegin.methodDefinition);
+        reorderLocals(locals, method.methodDefinition);
         return locals;
     }
 
@@ -87,9 +88,9 @@ public class ProgramIr {
     private void reorderLocals(List<AbstractName> locals, MethodDefinition methodDefinition) {
         List<AbstractName> methodParametersNames = new ArrayList<>();
 
-        Set<String> methodParameters = methodDefinition.methodDefinitionParameterList
+        Set<String> methodParameters = methodDefinition.parameterList
                 .stream()
-                .map(methodDefinitionParameter -> methodDefinitionParameter.id.id)
+                .map(MethodDefinitionParameter::getName)
                 .collect(Collectors.toSet());
 
         List<AbstractName> methodParamNamesList = new ArrayList<>();

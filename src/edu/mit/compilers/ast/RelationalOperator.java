@@ -1,5 +1,7 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
@@ -12,12 +14,12 @@ public class RelationalOperator extends BinOperator {
 
     @Override
     public String opRep() {
-        switch (op) {
+        switch (label) {
             case DecafScanner.LT: return "Lt";
             case DecafScanner.GT: return "Gt";
             case DecafScanner.GEQ: return "GtE";
             case DecafScanner.LEQ : return  "LtE";
-            default: throw new IllegalArgumentException("please register relational operator: " + op);
+            default: throw new IllegalArgumentException("please register relational operator: " + label);
         }
     }
 
@@ -28,12 +30,16 @@ public class RelationalOperator extends BinOperator {
 
     @Override
     public String getSourceCode() {
-        switch (op) {
+        switch (label) {
             case DecafScanner.LT: return "<";
             case DecafScanner.GT: return ">";
             case DecafScanner.GEQ: return ">=";
             case DecafScanner.LEQ: return "<=";
-            default: throw new IllegalArgumentException("please register relational operator: " + op);
+            default: throw new IllegalArgumentException("please register relational operator: " + label);
         }
+    }
+
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+        return null;
     }
 }

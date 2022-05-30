@@ -1,5 +1,7 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
@@ -9,6 +11,11 @@ import java.util.List;
 
 public class ExpressionParameter extends MethodCallParameter implements HasExpression {
     public Expression expression;
+
+    @Override
+    public Type getType() {
+        return expression.getType();
+    }
 
     @Override
     public List<Pair<String, AST>> getChildren() {
@@ -37,6 +44,10 @@ public class ExpressionParameter extends MethodCallParameter implements HasExpre
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
+    }
+
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+        return codegenAstVisitor.visit(this, resultLocation);
     }
 
     @Override

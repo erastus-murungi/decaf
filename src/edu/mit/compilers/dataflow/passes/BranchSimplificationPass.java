@@ -2,31 +2,25 @@ package edu.mit.compilers.dataflow.passes;
 
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.BasicBlockWithBranch;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.codes.ConditionalJump;
 import edu.mit.compilers.codegen.codes.Label;
-import edu.mit.compilers.codegen.codes.MethodBegin;
+import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.Instruction;
-import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.codegen.names.AbstractName;
 
 public class BranchSimplificationPass extends OptimizationPass {
-    HashMap<Label, InstructionList> nextBlockInPath;
     boolean noChanges = true;
 
-    public BranchSimplificationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
-        super(globalVariables, methodBegin);
-        buildBlockPath();
+    public BranchSimplificationPass(Set<AbstractName> globalVariables, Method method) {
+        super(globalVariables, method);
     }
 
     private boolean isTrue(ConditionalJump conditionalJump) {
@@ -35,28 +29,6 @@ public class BranchSimplificationPass extends OptimizationPass {
 
     private boolean isFalse(ConditionalJump conditionalJump) {
         return conditionalJump.condition.equals(InstructionSimplifyPass.mZero);
-    }
-
-    private void buildBlockPath() {
-        nextBlockInPath = new HashMap<>();
-        for (BasicBlock basicBlock : basicBlocks) {
-            var tacList = basicBlock.getInstructionList();
-            if (!tacList.isEmpty()) {
-                Instruction tac = tacList.firstCode();
-                if (tac instanceof Label)
-                    nextBlockInPath.put(((Label) tac), tacList);
-            }
-            var nextTacList = tacList;
-            while (nextTacList != null) {
-                if (!nextTacList.isEmpty()) {
-                    Instruction tac = nextTacList.firstCode();
-                    if (tac instanceof Label)
-                        nextBlockInPath.put(((Label) tac), nextTacList);
-                }
-                tacList = nextTacList;
-                nextTacList = tacList;
-            }
-        }
     }
 
     private Optional<ConditionalJump> getConditional(InstructionList instructionList) {

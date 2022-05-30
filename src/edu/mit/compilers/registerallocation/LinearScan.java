@@ -7,21 +7,21 @@ import java.util.List;
 import java.util.Map;
 
 import edu.mit.compilers.asm.X64Register;
-import edu.mit.compilers.codegen.codes.MethodBegin;
+import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.AbstractName;
 
 public class LinearScan {
     private final List<X64Register> availableRegisters = new ArrayList<>();
     private List<LiveInterval> active = new ArrayList<>();
-    private final Map<MethodBegin, Map<AbstractName, X64Register>> varToRegMap = new HashMap<>();
-    private final Map<MethodBegin, List<LiveInterval>> liveIntervals;
+    private final Map<Method, Map<AbstractName, X64Register>> varToRegMap = new HashMap<>();
+    private final Map<Method, List<LiveInterval>> liveIntervals;
 
-    public LinearScan(Collection<X64Register> availableRegisters, Map<MethodBegin, List<LiveInterval>> liveIntervals) {
+    public LinearScan(Collection<X64Register> availableRegisters, Map<Method, List<LiveInterval>> liveIntervals) {
         this.availableRegisters.addAll(availableRegisters);
         this.liveIntervals = liveIntervals;
     }
 
-    public Map<MethodBegin, Map<AbstractName, X64Register>> getVariableToRegisterMapping() {
+    public Map<Method, Map<AbstractName, X64Register>> getVariableToRegisterMapping() {
         return varToRegMap;
     }
 

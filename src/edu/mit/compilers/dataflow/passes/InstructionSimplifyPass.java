@@ -7,10 +7,10 @@ import static edu.mit.compilers.grammar.DecafScanner.PLUS;
 import java.util.ArrayList;
 import java.util.Set;
 
-import edu.mit.compilers.ast.BuiltinType;
+import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.Assign;
-import edu.mit.compilers.codegen.codes.MethodBegin;
+import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
@@ -18,15 +18,15 @@ import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.ConstantName;
 
 public class InstructionSimplifyPass extends OptimizationPass {
-    static final ConstantName mZero = new ConstantName(0L, BuiltinType.Int);
-    static final ConstantName mOne = new ConstantName(1L, BuiltinType.Int);
+    static final ConstantName mZero = new ConstantName(0L, Type.Int);
+    static final ConstantName mOne = new ConstantName(1L, Type.Int);
 
     private static ConstantName getZero() {
-        return new ConstantName(0L, BuiltinType.Bool);
+        return new ConstantName(0L, Type.Bool);
     }
 
     private static ConstantName getOne() {
-        return new ConstantName(1L, BuiltinType.Int);
+        return new ConstantName(1L, Type.Int);
     }
 
     public static boolean matchBinOpOperandsCommutative(BinaryInstruction instruction,
@@ -47,8 +47,8 @@ public class InstructionSimplifyPass extends OptimizationPass {
                         .equals(rhsExpected);
     }
 
-    public InstructionSimplifyPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
-        super(globalVariables, methodBegin);
+    public InstructionSimplifyPass(Set<AbstractName> globalVariables, Method method) {
+        super(globalVariables, method);
     }
 
     private static AbstractName getNotEq(BinaryInstruction binaryInstruction, AbstractName expected) {
@@ -66,7 +66,7 @@ public class InstructionSimplifyPass extends OptimizationPass {
         // 0 + X -> X
         var X = getNonZero(addInstruction);
         if (matchBinOpOperandsCommutative(addInstruction, mZero, X)) {
-            return Assign.ofRegularAssign(addInstruction.store, X);
+            return Assign.ofRegularAssign(addInstruction.getStore(), X);
         }
         return addInstruction;
     }
@@ -76,17 +76,17 @@ public class InstructionSimplifyPass extends OptimizationPass {
         // X == true -> X
         // true == X -> X
         var X = getNotEq(eqInstruction, mOne);
-        if (X.builtinType.equals(BuiltinType.Bool)) {
+        if (X.getType().equals(Type.Bool)) {
             if (matchBinOpOperandsCommutative(eqInstruction, X, mOne))
-                return Assign.ofRegularAssign(eqInstruction.store, X);
+                return Assign.ofRegularAssign(eqInstruction.getStore(), X);
             // true == true -> true
             if (matchBinOpOperands(eqInstruction, mOne, mOne)) {
-                return Assign.ofRegularAssign(eqInstruction.store, mOne);
+                return Assign.ofRegularAssign(eqInstruction.getStore(), mOne);
             }
             // true == false -> false
             // false == true -> false
             if (matchBinOpOperandsCommutative(eqInstruction, mOne, mZero)) {
-                return Assign.ofRegularAssign(eqInstruction.store, getZero());
+                return Assign.ofRegularAssign(eqInstruction.getStore(), getZero());
             }
         }
         return eqInstruction;
@@ -99,20 +99,20 @@ public class InstructionSimplifyPass extends OptimizationPass {
         // X * 0 -> 0
         final var X = getNonZero(multiplyInstruction);
         if (matchBinOpOperandsCommutative(multiplyInstruction, mZero, X)) {
-            return Assign.ofRegularAssign(multiplyInstruction.store, getZero());
+            return Assign.ofRegularAssign(multiplyInstruction.getStore(), getZero());
         }
         // X * 1 -> X
         // 1 * X -> X
         if (matchBinOpOperandsCommutative(multiplyInstruction, mOne, X)) {
-            return Assign.ofRegularAssign(multiplyInstruction.store, X);
+            return Assign.ofRegularAssign(multiplyInstruction.getStore(), X);
         }
         return multiplyInstruction;
     }
 
     private Instruction simplifyQuadruple(BinaryInstruction binaryInstruction) {
-        var aLong = InstructionSimplifyIrPass.symbolicallyEvaluate(String.format("%s %s %s", binaryInstruction.fstOperand.value, binaryInstruction.operator, binaryInstruction.sndOperand.value));
+        var aLong = InstructionSimplifyIrPass.symbolicallyEvaluate(String.format("%s %s %s", binaryInstruction.fstOperand.getLabel(), binaryInstruction.operator, binaryInstruction.sndOperand.getLabel()));
         if (aLong.isPresent()) {
-            return Assign.ofRegularAssign(binaryInstruction.store, new ConstantName(aLong.get(), BuiltinType.Int));
+            return Assign.ofRegularAssign(binaryInstruction.getStore(), new ConstantName(aLong.get(), Type.Int));
         }
         Instruction newTac = null;
         switch (binaryInstruction.operator) {

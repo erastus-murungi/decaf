@@ -1,37 +1,54 @@
 package edu.mit.compilers.codegen.codes;
 
-import java.util.List;
-
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.dataflow.operand.Operand;
 
-public class StoreInstruction extends Instruction{
-    public StoreInstruction(AST source) {
+import java.util.Optional;
+import java.util.Set;
+
+public abstract class StoreInstruction extends HasOperand implements Cloneable {
+    protected AssignableName store;
+
+    public StoreInstruction(AssignableName store, AST source) {
         super(source);
+        this.store = store;
     }
 
-    public StoreInstruction(AST source, String comment) {
+    public StoreInstruction(AssignableName store, AST source, String comment) {
         super(source, comment);
+        this.store = store;
     }
 
-    @Override
-    public <T, E> T accept(InstructionVisitor<T, E> visitor, E extra) {
-        return null;
+    public AssignableName getStore() {
+        return store;
     }
 
-    @Override
-    public List<AbstractName> getAllNames() {
-        return null;
+    public void setStore(AssignableName dst) {
+        this.store = dst;
     }
 
-    @Override
-    public String repr() {
-        return null;
-    }
+    public abstract Optional<Operand> getOperandNoArray();
 
+    public Optional<Operand> getOperandNoArrayNoGlobals(Set<AbstractName> globals) {
+        Optional<Operand> operand = getOperandNoArray();
+        if (operand.isPresent()) {
+            if (operand.get().containsAny(globals)) {
+                return Optional.empty();
+            }
+        }
+        return operand;
+    }
     @Override
-    public Instruction copy() {
-        return null;
+    public StoreInstruction clone() {
+        try {
+            StoreInstruction clone = (StoreInstruction) super.clone();
+            // TODO: copy mutable state here, so the clone can't change the internals of the original
+            clone.store = store;
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
     }
 }

@@ -5,14 +5,11 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
-import edu.mit.compilers.codegen.names.VariableName;
 import edu.mit.compilers.utils.Utils;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
-public class MethodBegin extends Instruction {
+public class Method extends Instruction {
     public final MethodDefinition methodDefinition;
     /**
      * @implNote instead of storing the set of locals, we now store a method's tac list.
@@ -20,7 +17,7 @@ public class MethodBegin extends Instruction {
      * <p>
      * This is the unoptimized threeAddressCodeList of a method
      */
-    public InstructionList unoptimized;
+    public InstructionList unoptimizedInstructionList;
 
     /**
      * We use this for optimization
@@ -40,24 +37,24 @@ public class MethodBegin extends Instruction {
     }
 
     public boolean isMain() {
-        return methodDefinition.methodName.id.equals("main");
+        return methodDefinition.methodName.getLabel().equals("main");
     }
 
     public String methodName() {
-        return methodDefinition.methodName.id;
+        return methodDefinition.methodName.getLabel();
     }
 
     // to be filled in later by the X64Converter
     public HashMap<String, Integer> nameToStackOffset = new HashMap<>();
 
-    public MethodBegin(MethodDefinition methodDefinition) {
+    public Method(MethodDefinition methodDefinition) {
         super(methodDefinition);
         this.methodDefinition = methodDefinition;
     }
 
     @Override
     public String toString() {
-        return String.format("%s:\n%s%s", methodDefinition.methodName.id, DOUBLE_INDENT, "enter method");
+        return String.format("%s:\n%s%s", methodDefinition.methodName.getLabel(), DOUBLE_INDENT, "enter method");
     }
 
     @Override
@@ -73,11 +70,11 @@ public class MethodBegin extends Instruction {
     @Override
     public String repr() {
         var defineString = Utils.coloredPrint("define", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s @%s -> %s {%s", defineString, methodDefinition.methodName.id, methodDefinition.returnType.getSourceCode(), DOUBLE_INDENT);
+        return String.format("%s @%s -> %s {%s", defineString, methodDefinition.methodName.getLabel(), methodDefinition.returnType.getSourceCode(), DOUBLE_INDENT);
     }
 
     @Override
     public Instruction copy() {
-        return new MethodBegin(methodDefinition);
+        return new Method(methodDefinition);
     }
 }

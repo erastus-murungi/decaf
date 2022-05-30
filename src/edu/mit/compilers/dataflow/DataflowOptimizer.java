@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import edu.mit.compilers.codegen.TraceScheduler;
-import edu.mit.compilers.codegen.codes.MethodBegin;
+import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.dataflow.passes.BranchSimplificationPass;
 import edu.mit.compilers.dataflow.passes.CommonSubExpressionEliminationPass;
@@ -26,8 +26,8 @@ public class DataflowOptimizer {
 
     Integer numberOfRuns = MAX_RUNS;
     Set<AbstractName> globalNames;
-    private final List<MethodBegin> allMethods;
-    private List<MethodBegin> toOptimizeMethods;
+    private final List<Method> allMethods;
+    private List<Method> toOptimizeMethods;
     List<OptimizationPass> optimizationPassList = new ArrayList<>();
 
     Factory optimizationPassesFactory = new Factory();
@@ -102,17 +102,17 @@ public class DataflowOptimizer {
 
     public void initialize() {
         runInterProceduralPasses();
-        addPass(OptimizationPassType.CopyPropagation);
-        addPass(OptimizationPassType.CommonSubExpression);
-        addPass(OptimizationPassType.DeadCodeElimination);
-        addPass(OptimizationPassType.PeepHoleOptimization);
-        addPass(OptimizationPassType.DeadStoreElimination);
-        addPass(OptimizationPassType.ConstantPropagation);
-        addPass(OptimizationPassType.InstructionSimplification);
+//        addPass(OptimizationPassType.CopyPropagation);
+//        addPass(OptimizationPassType.CommonSubExpression);
+//        addPass(OptimizationPassType.DeadCodeElimination);
+//        addPass(OptimizationPassType.PeepHoleOptimization);
+//        addPass(OptimizationPassType.DeadStoreElimination);
+//        addPass(OptimizationPassType.ConstantPropagation);
+//        addPass(OptimizationPassType.InstructionSimplification);
         // addPass(OptimizationPassType.BranchSimplification);
     }
 
-    public List<MethodBegin> getOptimizedMethods() {
+    public List<Method> getOptimizedMethods() {
         if (toOptimizeMethods.isEmpty()) {
             return allMethods;
         } else {
@@ -120,12 +120,12 @@ public class DataflowOptimizer {
         }
     }
 
-    public DataflowOptimizer(List<MethodBegin> allMethods, Set<AbstractName> globalNames, boolean[] cliOpts) {
+    public DataflowOptimizer(List<Method> allMethods, Set<AbstractName> globalNames, boolean[] cliOpts) {
         this.globalNames = globalNames;
         this.allMethods = allMethods;
         // ignore all methods with a runtime
         if (allMethods.stream()
-                .anyMatch(MethodBegin::hasRuntimeException))
+                .anyMatch(Method::hasRuntimeException))
             this.toOptimizeMethods = Collections.emptyList();
         else
             this.toOptimizeMethods = allMethods;

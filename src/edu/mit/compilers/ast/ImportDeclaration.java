@@ -1,5 +1,7 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable; 
 import edu.mit.compilers.utils.Pair;
@@ -10,6 +12,11 @@ import static edu.mit.compilers.grammar.DecafScanner.RESERVED_IMPORT;
 
 public class ImportDeclaration extends Declaration {
     public final Name nameId;
+
+    @Override
+    public Type getType() {
+        return Type.Undefined;
+    }
 
     public ImportDeclaration(Name nameId) {
         this.nameId = nameId;
@@ -38,5 +45,9 @@ public class ImportDeclaration extends Declaration {
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
+    }
+
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+        return null;
     }
 }

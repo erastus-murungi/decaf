@@ -1,7 +1,7 @@
 package edu.mit.compilers.dataflow.analyses;
 
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.codes.Store;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.dataflow.Direction;
@@ -88,7 +88,7 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
         var superSet = new HashSet<>(allValues);
         var killedExpressions = new HashSet<Operand>();
 
-        for (Store assignment : basicBlock.getStores()) {
+        for (StoreInstruction assignment : basicBlock.getStores()) {
             // add all the computations that contain operands
             // that get re-assigned by the current stmt to
             // killedExpressions
@@ -103,7 +103,7 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
 
     private HashSet<Operand> gen(BasicBlock basicBlock) {
         var validComputations = new HashSet<Operand>();
-        for (Store assignment : basicBlock.getStores()) {
+        for (StoreInstruction assignment : basicBlock.getStores()) {
             if (assignment instanceof UnaryInstruction || assignment instanceof BinaryInstruction) {
                 assignment.getOperandNoArray()
                         .ifPresent(validComputations::add);
@@ -125,7 +125,7 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
      * @return true if the two assignments are equivalent and false otherwise
      * @throws IllegalArgumentException if any of the arguments is null
      */
-    public static boolean expressionsAreIsomorphic(Store a, Store b) {
+    public static boolean expressionsAreIsomorphic(StoreInstruction a, StoreInstruction b) {
         if (a == null) {
             throw new IllegalArgumentException("first assignment is a null pointer");
         } else if (b == null) {

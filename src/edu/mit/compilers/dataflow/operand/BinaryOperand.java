@@ -1,9 +1,8 @@
 package edu.mit.compilers.dataflow.operand;
 
-import edu.mit.compilers.codegen.codes.Store;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
 
 
 public class BinaryOperand extends Operand {
@@ -23,17 +22,12 @@ public class BinaryOperand extends Operand {
     }
 
     @Override
-    public boolean isContainedIn(Store store) {
-        if (store instanceof BinaryInstruction) {
-            BinaryInstruction binaryInstruction = (BinaryInstruction) store;
+    public boolean isContainedIn(StoreInstruction storeInstruction) {
+        if (storeInstruction instanceof BinaryInstruction) {
+            BinaryInstruction binaryInstruction = (BinaryInstruction) storeInstruction;
             return new BinaryOperand(binaryInstruction).equals(this);
         }
         return false;
-    }
-
-    @Override
-    public Store getStoreInstructionFromOperand(AssignableName store) {
-        return new BinaryInstruction(store, fstOperand, operator, sndOperand, null, null);
     }
 
     @Override

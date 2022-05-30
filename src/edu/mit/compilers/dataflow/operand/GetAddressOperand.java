@@ -3,9 +3,8 @@ package edu.mit.compilers.dataflow.operand;
 import java.util.Objects;
 
 import edu.mit.compilers.codegen.codes.GetAddress;
-import edu.mit.compilers.codegen.codes.Store;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
 
 public class GetAddressOperand extends Operand {
     private final GetAddress getAddress;
@@ -20,17 +19,12 @@ public class GetAddressOperand extends Operand {
     }
 
     @Override
-    public boolean isContainedIn(Store store) {
-        if (store instanceof GetAddress) {
-            GetAddress otherGetAddress = (GetAddress) store;
+    public boolean isContainedIn(StoreInstruction storeInstruction) {
+        if (storeInstruction instanceof GetAddress) {
+            GetAddress otherGetAddress = (GetAddress) storeInstruction;
             return getAddress.equals(otherGetAddress);
         }
         return false;
-    }
-
-    @Override
-    public Store getStoreInstructionFromOperand(AssignableName store) {
-        return new GetAddress(getAddress.source, getAddress.getBaseAddress(), getAddress.getIndex(), getAddress.getStore(), getAddress.getLength().orElse(null));
     }
 
     @Override

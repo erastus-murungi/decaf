@@ -23,8 +23,8 @@ public class NOP extends BasicBlockBranchLess {
         return Optional.ofNullable(nopLabel);
     }
 
-    public<T> T accept(BasicBlockVisitor<T> visitor, SymbolTable symbolTable) {
-        return visitor.visit(this, symbolTable);
+    public<T> T accept(BasicBlockVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

@@ -1,5 +1,7 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
@@ -12,10 +14,10 @@ public class UnaryOperator extends Operator {
 
     @Override
     public String opRep() {
-        switch (op) {
+        switch (label) {
             case DecafScanner.MINUS: return "Neg";
             case DecafScanner.NOT: return "Not";
-            default: throw new IllegalArgumentException("please register unary operator: " + op);
+            default: throw new IllegalArgumentException("please register unary operator: " + label);
         }
     }
 
@@ -26,10 +28,14 @@ public class UnaryOperator extends Operator {
 
     @Override
     public String getSourceCode() {
-         switch (op) {
+         switch (label) {
              case DecafScanner.MINUS: return  "-";
              case DecafScanner.NOT: return  "!";
-             default:throw new IllegalArgumentException("please register unary operator: " + op);
+             default:throw new IllegalArgumentException("please register unary operator: " + label);
         }
+    }
+
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+        return null;
     }
 }

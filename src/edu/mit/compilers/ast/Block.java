@@ -3,6 +3,8 @@ package edu.mit.compilers.ast;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
@@ -15,6 +17,11 @@ public class Block extends AST {
     public Block(List<FieldDeclaration> fieldDeclarationList, List<Statement> statementList) {
         this.fieldDeclarationList = fieldDeclarationList;
         this.statementList = statementList;
+    }
+
+    @Override
+    public Type getType() {
+        return Type.Undefined;
     }
 
     @Override
@@ -61,5 +68,9 @@ public class Block extends AST {
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
+    }
+
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+        return codegenAstVisitor.visit(this, resultLocation);
     }
 }

@@ -1,6 +1,5 @@
 package edu.mit.compilers.ast;
 
-import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.grammar.DecafScanner.BinaryOperator;
 import edu.mit.compilers.grammar.TokenPosition;
 

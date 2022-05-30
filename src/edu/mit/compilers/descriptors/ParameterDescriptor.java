@@ -1,9 +1,9 @@
 package edu.mit.compilers.descriptors;
 
-import edu.mit.compilers.ast.BuiltinType;
+import edu.mit.compilers.ast.Type;
 
 public class ParameterDescriptor extends Descriptor {
-    public ParameterDescriptor(String id, BuiltinType type) {
+    public ParameterDescriptor(String id, Type type) {
         super(type, id);
     }
 }

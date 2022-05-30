@@ -15,7 +15,7 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 
 public class TestRunner {
-    public static final String DEFAULT_DATAFLOW_TESTS_ROOT = "tests/dataflow/input";
+    public static final String DEFAULT_DATAFLOW_TESTS_ROOT = "tests/optimizer/dcf";
 
     public static void run() {
         try {

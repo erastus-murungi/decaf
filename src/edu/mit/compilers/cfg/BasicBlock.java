@@ -4,9 +4,9 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
 import edu.mit.compilers.codegen.codes.Label;
-import edu.mit.compilers.codegen.codes.Store;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
-import edu.mit.compilers.symbolTable.SymbolTable;
+import edu.mit.compilers.ssa.Phi;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -86,7 +86,7 @@ public abstract class BasicBlock {
         setLabel(new Label(TemporaryNameIndexGenerator.getNextLabel()));
     }
 
-    public abstract <T> T accept(BasicBlockVisitor<T> visitor, SymbolTable symbolTable);
+    public abstract <T> T accept(BasicBlockVisitor<T> visitor);
 
     public String getLinesOfCodeString() {
         if (lines.isEmpty()) {
@@ -109,11 +109,18 @@ public abstract class BasicBlock {
      * get only TACs which change values of variables
      * @return Iterator of Assignment TACs
      */
-    public List<Store> getStores() {
+    public List<StoreInstruction> getStores() {
         return instructionList.stream()
-                .filter(tac -> tac instanceof Store)
-                .map(tac -> (Store) tac)
+                .filter(tac -> tac instanceof StoreInstruction)
+                .map(tac -> (StoreInstruction) tac)
                 .collect(Collectors.toList());
+    }
+
+    public List<Phi> getPhiFunctions() {
+        return instructionList.stream()
+                              .filter(tac -> tac instanceof Phi)
+                              .map(tac -> (Phi) tac)
+                              .collect(Collectors.toList());
     }
 
     /**

@@ -8,12 +8,12 @@ import edu.mit.compilers.utils.Utils;
 import java.util.Collections;
 import java.util.List;
 
-public class StringLiteralStackAllocation extends Instruction {
+public class StringLiteralAllocation extends Instruction {
     public String label;
     public String stringConstant;
     public String stringConstantEscaped;
 
-    public StringLiteralStackAllocation(String stringConstant) {
+    public StringLiteralAllocation(String stringConstant) {
         super(null);
         this.label = TemporaryNameIndexGenerator.getNextStringLiteralIndex();
         this.stringConstant = stringConstant;
@@ -45,7 +45,7 @@ public class StringLiteralStackAllocation extends Instruction {
 
     @Override
     public Instruction copy() {
-        return new StringLiteralStackAllocation(stringConstant);
+        return new StringLiteralAllocation(stringConstant);
     }
 
     public String getASM() {

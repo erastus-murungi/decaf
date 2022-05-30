@@ -1,6 +1,8 @@
 package edu.mit.compilers.ast;
 
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
@@ -44,5 +46,9 @@ public class Increment extends AssignExpr {
     @Override
     public String getOperator() {
         return "++";
+    }
+
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+        return null;
     }
 }

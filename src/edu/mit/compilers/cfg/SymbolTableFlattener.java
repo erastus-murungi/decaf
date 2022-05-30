@@ -68,7 +68,7 @@ public class SymbolTableFlattener {
             addChildrenVars(methodTable, child);
     }
 
-    private static void renameVariableWithinCurrentScope(Block block, String oldName, String newName) {
+    private static void renameVariableWithinCurrentScope(Block block, String oldLabel, String newLabel) {
         Stack<AST> toExplore = new Stack<>();
         toExplore.push(block);
         while (!toExplore.isEmpty()) {
@@ -77,8 +77,8 @@ public class SymbolTableFlattener {
                 AST child = astPair.second();
                 if (child instanceof Name) {
                     Name name = (Name) child;
-                    if (name.id.equals(oldName)) {
-                        name.id = newName;
+                    if (name.getLabel().equals(oldLabel)) {
+                        name.setLabel(newLabel);
                     }
                 }
                 if (!(child instanceof Block))

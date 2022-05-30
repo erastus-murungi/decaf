@@ -1,5 +1,7 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
@@ -13,10 +15,10 @@ public class EqualityOperator extends BinOperator {
 
     @Override
     public String opRep() {
-        switch (op) {
+        switch (label) {
             case DecafScanner.EQ: return "Eq";
             case DecafScanner.NEQ: return "NotEq";
-            default: throw new IllegalArgumentException("please register equality operator: " + op);
+            default: throw new IllegalArgumentException("please register equality operator: " + label);
         }
 }
 
@@ -27,10 +29,14 @@ public class EqualityOperator extends BinOperator {
 
     @Override
     public String getSourceCode() {
-        switch (op) {
+        switch (label) {
             case DecafScanner.EQ: return "==";
             case DecafScanner.NEQ: return  "!=";
-            default: throw new IllegalArgumentException("please register equality operator: " + op);
+            default: throw new IllegalArgumentException("please register equality operator: " + label);
         }
+    }
+
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+        return null;
     }
 }

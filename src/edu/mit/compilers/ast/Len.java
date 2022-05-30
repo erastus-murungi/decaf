@@ -1,5 +1,7 @@
 package edu.mit.compilers.ast;
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
@@ -11,7 +13,7 @@ import static edu.mit.compilers.grammar.DecafScanner.RESERVED_LEN;
 
 public class Len extends Expression {
     final public Name nameId;
-    final public BuiltinType builtinType = BuiltinType.Int;
+    final public Type type = Type.Int;
 
     public Len(TokenPosition tokenPosition, Name nameId) {
         super(tokenPosition);
@@ -36,11 +38,16 @@ public class Len extends Expression {
 
     @Override
     public String getSourceCode() {
-        return String.format("%s (%s)", RESERVED_LEN, nameId.id);
+        return String.format("%s (%s)", RESERVED_LEN, nameId.getLabel());
     }
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
         return visitor.visit(this, curSymbolTable);
     }
+
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+        return codegenAstVisitor.visit(this);
+    }
+
 }

@@ -1,9 +1,7 @@
 package edu.mit.compilers.dataflow.operand;
 
-import edu.mit.compilers.codegen.codes.Assign;
-import edu.mit.compilers.codegen.codes.Store;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
 import edu.mit.compilers.grammar.DecafScanner;
 
 import java.util.Objects;
@@ -23,13 +21,8 @@ public class UnmodifiedOperand extends Operand {
     }
 
     @Override
-    public boolean isContainedIn(Store store) {
+    public boolean isContainedIn(StoreInstruction storeInstruction) {
         return false;
-    }
-
-    @Override
-    public Store getStoreInstructionFromOperand(AssignableName store) {
-        return new Assign(store, abstractName, null, null);
     }
 
     @Override

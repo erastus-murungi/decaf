@@ -15,7 +15,7 @@ import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.utils.Utils;
 
 
-public class GetAddress extends Store {
+public class GetAddress extends StoreInstruction {
     private AbstractName baseAddress;
     private AbstractName index;
     private final ConstantName length;
@@ -58,7 +58,7 @@ public class GetAddress extends Store {
     @Override
     public String repr() {
         final var getAddr = Utils.coloredPrint("getaddr", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s%s = %s %s %s, %s", DOUBLE_INDENT, store.repr(), getAddr, baseAddress.repr(), baseAddress.builtinType.getColoredSourceCode(), getIndex().repr());
+        return String.format("%s%s = %s %s %s, %s", DOUBLE_INDENT, getStore().repr(), getAddr, baseAddress.repr(), baseAddress.getType().getColoredSourceCode(), getIndex().repr());
     }
 
     @Override

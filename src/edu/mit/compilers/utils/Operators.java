@@ -25,6 +25,8 @@ public class Operators {
     public static final String INCREMENT = "++";
     public static final String DECREMENT = "--";
 
+    public static final String ASSIGN = "=";
+
     public static String getOperatorName(String operator) {
         switch (operator) {
             case PLUS:
@@ -53,6 +55,8 @@ public class Operators {
                 return "and";
             case CONDITIONAL_OR:
                 return "or";
+            case ASSIGN:
+                return "assign";
             default:
                 throw new IllegalArgumentException("operator " + operator + " not recognized");
         }

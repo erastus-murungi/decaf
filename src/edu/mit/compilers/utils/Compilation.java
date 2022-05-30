@@ -6,7 +6,6 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
-import java.util.stream.Collectors;
 
 import edu.mit.compilers.asm.X64CodeConverter;
 import edu.mit.compilers.asm.X64Program;
@@ -14,8 +13,8 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.cfg.CFGGenerator;
 import edu.mit.compilers.cfg.CFGVisitor;
 import edu.mit.compilers.codegen.InstructionList;
-import edu.mit.compilers.codegen.InstructionListConverter;
-import edu.mit.compilers.codegen.TraceScheduler;
+import edu.mit.compilers.codegen.BasicBlockToInstructionListConverter;
+import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.dataflow.DataflowOptimizer;
 import edu.mit.compilers.dataflow.passes.InstructionSimplifyIrPass;
 import edu.mit.compilers.grammar.DecafParser;
@@ -23,6 +22,7 @@ import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.Token;
 import edu.mit.compilers.ir.DecafSemanticChecker;
 import edu.mit.compilers.registerallocation.RegisterAllocation;
+import edu.mit.compilers.ssa.SSATransform;
 import edu.mit.compilers.tools.CLI;
 
 public class Compilation {
@@ -31,8 +31,8 @@ public class Compilation {
     private DecafParser parser;
     private DecafSemanticChecker semanticChecker;
     private CFGGenerator cfgGenerator;
-    private InstructionListConverter instructionListConverter;
-    private CFGVisitor CFGVisitor;
+    private BasicBlockToInstructionListConverter basicBlockToInstructionListConverter;
+    private CFGVisitor cfgVisitor;
 
     private ProgramIr programIr;
 
@@ -61,6 +61,7 @@ public class Compilation {
         PARSED,
         SEM_CHECKED,
         CFG_GENERATED,
+        SSA_GENERATED,
         IR_GENERATED,
         DATAFLOW_OPTIMIZED,
         ASSEMBLED,
@@ -86,6 +87,10 @@ public class Compilation {
                 break;
             }
             case IR_GENERATED: {
+                generateSsa();
+                break;
+            }
+            case SSA_GENERATED: {
                 runDataflowOptimizationPasses();
                 break;
             }
@@ -191,8 +196,8 @@ public class Compilation {
     }
 
     private void generateCFGVisualizationPdfs() {
-        var copy = new HashMap<>(CFGVisitor.methodCFGBlocks);
-        copy.put("globals", CFGVisitor.initialGlobalBlock);
+        var copy = new HashMap<>(cfgVisitor.methodCFGBlocks);
+        copy.put("globals", cfgVisitor.initialGlobalBlock);
 //        GraphVizPrinter.printGraph(copy, (basicBlock -> basicBlock.threeAddressCodeList.getCodes().stream().map(ThreeAddressCode::repr).collect(Collectors.joining("\n"))));
         GraphVizPrinter.printGraph(copy);
     }
@@ -202,7 +207,7 @@ public class Compilation {
     }
 
     private void generateSymbolTablePdfs() {
-        GraphVizPrinter.printSymbolTables(parser.getRoot(), instructionListConverter.cfgSymbolTables);
+        GraphVizPrinter.printSymbolTables(parser.getRoot(), basicBlockToInstructionListConverter.getPerMethodSymbolTables());
     }
 
     private void generateCFGs() {
@@ -211,25 +216,25 @@ public class Compilation {
             if (CLI.debug) {
                 System.out.println("before InstructionSimplifyPass");
                 System.out.println(parser.getRoot()
-                        .getSourceCode());
+                                         .getSourceCode());
             }
             InstructionSimplifyIrPass.run(parser.getRoot());
             if (CLI.debug) {
                 System.out.println("after InstructionSimplifyPass");
                 System.out.println(parser.getRoot()
-                        .getSourceCode());
+                                         .getSourceCode());
             }
         }
 
         cfgGenerator = new CFGGenerator(parser.getRoot(), semanticChecker.globalDescriptor);
-        CFGVisitor = cfgGenerator.buildiCFG();
+        cfgVisitor = cfgGenerator.buildiCFG();
         compilationState = CompilationState.CFG_GENERATED;
     }
 
     private void generateIr() {
         assert compilationState == CompilationState.CFG_GENERATED;
-        instructionListConverter = new InstructionListConverter(cfgGenerator);
-        programIr = instructionListConverter.fill(CFGVisitor, parser.getRoot());
+        basicBlockToInstructionListConverter = new BasicBlockToInstructionListConverter(cfgGenerator.globalDescriptor, cfgGenerator.errors, cfgVisitor, parser.getRoot());
+        programIr = basicBlockToInstructionListConverter.getProgramIr();
         if (CLI.debug) {
             generateSymbolTablePdfs();
         }
@@ -240,7 +245,17 @@ public class Compilation {
     }
 
     private int countLinesOfCode() {
-        return programIr.mergeProgram().size();
+        return programIr.mergeProgram()
+                        .size();
+    }
+
+
+    private void generateSsa() {
+        assert compilationState == CompilationState.IR_GENERATED;
+        SSATransform ssaTransform;
+        for (Method method : programIr.methodList)
+            ssaTransform = new SSATransform(method.entryBlock);
+        compilationState = CompilationState.SSA_GENERATED;
     }
 
     private void runDataflowOptimizationPasses() {
@@ -252,10 +267,10 @@ public class Compilation {
                 System.out.println("Before optimization");
                 System.out.println(programIr.mergeProgram());
             }
-            var dataflowOptimizer = new DataflowOptimizer(programIr.methodBeginList, instructionListConverter.globalNames, CLI.opts);
+            var dataflowOptimizer = new DataflowOptimizer(programIr.methodList, basicBlockToInstructionListConverter.getGlobalNames(), CLI.opts);
             dataflowOptimizer.initialize();
             dataflowOptimizer.optimize();
-            programIr.methodBeginList = dataflowOptimizer.getOptimizedMethods();
+            programIr.methodList = dataflowOptimizer.getOptimizedMethods();
             nLinesOfCodeReductionFactor = (oldNLinesOfCode - countLinesOfCode()) / oldNLinesOfCode;
             if (CLI.debug) {
                 System.out.println("After optimization");
@@ -332,7 +347,7 @@ public class Compilation {
                         }
                     }
                     outputStream.println(token.tokenPosition()
-                            .line() + 1 + " " + text);
+                                              .line() + 1 + " " + text);
                 }
                 done = true;
             } catch (Exception e) {

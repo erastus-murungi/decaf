@@ -5,10 +5,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import edu.mit.compilers.ast.Block;
-import edu.mit.compilers.ast.BuiltinType;
+import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.descriptors.ArrayDescriptor;
 import edu.mit.compilers.descriptors.Descriptor;
-import edu.mit.compilers.descriptors.VariableDescriptor;
 
 
 public class SymbolTable {
@@ -120,7 +119,7 @@ public class SymbolTable {
         List<Descriptor> list1 = new ArrayList<>(this.entries.values());
         List<String> builtins = new ArrayList<>();
         for (Descriptor descriptor1 : list1) {
-            BuiltinType type = descriptor1.type;
+            Type type = descriptor1.type;
             String toString = type.toString();
             builtins.add(toString);
         }

@@ -13,8 +13,8 @@ class Main {
         CLI.parse(args, optnames);
 //        String sourceCode = "import printf; \n void main() {int x; x = (1 + 6 * 3); printf(\"%d\", x);}";
 //        new Compilation(sourceCode).run();
-//          new Compilation(new FileInputStream("tests/dataflow/input/cp-10.dcf"), true).run();
-        new Compilation().run();
+          new Compilation(new FileInputStream("tests/codegen/input/x-02-for-condwithsideeffects.dcf"), true).run();
+//        new Compilation().run();
 //        TestRunner.run();
     }
 }

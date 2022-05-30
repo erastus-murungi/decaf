@@ -1,7 +1,7 @@
 package edu.mit.compilers.cfg;
 
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.ast.BuiltinType;
+import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.ast.MethodDefinition;
 import edu.mit.compilers.ast.Return;
 import edu.mit.compilers.dataflow.passes.BranchFoldingPass;
@@ -26,7 +26,7 @@ public class CFGGenerator {
 
     private void catchFalloutError(NOP exitNop, MethodDescriptor methodDescriptor) {
         final MethodDefinition methodDefinition = methodDescriptor.methodDefinition;
-        if (methodDescriptor.type == BuiltinType.Void)
+        if (methodDescriptor.type == Type.Void)
             return;
 
         exitNop.getPredecessors().removeIf(block -> !(block
@@ -47,7 +47,7 @@ public class CFGGenerator {
             errors.addAll(allExecutionsPathsThatDontReturn
                     .stream()
                     .map(cfgBlock -> new DecafException(methodDefinition.tokenPosition,
-                            methodDefinition.methodName.id + "'s execution path ends with" +
+                            methodDefinition.methodName.getLabel() + "'s execution path ends with" +
                             (cfgBlock.lines.isEmpty() ? "" : (cfgBlock
                                     .lastASTLine()
                                     .getSourceCode())) + " instead of a return statement"))
@@ -56,7 +56,7 @@ public class CFGGenerator {
         if (allExecutionPathsReturn.isEmpty()) {
             errors.add(new DecafException(
                     methodDefinition.tokenPosition,
-                    methodDefinition.methodName.id + " method does not return expected type " + methodDefinition.returnType));
+                    methodDefinition.methodName.getLabel() + " method does not return expected type " + methodDefinition.returnType));
         }
     }
 
@@ -70,18 +70,18 @@ public class CFGGenerator {
 
         visitor.methodCFGBlocks.forEach((k, v) -> {
             nopVisitor.exit = visitor.methodToExitNOP.get(k);
-            ((BasicBlockBranchLess) v).autoChild.accept(nopVisitor, theSymbolWeCareAbout);
+            ((BasicBlockBranchLess) v).autoChild.accept(nopVisitor);
         });
 
         visitor.methodCFGBlocks.forEach((k, v) -> {
             maximalVisitor.exitNOP = visitor.methodToExitNOP.get(k);
-            v.accept(maximalVisitor, theSymbolWeCareAbout);
+            v.accept(maximalVisitor);
             catchFalloutError(maximalVisitor.exitNOP, (MethodDescriptor) globalDescriptor.methodsSymbolTable
                     .getDescriptorFromValidScopes(k)
                     .orElseThrow());
         });
         nopVisitor.exit = (NOP) visitor.initialGlobalBlock.autoChild;
-        visitor.initialGlobalBlock.accept(nopVisitor, theSymbolWeCareAbout);
+        visitor.initialGlobalBlock.accept(nopVisitor);
         HashMap<String, BasicBlock> methodBlocksCFG = new HashMap<>();
         visitor.methodCFGBlocks.forEach((k, v) -> {
             if (v
@@ -96,7 +96,7 @@ public class CFGGenerator {
         });
         visitor.methodCFGBlocks = methodBlocksCFG;
         maximalVisitor.exitNOP = (NOP) visitor.initialGlobalBlock.autoChild;
-        visitor.initialGlobalBlock.accept(maximalVisitor, theSymbolWeCareAbout);
+        visitor.initialGlobalBlock.accept(maximalVisitor);
         BranchFoldingPass.run(methodBlocksCFG.values());
         return visitor;
     }

@@ -1,7 +1,7 @@
 package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.ast.BuiltinType;
+import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.AbstractName;
 
@@ -14,13 +14,13 @@ public class GlobalAllocation extends Instruction {
     public final AbstractName variableName;
     public final long size;
     public final int alignment;
-    public final BuiltinType type;
+    public final Type type;
 
-    public GlobalAllocation(AST source, String comment, AbstractName variableName, long size, BuiltinType builtinType) {
+    public GlobalAllocation(AST source, String comment, AbstractName variableName, long size, Type type) {
         super(source, comment);
         this.variableName = variableName;
         this.size = size;
-        this.type  = builtinType;
+        this.type  = type;
         this.alignment = DEFAULT_ALIGNMENT;
     }
 
@@ -36,7 +36,7 @@ public class GlobalAllocation extends Instruction {
 
     @Override
     public String repr() {
-        return String.format("global %s %s", variableName.builtinType.getSourceCode(), variableName.repr());
+        return String.format("global %s %s", variableName.getType().getSourceCode(), variableName.repr());
     }
 
     @Override

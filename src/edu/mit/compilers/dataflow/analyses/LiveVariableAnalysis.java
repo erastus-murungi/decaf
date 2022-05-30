@@ -3,7 +3,7 @@ package edu.mit.compilers.dataflow.analyses;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.PopParameter;
-import edu.mit.compilers.codegen.codes.Store;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.MemoryAddressName;
@@ -92,7 +92,7 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
         for (Instruction tac : tacReversed) {
             if (tac instanceof HasOperand) {
                 var hasOperand = (HasOperand) tac;
-                hasOperand.getOperandNamesNoArrayNoConstants()
+                hasOperand.getAssignables()
                         .forEach(abstractName -> useSet.add(new Use(abstractName, tac)));
             }
         }
@@ -107,8 +107,8 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
             if (tac instanceof PopParameter) {
                 defSet.add(new Def((PopParameter) tac));
             }
-            if (tac instanceof Store) {
-                var hasResult = (Store) tac;
+            if (tac instanceof StoreInstruction) {
+                var hasResult = (StoreInstruction) tac;
                 if (!(hasResult.getStore() instanceof MemoryAddressName)) {
                     defSet.add(new Def(hasResult));
                 }

@@ -7,8 +7,8 @@ import java.util.Set;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
-import edu.mit.compilers.codegen.codes.MethodBegin;
-import edu.mit.compilers.codegen.codes.Store;
+import edu.mit.compilers.codegen.codes.Method;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.AbstractName;
 import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.dataflow.analyses.AvailableCopies;
@@ -16,8 +16,8 @@ import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 
 public class CopyPropagationPass extends OptimizationPass {
-    public CopyPropagationPass(Set<AbstractName> globalVariables, MethodBegin methodBegin) {
-        super(globalVariables, methodBegin);
+    public CopyPropagationPass(Set<AbstractName> globalVariables, Method method) {
+        super(globalVariables, method);
     }
 
 
@@ -32,8 +32,8 @@ public class CopyPropagationPass extends OptimizationPass {
             // we want to eventually propagate so that a = $0
             notConverged = false;
             for (var toBeReplaced : hasOperand.getOperandNamesNoArray()) {
-                if (hasOperand instanceof Store && ((Store) hasOperand).getStore()
-                                                                       .equals(toBeReplaced))
+                if (hasOperand instanceof StoreInstruction && ((StoreInstruction) hasOperand).getStore()
+                                                                                             .equals(toBeReplaced))
                     continue;
                 if (copies.containsKey(toBeReplaced)) {
                     var replacer = copies.get(toBeReplaced);
@@ -67,8 +67,8 @@ public class CopyPropagationPass extends OptimizationPass {
                 propagateCopy((HasOperand) instruction, copies);
             }
 
-            if (instruction instanceof Store) {
-                var hasResult = (Store) instruction;
+            if (instruction instanceof StoreInstruction) {
+                var hasResult = (StoreInstruction) instruction;
                 var resultLocation = hasResult.getStore();
                 if (!(resultLocation instanceof MemoryAddressName)) {
                     for (var assignableName : new ArrayList<>(copies.keySet())) {

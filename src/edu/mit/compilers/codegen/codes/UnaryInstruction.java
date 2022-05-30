@@ -11,7 +11,7 @@ import edu.mit.compilers.dataflow.operand.UnaryOperand;
 import java.util.List;
 import java.util.Optional;
 
-public class UnaryInstruction extends Store implements Cloneable {
+public class UnaryInstruction extends StoreInstruction implements Cloneable {
     public AbstractName operand;
     public String operator;
 
@@ -24,8 +24,8 @@ public class UnaryInstruction extends Store implements Cloneable {
     @Override
     public String toString() {
         if (getComment().isPresent())
-            return String.format("%s%s = %s %s %s %s", DOUBLE_INDENT, store, operator, operand, DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s = %s %s", DOUBLE_INDENT, store, operator, operand);
+            return String.format("%s%s = %s %s %s %s", DOUBLE_INDENT, getStore(), operator, operand, DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s = %s %s", DOUBLE_INDENT, getStore(), operator, operand);
     }
 
     @Override
@@ -35,14 +35,14 @@ public class UnaryInstruction extends Store implements Cloneable {
 
     @Override
     public List<AbstractName> getAllNames() {
-        return List.of(store, operand);
+        return List.of(getStore(), operand);
     }
 
     @Override
     public String repr() {
         if (getComment().isPresent())
-            return String.format("%s%s: %s = %s %s %s %s", DOUBLE_INDENT, store.repr(), store.builtinType.getSourceCode(), operator, operand.repr(), DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s: %s = %s %s", DOUBLE_INDENT, store.repr(), operator, store.builtinType.getSourceCode(), operand.repr());
+            return String.format("%s%s: %s = %s %s %s %s", DOUBLE_INDENT, getStore().repr(), getStore().getType().getSourceCode(), operator, operand.repr(), DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s: %s = %s %s", DOUBLE_INDENT, getStore().repr(), operator, getStore().getType().getSourceCode(), operand.repr());
     }
 
     @Override
@@ -52,7 +52,7 @@ public class UnaryInstruction extends Store implements Cloneable {
 
     @Override
     public Optional<Operand> getOperandNoArray() {
-        if (operand instanceof MemoryAddressName || store instanceof MemoryAddressName)
+        if (operand instanceof MemoryAddressName || getStore() instanceof MemoryAddressName)
             return Optional.empty();
         return Optional.of(new UnaryOperand(this));
     }
@@ -63,7 +63,7 @@ public class UnaryInstruction extends Store implements Cloneable {
         clone.operand = operand;
         clone.operator = operator;
         clone.setComment(getComment().orElse(null));
-        clone.store = store;
+        clone.setStore(store);
         clone.source = source;
         return clone;
     }

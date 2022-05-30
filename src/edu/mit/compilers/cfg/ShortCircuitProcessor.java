@@ -35,14 +35,14 @@ public class ShortCircuitProcessor {
         // Apply De Morgan's Laws
         if (expression instanceof UnaryOpExpression) {
             final UnaryOpExpression unaryOpExpression = (UnaryOpExpression) expression;
-            if (unaryOpExpression.op.op.equals(NOT)) {
-                final UnaryOperator unaryNot = unaryOpExpression.op;
+            if (unaryOpExpression.getUnaryOperator().label.equals(NOT)) {
+                final UnaryOperator unaryNot = unaryOpExpression.getUnaryOperator();
                 final Expression operand = extractParenthesized(unaryOpExpression.operand);
                 if (operand instanceof BinaryOpExpression) {
                     BinaryOpExpression binaryOpExpression = (BinaryOpExpression) operand;
                     if (binaryOpExpression.op instanceof ConditionalOperator) {
                         final ConditionalOperator operator = (ConditionalOperator) binaryOpExpression.op;
-                        if (operator.op.equals(CONDITIONAL_AND)) {
+                        if (operator.label.equals(CONDITIONAL_AND)) {
 
                             // Not (A and B) is the same as Not A or Not B.
                             return BinaryOpExpression.of(
@@ -80,7 +80,7 @@ public class ShortCircuitProcessor {
 
                 BasicBlockWithBranch b1, b2;
 
-                if (operator.op.equals(CONDITIONAL_AND)) {
+                if (operator.label.equals(CONDITIONAL_AND)) {
                     b2 = shortCircuitImpl(new BasicBlockWithBranch(c2, basicBlockWithBranch.trueChild, basicBlockWithBranch.falseChild));
                     b1 = shortCircuitImpl(new BasicBlockWithBranch(c1, b2, basicBlockWithBranch.falseChild));
                 } else {

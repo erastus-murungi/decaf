@@ -1,9 +1,8 @@
 package edu.mit.compilers.dataflow.operand;
 
-import edu.mit.compilers.codegen.codes.Store;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
 
 import java.util.Objects;
 
@@ -21,17 +20,12 @@ public class UnaryOperand extends Operand {
     }
 
     @Override
-    public boolean isContainedIn(Store store) {
-        if (store instanceof UnaryInstruction) {
-            UnaryInstruction unaryInstruction = (UnaryInstruction) store;
+    public boolean isContainedIn(StoreInstruction storeInstruction) {
+        if (storeInstruction instanceof UnaryInstruction) {
+            UnaryInstruction unaryInstruction = (UnaryInstruction) storeInstruction;
             return new UnaryOperand(unaryInstruction).equals(this);
         }
         return false;
-    }
-
-    @Override
-    public Store getStoreInstructionFromOperand(AssignableName store) {
-        return new UnaryInstruction(store, operator, operand, null);
     }
 
     @Override

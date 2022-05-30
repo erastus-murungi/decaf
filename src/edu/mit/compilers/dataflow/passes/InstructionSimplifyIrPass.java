@@ -60,7 +60,7 @@ public class InstructionSimplifyIrPass {
 
 
     private static Expression trySimplifyEqInstruction(Expression expression) {
-        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.op.equals(DecafScanner.EQ)) {
+        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.EQ)) {
             var eqInstruction = (BinaryOpExpression) expression;
             // X == true -> X
             // true == X -> X
@@ -81,7 +81,7 @@ public class InstructionSimplifyIrPass {
     }
 
     private static Expression trySimplifyNeqInstruction(Expression expression) {
-        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.op.equals(DecafScanner.NEQ)) {
+        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.NEQ)) {
             var eqInstruction = (BinaryOpExpression) expression;
             // X != false -> X
             // false != X -> X
@@ -105,11 +105,11 @@ public class InstructionSimplifyIrPass {
     private static Expression tryCollapseUnaryExpression(Expression expression) {
         if (expression instanceof UnaryOpExpression) {
             var unaryOpExpression = (UnaryOpExpression) expression;
-            if (unaryOpExpression.op.op.equals(DecafScanner.MINUS)) {
+            if (unaryOpExpression.getUnaryOperator().label.equals(DecafScanner.MINUS)) {
                 if (unaryOpExpression.operand instanceof IntLiteral) {
                     return new DecimalLiteral(unaryOpExpression.tokenPosition, "-" + unaryOpExpression.operand.getSourceCode());
                 }
-            } else if (unaryOpExpression.op.op.equals(DecafScanner.NOT)) {
+            } else if (unaryOpExpression.getUnaryOperator().label.equals(DecafScanner.NOT)) {
                 if (unaryOpExpression.operand instanceof BooleanLiteral) {
                     // !true = false
                     if (unaryOpExpression.operand.getSourceCode()
@@ -194,7 +194,7 @@ public class InstructionSimplifyIrPass {
 
 
     private static Expression trySimplifyAddInstruction(Expression expression) {
-        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.op.equals(DecafScanner.PLUS)) {
+        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.PLUS)) {
             var addInstruction = (BinaryOpExpression) expression;
             // 0 + X -> X
             var X = addInstruction.lhs;
@@ -206,7 +206,7 @@ public class InstructionSimplifyIrPass {
     }
 
     private static Expression trySimplifyMulInstruction(Expression expression) {
-        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.op.equals(DecafScanner.MULTIPLY)) {
+        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.MULTIPLY)) {
             var multiplyInstruction = (BinaryOpExpression) expression;
             // 0 * X -> 0
             // X * 0 -> 0
@@ -224,7 +224,7 @@ public class InstructionSimplifyIrPass {
     }
 
     private static Expression trySimplifySubInstruction(Expression expression) {
-        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.op.equals(DecafScanner.MINUS)) {
+        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.MINUS)) {
             var subInstruction = (BinaryOpExpression) expression;
             // X - X -> 0
             var X = subInstruction.lhs;
@@ -241,7 +241,7 @@ public class InstructionSimplifyIrPass {
     }
 
     private static Expression trySimplifyDivInstruction(Expression expression) {
-        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.op.equals(DecafScanner.DIVIDE)) {
+        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.DIVIDE)) {
             var divInstruction = (BinaryOpExpression) expression;
             // X / X -> 1
             var X = divInstruction.lhs;
@@ -263,7 +263,7 @@ public class InstructionSimplifyIrPass {
     }
 
     private static Expression trySimplifyModInstruction(Expression expression) {
-        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.op.equals(DecafScanner.MOD)) {
+        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.MOD)) {
             var modInstruction = (BinaryOpExpression) expression;
             // 0 % X -> 0
             var X = modInstruction.rhs;

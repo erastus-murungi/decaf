@@ -10,11 +10,11 @@ import java.util.List;
 
 public abstract class Operator extends AST {
     final public TokenPosition tokenPosition;
-    public final String op;
+    public final String label;
 
-    public Operator(TokenPosition tokenPosition, String op) {
+    public Operator(TokenPosition tokenPosition, String label) {
         this.tokenPosition = tokenPosition;
-        this.op = op;
+        this.label = label;
     }
 
     @Override
@@ -32,5 +32,10 @@ public abstract class Operator extends AST {
     @Override
     public String toString() {
         return opRep() + "{}";
+    }
+
+    @Override
+    public Type getType() {
+        return Type.Undefined;
     }
 }
