@@ -2,8 +2,8 @@ package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
@@ -12,16 +12,20 @@ import edu.mit.compilers.utils.Utils;
 import java.util.List;
 import java.util.Optional;
 
-public class Assign extends StoreInstruction implements Cloneable {
-    public AbstractName operand;
+public class CopyInstruction extends StoreInstruction implements Cloneable {
+    private Value value;
 
-    public Assign(AssignableName dst, AbstractName operand, AST source, String comment) {
-        super(dst, source, comment);
-        this.operand = operand;
+    public Value getValue() {
+        return value;
     }
 
-    public static Assign ofRegularAssign(AssignableName dst, AbstractName operand) {
-        return new Assign(dst, operand, null, "");
+    public CopyInstruction(LValue dst, Value operand, AST source, String comment) {
+        super(dst, source, comment);
+        this.value = operand;
+    }
+
+    public static CopyInstruction noMetaData(LValue dst, Value operand) {
+        return new CopyInstruction(dst, operand, null, "");
     }
 
     @Override
@@ -30,19 +34,19 @@ public class Assign extends StoreInstruction implements Cloneable {
     }
 
     @Override
-    public List<AbstractName> getAllNames() {
-        return List.of(getStore(), operand);
+    public List<Value> getAllNames() {
+        return List.of(getStore(), value);
     }
 
     @Override
     public String repr() {
         var storeString = Utils.coloredPrint("store", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s%s %s, %s", DOUBLE_INDENT, storeString, operand.repr(), getStore().repr());
+        return String.format("%s%s %s, %s", DOUBLE_INDENT, storeString, value.repr(), getStore().repr());
     }
 
     @Override
     public Instruction copy() {
-        return new Assign(getStore(), operand, source, getComment().orElse(null));
+        return new CopyInstruction(getStore(), value, source, getComment().orElse(null));
     }
 
     @Override
@@ -52,20 +56,20 @@ public class Assign extends StoreInstruction implements Cloneable {
 
     @Override
     public Optional<Operand> getOperandNoArray() {
-        if (operand instanceof MemoryAddressName)
+        if (value instanceof MemoryAddressName)
             return Optional.empty();
-        return Optional.of(new UnmodifiedOperand(operand));
+        return Optional.of(new UnmodifiedOperand(value));
     }
 
-    public boolean contains(AbstractName name) {
-        return getStore().equals(name) || operand.equals(name);
+    public boolean contains(Value name) {
+        return getStore().equals(name) || value.equals(name);
     }
 
     @Override
-    public Assign clone() {
-        Assign clone = (Assign) super.clone();
+    public CopyInstruction clone() {
+        CopyInstruction clone = (CopyInstruction) super.clone();
         // TODO: copy mutable state here, so the clone can't change the internals of the original
-        clone.operand = operand;
+        clone.value = value;
         clone.setComment(getComment().orElse(null));
         clone.setStore(getStore());
         clone.source = source;
@@ -74,18 +78,18 @@ public class Assign extends StoreInstruction implements Cloneable {
 
     @Override
     public Operand getOperand() {
-        return new UnmodifiedOperand(operand);
+        return new UnmodifiedOperand(value);
     }
 
     @Override
-    public List<AbstractName> getOperandNames() {
-        return List.of(operand);
+    public List<Value> getOperandNames() {
+        return List.of(value);
     }
 
-    public boolean replace(AbstractName oldVariable, AbstractName replacer) {
+    public boolean replace(Value oldVariable, Value replacer) {
         var replaced = false;
-        if (operand.equals(oldVariable)) {
-            operand = replacer;
+        if (value.equals(oldVariable)) {
+            value = replacer;
             replaced = true;
         }
         return replaced;

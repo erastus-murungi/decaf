@@ -9,12 +9,13 @@ import java.util.Set;
 
 import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.codes.Assign;
+import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.ConstantName;
 
 public class InstructionSimplifyPass extends OptimizationPass {
@@ -30,15 +31,15 @@ public class InstructionSimplifyPass extends OptimizationPass {
     }
 
     public static boolean matchBinOpOperandsCommutative(BinaryInstruction instruction,
-                                                        AbstractName lhsExpected,
-                                                        AbstractName rhsExpected) {
+                                                        Value lhsExpected,
+                                                        Value rhsExpected) {
         return matchBinOpOperands(instruction, lhsExpected, rhsExpected) ||
                 matchBinOpOperands(instruction, rhsExpected, lhsExpected);
     }
 
     public static boolean matchBinOpOperands(BinaryInstruction instruction,
-                                             AbstractName lhsExpected,
-                                             AbstractName rhsExpected) {
+                                             Value lhsExpected,
+                                             Value rhsExpected) {
         var lhsActual = instruction.fstOperand;
         var rhsActual = instruction.sndOperand;
         return lhsActual
@@ -47,17 +48,17 @@ public class InstructionSimplifyPass extends OptimizationPass {
                         .equals(rhsExpected);
     }
 
-    public InstructionSimplifyPass(Set<AbstractName> globalVariables, Method method) {
+    public InstructionSimplifyPass(Set<LValue> globalVariables, Method method) {
         super(globalVariables, method);
     }
 
-    private static AbstractName getNotEq(BinaryInstruction binaryInstruction, AbstractName expected) {
+    private static Value getNotEq(BinaryInstruction binaryInstruction, Value expected) {
         if (binaryInstruction.fstOperand.equals(expected))
             return binaryInstruction.sndOperand;
         return binaryInstruction.fstOperand;
     }
 
-    private static AbstractName getNonZero(BinaryInstruction binaryInstruction) {
+    private static Value getNonZero(BinaryInstruction binaryInstruction) {
         return getNotEq(binaryInstruction, mZero);
     }
 
@@ -66,7 +67,7 @@ public class InstructionSimplifyPass extends OptimizationPass {
         // 0 + X -> X
         var X = getNonZero(addInstruction);
         if (matchBinOpOperandsCommutative(addInstruction, mZero, X)) {
-            return Assign.ofRegularAssign(addInstruction.getStore(), X);
+            return CopyInstruction.noMetaData(addInstruction.getStore(), X);
         }
         return addInstruction;
     }
@@ -78,15 +79,15 @@ public class InstructionSimplifyPass extends OptimizationPass {
         var X = getNotEq(eqInstruction, mOne);
         if (X.getType().equals(Type.Bool)) {
             if (matchBinOpOperandsCommutative(eqInstruction, X, mOne))
-                return Assign.ofRegularAssign(eqInstruction.getStore(), X);
+                return CopyInstruction.noMetaData(eqInstruction.getStore(), X);
             // true == true -> true
             if (matchBinOpOperands(eqInstruction, mOne, mOne)) {
-                return Assign.ofRegularAssign(eqInstruction.getStore(), mOne);
+                return CopyInstruction.noMetaData(eqInstruction.getStore(), mOne);
             }
             // true == false -> false
             // false == true -> false
             if (matchBinOpOperandsCommutative(eqInstruction, mOne, mZero)) {
-                return Assign.ofRegularAssign(eqInstruction.getStore(), getZero());
+                return CopyInstruction.noMetaData(eqInstruction.getStore(), getZero());
             }
         }
         return eqInstruction;
@@ -99,12 +100,12 @@ public class InstructionSimplifyPass extends OptimizationPass {
         // X * 0 -> 0
         final var X = getNonZero(multiplyInstruction);
         if (matchBinOpOperandsCommutative(multiplyInstruction, mZero, X)) {
-            return Assign.ofRegularAssign(multiplyInstruction.getStore(), getZero());
+            return CopyInstruction.noMetaData(multiplyInstruction.getStore(), getZero());
         }
         // X * 1 -> X
         // 1 * X -> X
         if (matchBinOpOperandsCommutative(multiplyInstruction, mOne, X)) {
-            return Assign.ofRegularAssign(multiplyInstruction.getStore(), X);
+            return CopyInstruction.noMetaData(multiplyInstruction.getStore(), X);
         }
         return multiplyInstruction;
     }
@@ -112,7 +113,7 @@ public class InstructionSimplifyPass extends OptimizationPass {
     private Instruction simplifyQuadruple(BinaryInstruction binaryInstruction) {
         var aLong = InstructionSimplifyIrPass.symbolicallyEvaluate(String.format("%s %s %s", binaryInstruction.fstOperand.getLabel(), binaryInstruction.operator, binaryInstruction.sndOperand.getLabel()));
         if (aLong.isPresent()) {
-            return Assign.ofRegularAssign(binaryInstruction.getStore(), new ConstantName(aLong.get(), Type.Int));
+            return CopyInstruction.noMetaData(binaryInstruction.getStore(), new ConstantName(aLong.get(), Type.Int));
         }
         Instruction newTac = null;
         switch (binaryInstruction.operator) {
@@ -159,7 +160,7 @@ public class InstructionSimplifyPass extends OptimizationPass {
     }
 
     @Override
-    public boolean run() {
+    public boolean runFunctionPass() {
         final var oldCodes = entryBlock.getCopyOfInstructionList();
         simplifyInstructions();
         return !oldCodes.equals(entryBlock.getInstructionList());

@@ -3,7 +3,8 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.LValue;
 
 import java.util.Collections;
 import java.util.List;
@@ -11,12 +12,12 @@ import java.util.List;
 public class GlobalAllocation extends Instruction {
     public static final int DEFAULT_ALIGNMENT = 8;
 
-    public final AbstractName variableName;
+    public final LValue variableName;
     public final long size;
     public final int alignment;
     public final Type type;
 
-    public GlobalAllocation(AST source, String comment, AbstractName variableName, long size, Type type) {
+    public GlobalAllocation(AST source, String comment, LValue variableName, long size, Type type) {
         super(source, comment);
         this.variableName = variableName;
         this.size = size;
@@ -30,7 +31,7 @@ public class GlobalAllocation extends Instruction {
     }
 
     @Override
-    public List<AbstractName> getAllNames() {
+    public List<Value> getAllNames() {
         return Collections.singletonList(variableName);
     }
 

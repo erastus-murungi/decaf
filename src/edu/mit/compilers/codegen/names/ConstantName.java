@@ -6,7 +6,7 @@ import edu.mit.compilers.ast.BooleanLiteral;
 import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.ast.IntLiteral;
 
-public class ConstantName extends AbstractName {
+public class ConstantName extends Value {
     public ConstantName(Long value, Type type) {
         super(type, String.valueOf(value));
     }
@@ -23,6 +23,10 @@ public class ConstantName extends AbstractName {
         return new ConstantName(0L, Type.Int);
     }
 
+    public static ConstantName one() {
+        return new ConstantName(1L, Type.Int);
+    }
+
     @Override
     public String toString() {
         return "$" + getLabel();
@@ -35,6 +39,11 @@ public class ConstantName extends AbstractName {
         if (!super.equals(o)) return false;
         ConstantName that = (ConstantName) o;
         return Objects.equals(getLabel(), that.getLabel());
+    }
+
+    @Override
+    public void renameForSsa(int versionNumber) {
+        throw new IllegalStateException();
     }
 
     @Override

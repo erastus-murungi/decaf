@@ -2,9 +2,8 @@ package edu.mit.compilers.dataflow.copy;
 
 
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
-import edu.mit.compilers.dataflow.operand.Operand;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.LValue;
 
 import java.util.Objects;
 
@@ -12,12 +11,12 @@ import java.util.Objects;
 // and pos is the position in block is the block where the assignment occurs
 // adapted from page 358 of the whale book
 public class CopyQuadruple {
-    public final AssignableName u;
-    public final AbstractName v;
+    public final LValue u;
+    public final Value v;
     public final int position;
     public final BasicBlock basicBlock;
 
-    public CopyQuadruple(AssignableName u, AbstractName v, int position, BasicBlock basicBlock) {
+    public CopyQuadruple(LValue u, Value v, int position, BasicBlock basicBlock) {
         this.u = u;
         this.v = v;
         this.position = position;
@@ -29,8 +28,8 @@ public class CopyQuadruple {
         return String.format("%s ⟵ %s    @ %s in %s", u, v, position, basicBlock.getLeader());
     }
 
-    public boolean contains(AbstractName abstractName) {
-        return u.equals(abstractName) || v.equals(abstractName);
+    public boolean contains(Value value) {
+        return u.equals(value) || v.equals(value);
     }
 
     @Override

@@ -27,6 +27,8 @@ public class Operators {
 
     public static final String ASSIGN = "=";
 
+    public static final String NOT = "!";
+
     public static String getOperatorName(String operator) {
         switch (operator) {
             case PLUS:
@@ -57,12 +59,29 @@ public class Operators {
                 return "or";
             case ASSIGN:
                 return "assign";
+            case NOT:
+                return "not";
             default:
                 throw new IllegalArgumentException("operator " + operator + " not recognized");
         }
     }
 
+    public static String getUnaryOperatorName(String operator) {
+        switch (operator) {
+            case MINUS:
+                return "neg";
+            case NOT:
+                return "not";
+            default:
+                throw new IllegalArgumentException("unary operator " + operator + " not recognized");
+        }
+    }
+
     public static String getColoredOperatorName(String operator) {
         return Utils.coloredPrint(getOperatorName(operator), Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
+    }
+
+    public static String getColoredUnaryOperatorName(String operator) {
+        return Utils.coloredPrint(getUnaryOperatorName(operator), Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
     }
 }

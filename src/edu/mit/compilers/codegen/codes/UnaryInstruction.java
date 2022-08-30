@@ -2,20 +2,21 @@ package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnaryOperand;
+import edu.mit.compilers.utils.Operators;
 
 import java.util.List;
 import java.util.Optional;
 
-public class UnaryInstruction extends StoreInstruction implements Cloneable {
-    public AbstractName operand;
+public class UnaryInstruction extends StoreInstruction {
+    public Value operand;
     public String operator;
 
-    public UnaryInstruction(AssignableName result, String operator, AbstractName operand, AST source) {
+    public UnaryInstruction(LValue result, String operator, Value operand, AST source) {
         super(result, source);
         this.operand = operand;
         this.operator = operator;
@@ -24,8 +25,8 @@ public class UnaryInstruction extends StoreInstruction implements Cloneable {
     @Override
     public String toString() {
         if (getComment().isPresent())
-            return String.format("%s%s = %s %s %s %s", DOUBLE_INDENT, getStore(), operator, operand, DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s = %s %s", DOUBLE_INDENT, getStore(), operator, operand);
+            return String.format("%s%s = %s %s %s %s", DOUBLE_INDENT, getStore(), Operators.getColoredUnaryOperatorName(operator), operand.repr(), DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s = %s %s", DOUBLE_INDENT, getStore(), Operators.getColoredUnaryOperatorName(operator), operand.repr());
     }
 
     @Override
@@ -34,15 +35,13 @@ public class UnaryInstruction extends StoreInstruction implements Cloneable {
     }
 
     @Override
-    public List<AbstractName> getAllNames() {
+    public List<Value> getAllNames() {
         return List.of(getStore(), operand);
     }
 
     @Override
     public String repr() {
-        if (getComment().isPresent())
-            return String.format("%s%s: %s = %s %s %s %s", DOUBLE_INDENT, getStore().repr(), getStore().getType().getSourceCode(), operator, operand.repr(), DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s: %s = %s %s", DOUBLE_INDENT, getStore().repr(), operator, getStore().getType().getSourceCode(), operand.repr());
+        return toString();
     }
 
     @Override
@@ -73,7 +72,7 @@ public class UnaryInstruction extends StoreInstruction implements Cloneable {
         return new UnaryOperand(this);
     }
 
-    public boolean replace(AbstractName oldVariable, AbstractName replacer) {
+    public boolean replace(Value oldVariable, Value replacer) {
         var replaced = false;
         if (operand.equals(oldVariable)) {
             operand = replacer;
@@ -83,7 +82,7 @@ public class UnaryInstruction extends StoreInstruction implements Cloneable {
     }
 
     @Override
-    public List<AbstractName> getOperandNames() {
+    public List<Value> getOperandNames() {
         return List.of(operand);
     }
 

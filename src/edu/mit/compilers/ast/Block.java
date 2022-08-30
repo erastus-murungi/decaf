@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import edu.mit.compilers.codegen.CodegenAstVisitor;
-import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
@@ -70,7 +70,7 @@ public class Block extends AST {
         return visitor.visit(this, curSymbolTable);
     }
 
-    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, LValue resultLocation) {
         return codegenAstVisitor.visit(this, resultLocation);
     }
 }

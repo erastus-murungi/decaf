@@ -8,12 +8,12 @@ import java.util.Map;
 
 import edu.mit.compilers.asm.X64Register;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
 
 public class LinearScan {
     private final List<X64Register> availableRegisters = new ArrayList<>();
     private List<LiveInterval> active = new ArrayList<>();
-    private final Map<Method, Map<AbstractName, X64Register>> varToRegMap = new HashMap<>();
+    private final Map<Method, Map<Value, X64Register>> varToRegMap = new HashMap<>();
     private final Map<Method, List<LiveInterval>> liveIntervals;
 
     public LinearScan(Collection<X64Register> availableRegisters, Map<Method, List<LiveInterval>> liveIntervals) {
@@ -21,7 +21,7 @@ public class LinearScan {
         this.liveIntervals = liveIntervals;
     }
 
-    public Map<Method, Map<AbstractName, X64Register>> getVariableToRegisterMapping() {
+    public Map<Method, Map<Value, X64Register>> getVariableToRegisterMapping() {
         return varToRegMap;
     }
 
@@ -32,7 +32,7 @@ public class LinearScan {
             availableRegisters.addAll(List.of(X64Register.regsToAllocate));
             List<LiveInterval> liveIntervalsList = entry.getValue();
             liveIntervalsList.sort(LiveInterval::compareStartPoint);
-            Map<AbstractName, X64Register> varToReg = varToRegMap.get(entry.getKey());
+            Map<Value, X64Register> varToReg = varToRegMap.get(entry.getKey());
             active = new ArrayList<>();
             for (LiveInterval i : liveIntervalsList) {
                 expireOldIntervals(i, varToReg);
@@ -48,7 +48,7 @@ public class LinearScan {
 //        System.out.println(varToRegMap);
     }
 
-    public void expireOldIntervals(LiveInterval i, Map<AbstractName, X64Register> varToReg) {
+    public void expireOldIntervals(LiveInterval i, Map<Value, X64Register> varToReg) {
         active.sort(LiveInterval::compareEndpoint);
         var toRemove = new ArrayList<LiveInterval>();
         for (LiveInterval j : active) {
@@ -62,7 +62,7 @@ public class LinearScan {
         for (LiveInterval j : toRemove) active.remove(j);
     }
 
-    public void spillAtInterval(LiveInterval i, Map<AbstractName, X64Register> varToReg) {
+    public void spillAtInterval(LiveInterval i, Map<Value, X64Register> varToReg) {
         LiveInterval spill = active.get(active.size() - 1);
         if (spill.endPoint > i.endPoint) {
             varToReg.put(i.variable, varToReg.get(spill.variable));

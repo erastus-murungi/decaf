@@ -20,18 +20,17 @@ import edu.mit.compilers.cfg.BasicBlockWithBranch;
 import edu.mit.compilers.cfg.CFGVisitor;
 import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.cfg.SymbolTableFlattener;
-import edu.mit.compilers.codegen.codes.ConditionalJump;
+import edu.mit.compilers.codegen.codes.AllocateInstruction;
+import edu.mit.compilers.codegen.codes.ConditionalBranch;
 import edu.mit.compilers.codegen.codes.GlobalAllocation;
 import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.MethodEnd;
-import edu.mit.compilers.codegen.codes.PopParameter;
 import edu.mit.compilers.codegen.codes.RuntimeException;
 import edu.mit.compilers.codegen.codes.StringLiteralAllocation;
-import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.MemoryAddressName;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.TemporaryName;
-import edu.mit.compilers.codegen.names.VariableName;
+import edu.mit.compilers.codegen.names.Variable;
 import edu.mit.compilers.descriptors.GlobalDescriptor;
 import edu.mit.compilers.exceptions.DecafException;
 import edu.mit.compilers.symbolTable.SymbolTable;
@@ -40,7 +39,7 @@ import edu.mit.compilers.utils.ProgramIr;
 
 public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<InstructionList> {
     private final List<DecafException> cfgGenerationErrors;
-    private final Set<AbstractName> globalNames = new HashSet<>();
+    private final Set<LValue> globalNames = new HashSet<>();
     private final Set<BasicBlock> visitedBasicBlocks = new HashSet<>();
     private final HashMap<String, SymbolTable> perMethodSymbolTables;
     private final ProgramIr programIr;
@@ -52,7 +51,8 @@ public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<I
     public HashMap<String, SymbolTable> getPerMethodSymbolTables() {
         return perMethodSymbolTables;
     }
-    public Set<AbstractName> getGlobalNames() {
+
+    public Set<LValue> getGlobalNames() {
         return globalNames;
     }
 
@@ -74,14 +74,6 @@ public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<I
         // if the errors list is non-empty, set hasRuntimeException to true
         method.setHasRuntimeException(!cfgGenerationErrors.isEmpty());
 
-        for (int indexOfParameter = 0; indexOfParameter < methodDefinition.parameterList.size(); indexOfParameter++) {
-            var parameter = methodDefinition.parameterList.get(indexOfParameter);
-            methodInstructionList.add(new PopParameter(
-                    new VariableName(parameter.getName(), parameter.getType()),
-                    indexOfParameter
-            ));
-        }
-
         final var entryBasicBlockInstructionList = methodStart.accept(this);
         entryBasicBlockInstructionList.addAll(0, methodInstructionList);
 
@@ -94,6 +86,12 @@ public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<I
         methodStart.setInstructionList(entryBasicBlockInstructionList);
         method.entryBlock = methodStart;
         method.exitBlock = currentMethodExitNop;
+        method.entryBlock.getInstructionList()
+                         .addAll(1, ProgramIr.getLocals(method, globalNames)
+                                             .stream()
+                                             .map(AllocateInstruction::new)
+                                             .collect(Collectors.toUnmodifiableList())
+                         );
         method.unoptimizedInstructionList = TraceScheduler.flattenIr(method);
         return method;
     }
@@ -104,18 +102,23 @@ public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<I
         for (var fieldDeclaration : program.fieldDeclarationList) {
             for (var name : fieldDeclaration.names) {
                 programHeaderInstructionList.add(new GlobalAllocation(name, "# " + name.getSourceCode(),
-                        new VariableName(name.getLabel(), fieldDeclaration.getType()), fieldDeclaration.getType().getFieldSize(), fieldDeclaration.getType()));
+                        new Variable(name.getLabel(), fieldDeclaration.getType()), fieldDeclaration.getType()
+                                                                                                   .getFieldSize(), fieldDeclaration.getType()));
             }
             for (var array : fieldDeclaration.arrays) {
-                var size = (fieldDeclaration.getType().getFieldSize() * array.getSize().convertToLong());
+                var size = (fieldDeclaration.getType()
+                                            .getFieldSize() * array.getSize()
+                                                                   .convertToLong());
                 programHeaderInstructionList.add(new GlobalAllocation(array, "# " + array.getSourceCode(),
-                        new VariableName(array.getId().getLabel(), fieldDeclaration.getType()), size, fieldDeclaration.getType()));
+                        new Variable(array.getId()
+                                          .getLabel(), fieldDeclaration.getType()), size, fieldDeclaration.getType()));
             }
         }
         globalNames.addAll(programHeaderInstructionList.stream()
                                                        .flatMap(instruction -> instruction.getAllNames()
                                                                                           .stream())
-                                                       .filter(abstractName -> abstractName instanceof VariableName || abstractName instanceof MemoryAddressName)
+                                                       .filter(abstractName -> abstractName instanceof LValue)
+                                                       .map(abstractName -> (LValue) abstractName)
                                                        .collect(Collectors.toUnmodifiableSet()));
 
         for (String stringLiteral : findAllStringLiterals(program)) {
@@ -158,7 +161,8 @@ public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<I
                         .add(generateMethodInstructionList(
                                 program.methodDefinitionList
                                         .stream()
-                                        .filter(methodDefinition -> methodDefinition.methodName.getLabel().equals(methodName))
+                                        .filter(methodDefinition -> methodDefinition.methodName.getLabel()
+                                                                                               .equals(methodName))
                                         .findFirst()
                                         .orElseThrow(() -> new IllegalStateException("expected to find method " + methodName))
                                 , methodEntryBasicBlock, perMethodSymbolTables.get(methodName))));
@@ -176,9 +180,10 @@ public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<I
         visitedBasicBlocks.add(basicBlockBranchLess);
         InstructionList instructionList = new InstructionList();
         instructionList.add(basicBlockBranchLess.getLabel());
-        for (var line : basicBlockBranchLess.lines)
+        for (var line : basicBlockBranchLess.getAstNodes())
             instructionList.addAll(line.accept(currentAstToInstructionListConverter, null));
-        basicBlockBranchLess.autoChild.accept(this);
+        basicBlockBranchLess.getSuccessor()
+                            .accept(this);
         basicBlockBranchLess.setInstructionList(instructionList);
         return instructionList;
     }
@@ -191,17 +196,21 @@ public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<I
 
         visitedBasicBlocks.add(basicBlockWithBranch);
 
-        var condition = basicBlockWithBranch.condition;
+        var condition = basicBlockWithBranch.getBranchCondition();
         var conditionInstructionList = condition.accept(currentAstToInstructionListConverter, TemporaryName.generateTemporaryName(Type.Bool));
         conditionInstructionList.add(0, basicBlockWithBranch.getLabel());
 
-        basicBlockWithBranch.trueChild.accept(this);
-        basicBlockWithBranch.falseChild.accept(this);
+        basicBlockWithBranch.getTrueTarget()
+                            .accept(this);
+        basicBlockWithBranch.getFalseTarget()
+                            .accept(this);
 
         var branchCondition =
-                new ConditionalJump(condition,
+                new ConditionalBranch(condition,
                         conditionInstructionList.place,
-                        basicBlockWithBranch.falseChild.getLabel(), "if !(" + basicBlockWithBranch.condition.getSourceCode() + ")");
+                        basicBlockWithBranch.getFalseTarget()
+                                            .getLabel(), "if !(" + basicBlockWithBranch.getBranchCondition()
+                                                                                       .getSourceCode() + ")");
         conditionInstructionList.add(branchCondition);
         basicBlockWithBranch.setInstructionList(conditionInstructionList);
         return conditionInstructionList;

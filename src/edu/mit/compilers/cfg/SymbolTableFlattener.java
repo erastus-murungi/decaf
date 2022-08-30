@@ -1,16 +1,21 @@
 package edu.mit.compilers.cfg;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Queue;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.Block;
 import edu.mit.compilers.ast.Name;
-import edu.mit.compilers.descriptors.*;
+import edu.mit.compilers.descriptors.Descriptor;
+import edu.mit.compilers.descriptors.GlobalDescriptor;
+import edu.mit.compilers.descriptors.MethodDescriptor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.symbolTable.SymbolTableType;
 import edu.mit.compilers.utils.Pair;
-
-import java.util.HashMap;
-import java.util.Stack;
-import java.util.TreeSet;
 
 public class SymbolTableFlattener {
     SymbolTable fields;
@@ -35,6 +40,14 @@ public class SymbolTableFlattener {
                 cfgMethods.put(methodEntry.getKey(), methodVars);
 
                 // add all params to symbol table, don't need to check for repeats bc it's the first table
+//                for (HashMap.Entry<String, Descriptor> paramEntry : new ArrayList<>(methodDesc.parameterSymbolTable.entries.entrySet())) {
+//                    var paramName = paramEntry.getKey();
+//                    var newParamName = paramName + "." + "local";
+//                    methodDesc.parameterSymbolTable.entries.remove(paramName);
+//                    methodDesc.parameterSymbolTable.entries.put(newParamName, paramEntry.getValue());
+//                    methodVars.entries.put(newParamName, paramEntry.getValue());
+//                    rename(methodDesc.methodDefinition.block, paramName, newParamName);
+//                }
                 methodVars.entries.putAll(methodDesc.parameterSymbolTable.entries);
                 methodVars.entries.putAll(this.fields.entries);
                 // iterate through all children of children blocks
@@ -48,7 +61,7 @@ public class SymbolTableFlattener {
     }
 
     public void addChildrenVars(SymbolTable methodTable, SymbolTable currTable) {
-        for (HashMap.Entry<String, Descriptor> variable: currTable.entries.entrySet()) {
+        for (HashMap.Entry<String, Descriptor> variable : currTable.entries.entrySet()) {
             // uniquely name each valid variable in method scope
             String varName = variable.getKey();
             String newVarName = varName;
@@ -69,22 +82,43 @@ public class SymbolTableFlattener {
     }
 
     private static void renameVariableWithinCurrentScope(Block block, String oldLabel, String newLabel) {
-        Stack<AST> toExplore = new Stack<>();
-        toExplore.push(block);
+        Queue<AST> toExplore = new ArrayDeque<>(block.getChildren()
+                                                     .stream()
+                                                     .map(Pair::second)
+                                                     .collect(Collectors.toUnmodifiableList()));
         while (!toExplore.isEmpty()) {
-            AST ast = toExplore.pop();
+            AST ast = toExplore.remove();
             for (Pair<String, AST> astPair : ast.getChildren()) {
                 AST child = astPair.second();
                 if (child instanceof Name) {
                     Name name = (Name) child;
-                    if (name.getLabel().equals(oldLabel)) {
+                    if (name.getLabel()
+                            .equals(oldLabel)) {
                         name.setLabel(newLabel);
                     }
                 }
                 if (!(child instanceof Block))
-                    toExplore.push(child);
+                    toExplore.add(child);
             }
         }
+    }
 
+    private static void rename(Block block, String oldLabel, String newLabel) {
+        Queue<AST> toExplore = new ArrayDeque<>();
+        toExplore.add(block);
+        while (!toExplore.isEmpty()) {
+            AST ast = toExplore.remove();
+            for (Pair<String, AST> astPair : ast.getChildren()) {
+                AST child = astPair.second();
+                if (child instanceof Name) {
+                    Name name = (Name) child;
+                    if (name.getLabel()
+                            .equals(oldLabel)) {
+                        name.setLabel(newLabel);
+                    }
+                }
+                toExplore.add(child);
+            }
+        }
     }
 }

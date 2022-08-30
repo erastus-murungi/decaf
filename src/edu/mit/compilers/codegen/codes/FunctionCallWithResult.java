@@ -8,22 +8,22 @@ import java.util.stream.Collectors;
 
 import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.dataflow.operand.MethodCallOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.utils.Utils;
 
 public class FunctionCallWithResult extends StoreInstruction implements FunctionCall {
-    private final Stack<AbstractName> arguments;
+    private final Stack<Value> arguments;
 
-    public FunctionCallWithResult(MethodCall methodCall, AssignableName resultLocation, Stack<AbstractName> arguments, String comment) {
+    public FunctionCallWithResult(MethodCall methodCall, LValue resultLocation, Stack<Value> arguments, String comment) {
         super(resultLocation, methodCall, comment);
         this.arguments = arguments;
     }
 
-    public Stack<AbstractName> getArguments() {
+    public Stack<Value> getArguments() {
         return arguments;
     }
     @Override
@@ -42,7 +42,7 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
     }
 
     @Override
-    public List<AbstractName> getAllNames() {
+    public List<Value> getAllNames() {
         var args = new ArrayList<>(getArguments());
         args.add(getStore());
         return args;
@@ -51,7 +51,7 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
     @Override
     public String repr() {
         var callString =  Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        var args = arguments.stream().map(AbstractName::repr).collect(Collectors.joining(", "));
+        var args = arguments.stream().map(Value::repr).collect(Collectors.joining(", "));
         return String.format("%s%s: %s = %s @%s(%s) %s%s", DOUBLE_INDENT, getStore().repr(), getMethodReturnType(), callString, getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
     }
 
@@ -73,16 +73,16 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
     }
 
     @Override
-    public List<AbstractName> getOperandNames() {
+    public List<Value> getOperandNames() {
         return new ArrayList<>(arguments);
     }
 
     @Override
-    public boolean replace(AbstractName oldName, AbstractName newName) {
+    public boolean replace(Value oldName, Value newName) {
         var replaced = false;
         int i = 0;
-        for (AbstractName abstractName: arguments) {
-            if (abstractName.equals(oldName)) {
+        for (Value value : arguments) {
+            if (value.equals(oldName)) {
                 arguments.set(i, newName);
                 replaced = true;
             }

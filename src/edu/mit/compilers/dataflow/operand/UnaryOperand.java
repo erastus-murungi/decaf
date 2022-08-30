@@ -2,12 +2,12 @@ package edu.mit.compilers.dataflow.operand;
 
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
 
 import java.util.Objects;
 
 public class UnaryOperand extends Operand {
-    public final AbstractName operand;
+    public final Value operand;
     public final String operator;
 
     public UnaryOperand(UnaryInstruction unaryInstruction) {
@@ -15,7 +15,7 @@ public class UnaryOperand extends Operand {
         this.operator = unaryInstruction.operator;
     }
     @Override
-    public boolean contains(AbstractName name) {
+    public boolean contains(Value name) {
         return this.operand.equals(name);
     }
 

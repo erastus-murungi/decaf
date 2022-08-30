@@ -9,19 +9,20 @@ import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.dataflow.analyses.AvailableCopies;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 
 public class CopyPropagationPass extends OptimizationPass {
-    public CopyPropagationPass(Set<AbstractName> globalVariables, Method method) {
+    public CopyPropagationPass(Set<LValue> globalVariables, Method method) {
         super(globalVariables, method);
     }
 
 
-    private static void propagateCopy(HasOperand hasOperand, HashMap<AbstractName, AbstractName> copies) {
+    private static void propagateCopy(HasOperand hasOperand, HashMap<Value, Value> copies) {
         if (copies.isEmpty())
             return;
         boolean notConverged = true;
@@ -54,7 +55,7 @@ public class CopyPropagationPass extends OptimizationPass {
         }
     }
 
-    private boolean performLocalCopyPropagation(BasicBlock basicBlock, HashMap<AbstractName, AbstractName> copies) {
+    private boolean performLocalCopyPropagation(BasicBlock basicBlock, HashMap<Value, Value> copies) {
         // we need a reference tac list to know whether any changes occurred
         final var tacList = basicBlock.getCopyOfInstructionList();
         final var newTacList = basicBlock.getInstructionList();
@@ -85,7 +86,7 @@ public class CopyPropagationPass extends OptimizationPass {
                     if (operand.isPresent()) {
                         Operand op = operand.get();
                         if (op instanceof UnmodifiedOperand) {
-                            AbstractName name = ((UnmodifiedOperand)operand.get()).abstractName;
+                            Value name = ((UnmodifiedOperand)operand.get()).value;
                             copies.put(resultLocation, name);
                         }
                     }
@@ -121,7 +122,7 @@ public class CopyPropagationPass extends OptimizationPass {
     }
 
     @Override
-    public boolean run() {
+    public boolean runFunctionPass() {
         final var oldCodes = entryBlock.getCopyOfInstructionList();
         performGlobalCopyPropagation();
         return !oldCodes.equals(entryBlock.getInstructionList());

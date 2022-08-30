@@ -29,9 +29,9 @@ public class NOP extends BasicBlockBranchLess {
 
     @Override
     public List<BasicBlock> getSuccessors() {
-        if (autoChild == null)
+        if (getSuccessor() == null)
             return Collections.emptyList();
-        return List.of(autoChild);
+        return List.of(getSuccessor());
     }
 
     @Override

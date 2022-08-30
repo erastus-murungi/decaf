@@ -3,7 +3,7 @@ package edu.mit.compilers.codegen.codes;
 import java.util.List;
 
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.utils.Utils;
 
@@ -31,7 +31,7 @@ public class ArrayBoundsCheck extends HasOperand {
     }
 
     @Override
-    public List<AbstractName> getAllNames() {
+    public List<Value> getAllNames() {
         return getAddress.getAllNames();
     }
 
@@ -57,12 +57,12 @@ public class ArrayBoundsCheck extends HasOperand {
     }
 
     @Override
-    public List<AbstractName> getOperandNames() {
+    public List<Value> getOperandNames() {
         return getAddress.getOperandNames();
     }
 
     @Override
-    public boolean replace(AbstractName oldName, AbstractName newName) {
+    public boolean replace(Value oldName, Value newName) {
         return getAddress.replace(oldName, newName);
     }
 }

@@ -14,14 +14,14 @@ import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.GlobalAllocation;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddressName;
 
 public class ProgramIr {
     public InstructionList headerInstructions;
     public List<Method> methodList;
-    Set<AbstractName> globals;
+    Set<LValue> globals = new HashSet<>();
 
     public ProgramIr(InstructionList headerInstructions, List<Method> methodList) {
         this.headerInstructions = headerInstructions;
@@ -36,7 +36,7 @@ public class ProgramIr {
         var programHeader = headerInstructions.copy();
         var tacList = programHeader.copy();
         for (Method method : methodList) {
-            for (InstructionList instructionList: new TraceScheduler(method).getInstructionTrace())
+            for (InstructionList instructionList : new TraceScheduler(method).getInstructionTrace())
                 tacList.addAll(instructionList);
         }
         return tacList;
@@ -51,16 +51,20 @@ public class ProgramIr {
                 .collect(Collectors.toUnmodifiableSet());
     }
 
-    public Set<AbstractName> getGlobals() {
+    public Set<LValue> getGlobals() {
         return globals;
     }
 
-    public List<AbstractName> getLocals(Method method) {
-        Set<AbstractName> uniqueNames = new HashSet<>();
+    public List<LValue> getLocals(Method method) {
+        return getLocals(method, globals);
+    }
+
+    public static List<LValue> getLocals(Method method, Set<LValue> globals) {
+        Set<Value> uniqueNames = new HashSet<>();
         var flattened = TraceScheduler.flattenIr(method);
 
         for (Instruction instruction : flattened) {
-            for (AbstractName name : instruction.getAllNames()) {
+            for (Value name : instruction.getAllNames()) {
                 if (name instanceof MemoryAddressName && !globals.contains(name)) {
                     uniqueNames.add(name);
                 }
@@ -68,15 +72,16 @@ public class ProgramIr {
         }
 
         for (Instruction instruction : flattened) {
-            for (AbstractName name : instruction.getAllNames()) {
+            for (var name : instruction.getAllNames()) {
                 if (!(name instanceof MemoryAddressName) && !globals.contains(name)) {
                     uniqueNames.add(name);
                 }
             }
         }
-        var locals =  uniqueNames
+        var locals = uniqueNames
                 .stream()
-                .filter((name -> ((name instanceof AssignableName))))
+                .filter((name -> ((name instanceof LValue))))
+                .map(name -> (LValue) name)
                 .distinct()
                 .sorted(Comparator.comparing(Object::toString))
                 .collect(Collectors.toList());
@@ -85,21 +90,21 @@ public class ProgramIr {
     }
 
 
-    private void reorderLocals(List<AbstractName> locals, MethodDefinition methodDefinition) {
-        List<AbstractName> methodParametersNames = new ArrayList<>();
+    private static void reorderLocals(List<LValue> locals, MethodDefinition methodDefinition) {
+        List<LValue> methodParametersNames = new ArrayList<>();
 
         Set<String> methodParameters = methodDefinition.parameterList
                 .stream()
                 .map(MethodDefinitionParameter::getName)
                 .collect(Collectors.toSet());
 
-        List<AbstractName> methodParamNamesList = new ArrayList<>();
-        for (AbstractName name : locals) {
+        List<LValue> methodParamNamesList = new ArrayList<>();
+        for (var name : locals) {
             if (methodParameters.contains(name.toString())) {
                 methodParamNamesList.add(name);
             }
         }
-        for (AbstractName local : locals) {
+        for (var local : locals) {
             if (methodParameters.contains(local.toString())) {
                 methodParametersNames.add(local);
             }
@@ -107,7 +112,7 @@ public class ProgramIr {
         locals.removeAll(methodParametersNames);
         locals.addAll(0, methodParamNamesList
                 .stream()
-                .sorted(Comparator.comparing(AbstractName::toString))
+                .sorted(Comparator.comparing(Value::toString))
                 .collect(Collectors.toList()));
     }
 }

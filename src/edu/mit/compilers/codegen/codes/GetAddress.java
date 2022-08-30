@@ -6,8 +6,8 @@ import java.util.Optional;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.ConstantName;
 import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.dataflow.operand.GetAddressOperand;
@@ -16,26 +16,26 @@ import edu.mit.compilers.utils.Utils;
 
 
 public class GetAddress extends StoreInstruction {
-    private AbstractName baseAddress;
-    private AbstractName index;
+    private Value baseAddress;
+    private Value index;
     private final ConstantName length;
 
     public Optional<ConstantName> getLength() {
         return Optional.ofNullable(length);
     }
 
-    public GetAddress(AST source, AbstractName baseAddress, AbstractName index, AssignableName dest, ConstantName length) {
+    public GetAddress(AST source, Value baseAddress, Value index, LValue dest, ConstantName length) {
         super(dest, source);
         this.baseAddress = baseAddress;
         this.index = index;
         this.length = length;
     }
 
-    public AbstractName getIndex() {
+    public Value getIndex() {
         return index;
     }
 
-    public AbstractName getBaseAddress() {
+    public Value getBaseAddress() {
         if (baseAddress == null)
             throw new IllegalStateException("the base address is null");
         return baseAddress;
@@ -51,14 +51,14 @@ public class GetAddress extends StoreInstruction {
     }
 
     @Override
-    public List<AbstractName> getAllNames() {
+    public List<Value> getAllNames() {
         return List.of(baseAddress, getIndex(), getStore());
     }
 
     @Override
     public String repr() {
-        final var getAddr = Utils.coloredPrint("getaddr", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s%s = %s %s %s, %s", DOUBLE_INDENT, getStore().repr(), getAddr, baseAddress.repr(), baseAddress.getType().getColoredSourceCode(), getIndex().repr());
+        final var getAddressString = Utils.coloredPrint("getaddr", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
+        return String.format("%s%s = %s %s %s, %s", DOUBLE_INDENT, getStore().repr(), getAddressString, baseAddress.repr(), baseAddress.getType().getColoredSourceCode(), getIndex().repr());
     }
 
     @Override
@@ -72,14 +72,14 @@ public class GetAddress extends StoreInstruction {
     }
 
     @Override
-    public List<AbstractName> getOperandNames() {
+    public List<Value> getOperandNames() {
         if (index != null)
             return List.of(baseAddress, index);
         return List.of(baseAddress);
     }
 
     @Override
-    public boolean replace(AbstractName oldName, AbstractName newName) {
+    public boolean replace(Value oldName, Value newName) {
         var replaced = false;
         if (oldName == baseAddress) {
             baseAddress = newName;

@@ -1,7 +1,7 @@
 package edu.mit.compilers.ast;
 
 import edu.mit.compilers.codegen.CodegenAstVisitor;
-import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
@@ -30,7 +30,7 @@ public class LocationArray extends Location implements HasExpression  {
         return visitor.visit(this, currentSymbolTable);
     }
 
-    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, LValue resultLocation) {
         return codegenAstVisitor.visit(this, resultLocation);
     }
 

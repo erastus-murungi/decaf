@@ -3,7 +3,7 @@ package edu.mit.compilers.dataflow.operand;
 import java.util.Objects;
 
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.ssa.Phi;
 
 public class PhiOperand extends Operand {
@@ -18,7 +18,7 @@ public class PhiOperand extends Operand {
     }
 
     @Override
-    public boolean contains(AbstractName comp) {
+    public boolean contains(Value comp) {
         return phi.getOperandNames()
                   .contains(comp);
     }

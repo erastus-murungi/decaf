@@ -38,7 +38,7 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
 
     private NOP preprocess(BasicBlock entryBlock) {
         NOP entry = new NOP(ENTRY_BLOCK_LABEL);
-        entry.autoChild = entryBlock;
+        entry.setSuccessor(entryBlock);
         correctPredecessors(entry);
         return entry;
     }
@@ -174,7 +174,7 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
 
     public Map<BasicBlock, Set<BasicBlock>> computeDominanceFrontier() {
         var dominanceFrontier = new HashMap<BasicBlock, Set<BasicBlock>>();
-        computeDominanceFrontier(entry.autoChild, dominanceFrontier);
+        computeDominanceFrontier(entry.getSuccessor(), dominanceFrontier);
         return dominanceFrontier;
     }
 
@@ -228,5 +228,26 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
         var order = new ArrayList<BasicBlock>();
         postOrder(entryBlock, new HashSet<>(), order);
         return order;
+    }
+
+    public List<BasicBlock> preorder() {
+        var Q = new ArrayDeque<BasicBlock>();
+        var visited = new HashSet<BasicBlock>();
+        var preorderList = new ArrayList<BasicBlock>();
+        Q.add(entry);
+        visited.add(entry);
+        while (!Q.isEmpty()) {
+            var v = Q.remove();
+            preorderList.add(v);
+            v.getSuccessors()
+             .forEach(successor -> {
+                         if (!visited.contains(successor)) {
+                             Q.add(successor);
+                             visited.add(successor);
+                         }
+                     }
+             );
+        }
+        return preorderList;
     }
 }

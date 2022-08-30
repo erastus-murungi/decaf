@@ -2,45 +2,42 @@ package edu.mit.compilers.dataflow.passes;
 
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.BasicBlockWithBranch;
 import edu.mit.compilers.codegen.InstructionList;
-import edu.mit.compilers.codegen.codes.ConditionalJump;
-import edu.mit.compilers.codegen.codes.Label;
+import edu.mit.compilers.codegen.codes.ConditionalBranch;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.Instruction;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.LValue;
 
 public class BranchSimplificationPass extends OptimizationPass {
     boolean noChanges = true;
 
-    public BranchSimplificationPass(Set<AbstractName> globalVariables, Method method) {
+    public BranchSimplificationPass(Set<LValue> globalVariables, Method method) {
         super(globalVariables, method);
     }
 
-    private boolean isTrue(ConditionalJump conditionalJump) {
-        return conditionalJump.condition.equals(InstructionSimplifyPass.mOne);
+    private boolean isTrue(ConditionalBranch conditionalBranch) {
+        return conditionalBranch.condition.equals(InstructionSimplifyPass.mOne);
     }
 
-    private boolean isFalse(ConditionalJump conditionalJump) {
-        return conditionalJump.condition.equals(InstructionSimplifyPass.mZero);
+    private boolean isFalse(ConditionalBranch conditionalBranch) {
+        return conditionalBranch.condition.equals(InstructionSimplifyPass.mZero);
     }
 
-    private Optional<ConditionalJump> getConditional(InstructionList instructionList) {
+    private Optional<ConditionalBranch> getConditional(InstructionList instructionList) {
         return instructionList
                 .stream()
-                .dropWhile(threeAddressCode -> !(threeAddressCode instanceof ConditionalJump))
-                .map(threeAddressCode -> (ConditionalJump) threeAddressCode)
+                .dropWhile(threeAddressCode -> !(threeAddressCode instanceof ConditionalBranch))
+                .map(threeAddressCode -> (ConditionalBranch) threeAddressCode)
                 .findFirst();
     }
 
     private Boolean getStateOfBlockCondition(BasicBlockWithBranch basicBlockWithBranch) {
-        Optional<ConditionalJump> conditionalJump = getConditional(basicBlockWithBranch.getInstructionList());
+        Optional<ConditionalBranch> conditionalJump = getConditional(basicBlockWithBranch.getInstructionList());
         if (conditionalJump.isPresent()) {
             if (isTrue(conditionalJump.get())) {
                 return true;
@@ -148,7 +145,7 @@ public class BranchSimplificationPass extends OptimizationPass {
 
 
     @Override
-    public boolean run() {
+    public boolean runFunctionPass() {
         removeUselessBranches();
         return noChanges;
     }

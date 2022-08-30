@@ -1,8 +1,8 @@
 package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.dataflow.operand.Operand;
 
@@ -24,22 +24,22 @@ public abstract class HasOperand extends Instruction {
 
     public abstract Operand getOperand();
 
-    public abstract List<AbstractName> getOperandNames();
+    public abstract List<Value> getOperandNames();
 
-    public abstract boolean replace(AbstractName oldName, AbstractName newName);
+    public abstract boolean replace(Value oldName, Value newName);
 
-    public List<AbstractName> getOperandNamesNoArray() {
+    public List<Value> getOperandNamesNoArray() {
         return getOperandNames()
                 .stream()
                 .filter(abstractName -> !(abstractName instanceof MemoryAddressName))
                 .collect(Collectors.toList());
     }
 
-    public List<AssignableName> getAssignables() {
+    public List<LValue> getLValues() {
         return getOperandNamesNoArray()
                 .stream()
-                .filter(abstractName -> (abstractName instanceof AssignableName))
-                .map(abstractName -> (AssignableName) abstractName)
+                .filter(abstractName -> (abstractName instanceof LValue))
+                .map(abstractName -> (LValue) abstractName)
                 .collect(Collectors.toList());
     }
 }

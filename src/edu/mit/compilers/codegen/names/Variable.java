@@ -2,8 +2,8 @@ package edu.mit.compilers.codegen.names;
 
 import edu.mit.compilers.ast.Type;
 
-public class VariableName extends AssignableName {
-    public VariableName(String label, Type type) {
+public class Variable extends LValue {
+    public Variable(String label, Type type) {
         super(label, type);
     }
 
@@ -13,8 +13,8 @@ public class VariableName extends AssignableName {
     }
 
     @Override
-    public VariableName copy() {
-        return new VariableName(label, type);
+    public Variable copy() {
+        return new Variable(label, type);
     }
 
     @Override

@@ -1,22 +1,28 @@
 package edu.mit.compilers.cfg;
 
-import edu.mit.compilers.symbolTable.SymbolTable;
-
 import java.util.Collections;
 import java.util.List;
 
 public class BasicBlockBranchLess extends BasicBlock {
-    public BasicBlock autoChild;
+    private BasicBlock successor;
 
-    public BasicBlockBranchLess(BasicBlock autoChild) {
-        this.autoChild = autoChild;
+    public BasicBlockBranchLess(BasicBlock successor) {
+        this.successor = successor;
+    }
+
+    public BasicBlock getSuccessor() {
+        return successor;
+    }
+
+    public void setSuccessor(BasicBlock successor) {
+        this.successor = successor;
     }
 
     @Override
     public List<BasicBlock> getSuccessors() {
-        if (autoChild == null)
+        if (successor == null)
             return Collections.emptyList();
-        return List.of(autoChild);
+        return List.of(successor);
     }
 
     public BasicBlockBranchLess() {

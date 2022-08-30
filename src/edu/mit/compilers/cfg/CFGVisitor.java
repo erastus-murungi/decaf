@@ -48,7 +48,7 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
     public BasicBlocksPair visit(FieldDeclaration fieldDeclaration, SymbolTable symbolTable) {
         // multiple fields can be declared in same line, handle/flatten later
         BasicBlockBranchLess fieldDecl = new BasicBlockBranchLess();
-        fieldDecl.lines.add(fieldDeclaration);
+        fieldDecl.getAstNodes().add(fieldDeclaration);
         return new BasicBlocksPair(fieldDecl, fieldDecl);
     }
 
@@ -56,16 +56,16 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
     public BasicBlocksPair visit(MethodDefinition methodDefinition, SymbolTable symbolTable) {
         BasicBlockBranchLess initial = new BasicBlockBranchLess();
         BasicBlocksPair curPair = new BasicBlocksPair(initial, new NOP());
-        initial.autoChild = curPair.endBlock;
-        ((BasicBlockBranchLess) curPair.startBlock).autoChild = curPair.endBlock;
+        initial.setSuccessor(curPair.endBlock);
+        ((BasicBlockBranchLess) curPair.startBlock).setSuccessor(curPair.endBlock);
         for (MethodDefinitionParameter param : methodDefinition.parameterList) {
             BasicBlocksPair placeholder = param.accept(this, symbolTable);
-            curPair.endBlock.autoChild = placeholder.startBlock;
+            curPair.endBlock.setSuccessor(placeholder.startBlock);
             placeholder.startBlock.addPredecessor(curPair.endBlock);
             curPair = placeholder;
         }
         BasicBlocksPair methodBody = methodDefinition.block.accept(this, symbolTable);
-        curPair.endBlock.autoChild = methodBody.startBlock;
+        curPair.endBlock.setSuccessor(methodBody.startBlock);
         methodBody.startBlock.addPredecessor(curPair.endBlock);
         return new BasicBlocksPair(initial, methodBody.endBlock);
     }
@@ -73,7 +73,7 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
     @Override
     public BasicBlocksPair visit(ImportDeclaration importDeclaration, SymbolTable symbolTable) {
         BasicBlockBranchLess import_ = new BasicBlockBranchLess();
-        import_.lines.add(importDeclaration);
+        import_.addAstNode(importDeclaration);
         return new BasicBlocksPair(import_, import_);
     }
 
@@ -83,17 +83,17 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
         // If false, end with NOP, also end of for_statement
         NOP falseBlock = new NOP("For Loop (false) " + forStatement.terminatingCondition.getSourceCode());
         NOP exit = new NOP("exit_for");
-        falseBlock.autoChild = exit;
+        falseBlock.setSuccessor(exit);
         exit.addPredecessor(falseBlock);
 
         // For the block, the child of that CFGBlock should be a block with the increment line
         BasicBlockBranchLess incrementBlock = new BasicBlockBranchLess();
-        incrementBlock.lines.add(forStatement.update);
+        incrementBlock.addAstNode(forStatement.update);
 
         // Evaluate the condition
         final Expression condition = rotateBinaryOpExpression(forStatement.terminatingCondition);
         BasicBlockWithBranch evaluateBlock = ShortCircuitProcessor.shortCircuit(new BasicBlockWithBranch(condition));
-        incrementBlock.autoChild = evaluateBlock;
+        incrementBlock.setSuccessor(evaluateBlock);
         evaluateBlock.addPredecessor(incrementBlock);
 
         // In for loops, continue should point to an incrementBlock
@@ -102,26 +102,27 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
         // If true, run the block.
         BasicBlocksPair truePair = forStatement.block.accept(this, symbolTable);
 
-        evaluateBlock.falseChild = falseBlock;
-        evaluateBlock.falseChild.addPredecessor(evaluateBlock);
+        evaluateBlock.setFalseTarget(falseBlock);
+        evaluateBlock.getFalseTarget()
+                     .addPredecessor(evaluateBlock);
 
-        evaluateBlock.trueChild = truePair.startBlock;
+        evaluateBlock.setTrueTarget(truePair.startBlock);
         truePair.startBlock.addPredecessor(evaluateBlock);
 
         if (truePair.endBlock != exitNOP) {
-            truePair.endBlock.autoChild = incrementBlock;
+            truePair.endBlock.setSuccessor(incrementBlock);
             incrementBlock.addPredecessor(truePair.endBlock);
         }
         // Initialize the condition variable
         BasicBlockBranchLess initializeBlock = new BasicBlockBranchLess();
-        initializeBlock.lines.add(forStatement.initialization);
+        initializeBlock.addAstNode(forStatement.initialization);
 
         // child of initialization block is evaluation
-        initializeBlock.autoChild = evaluateBlock;
+        initializeBlock.setSuccessor(evaluateBlock);
         evaluateBlock.addPredecessor(initializeBlock);
 
         // Child of that increment block should be the evaluation
-        incrementBlock.autoChild = evaluateBlock;
+        incrementBlock.setSuccessor(evaluateBlock);
         evaluateBlock.addPredecessor(incrementBlock);
 
         handleBreaksInLoops(falseBlock);
@@ -134,7 +135,7 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
         List<BasicBlockBranchLess> breakBlocks = loopToBreak.pop();
         if (!breakBlocks.isEmpty()) {
             for (BasicBlockBranchLess breakBlock: breakBlocks) {
-                breakBlock.autoChild = cfgBlock;
+                breakBlock.setSuccessor(cfgBlock);
                 toRemove.add(breakBlock);
                 cfgBlock.addPredecessor(breakBlock);
             }
@@ -164,7 +165,7 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
         // Evaluate the condition
         Expression test = rotateBinaryOpExpression(whileStatement.test);
         BasicBlockWithBranch conditionExpr = new BasicBlockWithBranch(test);
-        conditionExpr.falseChild = falseBlock;
+        conditionExpr.setFalseTarget(falseBlock);
         falseBlock.addPredecessor(conditionExpr);
 
         // In for loops, continue should point to the evaluation expression
@@ -173,10 +174,10 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
         // If true, run the block.
         BasicBlocksPair truePair = whileStatement.body.accept(this, symbolTable);
 
-        conditionExpr.trueChild = truePair.startBlock;
+        conditionExpr.setTrueTarget(truePair.startBlock);
         conditionExpr = ShortCircuitProcessor.shortCircuit(conditionExpr);
         if (truePair.endBlock != null) {
-            truePair.endBlock.autoChild = conditionExpr;
+            truePair.endBlock.setSuccessor(conditionExpr);
             conditionExpr.addPredecessor(truePair.endBlock);
         }
 
@@ -188,16 +189,16 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
     @Override
     public BasicBlocksPair visit(Program program, SymbolTable symbolTable) {
         BasicBlocksPair curPair = new BasicBlocksPair(initialGlobalBlock, new NOP("global NOP"));
-        initialGlobalBlock.autoChild = curPair.endBlock;
+        initialGlobalBlock.setSuccessor(curPair.endBlock);
         for (ImportDeclaration import_ : program.importDeclarationList) {
             BasicBlocksPair placeholder = import_.accept(this, symbolTable);
-            curPair.endBlock.autoChild = placeholder.startBlock;
+            curPair.endBlock.setSuccessor(placeholder.startBlock);
             placeholder.startBlock.addPredecessor(curPair.endBlock);
             curPair = placeholder;
         }
         for (FieldDeclaration field : program.fieldDeclarationList) {
             BasicBlocksPair placeholder = field.accept(this, symbolTable);
-            curPair.endBlock.autoChild = placeholder.startBlock;
+            curPair.endBlock.setSuccessor(placeholder.startBlock);
             placeholder.startBlock.addPredecessor(curPair.endBlock);
             curPair = placeholder;
         }
@@ -228,11 +229,11 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
         NOP initial = new NOP();
         NOP exit = new NOP();
         BasicBlocksPair curPair = new BasicBlocksPair(initial, new NOP());
-        initial.autoChild = curPair.endBlock;
+        initial.setSuccessor(curPair.endBlock);
 
         for (FieldDeclaration field : block.fieldDeclarationList) {
             BasicBlocksPair placeholder = field.accept(this, symbolTable);
-            curPair.endBlock.autoChild = placeholder.startBlock;
+            curPair.endBlock.setSuccessor(placeholder.startBlock);
             placeholder.startBlock.addPredecessor(curPair.endBlock);
             curPair = placeholder;
         }
@@ -242,10 +243,10 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
                 // will return a NOP() for sure because Continue blocks should be pointers back to the evaluation block
                 BasicBlockBranchLess continueCfg = new NOP();
                 BasicBlock nextBlock = continueBlocks.peek();
-                continueCfg.autoChild = nextBlock;
+                continueCfg.setSuccessor(nextBlock);
                 nextBlock.addPredecessor(continueCfg);
                 continueCfg.addPredecessor(curPair.endBlock);
-                curPair.endBlock.autoChild = continueCfg;
+                curPair.endBlock.setSuccessor(continueCfg);
                 return new BasicBlocksPair(initial, continueCfg);
             }
             if (statement instanceof Break) {
@@ -253,24 +254,24 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
                 BasicBlockBranchLess breakCfg = new NOP("Break");
                 loopToBreak.peek().add(breakCfg);
                 breakCfg.addPredecessor(curPair.endBlock);
-                curPair.endBlock.autoChild = breakCfg;
+                curPair.endBlock.setSuccessor(breakCfg);
                 return new BasicBlocksPair(initial, breakCfg, false);
             }
             if (statement instanceof Return) {
                 BasicBlocksPair returnPair = statement.accept(this, symbolTable);
-                curPair.endBlock.autoChild = returnPair.startBlock;
+                curPair.endBlock.setSuccessor(returnPair.startBlock);
                 returnPair.startBlock.addPredecessor(curPair.endBlock);
                 return new BasicBlocksPair(initial, returnPair.endBlock, false);
             }
             // recurse normally for other cases
             else {
                 BasicBlocksPair placeholder = statement.accept(this, symbolTable);
-                curPair.endBlock.autoChild = placeholder.startBlock;
+                curPair.endBlock.setSuccessor(placeholder.startBlock);
                 placeholder.startBlock.addPredecessor(curPair.endBlock);
                 curPair = placeholder;
             }
         }
-        curPair.endBlock.autoChild = exit;
+        curPair.endBlock.setSuccessor(exit);
         exit.addPredecessor(curPair.endBlock);
         return new BasicBlocksPair(initial, exit, false);
     }
@@ -299,9 +300,9 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
 
         // If true, run the block.
         BasicBlocksPair truePair = ifStatement.ifBlock.accept(this, symbolTable);
-        if (truePair.endBlock.autoChild == null) {
+        if (truePair.endBlock.getSuccessor() == null) {
             // handling the cases when we have a "Continue" statement
-            truePair.endBlock.autoChild = exit;
+            truePair.endBlock.setSuccessor(exit);
             exit.addPredecessor(truePair.endBlock);
         }
 
@@ -311,9 +312,9 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
         BasicBlockWithBranch conditionExpr;
         if (ifStatement.elseBlock != null) {
             BasicBlocksPair falsePair = ifStatement.elseBlock.accept(this, symbolTable);
-            if (falsePair.endBlock.autoChild == null) {
+            if (falsePair.endBlock.getSuccessor() == null) {
                 // handling the cases when we have a "Continue" statement
-                falsePair.endBlock.autoChild = exit;
+                falsePair.endBlock.setSuccessor(exit);
                 exit.addPredecessor(falsePair.endBlock);
             }
             conditionExpr = new BasicBlockWithBranch(condition, truePair.startBlock, falsePair.startBlock);
@@ -331,8 +332,8 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
     public BasicBlocksPair visit(Return returnStatement, SymbolTable symbolTable) {
         BasicBlockBranchLess returnBlock = new BasicBlockBranchLess();
         returnStatement.retExpression = rotateBinaryOpExpression(returnStatement.retExpression);
-        returnBlock.lines.add(returnStatement);
-        returnBlock.autoChild = exitNOP;
+        returnBlock.addAstNode(returnStatement);
+        returnBlock.setSuccessor(exitNOP);
         return new BasicBlocksPair(returnBlock, exitNOP);
     }
 
@@ -359,7 +360,7 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
                 methodCallStatement.methodCall.methodCallParameterList.set(i, param);
             }
         }
-        methodCallExpr.lines.add(methodCallStatement);
+        methodCallExpr.addAstNode(methodCallStatement);
         return new BasicBlocksPair(methodCallExpr, methodCallExpr);
     }
 
@@ -383,7 +384,7 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
             throw new IllegalStateException("unrecognized AST node " + locationAssignExpr.assignExpr);
         }
 
-        assignment.lines.add(new Assignment(locationAssignExpr.location, locationAssignExpr.assignExpr, op));
+        assignment.addAstNode(new Assignment(locationAssignExpr.location, locationAssignExpr.assignExpr, op));
         return new BasicBlocksPair(assignment, assignment);
     }
 
@@ -396,8 +397,8 @@ public class CFGVisitor implements Visitor<BasicBlocksPair> {
     @Override
     public BasicBlocksPair visit(MethodDefinitionParameter methodDefinitionParameter, SymbolTable symbolTable) {
         BasicBlockBranchLess methodParam = new BasicBlockBranchLess();
-        methodParam.autoChild = methodParam;
-        methodParam.lines.add(methodDefinitionParameter);
+        methodParam.setSuccessor(methodParam);
+        methodParam.addAstNode(methodDefinitionParameter);
         return new BasicBlocksPair(methodParam, methodParam);
     }
 

@@ -8,13 +8,14 @@ import java.util.Set;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
-import edu.mit.compilers.codegen.codes.Assign;
+import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.dataflow.analyses.AvailableExpressions;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.dominator.ImmediateDominator;
@@ -23,7 +24,7 @@ import edu.mit.compilers.dataflow.operand.Operand;
 public class CommonSubExpressionEliminationPass extends OptimizationPass {
     boolean changeHappened = false;
 
-    public CommonSubExpressionEliminationPass(Set<AbstractName> globalVariables, Method method) {
+    public CommonSubExpressionEliminationPass(Set<LValue> globalVariables, Method method) {
         super(globalVariables, method);
     }
 
@@ -41,13 +42,12 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
     private void performCSE(StoreInstruction storeInstruction,
                             Operand operand,
                             InstructionList instructionList,
-                            Set<AbstractName> globalVariables,
-                            HashMap<Operand, AbstractName> expressionToVariable,
+                            HashMap<Operand, Value> expressionToVariable,
                             HashMap<Instruction, Integer> instructionToPositionInInstructionList) {
 
         if (expressionToVariable.containsKey(operand)) {
             // this computation has been made before, so swap it with the variable that already stores the value
-            var replacer = Assign.ofRegularAssign(storeInstruction.getStore(), expressionToVariable.get(operand));
+            var replacer = CopyInstruction.noMetaData(storeInstruction.getStore(), expressionToVariable.get(operand));
             var indexOfOldCode = instructionToPositionInInstructionList.get(storeInstruction);
             /* we check if the oldCode is indeed present in the tac list.
                if it is not, this method throws an IllegalArgumentException
@@ -63,7 +63,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
     }
 
     private static void discardKilledExpressions(StoreInstruction storeInstruction,
-                                                 HashMap<Operand, AbstractName> expressionToVariable) {
+                                                 HashMap<Operand, Value> expressionToVariable) {
         // we iterate through a copy of the keys to prevent a ConcurrentCoModificationException
         for (Operand operand : new ArrayList<>(expressionToVariable.keySet())) {
             if (operand.contains(storeInstruction.getStore())) {
@@ -89,10 +89,10 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
         return tacToPositionInList;
     }
 
-    public void performLocalCSE(BasicBlock basicBlock, Set<AbstractName> globalVariables) {
+    public void performLocalCSE(BasicBlock basicBlock) {
         // this maps each expression to its variable, for instance "a + b" -> c
         // while "a" and "b" have not been re-assigned, all occurrences of "a + b" are replaced with c
-        final var expressionToVariable = new HashMap<Operand, AbstractName>();
+        final var expressionToVariable = new HashMap<Operand, Value>();
         // this maps each three address code to it's position in its corresponding TAC list
         // it is helpful when swapping out expressions with their replacements
         final var tacToPositionInList = getTacToPosMapping(basicBlock.getInstructionList());
@@ -104,7 +104,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
             if (storeInstruction instanceof BinaryInstruction || storeInstruction instanceof UnaryInstruction) {
                 storeInstruction.getOperandNoArray()
                                 .ifPresent(
-                             operand -> performCSE(storeInstruction, operand, tacList, globalVariables, expressionToVariable, tacToPositionInList));
+                             operand -> performCSE(storeInstruction, operand, tacList, expressionToVariable, tacToPositionInList));
             }
             // remove all expressions which have been killed by this assignment
             discardKilledExpressions(storeInstruction, expressionToVariable);
@@ -118,7 +118,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
 
         // we first perform local CSE for each basic block
         for (var basicBlock : basicBlocks)
-            performLocalCSE(basicBlock, globalVariables);
+            performLocalCSE(basicBlock);
 
         // we then get the available expressions for each basic block in the CFG
         var availableExpressionsIn = availableExpressions.in;
@@ -135,7 +135,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
                     if (storeInstruction instanceof UnaryInstruction || storeInstruction instanceof BinaryInstruction) {
                         if (availableExpression.isContainedIn(storeInstruction) && !isReassignedBeforeUse(basicBlock, availableExpression, storeInstruction)) {
                             final var expressionName = findExpressionAmongDominators(basicBlock, availableExpression, dom);
-                            final var assign = Assign.ofRegularAssign(storeInstruction.getStore(), expressionName);
+                            final var assign = CopyInstruction.noMetaData(storeInstruction.getStore(), expressionName);
                             swapOut(basicBlock.getInstructionList(), instructionToIndexMapping, storeInstruction, assign);
                             break;
                         }
@@ -173,9 +173,9 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
         return false;
     }
 
-    private static AbstractName findExpressionAmongDominators(BasicBlock B,
-                                                              Operand operand,
-                                                              ImmediateDominator dominatorTree) {
+    private static Value findExpressionAmongDominators(BasicBlock B,
+                                                       Operand operand,
+                                                       ImmediateDominator dominatorTree) {
         for (BasicBlock dominator : dominatorTree.getDominators(B)) {
             for (Instruction instruction : dominator.getInstructionList()) {
                 if (instruction instanceof BinaryInstruction || instruction instanceof UnaryInstruction) {
@@ -191,7 +191,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
     }
 
     @Override
-    public boolean run() {
+    public boolean runFunctionPass() {
         changeHappened = false;
         performGlobalCSE();
         return changeHappened;

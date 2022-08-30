@@ -2,8 +2,8 @@ package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.dataflow.operand.BinaryOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
@@ -19,12 +19,12 @@ import java.util.Optional;
  */
 
 public class BinaryInstruction extends StoreInstruction {
-    public AbstractName fstOperand;
+    public Value fstOperand;
     public String operator;
-    public AbstractName sndOperand;
+    public Value sndOperand;
 
 
-    public BinaryInstruction(AssignableName result, AbstractName fstOperand, String operator, AbstractName sndOperand, String comment, AST source) {
+    public BinaryInstruction(LValue result, Value fstOperand, String operator, Value sndOperand, String comment, AST source) {
         super(result, source, comment);
         this.fstOperand = fstOperand;
         this.operator = operator;
@@ -44,7 +44,7 @@ public class BinaryInstruction extends StoreInstruction {
     }
 
     @Override
-    public List<AbstractName> getAllNames() {
+    public List<Value> getAllNames() {
         return List.of(getStore(), fstOperand, sndOperand);
     }
 
@@ -67,7 +67,7 @@ public class BinaryInstruction extends StoreInstruction {
         return Optional.of(new BinaryOperand(this));
     }
 
-    public boolean replace(AbstractName oldVariable, AbstractName replacer) {
+    public boolean replace(Value oldVariable, Value replacer) {
         var replaced = false;
         if (fstOperand.equals(oldVariable)) {
             fstOperand = replacer;
@@ -86,7 +86,7 @@ public class BinaryInstruction extends StoreInstruction {
     }
 
     @Override
-    public List<AbstractName> getOperandNames() {
+    public List<Value> getOperandNames() {
         return List.of(fstOperand, sndOperand);
     }
 

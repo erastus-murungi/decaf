@@ -7,17 +7,20 @@ import java.util.Set;
 
 import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.dataflow.passes.BranchSimplificationPass;
 import edu.mit.compilers.dataflow.passes.CommonSubExpressionEliminationPass;
 import edu.mit.compilers.dataflow.passes.ConstantPropagationPass;
 import edu.mit.compilers.dataflow.passes.CopyPropagationPass;
-import edu.mit.compilers.dataflow.passes.DeadCodeEliminationPass;
 import edu.mit.compilers.dataflow.passes.DeadStoreEliminationPass;
 import edu.mit.compilers.dataflow.passes.FunctionInlinePass;
 import edu.mit.compilers.dataflow.passes.InstructionSimplifyPass;
 import edu.mit.compilers.dataflow.passes.OptimizationPass;
 import edu.mit.compilers.dataflow.passes.PeepHoleOptimizationPass;
+import edu.mit.compilers.dataflow.ssapasses.CommonSubExpressionEliminationSsaPass;
+import edu.mit.compilers.dataflow.ssapasses.CopyPropagationSsaPass;
+import edu.mit.compilers.dataflow.ssapasses.DeadStoreEliminationSsaPass;
+import edu.mit.compilers.dataflow.ssapasses.SccpSsaPass;
 import edu.mit.compilers.tools.CLI;
 import edu.mit.compilers.utils.Utils;
 
@@ -25,7 +28,7 @@ public class DataflowOptimizer {
     private static final int MAX_RUNS = 20;
 
     Integer numberOfRuns = MAX_RUNS;
-    Set<AbstractName> globalNames;
+    Set<LValue> globalNames;
     private final List<Method> allMethods;
     private List<Method> toOptimizeMethods;
     List<OptimizationPass> optimizationPassList = new ArrayList<>();
@@ -35,56 +38,70 @@ public class DataflowOptimizer {
     public enum OptimizationPassType {
         CommonSubExpression,
         CopyPropagation,
-        DeadCodeElimination,
         DeadStoreElimination,
         PeepHoleOptimization,
         ConstantPropagation,
         InstructionSimplification,
-        BranchSimplification
-    }
+        BranchSimplification,
+        CommonSubExpressionSsa,
+        CopyPropagationSsa,
+        DeadStoreEliminationSsa,
+        SccpSsa
+        }
 
     public class Factory {
         public List<OptimizationPass> getPass(OptimizationPassType optimizationPassType) {
             final var optimizationPassesList = new ArrayList<OptimizationPass>();
             switch (optimizationPassType) {
                 case CopyPropagation: {
-                    toOptimizeMethods.forEach(methodBegin ->
-                            optimizationPassesList.add(new CopyPropagationPass(globalNames, methodBegin)));
-                    break;
-                }
-                case DeadCodeElimination: {
-                    toOptimizeMethods.forEach(methodBegin ->
-                            optimizationPassesList.add(new DeadCodeEliminationPass(globalNames, methodBegin)));
+                    toOptimizeMethods.forEach(method ->
+                            optimizationPassesList.add(new CopyPropagationPass(globalNames, method)));
                     break;
                 }
                 case CommonSubExpression: {
-                    toOptimizeMethods.forEach(methodBegin ->
-                            optimizationPassesList.add(new CommonSubExpressionEliminationPass(globalNames, methodBegin)));
+                    toOptimizeMethods.forEach(method ->
+                            optimizationPassesList.add(new CommonSubExpressionEliminationPass(globalNames, method)));
                     break;
                 }
                 case DeadStoreElimination: {
-                    toOptimizeMethods.forEach(methodBegin ->
-                            optimizationPassesList.add(new DeadStoreEliminationPass(globalNames, methodBegin)));
+                    toOptimizeMethods.forEach(method ->
+                            optimizationPassesList.add(new DeadStoreEliminationPass(globalNames, method)));
                     break;
                 }
                 case PeepHoleOptimization: {
-                    toOptimizeMethods.forEach(methodBegin ->
-                            optimizationPassesList.add(new PeepHoleOptimizationPass(globalNames, methodBegin)));
+                    toOptimizeMethods.forEach(method ->
+                            optimizationPassesList.add(new PeepHoleOptimizationPass(globalNames, method)));
                     break;
                 }
                 case ConstantPropagation: {
-                    toOptimizeMethods.forEach(methodBegin ->
-                            optimizationPassesList.add(new ConstantPropagationPass(globalNames, methodBegin)));
+                    toOptimizeMethods.forEach(method ->
+                            optimizationPassesList.add(new ConstantPropagationPass(globalNames, method)));
                     break;
                 }
                 case InstructionSimplification: {
-                    toOptimizeMethods.forEach(methodBegin ->
-                            optimizationPassesList.add(new InstructionSimplifyPass(globalNames, methodBegin)));
+                    toOptimizeMethods.forEach(method ->
+                            optimizationPassesList.add(new InstructionSimplifyPass(globalNames, method)));
                     break;
                 }
                 case BranchSimplification: {
-                    toOptimizeMethods.forEach(methodBegin ->
-                            optimizationPassesList.add(new BranchSimplificationPass(globalNames, methodBegin)));
+                    toOptimizeMethods.forEach(method ->
+                            optimizationPassesList.add(new BranchSimplificationPass(globalNames, method)));
+                    break;
+                }
+                case CommonSubExpressionSsa: {
+                    toOptimizeMethods.forEach(method -> optimizationPassesList.add(new CommonSubExpressionEliminationSsaPass(globalNames, method)));
+                    break;
+                }
+                case CopyPropagationSsa: {
+                    toOptimizeMethods.forEach(method -> optimizationPassesList.add(new CopyPropagationSsaPass(globalNames, method)));
+                    break;
+                }
+                case DeadStoreEliminationSsa: {
+                    toOptimizeMethods.forEach(method -> optimizationPassesList.add(new DeadStoreEliminationSsaPass(globalNames, method)));
+                    break;
+                }
+                case SccpSsa: {
+                    toOptimizeMethods.forEach(method -> optimizationPassesList.add(new SccpSsaPass(globalNames, method)));
                     break;
                 }
                 default: {
@@ -101,15 +118,19 @@ public class DataflowOptimizer {
     }
 
     public void initialize() {
-        runInterProceduralPasses();
+//        runInterProceduralPasses();
 //        addPass(OptimizationPassType.CopyPropagation);
 //        addPass(OptimizationPassType.CommonSubExpression);
 //        addPass(OptimizationPassType.DeadCodeElimination);
-//        addPass(OptimizationPassType.PeepHoleOptimization);
+        addPass(OptimizationPassType.PeepHoleOptimization);
 //        addPass(OptimizationPassType.DeadStoreElimination);
 //        addPass(OptimizationPassType.ConstantPropagation);
 //        addPass(OptimizationPassType.InstructionSimplification);
         // addPass(OptimizationPassType.BranchSimplification);
+//        addPass(OptimizationPassType.CommonSubExpressionSsa);
+//        addPass(OptimizationPassType.CopyPropagationSsa);
+//        addPass(OptimizationPassType.DeadStoreEliminationSsa);
+//        addPass(OptimizationPassType.SccpSsa);
     }
 
     public List<Method> getOptimizedMethods() {
@@ -120,7 +141,7 @@ public class DataflowOptimizer {
         }
     }
 
-    public DataflowOptimizer(List<Method> allMethods, Set<AbstractName> globalNames, boolean[] cliOpts) {
+    public DataflowOptimizer(List<Method> allMethods, Set<LValue> globalNames, boolean[] cliOpts) {
         this.globalNames = globalNames;
         this.allMethods = allMethods;
         // ignore all methods with a runtime
@@ -142,7 +163,7 @@ public class DataflowOptimizer {
             for (var optimizationPass : optimizationPassList) {
                 if (!toOptimizeMethods.contains(optimizationPass.getMethod()))
                     continue;
-                var changesHappenedForOpt = optimizationPass.run();
+                var changesHappenedForOpt = optimizationPass.runFunctionPass();
                 changesHappened = changesHappened | changesHappenedForOpt;
                 if (CLI.debug) {
                     System.out.format("%s<%s> run = %s\n", optimizationPass.getClass()

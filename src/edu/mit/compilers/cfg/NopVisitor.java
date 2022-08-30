@@ -1,7 +1,5 @@
 package edu.mit.compilers.cfg;
 
-import edu.mit.compilers.symbolTable.SymbolTable;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -20,8 +18,8 @@ public class NopVisitor implements BasicBlockVisitor<Void> {
         if (!seen.contains(basicBlockBranchLess)) {
             seen.add(basicBlockBranchLess);
             // we assume this is the first instance of the
-            if (basicBlockBranchLess.autoChild != null) {
-                basicBlockBranchLess.autoChild.accept(this);
+            if (basicBlockBranchLess.getSuccessor() != null) {
+                basicBlockBranchLess.getSuccessor().accept(this);
             }
         }
         return null;
@@ -31,11 +29,13 @@ public class NopVisitor implements BasicBlockVisitor<Void> {
     public Void visit(BasicBlockWithBranch basicBlockWithBranch) {
         if (!seen.contains(basicBlockWithBranch)) {
             seen.add(basicBlockWithBranch);
-            if (basicBlockWithBranch.trueChild != null) {
-                basicBlockWithBranch.trueChild.accept(this);
+            if (basicBlockWithBranch.getTrueTarget() != null) {
+                basicBlockWithBranch.getTrueTarget()
+                                    .accept(this);
             }
-            if (basicBlockWithBranch.falseChild != null) {
-                basicBlockWithBranch.falseChild.accept(this);
+            if (basicBlockWithBranch.getFalseTarget() != null) {
+                basicBlockWithBranch.getFalseTarget()
+                                    .accept(this);
             }
         }
         return null;
@@ -48,12 +48,12 @@ public class NopVisitor implements BasicBlockVisitor<Void> {
             seen.add(nop);
             BasicBlock endBlock;
             if (nop == exit) {
-                nop.autoChild = null;
+                nop.setSuccessor(null);
                 return null;
             }
-            if (nop.autoChild != null) {
-                nop.autoChild.accept(this);
-                endBlock = nop.autoChild;
+            if (nop.getSuccessor() != null) {
+                nop.getSuccessor().accept(this);
+                endBlock = nop.getSuccessor();
             } else {
                 endBlock = exit;
             }
@@ -61,15 +61,15 @@ public class NopVisitor implements BasicBlockVisitor<Void> {
                 // connecting parents to child
                 if (parent instanceof BasicBlockWithBranch) {
                     BasicBlockWithBranch parentConditional = (BasicBlockWithBranch) parent;
-                    if (parentConditional.trueChild == nop) {
-                        parentConditional.trueChild = endBlock;
-                    } else if (parentConditional.falseChild == nop) {
-                        parentConditional.falseChild = endBlock;
+                    if (parentConditional.getTrueTarget() == nop) {
+                        parentConditional.setTrueTarget(endBlock);
+                    } else if (parentConditional.getFalseTarget() == nop) {
+                        parentConditional.setFalseTarget(endBlock);
                     }
                 } else {
                     BasicBlockBranchLess parentNonConditional = (BasicBlockBranchLess) parent;
-                    if (parentNonConditional.autoChild == nop) {
-                        parentNonConditional.autoChild = endBlock;
+                    if (parentNonConditional.getSuccessor() == nop) {
+                        parentNonConditional.setSuccessor(endBlock);
                     }
                 }
                 endBlock.removePredecessor(nop);

@@ -3,7 +3,7 @@ package edu.mit.compilers.codegen.codes;
 import java.util.Stack;
 
 import edu.mit.compilers.ast.MethodCall;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
 
 public interface FunctionCall {
     MethodCall getMethod();
@@ -24,6 +24,6 @@ public interface FunctionCall {
         return getMethod().getType().getSourceCode();
     }
 
-    public Stack<AbstractName> getArguments();
+    public Stack<Value> getArguments();
 }
 

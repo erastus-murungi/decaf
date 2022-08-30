@@ -1,7 +1,7 @@
 package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.exceptions.DecafException;
 
 import java.util.Collections;
@@ -25,7 +25,7 @@ public class RuntimeException extends Instruction {
     }
 
     @Override
-    public List<AbstractName> getAllNames() {
+    public List<Value> getAllNames() {
         return Collections.emptyList();
     }
 

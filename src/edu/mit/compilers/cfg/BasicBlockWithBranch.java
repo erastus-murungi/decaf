@@ -1,35 +1,53 @@
 package edu.mit.compilers.cfg;
 
 import edu.mit.compilers.ast.Expression;
-import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.List;
 
 public class BasicBlockWithBranch extends BasicBlock {
-    public BasicBlock trueChild;
-    public BasicBlock falseChild;
+    private BasicBlock trueTarget;
+    private BasicBlock falseTarget;
 
-    public Expression condition;
+    private final Expression branchCondition;
 
-    public BasicBlockWithBranch(Expression condition, BasicBlock trueChild, BasicBlock falseChild) {
-        this.trueChild = trueChild;
-        this.falseChild = falseChild;
-        this.condition = condition;
-        lines.add(this.condition);
+    public Expression getBranchCondition() {
+        return branchCondition;
+    }
+
+    public BasicBlockWithBranch(Expression branchCondition, BasicBlock trueTarget, BasicBlock falseTarget) {
+        this.setTrueTarget(trueTarget);
+        this.setFalseTarget(falseTarget);
+        this.branchCondition = branchCondition;
+        addAstNode(branchCondition);
     }
 
     public BasicBlockWithBranch(Expression condition) {
-        this.condition = condition;
-        lines.add(this.condition);
+        this(condition, null, null);
     }
 
     @Override
     public List<BasicBlock> getSuccessors() {
-        return List.of(trueChild, falseChild);
+        return List.of(getTrueTarget(), getFalseTarget());
     }
 
     @Override
     public <T> T accept(BasicBlockVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    public BasicBlock getTrueTarget() {
+        return trueTarget;
+    }
+
+    public void setTrueTarget(BasicBlock trueTarget) {
+        this.trueTarget = trueTarget;
+    }
+
+    public BasicBlock getFalseTarget() {
+        return falseTarget;
+    }
+
+    public void setFalseTarget(BasicBlock falseTarget) {
+        this.falseTarget = falseTarget;
     }
 }

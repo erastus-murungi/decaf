@@ -2,7 +2,7 @@ package edu.mit.compilers.ast;
 
 
 import edu.mit.compilers.codegen.CodegenAstVisitor;
-import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
@@ -47,7 +47,7 @@ public class ArithmeticOperator extends BinOperator {
         }
     }
 
-    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, LValue resultLocation) {
         return null;
     }
 }

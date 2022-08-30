@@ -4,10 +4,13 @@ import edu.mit.compilers.ast.*;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.Variable;
 import edu.mit.compilers.utils.Utils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Method extends Instruction {
     public final MethodDefinition methodDefinition;
@@ -18,6 +21,12 @@ public class Method extends Instruction {
      * This is the unoptimized threeAddressCodeList of a method
      */
     public InstructionList unoptimizedInstructionList;
+
+    private final List<LValue> parameterNames;
+
+    public List<LValue> getParameterNames() {
+        return parameterNames;
+    }
 
     /**
      * We use this for optimization
@@ -37,7 +46,8 @@ public class Method extends Instruction {
     }
 
     public boolean isMain() {
-        return methodDefinition.methodName.getLabel().equals("main");
+        return methodDefinition.methodName.getLabel()
+                                          .equals("main");
     }
 
     public String methodName() {
@@ -50,6 +60,9 @@ public class Method extends Instruction {
     public Method(MethodDefinition methodDefinition) {
         super(methodDefinition);
         this.methodDefinition = methodDefinition;
+        parameterNames =  methodDefinition.parameterList.stream()
+                                             .map(methodDefinitionParameter -> new Variable(methodDefinitionParameter.getName(), methodDefinitionParameter.getType()))
+                                             .collect(Collectors.toList());
     }
 
     @Override
@@ -63,7 +76,7 @@ public class Method extends Instruction {
     }
 
     @Override
-    public List<AbstractName> getAllNames() {
+    public List<Value> getAllNames() {
         return Collections.emptyList();
     }
 

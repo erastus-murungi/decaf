@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.NOP;
-import edu.mit.compilers.codegen.codes.ConditionalJump;
+import edu.mit.compilers.codegen.codes.ConditionalBranch;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.Method;
@@ -48,7 +48,7 @@ public class TraceScheduler {
         if (instruction instanceof UnconditionalJump) {
             return ((UnconditionalJump) instruction).goToLabel;
         } else {
-            return ((ConditionalJump) instruction).falseLabel;
+            return ((ConditionalBranch) instruction).falseLabel;
         }
     }
 

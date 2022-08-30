@@ -35,12 +35,12 @@ public class CFGGenerator {
 
         final List<BasicBlock> allExecutionPathsReturn = exitNop.getPredecessors()
                                                                 .stream()
-                                                                .filter(cfgBlock -> (!cfgBlock.lines.isEmpty() && (cfgBlock.lastASTLine() instanceof Return)))
+                                                                .filter(cfgBlock -> (!cfgBlock.getAstNodes().isEmpty() && (cfgBlock.lastASTLine() instanceof Return)))
                                                                 .collect(Collectors.toList());
 
         final List<BasicBlock> allExecutionsPathsThatDontReturn = exitNop.getPredecessors()
                                                                          .stream()
-                                                                         .filter(cfgBlock -> (cfgBlock.lines.isEmpty() || (!(cfgBlock.lastASTLine() instanceof Return))))
+                                                                         .filter(cfgBlock -> (cfgBlock.getAstNodes().isEmpty() || (!(cfgBlock.lastASTLine() instanceof Return))))
                                                                          .collect(Collectors.toList());
 
         if (allExecutionPathsReturn.size() != allExecutionsPathsThatDontReturn.size()) {
@@ -48,7 +48,7 @@ public class CFGGenerator {
                     .stream()
                     .map(cfgBlock -> new DecafException(methodDefinition.tokenPosition,
                             methodDefinition.methodName.getLabel() + "'s execution path ends with" +
-                            (cfgBlock.lines.isEmpty() ? "" : (cfgBlock
+                            (cfgBlock.getAstNodes().isEmpty() ? "" : (cfgBlock
                                     .lastASTLine()
                                     .getSourceCode())) + " instead of a return statement"))
                     .collect(Collectors.toList()));
@@ -70,7 +70,7 @@ public class CFGGenerator {
 
         visitor.methodCFGBlocks.forEach((k, v) -> {
             nopVisitor.exit = visitor.methodToExitNOP.get(k);
-            ((BasicBlockBranchLess) v).autoChild.accept(nopVisitor);
+            ((BasicBlockBranchLess) v).getSuccessor().accept(nopVisitor);
         });
 
         visitor.methodCFGBlocks.forEach((k, v) -> {
@@ -80,22 +80,22 @@ public class CFGGenerator {
                     .getDescriptorFromValidScopes(k)
                     .orElseThrow());
         });
-        nopVisitor.exit = (NOP) visitor.initialGlobalBlock.autoChild;
+        nopVisitor.exit = (NOP) visitor.initialGlobalBlock.getSuccessor();
         visitor.initialGlobalBlock.accept(nopVisitor);
         HashMap<String, BasicBlock> methodBlocksCFG = new HashMap<>();
         visitor.methodCFGBlocks.forEach((k, v) -> {
             if (v
                     .getLinesOfCodeString()
                     .isBlank()) {
-                if (((BasicBlockBranchLess) v).autoChild != null) {
-                    ((BasicBlockBranchLess) v).autoChild.removePredecessor(v);
-                    v = ((BasicBlockBranchLess) v).autoChild;
+                if (((BasicBlockBranchLess) v).getSuccessor() != null) {
+                    ((BasicBlockBranchLess) v).getSuccessor().removePredecessor(v);
+                    v = ((BasicBlockBranchLess) v).getSuccessor();
                 }
             }
             methodBlocksCFG.put(k, v);
         });
         visitor.methodCFGBlocks = methodBlocksCFG;
-        maximalVisitor.exitNOP = (NOP) visitor.initialGlobalBlock.autoChild;
+        maximalVisitor.exitNOP = (NOP) visitor.initialGlobalBlock.getSuccessor();
         visitor.initialGlobalBlock.accept(maximalVisitor);
         BranchFoldingPass.run(methodBlocksCFG.values());
         return visitor;
@@ -117,10 +117,10 @@ public class CFGGenerator {
                 System.out.println();
             }
             if (block instanceof BasicBlockWithBranch) {
-                toVisit.add(((BasicBlockWithBranch) block).falseChild);
-                toVisit.add(((BasicBlockWithBranch) block).trueChild);
+                toVisit.add(((BasicBlockWithBranch) block).getFalseTarget());
+                toVisit.add(((BasicBlockWithBranch) block).getTrueTarget());
             } else {
-                toVisit.add(((BasicBlockBranchLess) block).autoChild);
+                toVisit.add(((BasicBlockBranchLess) block).getSuccessor());
             }
         }
     }
@@ -138,8 +138,8 @@ public class CFGGenerator {
             System.out.println(Utils.coloredPrint(block.getLinesOfCodeString(), Utils.ANSIColorConstants.ANSI_BLUE) + "  <<<<   ");
 
             if (block instanceof BasicBlockWithBranch) {
-                BasicBlock falseChild = ((BasicBlockWithBranch) block).falseChild;
-                BasicBlock trueChild = ((BasicBlockWithBranch) block).trueChild;
+                BasicBlock falseChild = ((BasicBlockWithBranch) block).getFalseTarget();
+                BasicBlock trueChild = ((BasicBlockWithBranch) block).getTrueTarget();
                 toVisit.add(falseChild);
                 toVisit.add(trueChild);
                 if (trueChild != null) {
@@ -154,7 +154,7 @@ public class CFGGenerator {
                 System.out.println();
 
             } else {
-                BasicBlock autoChild = ((BasicBlockBranchLess) block).autoChild;
+                BasicBlock autoChild = ((BasicBlockBranchLess) block).getSuccessor();
                 toVisit.add(autoChild);
                 if (autoChild != null) {
                     System.out.print("A ---- ");

@@ -11,21 +11,21 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.PhiOperand;
 
 public class Phi extends StoreInstruction {
-    private final Map<BasicBlock, AssignableName> basicBlockToAssignableNameMapping;
+    private final Map<BasicBlock, Value> basicBlockToAssignableNameMapping;
 
-    public Phi(AssignableName v, Map<BasicBlock, AssignableName> xs) {
+    public Phi(LValue v, Map<BasicBlock, Value> xs) {
         super(v, null);
         assert xs.size() > 2;
         basicBlockToAssignableNameMapping = xs;
     }
 
-    public AssignableName getVariableForB(BasicBlock B) {
+    public Value getVariableForB(BasicBlock B) {
         return basicBlockToAssignableNameMapping.get(B);
     }
 
@@ -35,13 +35,21 @@ public class Phi extends StoreInstruction {
     }
 
     @Override
-    public List<AbstractName> getOperandNames() {
+    public List<Value> getOperandNames() {
         return new ArrayList<>(basicBlockToAssignableNameMapping.values());
     }
 
     @Override
-    public boolean replace(AbstractName oldName, AbstractName newName) {
-        return false;
+    public boolean replace(Value oldName, Value newName) {
+        var replaced = false;
+        for (BasicBlock basicBlock: basicBlockToAssignableNameMapping.keySet()) {
+            var abstractName = basicBlockToAssignableNameMapping.get(basicBlock);
+            if (abstractName.equals(oldName)) {
+                basicBlockToAssignableNameMapping.put(basicBlock, newName);
+                replaced = true;
+            }
+        }
+        return replaced;
     }
 
     @Override
@@ -50,7 +58,7 @@ public class Phi extends StoreInstruction {
     }
 
     @Override
-    public List<AbstractName> getAllNames() {
+    public List<Value> getAllNames() {
         var allNames = getOperandNames();
         allNames.add(getStore());
         return allNames;
@@ -73,7 +81,7 @@ public class Phi extends StoreInstruction {
 
     @Override
     public String toString() {
-        String rhs = basicBlockToAssignableNameMapping.values().stream().map(AssignableName::repr).collect(Collectors.joining(", "));
+        String rhs = basicBlockToAssignableNameMapping.values().stream().map(Value::repr).collect(Collectors.joining(", "));
         return String.format("%s%s: %s = phi (%s)", DOUBLE_INDENT, getStore().repr(), getStore().getType().getColoredSourceCode(), rhs);
     }
 

@@ -2,18 +2,18 @@ package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 import edu.mit.compilers.utils.Utils;
 
 import java.util.List;
 
-public class ConditionalJump extends HasOperand {
-    public AbstractName condition;
+public class ConditionalBranch extends HasOperand {
+    public Value condition;
     public final Label falseLabel;
 
-    public ConditionalJump(AST source, AbstractName condition, Label falseLabel, String comment) {
+    public ConditionalBranch(AST source, Value condition, Label falseLabel, String comment) {
         super(source, comment);
         this.condition = condition;
         this.falseLabel = falseLabel;
@@ -30,7 +30,7 @@ public class ConditionalJump extends HasOperand {
     }
 
     @Override
-    public List<AbstractName> getAllNames() {
+    public List<Value> getAllNames() {
         return List.of(condition);
     }
 
@@ -45,7 +45,7 @@ public class ConditionalJump extends HasOperand {
 
     @Override
     public Instruction copy() {
-        return new ConditionalJump(source, condition, falseLabel, getComment().orElse(null));
+        return new ConditionalBranch(source, condition, falseLabel, getComment().orElse(null));
     }
 
     @Override
@@ -54,11 +54,11 @@ public class ConditionalJump extends HasOperand {
     }
 
     @Override
-    public List<AbstractName> getOperandNames() {
+    public List<Value> getOperandNames() {
         return List.of(condition);
     }
 
-    public boolean replace(AbstractName oldVariable, AbstractName replacer) {
+    public boolean replace(Value oldVariable, Value replacer) {
         var replaced = false;
         if (condition.equals(oldVariable)) {
             condition = replacer;

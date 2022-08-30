@@ -65,15 +65,17 @@ public class ShortCircuitProcessor {
     }
 
     private static BasicBlockWithBranch shortCircuitImpl(BasicBlockWithBranch basicBlockWithBranch) {
-        final Expression expression = simplify(basicBlockWithBranch.condition);
+        final Expression expression = simplify(basicBlockWithBranch.getBranchCondition());
 
         if (expression instanceof BinaryOpExpression) {
             BinaryOpExpression conditional = (BinaryOpExpression) expression;
             if (conditional.op instanceof ConditionalOperator) {
                 ConditionalOperator operator = (ConditionalOperator) conditional.op;
 
-                basicBlockWithBranch.falseChild.removePredecessor(basicBlockWithBranch);
-                basicBlockWithBranch.trueChild.removePredecessor(basicBlockWithBranch);
+                basicBlockWithBranch.getFalseTarget()
+                                    .removePredecessor(basicBlockWithBranch);
+                basicBlockWithBranch.getTrueTarget()
+                                    .removePredecessor(basicBlockWithBranch);
 
                 final Expression c1 = rotateBinaryOpExpression(conditional.lhs);
                 final Expression c2 = rotateBinaryOpExpression(conditional.rhs);
@@ -81,23 +83,31 @@ public class ShortCircuitProcessor {
                 BasicBlockWithBranch b1, b2;
 
                 if (operator.label.equals(CONDITIONAL_AND)) {
-                    b2 = shortCircuitImpl(new BasicBlockWithBranch(c2, basicBlockWithBranch.trueChild, basicBlockWithBranch.falseChild));
-                    b1 = shortCircuitImpl(new BasicBlockWithBranch(c1, b2, basicBlockWithBranch.falseChild));
+                    b2 = shortCircuitImpl(new BasicBlockWithBranch(c2, basicBlockWithBranch.getTrueTarget(), basicBlockWithBranch.getFalseTarget()));
+                    b1 = shortCircuitImpl(new BasicBlockWithBranch(c1, b2, basicBlockWithBranch.getFalseTarget()));
                 } else {
-                    b2 = shortCircuitImpl(new BasicBlockWithBranch(c2, basicBlockWithBranch.trueChild, basicBlockWithBranch.falseChild));
-                    b1 = shortCircuitImpl(new BasicBlockWithBranch(c1, basicBlockWithBranch.trueChild, b2));
+                    b2 = shortCircuitImpl(new BasicBlockWithBranch(c2, basicBlockWithBranch.getTrueTarget(), basicBlockWithBranch.getFalseTarget()));
+                    b1 = shortCircuitImpl(new BasicBlockWithBranch(c1, basicBlockWithBranch.getTrueTarget(), b2));
                 }
 
                 // TODO: improve the parent pointer logic here by removing checks
-                if (basicBlockWithBranch.trueChild.doesNotContainPredecessor(b1) && b1.trueChild == basicBlockWithBranch.trueChild)
-                    basicBlockWithBranch.trueChild.addPredecessor(b1);
-                if (basicBlockWithBranch.falseChild.doesNotContainPredecessor(b1) && b1.falseChild == basicBlockWithBranch.falseChild)
-                    basicBlockWithBranch.falseChild.addPredecessor(b1);
-                if (basicBlockWithBranch.trueChild.doesNotContainPredecessor(b2) && b2.trueChild == basicBlockWithBranch.trueChild)
-                    basicBlockWithBranch.trueChild.addPredecessor(b2);
-                if (basicBlockWithBranch.falseChild.doesNotContainPredecessor(b2) && b2.falseChild == basicBlockWithBranch.falseChild)
-                    basicBlockWithBranch.falseChild.addPredecessor(b2);
-                if (b2.doesNotContainPredecessor(b1) && (b1.falseChild == b2 || b1.trueChild == b2))
+                if (basicBlockWithBranch.getTrueTarget()
+                                        .doesNotContainPredecessor(b1) && b1.getTrueTarget() == basicBlockWithBranch.getTrueTarget())
+                    basicBlockWithBranch.getTrueTarget()
+                                        .addPredecessor(b1);
+                if (basicBlockWithBranch.getFalseTarget()
+                                        .doesNotContainPredecessor(b1) && b1.getFalseTarget() == basicBlockWithBranch.getFalseTarget())
+                    basicBlockWithBranch.getFalseTarget()
+                                        .addPredecessor(b1);
+                if (basicBlockWithBranch.getTrueTarget()
+                                        .doesNotContainPredecessor(b2) && b2.getTrueTarget() == basicBlockWithBranch.getTrueTarget())
+                    basicBlockWithBranch.getTrueTarget()
+                                        .addPredecessor(b2);
+                if (basicBlockWithBranch.getFalseTarget()
+                                        .doesNotContainPredecessor(b2) && b2.getFalseTarget() == basicBlockWithBranch.getFalseTarget())
+                    basicBlockWithBranch.getFalseTarget()
+                                        .addPredecessor(b2);
+                if (b2.doesNotContainPredecessor(b1) && (b1.getFalseTarget() == b2 || b1.getTrueTarget() == b2))
                     b2.addPredecessor(b1);
                 return b1;
             }

@@ -1,11 +1,11 @@
 package edu.mit.compilers.registerallocation;
 
 import edu.mit.compilers.codegen.InstructionList;
-import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.LValue;
 
 public class LiveInterval {
     private InstructionList instructionList;
-    AssignableName variable;
+    LValue variable;
     int startPoint;
     int endPoint;
     String methodName;
@@ -14,7 +14,7 @@ public class LiveInterval {
         return instructionList;
     }
 
-    public LiveInterval(AssignableName variable, int startPoint, int endPoint, InstructionList instructionList, String methodName) {
+    public LiveInterval(LValue variable, int startPoint, int endPoint, InstructionList instructionList, String methodName) {
         this.variable = variable;
         this.startPoint = startPoint;
         this.endPoint = endPoint;

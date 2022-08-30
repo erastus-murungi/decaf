@@ -2,8 +2,9 @@ package edu.mit.compilers.codegen.names;
 
 import edu.mit.compilers.ast.Type;
 
-public abstract class AbstractName {
+public abstract class Value {
     protected Type type;
+
     protected String label;
 
     public Type getType() {
@@ -14,7 +15,7 @@ public abstract class AbstractName {
         return label;
     }
 
-    public AbstractName(Type type, String label) {
+    public Value(Type type, String label) {
         this.type = type;
         this.label = label;
     }
@@ -25,11 +26,13 @@ public abstract class AbstractName {
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        AbstractName that = (AbstractName) o;
+        Value that = (Value) o;
         return toString().equals(that.toString());
     }
 
-    public abstract <T extends AbstractName> T copy();
+    public abstract <T extends Value> T copy();
+
+    public abstract void renameForSsa(int versionNumber);
 
     public abstract String repr();
 

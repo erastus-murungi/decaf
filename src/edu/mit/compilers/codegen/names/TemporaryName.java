@@ -3,7 +3,7 @@ package edu.mit.compilers.codegen.names;
 import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
 
-public class TemporaryName extends AssignableName {
+public class TemporaryName extends LValue {
     public TemporaryName(long index, Type type) {
         super(String.format("%%%d", index), type);
     }

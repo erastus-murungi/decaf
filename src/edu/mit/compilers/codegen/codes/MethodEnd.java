@@ -2,7 +2,7 @@ package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.MethodDefinition;
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,7 +30,7 @@ public class MethodEnd extends Instruction {
     }
 
     @Override
-    public List<AbstractName> getAllNames() {
+    public List<Value> getAllNames() {
         return Collections.emptyList();
     }
 

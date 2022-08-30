@@ -3,6 +3,7 @@ package edu.mit.compilers.cfg;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
+import edu.mit.compilers.codegen.codes.AllocateInstruction;
 import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
@@ -18,6 +19,24 @@ public abstract class BasicBlock {
     // to be set by a visitor
     private InstructionList instructionList;
 
+    private final ArrayList<AST> astNodes;
+
+    public ArrayList<AST> getAstNodes() {
+        return astNodes;
+    }
+
+    public void addAstNode(AST astNode) {
+        astNodes.add(astNode);
+    }
+
+    public void addAstNodes(Collection<AST> astNodes) {
+        this.astNodes.addAll(astNodes);
+    }
+
+    public void removeAstNodes(Collection<AST> astNodes) {
+        this.astNodes.removeAll(astNodes);
+    }
+
     public InstructionList getInstructionList() {
         return instructionList;
     }
@@ -25,8 +44,6 @@ public abstract class BasicBlock {
     public void setInstructionList(InstructionList instructionList) {
         this.instructionList = instructionList;
     }
-
-    public ArrayList<AST> lines;
 
     private Label label;
 
@@ -42,7 +59,7 @@ public abstract class BasicBlock {
     }
 
     public String getLeader() {
-        return lines.isEmpty() ? "None" : lines.get(0).getSourceCode();
+        return astNodes.isEmpty() ? "None" : astNodes.get(0).getSourceCode();
     }
 
     public void addPredecessor(BasicBlock predecessor) {
@@ -76,12 +93,12 @@ public abstract class BasicBlock {
     public abstract List<BasicBlock> getSuccessors();
 
     public AST lastASTLine() {
-        return lines.get(lines.size() - 1);
+        return astNodes.get(astNodes.size() - 1);
     }
 
     public BasicBlock() {
         predecessors = new ArrayList<>();
-        lines = new ArrayList<>();
+        astNodes = new ArrayList<>();
         instructionList = new InstructionList();
         setLabel(new Label(TemporaryNameIndexGenerator.getNextLabel()));
     }
@@ -89,12 +106,12 @@ public abstract class BasicBlock {
     public abstract <T> T accept(BasicBlockVisitor<T> visitor);
 
     public String getLinesOfCodeString() {
-        if (lines.isEmpty()) {
+        if (astNodes.isEmpty()) {
             if (!instructionList.isEmpty()) {
                 return instructionList.get(0).repr();
             }
         }
-        return lines
+        return astNodes
                 .stream()
                 .map(AST::getSourceCode)
                 .collect(Collectors.joining("\n"));
@@ -116,10 +133,23 @@ public abstract class BasicBlock {
                 .collect(Collectors.toList());
     }
 
+    public List<AllocateInstruction> getAllocations() {
+        return instructionList.stream()
+                              .filter(tac -> tac instanceof AllocateInstruction)
+                              .map(tac -> (AllocateInstruction) tac)
+                              .collect(Collectors.toList());
+    }
+
     public List<Phi> getPhiFunctions() {
         return instructionList.stream()
                               .filter(tac -> tac instanceof Phi)
                               .map(tac -> (Phi) tac)
+                              .collect(Collectors.toList());
+    }
+
+    public List<Instruction> getNonPhiInstructions() {
+        return instructionList.stream()
+                              .filter(tac -> !(tac instanceof Phi))
                               .collect(Collectors.toList());
     }
 
@@ -130,5 +160,9 @@ public abstract class BasicBlock {
      */
     public List<Instruction> getCopyOfInstructionList() {
         return new ArrayList<>(instructionList);
+    }
+
+    public boolean phiPresent() {
+        return instructionList.stream().anyMatch(instruction -> instruction instanceof Phi);
     }
 }

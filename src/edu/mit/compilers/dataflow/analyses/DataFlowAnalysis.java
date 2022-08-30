@@ -31,7 +31,7 @@ public abstract class DataFlowAnalysis<Value> {
 
     private void attachEntryNode(BasicBlock basicBlock) {
         entryBlock = new NOP("Entry");
-        entryBlock.autoChild = basicBlock;
+        entryBlock.setSuccessor(basicBlock);
         basicBlock.addPredecessor(entryBlock);
     }
 

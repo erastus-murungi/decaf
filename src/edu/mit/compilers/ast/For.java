@@ -1,15 +1,13 @@
 package edu.mit.compilers.ast;
 
 import edu.mit.compilers.codegen.CodegenAstVisitor;
-import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symbolTable.SymbolTable; 
 import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.Utils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_FOR;
@@ -79,7 +77,7 @@ public class For extends Statement implements HasExpression  {
             terminatingCondition = newExpr;
     }
 
-    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation) {
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, LValue resultLocation) {
         return null;
     }
 }

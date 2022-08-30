@@ -41,7 +41,7 @@ public class BranchFoldingPass {
                 var commonInstructions = getCommonInstructions(basicBlock.getPredecessors());
                 if (commonInstructions.isPresent()) {
                     var common = new BasicBlockBranchLess();
-                    common.lines.addAll(commonInstructions.get());
+                    common.addAstNodes(commonInstructions.get());
                     realignPointers(basicBlock.getPredecessors(), common, basicBlock);
                 }
             }
@@ -53,25 +53,25 @@ public class BranchFoldingPass {
         assert haveSameSuccessor(basicBlocks);
         for (BasicBlock basicBlock : basicBlocks) {
             // remove the instructions
-            basicBlock.lines.removeAll(common.lines);
-            ((BasicBlockBranchLess) basicBlock).autoChild = common;
+            basicBlock.removeAstNodes(common.getAstNodes());
+            ((BasicBlockBranchLess) basicBlock).setSuccessor(common);
             common.addPredecessor(basicBlock);
         }
         successor.clearPredecessors();
         common.clearPredecessors();
         successor.addPredecessor(common);
-        common.autoChild = successor;
+        common.setSuccessor(successor);
     }
 
 
     private static Optional<List<AST>> getCommonInstructions(List<BasicBlock> basicBlocks) {
         List<AST> commonTailInstructions = new ArrayList<>();
         var minSize = basicBlocks.stream()
-                .map(basicBlock -> basicBlock.lines.size())
+                .map(basicBlock -> basicBlock.getAstNodes().size())
                 .mapToInt(Integer::intValue)
                 .min();
         var collected = basicBlocks.stream()
-                .map(basicBlock -> new ArrayList<>(basicBlock.lines))
+                .map(basicBlock -> new ArrayList<>(basicBlock.getAstNodes()))
                 .collect(Collectors.toUnmodifiableList());
         collected.forEach(Collections::reverse);
 

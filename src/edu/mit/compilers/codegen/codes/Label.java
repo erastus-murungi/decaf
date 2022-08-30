@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
 
 public class Label extends Instruction {
     private final Integer labelIndex;
@@ -13,13 +13,13 @@ public class Label extends Instruction {
 
     public String getLabel() {
         if (this.label == null)
-            return "label " + labelIndex;
+            return "L" + labelIndex;
         return label;
     }
 
     public String getLabelForAsm() {
         if (this.label == null)
-            return "LBB" + labelIndex;
+            return "L" + labelIndex;
         return label;
     }
 
@@ -49,7 +49,7 @@ public class Label extends Instruction {
     }
 
     @Override
-    public List<AbstractName> getAllNames() {
+    public List<Value> getAllNames() {
         return Collections.emptyList();
     }
 

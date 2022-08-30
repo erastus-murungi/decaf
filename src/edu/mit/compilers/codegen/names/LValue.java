@@ -4,8 +4,8 @@ import java.util.Objects;
 
 import edu.mit.compilers.ast.Type;
 
-public abstract class AssignableName extends AbstractName {
-    public AssignableName(String label, Type type) {
+public abstract class LValue extends Value {
+    public LValue(String label, Type type) {
         super(type, label);
     }
 
@@ -14,7 +14,7 @@ public abstract class AssignableName extends AbstractName {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-        AssignableName that = (AssignableName) o;
+        LValue that = (LValue) o;
         return Objects.equals(getLabel(), that.getLabel());
     }
 

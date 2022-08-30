@@ -7,9 +7,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class InstructionList extends ArrayList<Instruction> {
-    public AbstractName place;
+    public Value place;
 
-    public InstructionList(AbstractName place, List<Instruction> codes) {
+    public InstructionList(Value place, List<Instruction> codes) {
         this.place = place;
         addAll(codes);
     }
@@ -18,7 +18,7 @@ public class InstructionList extends ArrayList<Instruction> {
         this(null, instructions);
     }
 
-    public InstructionList(AbstractName place) {
+    public InstructionList(Value place) {
         this(place, Collections.emptyList());
     }
 
@@ -51,7 +51,7 @@ public class InstructionList extends ArrayList<Instruction> {
         return instructionList;
     }
 
-    public static InstructionList of(Instruction instruction, AssignableName place) {
+    public static InstructionList of(Instruction instruction, LValue place) {
         var instructionList = new InstructionList(place);
         instructionList.add(instruction);
         return instructionList;

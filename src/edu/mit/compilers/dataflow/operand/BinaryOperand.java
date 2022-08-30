@@ -2,13 +2,13 @@ package edu.mit.compilers.dataflow.operand;
 
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
 
 
 public class BinaryOperand extends Operand {
-    public final AbstractName fstOperand;
+    public final Value fstOperand;
     public final String operator;
-    public final AbstractName sndOperand;
+    public final Value sndOperand;
 
     public BinaryOperand(BinaryInstruction binaryInstruction) {
         this.fstOperand = binaryInstruction.fstOperand;
@@ -17,7 +17,7 @@ public class BinaryOperand extends Operand {
     }
 
     @Override
-    public boolean contains(AbstractName name) {
+    public boolean contains(Value name) {
         return this.fstOperand.equals(name) || this.sndOperand.equals(name);
     }
 

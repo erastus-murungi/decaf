@@ -2,10 +2,9 @@ package edu.mit.compilers.dataflow.analyses;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.HasOperand;
-import edu.mit.compilers.codegen.codes.PopParameter;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.dataflow.usedef.Def;
@@ -20,7 +19,7 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
         super(basicBlock);
     }
 
-    public Set<AbstractName> liveOut(BasicBlock basicBlock) {
+    public Set<Value> liveOut(BasicBlock basicBlock) {
         // the set of variables actually needed later in the program
         return out
                 .get(basicBlock)
@@ -29,7 +28,7 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
                 .collect(Collectors.toSet());
     }
 
-    public Set<AbstractName> liveIn(BasicBlock basicBlock) {
+    public Set<Value> liveIn(BasicBlock basicBlock) {
         return in
                 .get(basicBlock)
                 .stream()
@@ -92,7 +91,7 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
         for (Instruction tac : tacReversed) {
             if (tac instanceof HasOperand) {
                 var hasOperand = (HasOperand) tac;
-                hasOperand.getAssignables()
+                hasOperand.getLValues()
                         .forEach(abstractName -> useSet.add(new Use(abstractName, tac)));
             }
         }
@@ -104,9 +103,6 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
         final var tacReversed = basicBlock.getCopyOfInstructionList();
         Collections.reverse(tacReversed);
         for (Instruction tac : tacReversed) {
-            if (tac instanceof PopParameter) {
-                defSet.add(new Def((PopParameter) tac));
-            }
             if (tac instanceof StoreInstruction) {
                 var hasResult = (StoreInstruction) tac;
                 if (!(hasResult.getStore() instanceof MemoryAddressName)) {
@@ -121,7 +117,7 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
     @Override
     public Set<UseDef> meet(BasicBlock basicBlock) {
         var outSet = new HashSet<UseDef>();
-        for (BasicBlock successor : basicBlock.getSuccessors()) {
+        for (var successor : basicBlock.getSuccessors()) {
             outSet.addAll(in(successor));
         }
         return outSet;

@@ -5,7 +5,9 @@ import edu.mit.compilers.codegen.codes.RuntimeException;
 
 public interface InstructionVisitor<ReturnType, ExtraInfoType> {
 
-    ReturnType visit(ConditionalJump jumpIfFalse, ExtraInfoType extraInfo);
+    ReturnType visit(AllocateInstruction allocateInstruction, ExtraInfoType extraInfo);
+
+    ReturnType visit(ConditionalBranch jumpIfFalse, ExtraInfoType extraInfo);
 
     ReturnType visit(Label label, ExtraInfoType extraInfo);
 
@@ -17,13 +19,9 @@ public interface InstructionVisitor<ReturnType, ExtraInfoType> {
 
     ReturnType visit(MethodEnd methodEnd, ExtraInfoType extraInfo);
 
-    ReturnType visit(MethodReturn methodReturn, ExtraInfoType extraInfo);
+    ReturnType visit(ReturnInstruction returnInstruction, ExtraInfoType extraInfo);
 
     ReturnType visit(UnaryInstruction oneOperandAssign, ExtraInfoType extraInfo);
-
-    ReturnType visit(PopParameter popParameter, ExtraInfoType extraInfo);
-
-    ReturnType visit(PushArgument pushArgument, ExtraInfoType extraInfo);
 
     ReturnType visit(StringLiteralAllocation stringLiteralAllocation, ExtraInfoType extraInfo);
 
@@ -37,7 +35,7 @@ public interface InstructionVisitor<ReturnType, ExtraInfoType> {
 
     ReturnType visit(RuntimeException runtimeException, ExtraInfoType extraInfo);
 
-    ReturnType visit(Assign assignment, ExtraInfoType extraInfo);
+    ReturnType visit(CopyInstruction assignment, ExtraInfoType extraInfo);
 
     ReturnType visit(GetAddress getAddress, ExtraInfoType extraInfo);
 

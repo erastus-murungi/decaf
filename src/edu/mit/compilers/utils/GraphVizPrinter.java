@@ -469,7 +469,7 @@ public class GraphVizPrinter {
             BasicBlock cfgBlock = stack.pop();
             if (cfgBlock instanceof NOP) {
                 nodes.add(String.format("   %s [shape=record, style=filled, fillcolor=gray, label=%s];", cfgBlock.hashCode(), "\"<from_node>" + escape(labelFunction.apply(cfgBlock)) + "\""));
-                BasicBlock autoChild = ((NOP) cfgBlock).autoChild;
+                BasicBlock autoChild = ((NOP) cfgBlock).getSuccessor();
                 if (autoChild != null) {
                     edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_node", autoChild.hashCode()+ ":from_node"));
                     if (!seen.contains(autoChild)) {
@@ -480,7 +480,7 @@ public class GraphVizPrinter {
             }
             else if (cfgBlock instanceof BasicBlockBranchLess) {
                 nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"<from_node>" + escape(labelFunction.apply(cfgBlock)) + "\""));
-                BasicBlock autoChild = ((BasicBlockBranchLess) cfgBlock).autoChild;
+                BasicBlock autoChild = ((BasicBlockBranchLess) cfgBlock).getSuccessor();
                 if (autoChild != null) {
                     edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_node", autoChild.hashCode() + ":from_node"));
                     if (!seen.contains(autoChild)) {
@@ -490,8 +490,8 @@ public class GraphVizPrinter {
                 }
             } else if (cfgBlock instanceof BasicBlockWithBranch) {
                 nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"{<from_node>" + escape(labelFunction.apply(cfgBlock)) + "|{<from_true> T|<from_false>F}" + "}\""));
-                BasicBlock falseChild = ((BasicBlockWithBranch) cfgBlock).falseChild;
-                BasicBlock trueChild = ((BasicBlockWithBranch) cfgBlock).trueChild;
+                BasicBlock falseChild = ((BasicBlockWithBranch) cfgBlock).getFalseTarget();
+                BasicBlock trueChild = ((BasicBlockWithBranch) cfgBlock).getTrueTarget();
                 if (falseChild != null) {
                     if ((!seen.contains(falseChild))) {
                         stack.push(falseChild);

@@ -10,18 +10,19 @@ import java.util.Stack;
 import java.util.stream.Collectors;
 
 import edu.mit.compilers.cfg.BasicBlock;
+import edu.mit.compilers.codegen.codes.AllocateInstruction;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.AbstractName;
-import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
 import edu.mit.compilers.dataflow.dominator.ImmediateDominator;
 
 public class SSATransform {
     List<BasicBlock> basicBlocks;
-    Set<AssignableName> allVariables;
+    Set<LValue> allVariables;
     ImmediateDominator immediateDominator;
 
     private void computeDominanceFrontiers(BasicBlock entryBlock) {
@@ -49,13 +50,13 @@ public class SSATransform {
                                                             .stream())
                            .flatMap(instruction -> instruction.getAllNames()
                                                               .stream())
-                           .filter(abstractName -> abstractName instanceof AssignableName)
-                           .map(abstractName -> (AssignableName) abstractName)
+                           .filter(abstractName -> abstractName instanceof LValue)
+                           .map(abstractName -> (LValue) abstractName)
                            .collect(Collectors.toUnmodifiableSet())
         );
     }
 
-    private Set<BasicBlock> getBasicBlocksModifyingVariable(AssignableName V) {
+    private Set<BasicBlock> getBasicBlocksModifyingVariable(LValue V) {
         return basicBlocks.stream()
                           .filter(basicBlock -> basicBlock.getStores()
                                                           .stream()
@@ -64,19 +65,19 @@ public class SSATransform {
                           .collect(Collectors.toUnmodifiableSet());
     }
 
-    private Set<AssignableName> getStoreLocations(BasicBlock X) {
+    private Set<LValue> getStoreLocations(BasicBlock X) {
         return X.getStores()
                 .stream()
                 .map(StoreInstruction::getStore)
-                .map(AssignableName::copy)
-                .map(name -> (AssignableName) name)
+                .map(LValue::copy)
+                .map(name -> (LValue) name)
                 .collect(Collectors.toUnmodifiableSet());
     }
 
-    private void initialize(Map<AssignableName, Stack<Integer>> stacks, Map<AssignableName, Integer> counters) {
+    private void initialize(Map<LValue, Stack<Integer>> stacks, Map<LValue, Integer> counters) {
         allVariables.stream()
-                    .map(AbstractName::copy)
-                    .map(name -> (AssignableName) name)
+                    .map(Value::copy)
+                    .map(name -> (LValue) name)
                     .forEach(
                             a -> {
                                 counters.put(a, 0);
@@ -86,15 +87,16 @@ public class SSATransform {
                             });
     }
 
-    private void genName(AssignableName V, Map<AssignableName, Integer> counters, Map<AssignableName, Stack<Integer>> stacks) {
+    private void genName(LValue V, Map<LValue, Integer> counters, Map<LValue, Stack<Integer>> stacks) {
         var i = counters.get(V);
-        stacks.get(V)
-              .push(i);
-        counters.put(V, i + 1);
+        var copyV = (LValue) V.copy();
         V.renameForSsa(i);
+        stacks.get(copyV)
+              .push(i);
+        counters.put(copyV, i + 1);
     }
 
-    private void rename(BasicBlock X, Map<AssignableName, Integer> counters, Map<AssignableName, Stack<Integer>> stacks) {
+    private void rename(BasicBlock X, Map<LValue, Integer> counters, Map<LValue, Stack<Integer>> stacks) {
         // rename all phi nodes
         final var stores = getStoreLocations(X);
 
@@ -106,7 +108,7 @@ public class SSATransform {
             if (instruction instanceof Phi)
                 continue;
             if (instruction instanceof HasOperand) {
-                var Vs = ((HasOperand) instruction).getAssignables();
+                var Vs = ((HasOperand) instruction).getLValues();
                 for (var V : Vs) {
                     V.renameForSsa(stacks.get(V)
                                          .peek());
@@ -165,7 +167,7 @@ public class SSATransform {
                                                     .filter(basicBlocksModifyingV::contains)
                                                     .count();
                             if (nCopiesOfV > 1) {
-                                var blockToVariable = new HashMap<BasicBlock, AssignableName>();
+                                var blockToVariable = new HashMap<BasicBlock, Value>();
                                 for (var P : Y.getPredecessors()) {
                                     blockToVariable.put(P, V.copy());
                                 }
@@ -185,14 +187,14 @@ public class SSATransform {
     }
 
     private void transform(BasicBlock entryBlock) {
-        var stacks = new HashMap<AssignableName, Stack<Integer>>();
-        var counters = new HashMap<AssignableName, Integer>();
+        var stacks = new HashMap<LValue, Stack<Integer>>();
+        var counters = new HashMap<LValue, Integer>();
         initialize(stacks, counters);
         rename(entryBlock, counters, stacks);
     }
 
     private void verify() {
-        var seen = new HashSet<AssignableName>();
+        var seen = new HashSet<LValue>();
         for (var B : basicBlocks) {
             for (var store : B.getStores()) {
                 if (seen.contains(store.getStore())) {
@@ -221,8 +223,8 @@ public class SSATransform {
          .stream()
          .flatMap(instruction -> instruction.getAllNames()
                                             .stream())
-         .filter(abstractName -> abstractName instanceof AssignableName)
-         .map(abstractName -> (AssignableName) abstractName)
-         .forEach(AssignableName::unRenameForSsa);
+         .filter(abstractName -> abstractName instanceof LValue)
+         .map(abstractName -> (LValue) abstractName)
+         .forEach(LValue::unRenameForSsa);
     }
 }

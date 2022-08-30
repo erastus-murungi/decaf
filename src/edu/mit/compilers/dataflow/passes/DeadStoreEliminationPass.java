@@ -15,7 +15,8 @@ import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
 import edu.mit.compilers.codegen.codes.Instruction;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.ConstantName;
 import edu.mit.compilers.codegen.names.MemoryAddressName;
 import edu.mit.compilers.codegen.names.StringConstantName;
@@ -27,7 +28,7 @@ import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
  */
 
 public class DeadStoreEliminationPass extends OptimizationPass {
-    public DeadStoreEliminationPass(Set<AbstractName> globalVariables, Method method) {
+    public DeadStoreEliminationPass(Set<LValue> globalVariables, Method method) {
         super(globalVariables, method);
     }
 
@@ -35,11 +36,11 @@ public class DeadStoreEliminationPass extends OptimizationPass {
      * Returns true is a name is a constant (value cannot be changed)
      * For instance a, %1, *b[1] return false while `const 1` and @.string_0 return true
      *
-     * @param abstractName the name to check
+     * @param value the name to check
      * @return true is abstractName is a constant
      */
-    private boolean isConstant(AbstractName abstractName) {
-        return abstractName instanceof ConstantName || abstractName instanceof StringConstantName;
+    private boolean isConstant(Value value) {
+        return value instanceof ConstantName || value instanceof StringConstantName;
     }
 
     /**
@@ -61,7 +62,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
      * @param basicBlockLiveOut set of names which are live going out of this block
      */
 
-    private void backwardRun(BasicBlock basicBlock, Set<AbstractName> basicBlockLiveOut) {
+    private void backwardRun(BasicBlock basicBlock, Set<Value> basicBlockLiveOut) {
         // we will be iterating backward
         var copyOfInstructionList = basicBlock.getCopyOfInstructionList();
         Collections.reverse(copyOfInstructionList);
@@ -71,7 +72,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
         final var instructionListToUpdate = basicBlock.getInstructionList();
         instructionListToUpdate.clear();
 
-        final var namesUsedSoFar = new HashSet<AbstractName>();
+        final var namesUsedSoFar = new HashSet<Value>();
         // we iterate in reverse
         for (var possibleStoreInstruction : copyOfInstructionList) {
             // always ignore assignments like a = a, a[i] = a[i]
@@ -126,7 +127,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                               .anyMatch(instruction -> instruction instanceof FunctionCall);
     }
 
-    private void forwardRun(BasicBlock basicBlock, Set<AbstractName> basicBlockLiveOut) {
+    private void forwardRun(BasicBlock basicBlock, Set<Value> basicBlockLiveOut) {
         var copyOfInstructionList = new ArrayList<>(basicBlock.getInstructionList());
         Collections.reverse(copyOfInstructionList);
         final var instructionListToUpdate = basicBlock.getInstructionList();
@@ -190,7 +191,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                                                              int indexOfStoreInstructionInBlock) {
         // this set stores all the names used in the right hands sides of instructions starting from
         // blockInstructionList[`indexOfStoreInstructionInBlock`] henceforth
-        var usedNames = new HashSet<AbstractName>();
+        var usedNames = new HashSet<Value>();
 
         // Because blockInstructionList[indexOfStoreInstructionInBlock] == storeInstruction = `some operand`
         // we start our check from indexOfStoreInstructionInBlock + 1
@@ -281,7 +282,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
     }
 
     @Override
-    public boolean run() {
+    public boolean runFunctionPass() {
         final var oldCodes = entryBlock.getCopyOfInstructionList();
         performDeadStoreElimination();
         return !oldCodes.equals(entryBlock.getInstructionList());

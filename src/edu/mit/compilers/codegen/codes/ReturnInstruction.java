@@ -2,33 +2,35 @@ package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
+import edu.mit.compilers.utils.Utils;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public class MethodReturn extends HasOperand {
-    private AbstractName returnAddress;
+public class ReturnInstruction extends HasOperand {
+    private Value returnAddress;
 
-    public MethodReturn(AST source) {
+    public ReturnInstruction(AST source) {
         super(source);
     }
 
-    public MethodReturn(AST source, AbstractName returnAddress) {
+    public ReturnInstruction(AST source, Value returnAddress) {
         super(source);
         this.returnAddress = returnAddress;
     }
 
-    public Optional<AbstractName> getReturnAddress() {
+    public Optional<Value> getReturnAddress() {
         return Optional.ofNullable(returnAddress);
     }
 
     @Override
     public String toString() {
-        return String.format("%s%s %s", DOUBLE_INDENT, "return", getReturnAddress().isEmpty() ? " " : getReturnAddress().get().repr());
+        final var returnString = Utils.coloredPrint("return", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
+        return String.format("%s%s %s", DOUBLE_INDENT, returnString, getReturnAddress().isEmpty() ? " " : getReturnAddress().get().repr());
     }
 
     @Override
@@ -37,7 +39,7 @@ public class MethodReturn extends HasOperand {
     }
 
     @Override
-    public List<AbstractName> getAllNames() {
+    public List<Value> getAllNames() {
         if (returnAddress == null)
             return Collections.emptyList();
         return List.of(returnAddress);
@@ -50,7 +52,7 @@ public class MethodReturn extends HasOperand {
 
     @Override
     public Instruction copy() {
-        return new MethodReturn(source, returnAddress);
+        return new ReturnInstruction(source, returnAddress);
     }
 
     @Override
@@ -59,14 +61,14 @@ public class MethodReturn extends HasOperand {
     }
 
     @Override
-    public List<AbstractName> getOperandNames() {
+    public List<Value> getOperandNames() {
         if (returnAddress == null)
             return Collections.emptyList();
         return List.of(returnAddress);
     }
 
     @Override
-    public boolean replace(AbstractName oldName, AbstractName newName) {
+    public boolean replace(Value oldName, Value newName) {
         if (oldName.equals(returnAddress)) {
             returnAddress = newName;
             return true;

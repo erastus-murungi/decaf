@@ -1,7 +1,7 @@
 package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.utils.Utils;
 
 import java.util.Collections;
@@ -30,14 +30,14 @@ public class UnconditionalJump extends Instruction {
     }
 
     @Override
-    public List<AbstractName> getAllNames() {
+    public List<Value> getAllNames() {
         return Collections.emptyList();
     }
 
     @Override
     public String repr() {
-//        var goTo =  Utils.coloredPrint("goto", Utils.ANSIColorConstants.ANSI_PURPLE_BOLD);
-        var goTo =  "goto";
+        var goTo =  Utils.coloredPrint("goto", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
+//        var goTo =  "goto";
         if (goToLabel == null)
             System.out.println("stop");
         return String.format("%s%s %s", DOUBLE_INDENT, goTo, goToLabel.getLabel());

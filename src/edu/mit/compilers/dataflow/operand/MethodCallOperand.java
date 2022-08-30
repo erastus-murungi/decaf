@@ -2,7 +2,7 @@ package edu.mit.compilers.dataflow.operand;
 
 import edu.mit.compilers.codegen.codes.FunctionCall;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
 
 import java.util.Objects;
 
@@ -14,7 +14,7 @@ public class MethodCallOperand extends Operand {
     }
 
     @Override
-    public boolean contains(AbstractName comp) {
+    public boolean contains(Value comp) {
         return false;
     }
 

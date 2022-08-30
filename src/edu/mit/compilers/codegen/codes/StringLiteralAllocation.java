@@ -2,7 +2,7 @@ package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.utils.Utils;
 
 import java.util.Collections;
@@ -34,7 +34,7 @@ public class StringLiteralAllocation extends Instruction {
     }
 
     @Override
-    public List<AbstractName> getAllNames() {
+    public List<Value> getAllNames() {
         return Collections.emptyList();
     }
 

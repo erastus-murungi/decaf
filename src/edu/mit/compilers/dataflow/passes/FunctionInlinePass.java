@@ -11,19 +11,17 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
-import edu.mit.compilers.codegen.codes.Assign;
+import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.FunctionCall;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
 import edu.mit.compilers.codegen.codes.MethodEnd;
-import edu.mit.compilers.codegen.codes.MethodReturn;
-import edu.mit.compilers.codegen.codes.PopParameter;
-import edu.mit.compilers.codegen.codes.PushArgument;
+import edu.mit.compilers.codegen.codes.ReturnInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.UnconditionalJump;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 
 
@@ -46,19 +44,12 @@ public class FunctionInlinePass {
         return newMethodList;
     }
 
-    private Map<AbstractName, AbstractName> mapParametersToArguments(InstructionList functionTacList,
-                                                                     List<AbstractName> arguments) {
-        int indexOfCode = 1;
-        int functionTacListSize = functionTacList.size();
-        var map = new HashMap<AbstractName, AbstractName>();
-        var parameters = new ArrayList<AbstractName>();
-        while (indexOfCode < functionTacListSize && functionTacList.get(indexOfCode) instanceof PopParameter) {
-            parameters.add(((PopParameter) functionTacList.get(indexOfCode)).parameterName);
-            indexOfCode++;
-
-        }
-        functionTacListSize = parameters.size();
-        for (indexOfCode = 0; indexOfCode < functionTacListSize; indexOfCode++) {
+    private Map<Value, Value> mapParametersToArguments(InstructionList functionTacList,
+                                                       List<Value> arguments) {
+        var method = (Method) functionTacList.get(0);
+        var map = new HashMap<Value, Value>();
+        var parameters = method.getParameterNames();
+        for (int indexOfCode = 0; indexOfCode < parameters.size(); indexOfCode++) {
             map.put(parameters.get(indexOfCode), arguments.get(indexOfCode));
         }
         return map;
@@ -80,16 +71,9 @@ public class FunctionInlinePass {
         return callSites;
     }
 
-    private List<AbstractName> findArgumentNames(InstructionList instructionList, int indexOfFunctionCall) {
+    private List<Value> findArgumentNames(InstructionList instructionList, int indexOfFunctionCall) {
         assert instructionList.get(indexOfFunctionCall) instanceof FunctionCall;
-        var arguments = new ArrayList<AbstractName>();
-        int indexOfPushParameter = indexOfFunctionCall - 1;
-        while (indexOfPushParameter >= 0 && instructionList.get(indexOfPushParameter) instanceof PushArgument) {
-            PushArgument pushArgument = (PushArgument) instructionList.get(indexOfPushParameter);
-            arguments.add(pushArgument.parameterName);
-            indexOfPushParameter--;
-        }
-        return arguments;
+        return ((FunctionCall) instructionList.get(indexOfFunctionCall)).getArguments();
     }
 
     private void inlineMethodBegin(Method method) {
@@ -101,14 +85,14 @@ public class FunctionInlinePass {
         }
     }
 
-    private List<Instruction> findReplacementBody(List<AbstractName> arguments,
+    private List<Instruction> findReplacementBody(List<Value> arguments,
                                                   InstructionList functionBody) {
         // replace all instances of arguments with
         // find my actual parameter names
         List<Instruction> newTacList = new ArrayList<>();
-        Map<AbstractName, AbstractName> paramToArg = mapParametersToArguments(functionBody, arguments);
+        Map<Value, Value> paramToArg = mapParametersToArguments(functionBody, arguments);
         for (var tac : functionBody) {
-            if (tac instanceof PopParameter || tac instanceof MethodEnd || tac instanceof Label || tac instanceof UnconditionalJump || tac instanceof Method)
+            if (tac instanceof MethodEnd || tac instanceof Label || tac instanceof UnconditionalJump || tac instanceof Method)
                 continue;
             if (tac instanceof HasOperand) {
                 tac = tac.copy();
@@ -149,18 +133,16 @@ public class FunctionInlinePass {
 
             if (targetTacList.get(indexOfCallSite) instanceof FunctionCallWithResult) {
 
-                assert replacement.get(0) instanceof MethodReturn;
-                var methodReturn = (MethodReturn) replacement.get(0);
+                assert replacement.get(0) instanceof ReturnInstruction;
+                var methodReturn = (ReturnInstruction) replacement.get(0);
                 var methodCallSetResult = (FunctionCallWithResult) targetTacList.get(indexOfCallSite);
-                newTacList.add(Assign.ofRegularAssign(methodCallSetResult.getStore(), methodReturn.getReturnAddress()
-                        .orElseThrow()));
+                newTacList.add(CopyInstruction.noMetaData(methodCallSetResult.getStore(), methodReturn.getReturnAddress()
+                                                                                                      .orElseThrow()));
 
                 replacement.remove(0);
             }
             newTacList.addAll(replacement);
             last = indexOfCallSite - 1;
-            while (last >= 0 && targetTacList.get(last) instanceof PushArgument)
-                last--;
             indexOfReplacementBody--;
         }
         var subTacList = targetTacList

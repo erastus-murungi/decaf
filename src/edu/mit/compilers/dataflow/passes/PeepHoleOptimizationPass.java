@@ -8,16 +8,16 @@ import java.util.stream.Collectors;
 
 import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
-import edu.mit.compilers.codegen.codes.ConditionalJump;
+import edu.mit.compilers.codegen.codes.ConditionalBranch;
 import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.UnconditionalJump;
-import edu.mit.compilers.codegen.names.AbstractName;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.ConstantName;
 
 public class PeepHoleOptimizationPass extends OptimizationPass {
-    public PeepHoleOptimizationPass(Set<AbstractName> globalVariables, Method method) {
+    public PeepHoleOptimizationPass(Set<LValue> globalVariables, Method method) {
         super(globalVariables, method);
     }
 
@@ -54,8 +54,8 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
     private Set<Label> findAllLabelsJumpedTo() {
         var allLabelsJumpedTo = new HashSet<Label>();
         for (Instruction instruction : TraceScheduler.flattenIr(method))
-            if (instruction instanceof ConditionalJump) {
-                allLabelsJumpedTo.add(((ConditionalJump) instruction).falseLabel);
+            if (instruction instanceof ConditionalBranch) {
+                allLabelsJumpedTo.add(((ConditionalBranch) instruction).falseLabel);
             } else if (instruction instanceof UnconditionalJump) {
                 allLabelsJumpedTo.add(((UnconditionalJump) instruction).goToLabel);
             }
@@ -117,7 +117,7 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
 
 
     @Override
-    public boolean run() {
+    public boolean runFunctionPass() {
         final var oldCodes = entryBlock.getCopyOfInstructionList();
         eliminateRedundantJumps();
         eliminateUnUsedJumps();

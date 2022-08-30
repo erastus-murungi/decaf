@@ -5,7 +5,7 @@ import edu.mit.compilers.codegen.codes.StringLiteralAllocation;
 
 import java.util.Objects;
 
-public class StringConstantName extends AbstractName {
+public class StringConstantName extends Value {
     StringLiteralAllocation stringConstant;
 
     public StringConstantName(StringLiteralAllocation stringConstant) {
@@ -15,7 +15,7 @@ public class StringConstantName extends AbstractName {
 
     @Override
     public String toString() {
-        return "$" + stringConstant.label;
+        return stringConstant.label;
     }
 
     @Override
@@ -28,7 +28,7 @@ public class StringConstantName extends AbstractName {
     }
 
     @Override
-    public AbstractName copy() {
+    public Value copy() {
         return new StringConstantName((StringLiteralAllocation) stringConstant.copy());
     }
 
@@ -40,5 +40,10 @@ public class StringConstantName extends AbstractName {
     @Override
     public int hashCode() {
         return Objects.hash(stringConstant.stringConstant);
+    }
+
+    @Override
+    public void renameForSsa(int versionNumber) {
+        throw new IllegalStateException();
     }
 }

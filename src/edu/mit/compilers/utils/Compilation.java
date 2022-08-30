@@ -3,9 +3,11 @@ package edu.mit.compilers.utils;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.Locale;
 
 import edu.mit.compilers.asm.X64CodeConverter;
 import edu.mit.compilers.asm.X64Program;
@@ -26,6 +28,7 @@ import edu.mit.compilers.ssa.SSATransform;
 import edu.mit.compilers.tools.CLI;
 
 public class Compilation {
+    private final static String osName = System.getProperty("os.name").replaceAll("\\s", "").toLowerCase(Locale.ROOT);
     private String sourceCode;
     private DecafScanner scanner;
     private DecafParser parser;
@@ -98,18 +101,56 @@ public class Compilation {
                 generateAssembly();
                 break;
             }
+            case ASSEMBLED: {
+                compileAssembly();
+            }
         }
+    }
+
+    private void compileAssembly() {
+        assert compilationState == CompilationState.ASSEMBLED;
+        if (osName.equals("macosx")) {
+            try {
+                Process process = Runtime.getRuntime().exec("clang " + CLI.outfile + " -mllvm --x86-asm-syntax=att -o main");
+                process.waitFor();
+                System.out.println(Utils.getStringFromInputStream(process.getErrorStream()));
+                System.out.println(Utils.getStringFromInputStream(process.getInputStream()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            try {
+                Process process = Runtime.getRuntime().exec("./main");
+                process.waitFor();
+                System.out.println(Utils.getStringFromInputStream(process.getErrorStream()));
+                System.out.println(Utils.getStringFromInputStream(process.getInputStream()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            throw new IllegalStateException("only darwin platform is supported not : " + osName);
+        }
+        compilationState = CompilationState.COMPLETED;
     }
 
     public void run() throws FileNotFoundException {
         runScanner();
-        while (compilationState != CompilationState.COMPLETED && compilationState != CompilationState.ASSEMBLED) {
+        while (compilationState != CompilationState.COMPLETED) {
             runNextStep();
         }
     }
 
-    public Compilation(String sourceCode, boolean debug) throws FileNotFoundException {
-        this.sourceCode = sourceCode;
+    public Compilation(String filenameOrSourceCode, boolean debug, boolean isFilename) throws FileNotFoundException {
+        if (isFilename) {
+            CLI.outfile = filenameOrSourceCode;
+            specificTestFileInitialize(new FileInputStream(filenameOrSourceCode));
+        }
+        else {
+            this.sourceCode = filenameOrSourceCode;
+        }
         initialize();
         CLI.debug = debug;
         CLI.target = CLI.Action.ASSEMBLY;
@@ -133,6 +174,10 @@ public class Compilation {
         specificTestFileInitialize(inputStream);
         initialize();
         CLI.debug = debug;
+    }
+
+    public Compilation(String filename, boolean debug) throws FileNotFoundException {
+        this(filename, debug, false);
     }
 
     public Compilation(InputStream inputStream) throws FileNotFoundException {
@@ -252,9 +297,9 @@ public class Compilation {
 
     private void generateSsa() {
         assert compilationState == CompilationState.IR_GENERATED;
-        SSATransform ssaTransform;
-        for (Method method : programIr.methodList)
-            ssaTransform = new SSATransform(method.entryBlock);
+//        SSATransform ssaTransform;
+//        for (Method method : programIr.methodList)
+//            ssaTransform = new SSATransform(method.entryBlock);
         compilationState = CompilationState.SSA_GENERATED;
     }
 
@@ -300,6 +345,7 @@ public class Compilation {
 //            nLinesRemovedByAssemblyOptimizer = peepHoleOptimizationAsmPass.getNumInstructionsRemoved();
         }
         outputStream.println(x64program);
+        System.out.println(x64program);
         compilationState = CompilationState.ASSEMBLED;
     }
 

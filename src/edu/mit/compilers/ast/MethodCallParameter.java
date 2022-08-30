@@ -2,10 +2,10 @@ package edu.mit.compilers.ast;
 
 
 import edu.mit.compilers.codegen.CodegenAstVisitor;
-import edu.mit.compilers.codegen.names.AssignableName;
+import edu.mit.compilers.codegen.names.LValue;
 
 public abstract class MethodCallParameter extends AST {
     public Type type;
 
-    public abstract <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, AssignableName resultLocation);
+    public abstract <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, LValue resultLocation);
 }
