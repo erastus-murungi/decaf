@@ -249,7 +249,7 @@ public class RegisterAllocation {
     private int findFirstDefinition(InstructionList instructionList, Value variable) {
         int indexOfInstruction = 0;
         for (Instruction instruction : instructionList) {
-            if (instruction.getAllNames().contains(variable))
+            if (instruction.getAllValues().contains(variable))
                 break;
             indexOfInstruction++;
         }
@@ -315,7 +315,7 @@ public class RegisterAllocation {
                                                             Map<Value, X64Register> nameToRegister) {
         for (int i = 0; i < instructionList.size(); i++) {
             Set<Value> names = instructionList.get(i)
-                                              .getAllNames()
+                                              .getAllValues()
                                               .stream()
                                               .filter(abstractName -> abstractName instanceof Variable)
                                               .collect(Collectors.toUnmodifiableSet());

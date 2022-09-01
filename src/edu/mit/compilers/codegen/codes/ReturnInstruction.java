@@ -33,7 +33,7 @@ public class ReturnInstruction extends HasOperand {
     }
 
     @Override
-    public List<Value> getAllNames() {
+    public List<Value> getAllValues() {
         if (returnAddress == null)
             return Collections.emptyList();
         return List.of(returnAddress);
@@ -50,7 +50,7 @@ public class ReturnInstruction extends HasOperand {
     }
 
     @Override
-    public List<Value> getOperandNames() {
+    public List<Value> getOperandValues() {
         if (returnAddress == null)
             return Collections.emptyList();
         return List.of(returnAddress);

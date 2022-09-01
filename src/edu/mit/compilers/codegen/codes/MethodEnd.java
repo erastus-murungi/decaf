@@ -26,7 +26,7 @@ public class MethodEnd extends Instruction {
     }
 
     @Override
-    public List<Value> getAllNames() {
+    public List<Value> getAllValues() {
         return Collections.emptyList();
     }
 

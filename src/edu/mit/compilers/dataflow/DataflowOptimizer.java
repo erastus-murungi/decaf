@@ -20,6 +20,7 @@ import edu.mit.compilers.dataflow.passes.PeepHoleOptimizationPass;
 import edu.mit.compilers.dataflow.ssapasses.CommonSubExpressionEliminationSsaPass;
 import edu.mit.compilers.dataflow.ssapasses.CopyPropagationSsaPass;
 import edu.mit.compilers.dataflow.ssapasses.DeadStoreEliminationSsaPass;
+import edu.mit.compilers.dataflow.ssapasses.RedundantPhiEliminationPass;
 import edu.mit.compilers.dataflow.ssapasses.SccpSsaPass;
 import edu.mit.compilers.utils.CLI;
 import edu.mit.compilers.utils.Utils;
@@ -46,65 +47,70 @@ public class DataflowOptimizer {
         CommonSubExpressionSsa,
         CopyPropagationSsa,
         DeadStoreEliminationSsa,
-        SccpSsa
+        SccpSsa,
+
+        RedundantPhiEliminationPass,
         }
 
     public class Factory {
         public List<OptimizationPass> getPass(OptimizationPassType optimizationPassType) {
             final var optimizationPassesList = new ArrayList<OptimizationPass>();
             switch (optimizationPassType) {
-                case CopyPropagation: {
+                case CopyPropagation -> {
                     toOptimizeMethods.forEach(method ->
                             optimizationPassesList.add(new CopyPropagationPass(globalNames, method)));
                     break;
                 }
-                case CommonSubExpression: {
+                case CommonSubExpression -> {
                     toOptimizeMethods.forEach(method ->
                             optimizationPassesList.add(new CommonSubExpressionEliminationPass(globalNames, method)));
                     break;
                 }
-                case DeadStoreElimination: {
+                case DeadStoreElimination -> {
                     toOptimizeMethods.forEach(method ->
                             optimizationPassesList.add(new DeadStoreEliminationPass(globalNames, method)));
                     break;
                 }
-                case PeepHoleOptimization: {
+                case PeepHoleOptimization -> {
                     toOptimizeMethods.forEach(method ->
                             optimizationPassesList.add(new PeepHoleOptimizationPass(globalNames, method)));
                     break;
                 }
-                case ConstantPropagation: {
+                case ConstantPropagation -> {
                     toOptimizeMethods.forEach(method ->
                             optimizationPassesList.add(new ConstantPropagationPass(globalNames, method)));
                     break;
                 }
-                case InstructionSimplification: {
+                case InstructionSimplification -> {
                     toOptimizeMethods.forEach(method ->
                             optimizationPassesList.add(new InstructionSimplifyPass(globalNames, method)));
                     break;
                 }
-                case BranchSimplification: {
+                case BranchSimplification -> {
                     toOptimizeMethods.forEach(method ->
                             optimizationPassesList.add(new BranchSimplificationPass(globalNames, method)));
                     break;
                 }
-                case CommonSubExpressionSsa: {
+                case CommonSubExpressionSsa -> {
                     toOptimizeMethods.forEach(method -> optimizationPassesList.add(new CommonSubExpressionEliminationSsaPass(globalNames, method)));
                     break;
                 }
-                case CopyPropagationSsa: {
+                case CopyPropagationSsa -> {
                     toOptimizeMethods.forEach(method -> optimizationPassesList.add(new CopyPropagationSsaPass(globalNames, method)));
                     break;
                 }
-                case DeadStoreEliminationSsa: {
+                case DeadStoreEliminationSsa -> {
                     toOptimizeMethods.forEach(method -> optimizationPassesList.add(new DeadStoreEliminationSsaPass(globalNames, method)));
                     break;
                 }
-                case SccpSsa: {
+                case SccpSsa -> {
                     toOptimizeMethods.forEach(method -> optimizationPassesList.add(new SccpSsaPass(globalNames, method)));
                     break;
                 }
-                default: {
+                case RedundantPhiEliminationPass -> {
+                    toOptimizeMethods.forEach(method -> optimizationPassesList.add(new RedundantPhiEliminationPass(globalNames, method)));
+                }
+                default -> {
                     throw new IllegalArgumentException();
                 }
             }
@@ -129,6 +135,7 @@ public class DataflowOptimizer {
         // addPass(OptimizationPassType.BranchSimplification);
 //        addPass(OptimizationPassType.CommonSubExpressionSsa);
 //        addPass(OptimizationPassType.CopyPropagationSsa);
+//        addPass(OptimizationPassType.RedundantPhiEliminationPass);
 //        addPass(OptimizationPassType.DeadStoreEliminationSsa);
 //        addPass(OptimizationPassType.SccpSsa);
     }

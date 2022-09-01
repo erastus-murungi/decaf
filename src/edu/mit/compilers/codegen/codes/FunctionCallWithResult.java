@@ -42,7 +42,7 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
     }
 
     @Override
-    public List<Value> getAllNames() {
+    public List<Value> getAllValues() {
         var args = new ArrayList<>(getArguments());
         args.add(getStore());
         return args;
@@ -73,7 +73,7 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
     }
 
     @Override
-    public List<Value> getOperandNames() {
+    public List<Value> getOperandValues() {
         return new ArrayList<>(arguments);
     }
 

@@ -72,7 +72,7 @@ public class Method extends Instruction {
     }
 
     @Override
-    public List<Value> getAllNames() {
+    public List<Value> getAllValues() {
         return Collections.emptyList();
     }
 

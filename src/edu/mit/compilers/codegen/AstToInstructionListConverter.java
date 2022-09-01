@@ -45,7 +45,6 @@ import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.NumericalConstant;
 import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.codegen.names.StringConstant;
-import edu.mit.compilers.codegen.names.Temporary;
 import edu.mit.compilers.codegen.names.Variable;
 import edu.mit.compilers.descriptors.ArrayDescriptor;
 import edu.mit.compilers.symboltable.SymbolTable;
@@ -93,7 +92,7 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
     }
 
     private LValue resolveStoreLocation(Type type) {
-        return Temporary.generateTemporaryName(type);
+        return Variable.genTemp(type);
     }
 
     private LValue resolveStoreLocation(LValue resultLocation, Type type) {
@@ -299,7 +298,7 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
         } else if (expressionParameter.expression instanceof IntLiteral) {
             expressionParameterInstructionList.place = new NumericalConstant(((IntLiteral) expressionParameter.expression).convertToLong(), Type.Int);
         } else {
-            Temporary temporaryVariable = Temporary.generateTemporaryName(expressionParameter.expression.getType());
+            var temporaryVariable = Variable.genTemp(expressionParameter.expression.getType());
             InstructionList expressionInstructionList = expressionParameter.expression.accept(this, resultLocation);
             expressionParameterInstructionList.addAll(expressionInstructionList);
             expressionParameterInstructionList.add(new CopyInstruction(temporaryVariable, expressionInstructionList.place.copy(), expressionParameter, temporaryVariable + " = " + expressionInstructionList.place));

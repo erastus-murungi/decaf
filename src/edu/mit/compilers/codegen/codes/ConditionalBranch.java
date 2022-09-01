@@ -30,7 +30,7 @@ public class ConditionalBranch extends HasOperand {
     }
 
     @Override
-    public List<Value> getAllNames() {
+    public List<Value> getAllValues() {
         return List.of(condition);
     }
 
@@ -54,7 +54,7 @@ public class ConditionalBranch extends HasOperand {
     }
 
     @Override
-    public List<Value> getOperandNames() {
+    public List<Value> getOperandValues() {
         return List.of(condition);
     }
 

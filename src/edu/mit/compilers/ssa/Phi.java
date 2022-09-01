@@ -35,7 +35,7 @@ public class Phi extends StoreInstruction {
     }
 
     @Override
-    public List<Value> getOperandNames() {
+    public List<Value> getOperandValues() {
         return new ArrayList<>(basicBlockToAssignableNameMapping.values());
     }
 
@@ -58,8 +58,8 @@ public class Phi extends StoreInstruction {
     }
 
     @Override
-    public List<Value> getAllNames() {
-        var allNames = getOperandNames();
+    public List<Value> getAllValues() {
+        var allNames = getOperandValues();
         allNames.add(getStore());
         return allNames;
     }

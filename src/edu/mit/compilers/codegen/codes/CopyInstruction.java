@@ -23,9 +23,8 @@ public class CopyInstruction extends StoreInstruction implements Cloneable {
         super(dst, source, comment);
         this.value = operand;
     }
-
-    public CopyInstruction(LValue dst, Value operand) {
-        this(dst, operand, null, String.format("%s = %s", dst, operand));
+    public static CopyInstruction noAstConstructor(LValue dst, Value operand) {
+        return new CopyInstruction(dst, operand, null, String.format("%s = %s", dst, operand));
     }
 
     public static CopyInstruction noMetaData(LValue dst, Value operand) {
@@ -38,7 +37,7 @@ public class CopyInstruction extends StoreInstruction implements Cloneable {
     }
 
     @Override
-    public List<Value> getAllNames() {
+    public List<Value> getAllValues() {
         return List.of(getStore(), value);
     }
 
@@ -75,7 +74,7 @@ public class CopyInstruction extends StoreInstruction implements Cloneable {
     }
 
     @Override
-    public List<Value> getOperandNames() {
+    public List<Value> getOperandValues() {
         return List.of(value);
     }
 

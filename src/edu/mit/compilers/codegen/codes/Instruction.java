@@ -4,6 +4,7 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.Variable;
 
 import java.util.Collection;
 import java.util.List;
@@ -39,16 +40,24 @@ public abstract class Instruction {
 
     public abstract <T, E> T accept(InstructionVisitor<T, E> visitor, E extra);
 
-    public abstract List<Value> getAllNames();
+    public abstract List<Value> getAllValues();
 
     public abstract String syntaxHighlightedToString();
 
     public abstract Instruction copy();
 
     public Collection<LValue> getAllLValues() {
-        return getAllNames().stream()
-                            .filter(value -> (value instanceof LValue))
-                            .map(value -> (LValue) value)
-                            .collect(Collectors.toList());
+        return getAllValues().stream()
+                             .filter(value -> (value instanceof LValue))
+                             .map(value -> (LValue) value)
+                             .collect(Collectors.toList());
+    }
+
+    public Collection<Variable> getAllScalarVariables() {
+        return getAllValues().stream()
+                             .filter(value -> (value instanceof Variable))
+                             .map(value -> (Variable) value)
+                             .collect(Collectors.toList());
+
     }
 }

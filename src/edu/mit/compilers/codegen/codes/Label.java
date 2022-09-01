@@ -49,7 +49,7 @@ public class Label extends Instruction {
     }
 
     @Override
-    public List<Value> getAllNames() {
+    public List<Value> getAllValues() {
         return Collections.emptyList();
     }
 

@@ -12,21 +12,19 @@ public abstract class LValue extends Value {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-        LValue that = (LValue) o;
-        return Objects.equals(getLabel(), that.getLabel());
-    }
-
-    @Override
     public int hashCode() {
         return Objects.hash(getLabel());
     }
 
     public void renameForSsa(int versionNumber) {
         this.versionNumber = versionNumber;
+    }
+
+    public void renameForSsa(LValue lValue) {
+        if (getType() != lValue.getType())
+            throw new IllegalArgumentException();
+        this.label = lValue.label;
+        this.versionNumber = lValue.versionNumber;
     }
 
     public void unRenameForSsa() {
@@ -51,5 +49,16 @@ public abstract class LValue extends Value {
         if (versionNumber != null)
             return String.format("%s.%d", label, versionNumber);
         return label;
+    }
+
+    @Override
+    public abstract LValue copy();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof LValue lValue)) return false;
+        if (!super.equals(o)) return false;
+        return Objects.equals(getLabel(), lValue.getLabel());
     }
 }

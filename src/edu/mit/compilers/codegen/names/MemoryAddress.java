@@ -2,7 +2,7 @@ package edu.mit.compilers.codegen.names;
 
 import edu.mit.compilers.ast.Type;
 
-public class MemoryAddress extends Temporary {
+public class MemoryAddress extends Variable {
     public MemoryAddress(long index, Type type) {
         super(index, type);
     }

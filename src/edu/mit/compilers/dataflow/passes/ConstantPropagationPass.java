@@ -80,7 +80,7 @@ public class ConstantPropagationPass extends OptimizationPass {
             for (Instruction instruction : basicBlock.getInstructionList()) {
                 if (instruction instanceof HasOperand) {
                     HasOperand hasOperand = (HasOperand) instruction;
-                    for (Value name : hasOperand.getOperandNames()) {
+                    for (Value name : hasOperand.getOperandValues()) {
                         if (storeToConstantMapping.containsKey(name)) {
                             hasOperand.replace(name, storeToConstantMapping.get(name));
                         }

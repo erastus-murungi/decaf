@@ -51,7 +51,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
      */
     private boolean allOperandNamesConstant(Instruction instruction) {
         if (instruction instanceof HasOperand)
-            return ((HasOperand) instruction).getOperandNames()
+            return ((HasOperand) instruction).getOperandValues()
                                              .stream()
                                              .allMatch(this::isConstant);
         return false;
@@ -80,11 +80,11 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                 continue;
 
             if (possibleStoreInstruction instanceof HasOperand) {
-                if (((HasOperand) possibleStoreInstruction).getOperandNames()
+                if (((HasOperand) possibleStoreInstruction).getOperandValues()
                                                            .stream()
                                                            .anyMatch(abstractName -> abstractName instanceof MemoryAddress)) {
                     instructionListToUpdate.add(possibleStoreInstruction);
-                    namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandNames());
+                    namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandValues());
                     continue;
                 }
             }
@@ -103,7 +103,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                             (!method.isMain()) || anySubsequentFunctionCalls(copyOfInstructionList.subList(0, copyOfInstructionList.indexOf(possibleStoreInstruction))))
                             || allOperandNamesConstant(possibleStoreInstruction)) {
                         if (possibleStoreInstruction instanceof HasOperand)
-                            namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandNames());
+                            namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandValues());
                         instructionListToUpdate.add(possibleStoreInstruction);
                         continue;
                     }
@@ -116,7 +116,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                 }
             }
             if (possibleStoreInstruction instanceof HasOperand)
-                namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandNames());
+                namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandValues());
 
             instructionListToUpdate.add(possibleStoreInstruction);
         }
@@ -141,7 +141,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                     instructionListToUpdate.add(possibleStoreInstruction);
                     continue;
                 }
-                if (((HasOperand) possibleStoreInstruction).getOperandNames()
+                if (((HasOperand) possibleStoreInstruction).getOperandValues()
                                                            .stream()
                                                            .anyMatch(abstractName -> abstractName instanceof MemoryAddress)) {
                     instructionListToUpdate.add(possibleStoreInstruction);
@@ -220,7 +220,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                      */
                     if (candidateStoreInstruction instanceof HasOperand) {
                         var storeInstructionWithOperand = ((HasOperand) candidateStoreInstruction);
-                        usedNames.addAll(storeInstructionWithOperand.getOperandNames());
+                        usedNames.addAll(storeInstructionWithOperand.getOperandValues());
                     }
                     break;
                 }
@@ -228,7 +228,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
             // add all names on the right-hand side;
             if (possibleStoreInstruction instanceof HasOperand) {
                 var storeInstructionWithOperand = ((HasOperand) possibleStoreInstruction);
-                usedNames.addAll(storeInstructionWithOperand.getOperandNames());
+                usedNames.addAll(storeInstructionWithOperand.getOperandValues());
             }
         }
         return usedNames.contains(storeInstruction.getStore());

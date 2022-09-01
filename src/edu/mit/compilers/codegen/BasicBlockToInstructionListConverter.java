@@ -29,7 +29,6 @@ import edu.mit.compilers.codegen.codes.MethodEnd;
 import edu.mit.compilers.codegen.codes.RuntimeException;
 import edu.mit.compilers.codegen.codes.StringLiteralAllocation;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.Temporary;
 import edu.mit.compilers.codegen.names.Variable;
 import edu.mit.compilers.descriptors.GlobalDescriptor;
 import edu.mit.compilers.exceptions.DecafException;
@@ -117,7 +116,7 @@ public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<I
             }
         }
         globalNames.addAll(programHeaderInstructionList.stream()
-                                                       .flatMap(instruction -> instruction.getAllNames()
+                                                       .flatMap(instruction -> instruction.getAllValues()
                                                                                           .stream())
                                                        .filter(abstractName -> abstractName instanceof LValue)
                                                        .map(abstractName -> (LValue) abstractName)
@@ -199,7 +198,7 @@ public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<I
         visitedBasicBlocks.add(basicBlockWithBranch);
 
         var condition = basicBlockWithBranch.getBranchCondition();
-        var conditionInstructionList = condition.accept(currentAstToInstructionListConverter, Temporary.generateTemporaryName(Type.Bool));
+        var conditionInstructionList = condition.accept(currentAstToInstructionListConverter, Variable.genTemp(Type.Bool));
         conditionInstructionList.add(0, basicBlockWithBranch.getLabel());
 
         basicBlockWithBranch.getTrueTarget()

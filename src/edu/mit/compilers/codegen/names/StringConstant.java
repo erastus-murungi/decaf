@@ -28,7 +28,7 @@ public class StringConstant extends Constant {
     }
 
     @Override
-    public Value copy() {
+    public StringConstant copy() {
         return new StringConstant((StringLiteralAllocation) stringConstant.copy());
     }
 

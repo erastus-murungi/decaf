@@ -38,7 +38,7 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
         for (BasicBlock basicBlock : dom.preorder()) {
             for (Instruction instruction: basicBlock.getInstructionList()) {
                 if (instruction instanceof HasOperand hasOperand) {
-                    for (LValue toBeReplaced: hasOperand.getLValues()) {
+                    for (LValue toBeReplaced: hasOperand.getOperandLValues()) {
                         if (copiesMap.containsKey(toBeReplaced)) {
                             var replacer = copiesMap.get(toBeReplaced);
                             // we have to do this in a while loop because of how copy replacements propagate

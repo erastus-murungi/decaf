@@ -29,7 +29,7 @@ public class DeadStoreEliminationSsaPass extends SsaOptimizationPass<Void> {
         for (BasicBlock basicBlock : getBasicBlockList()) {
             for (Instruction instruction : basicBlock.getInstructionList()) {
                 if (instruction instanceof HasOperand hasOperand) {
-                    used.addAll(hasOperand.getLValues());
+                    used.addAll(hasOperand.getOperandLValues());
                 }
             }
         }

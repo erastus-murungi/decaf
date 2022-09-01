@@ -41,7 +41,7 @@ public class BinaryInstruction extends StoreInstruction {
     }
 
     @Override
-    public List<Value> getAllNames() {
+    public List<Value> getAllValues() {
         return List.of(getStore(), fstOperand, sndOperand);
     }
 
@@ -76,7 +76,7 @@ public class BinaryInstruction extends StoreInstruction {
     }
 
     @Override
-    public List<Value> getOperandNames() {
+    public List<Value> getOperandValues() {
         return List.of(fstOperand, sndOperand);
     }
 

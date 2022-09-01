@@ -32,7 +32,7 @@ public class CopyPropagationPass extends OptimizationPass {
             // it possible that our copies map has y `replaces` k, and x `replaces` y and $0 `replaces` x
             // we want to eventually propagate so that a = $0
             notConverged = false;
-            for (var toBeReplaced : hasOperand.getOperandNamesNoArray()) {
+            for (var toBeReplaced : hasOperand.getOperandScalarVariables()) {
                 if (hasOperand instanceof StoreInstruction && ((StoreInstruction) hasOperand).getStore()
                                                                                              .equals(toBeReplaced))
                     continue;

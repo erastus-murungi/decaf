@@ -35,7 +35,7 @@ public class UnaryInstruction extends StoreInstruction {
     }
 
     @Override
-    public List<Value> getAllNames() {
+    public List<Value> getAllValues() {
         return List.of(getStore(), operand);
     }
 
@@ -82,7 +82,7 @@ public class UnaryInstruction extends StoreInstruction {
     }
 
     @Override
-    public List<Value> getOperandNames() {
+    public List<Value> getOperandValues() {
         return List.of(operand);
     }
 

@@ -31,7 +31,7 @@ public class GlobalAllocation extends Instruction {
     }
 
     @Override
-    public List<Value> getAllNames() {
+    public List<Value> getAllValues() {
         return Collections.singletonList(variableName);
     }
 

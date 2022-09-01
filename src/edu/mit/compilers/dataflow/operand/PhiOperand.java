@@ -19,7 +19,7 @@ public class PhiOperand extends Operand {
 
     @Override
     public boolean contains(Value comp) {
-        return phi.getOperandNames()
+        return phi.getOperandValues()
                   .contains(comp);
     }
 
@@ -36,11 +36,11 @@ public class PhiOperand extends Operand {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PhiOperand that = (PhiOperand) o;
-        return Objects.equals(getPhi().getOperandNames(), that.getPhi().getOperandNames());
+        return Objects.equals(getPhi().getOperandValues(), that.getPhi().getOperandValues());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getPhi().getOperandNames());
+        return Objects.hash(getPhi().getOperandValues());
     }
 }

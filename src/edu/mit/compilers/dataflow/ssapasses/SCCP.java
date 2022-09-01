@@ -59,7 +59,7 @@ public class SCCP {
         for (BasicBlock basicBlock : getReversePostOrder(entryBlock)) {
             for (Instruction instruction : basicBlock.getInstructionList()) {
                 m.put(instruction, new ArrayList<>());
-                for (Value v : instruction.getAllNames()) {
+                for (Value v : instruction.getAllValues()) {
                     if (v instanceof LValue) {
                         m.get(instruction)
                          .add(new LatticeCell(v, LatticeElement.top()));
@@ -108,7 +108,7 @@ public class SCCP {
                 }
                 if (instruction instanceof HasOperand) {
                     HasOperand hasOperand = (HasOperand) instruction;
-                    for (LValue lValue : hasOperand.getLValues()) {
+                    for (LValue lValue : hasOperand.getOperandLValues()) {
                         ssaEdges.add(new SsaEdge(lValueToDefMapping.computeIfAbsent(lValue, key -> {
                             throw new IllegalStateException(lValue + " not found");
                         }), hasOperand, basicBlock));

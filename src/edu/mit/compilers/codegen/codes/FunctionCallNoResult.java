@@ -39,7 +39,7 @@ public class FunctionCallNoResult extends HasOperand implements FunctionCall {
     }
 
     @Override
-    public List<Value> getAllNames() {
+    public List<Value> getAllValues() {
         return new ArrayList<>(arguments);
     }
 
@@ -49,7 +49,7 @@ public class FunctionCallNoResult extends HasOperand implements FunctionCall {
     }
 
     @Override
-    public List<Value> getOperandNames() {
+    public List<Value> getOperandValues() {
         return new ArrayList<>(arguments);
     }
 

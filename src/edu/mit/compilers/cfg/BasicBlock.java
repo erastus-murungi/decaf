@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public abstract class BasicBlock {
+    private Label label;
     private final ArrayList<BasicBlock> predecessors;
     // to be set by a visitor
     private InstructionList instructionList;
@@ -46,8 +47,6 @@ public abstract class BasicBlock {
     public void setInstructionList(InstructionList instructionList) {
         this.instructionList = instructionList;
     }
-
-    private Label label;
 
     public void setLabel(Label label) {
         if (label == null) {

@@ -152,8 +152,8 @@ public class Interpreter {
                 new AllocateInstruction(a),
                 new AllocateInstruction(b),
                 new AllocateInstruction(c),
-                new CopyInstruction(a.copy(), new NumericalConstant(10L, Type.Int)),
-                new CopyInstruction(b.copy(), a.copy()),
+                CopyInstruction.noAstConstructor(a.copy(), new NumericalConstant(10L, Type.Int)),
+                CopyInstruction.noAstConstructor(b.copy(), a.copy()),
                 new BinaryInstruction(c, b, Operators.PLUS, a),
                 new FunctionCallNoResult(new MethodCall(name, arguments), argsStack, "")
         );

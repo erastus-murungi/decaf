@@ -31,8 +31,8 @@ public class ArrayBoundsCheck extends HasOperand {
     }
 
     @Override
-    public List<Value> getAllNames() {
-        return getAddress.getAllNames();
+    public List<Value> getAllValues() {
+        return getAddress.getAllValues();
     }
 
     @Override
@@ -47,8 +47,8 @@ public class ArrayBoundsCheck extends HasOperand {
     }
 
     @Override
-    public List<Value> getOperandNames() {
-        return getAddress.getOperandNames();
+    public List<Value> getOperandValues() {
+        return getAddress.getOperandValues();
     }
 
     @Override

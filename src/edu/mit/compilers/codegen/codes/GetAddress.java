@@ -51,7 +51,7 @@ public class GetAddress extends StoreInstruction {
     }
 
     @Override
-    public List<Value> getAllNames() {
+    public List<Value> getAllValues() {
         return List.of(baseAddress, getIndex(), getStore());
     }
 
@@ -72,7 +72,7 @@ public class GetAddress extends StoreInstruction {
     }
 
     @Override
-    public List<Value> getOperandNames() {
+    public List<Value> getOperandValues() {
         if (index != null)
             return List.of(baseAddress, index);
         return List.of(baseAddress);

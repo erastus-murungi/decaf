@@ -64,7 +64,7 @@ public class ProgramIr {
         var flattened = TraceScheduler.flattenIr(method);
 
         for (Instruction instruction : flattened) {
-            for (Value name : instruction.getAllNames()) {
+            for (Value name : instruction.getAllValues()) {
                 if (name instanceof MemoryAddress && !globals.contains(name)) {
                     uniqueNames.add(name);
                 }
@@ -72,7 +72,7 @@ public class ProgramIr {
         }
 
         for (Instruction instruction : flattened) {
-            for (var name : instruction.getAllNames()) {
+            for (var name : instruction.getAllValues()) {
                 if (!(name instanceof MemoryAddress) && !globals.contains(name)) {
                     uniqueNames.add(name);
                 }
