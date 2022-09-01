@@ -5,7 +5,7 @@ import java.util.List;
 
 import edu.mit.compilers.ast.*;
 import edu.mit.compilers.exceptions.DecafSemanticException;
-import edu.mit.compilers.symbolTable.SymbolTable;
+import edu.mit.compilers.symboltable.SymbolTable;
 
 public interface Visitor<T> {
     List<DecafSemanticException> exceptions = new ArrayList<>();

@@ -1,8 +1,8 @@
 package edu.mit.compilers.descriptors;
 
 import edu.mit.compilers.ast.Type;
-import edu.mit.compilers.symbolTable.SymbolTable;
-import edu.mit.compilers.symbolTable.SymbolTableType;
+import edu.mit.compilers.symboltable.SymbolTable;
+import edu.mit.compilers.symboltable.SymbolTableType;
 
 import java.util.*;
 

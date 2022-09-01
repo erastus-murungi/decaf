@@ -32,7 +32,7 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.BasicBlockWithBranch;
 import edu.mit.compilers.cfg.BasicBlockBranchLess;
 import edu.mit.compilers.cfg.NOP;
-import edu.mit.compilers.symbolTable.SymbolTable;
+import edu.mit.compilers.symboltable.SymbolTable;
 
 import java.io.*;
 import java.util.*;
@@ -102,7 +102,7 @@ public class GraphVizPrinter {
     /**
      * The dir. where temporary files will be created.
      */
-    private static final String TEMP_DIR = ".";
+    private static final String TEMP_DIR = "./dot";
 
     /**
      * Where is your dot program located? It will be called externally.
@@ -176,7 +176,8 @@ public class GraphVizPrinter {
      * Adds a string to the graph's source (with newline).
      */
     public void addln(String line) {
-        this.graph.append(line + "\n");
+        this.graph.append(line)
+                  .append("\n");
     }
 
     /**

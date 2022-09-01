@@ -10,7 +10,7 @@ import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.MemoryAddressName;
+import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.dataflow.operand.MethodCallOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.utils.Utils;
@@ -49,7 +49,7 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
     }
 
     @Override
-    public String repr() {
+    public String syntaxHighlightedToString() {
         var callString =  Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
         var args = arguments.stream().map(Value::repr).collect(Collectors.joining(", "));
         return String.format("%s%s: %s = %s @%s(%s) %s%s", DOUBLE_INDENT, getStore().repr(), getMethodReturnType(), callString, getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
@@ -62,7 +62,7 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
 
     @Override
     public Optional<Operand> getOperandNoArray() {
-        if (getStore() instanceof MemoryAddressName)
+        if (getStore() instanceof MemoryAddress)
             return Optional.empty();
         return Optional.of(new MethodCallOperand(this));
     }

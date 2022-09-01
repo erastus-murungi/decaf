@@ -6,26 +6,31 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import edu.mit.compilers.asm.X64CodeConverter;
 import edu.mit.compilers.asm.X64Program;
 import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.CFGGenerator;
 import edu.mit.compilers.cfg.CFGVisitor;
-import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.BasicBlockToInstructionListConverter;
+import edu.mit.compilers.codegen.InstructionList;
+import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.dataflow.DataflowOptimizer;
 import edu.mit.compilers.dataflow.passes.InstructionSimplifyIrPass;
 import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.Token;
+import edu.mit.compilers.interpreter.Interpreter;
 import edu.mit.compilers.ir.DecafSemanticChecker;
 import edu.mit.compilers.registerallocation.RegisterAllocation;
 import edu.mit.compilers.ssa.SSATransform;
-import edu.mit.compilers.tools.CLI;
+import jdk.jshell.execution.Util;
 
 public class Compilation {
     private final static String osName = System.getProperty("os.name").replaceAll("\\s", "").toLowerCase(Locale.ROOT);
@@ -73,37 +78,17 @@ public class Compilation {
 
     private void runNextStep() {
         switch (compilationState) {
-            case SCANNED: {
-                runParser();
-                break;
-            }
-            case PARSED: {
-                runSemanticsChecker();
-                break;
-            }
-            case SEM_CHECKED: {
-                generateCFGs();
-                break;
-            }
-            case CFG_GENERATED: {
-                generateIr();
-                break;
-            }
-            case IR_GENERATED: {
-                generateSsa();
-                break;
-            }
-            case SSA_GENERATED: {
-                runDataflowOptimizationPasses();
-                break;
-            }
-            case DATAFLOW_OPTIMIZED: {
-                generateAssembly();
-                break;
-            }
-            case ASSEMBLED: {
-                compileAssembly();
-            }
+            case INITIALIZED -> System.out.println("starting!");
+            case SCANNED -> runParser();
+            case PARSED -> runSemanticsChecker();
+            case SEM_CHECKED -> generateCFGs();
+            case CFG_GENERATED -> generateIr();
+            case IR_GENERATED -> generateSsa();
+            case SSA_GENERATED -> runDataflowOptimizationPasses();
+            case DATAFLOW_OPTIMIZED -> generateAssembly();
+            case ASSEMBLED -> compileAssembly();
+            case COMPLETED -> System.out.println("done!");
+            default -> throw new IllegalStateException("Unexpected value: " + compilationState);
         }
     }
 
@@ -297,9 +282,9 @@ public class Compilation {
 
     private void generateSsa() {
         assert compilationState == CompilationState.IR_GENERATED;
-//        SSATransform ssaTransform;
-//        for (Method method : programIr.methodList)
-//            ssaTransform = new SSATransform(method.entryBlock);
+        SSATransform ssaTransform;
+        for (Method method : programIr.methodList)
+            ssaTransform = new SSATransform(method);
         compilationState = CompilationState.SSA_GENERATED;
     }
 
@@ -307,6 +292,8 @@ public class Compilation {
         assert compilationState == CompilationState.IR_GENERATED;
         double oldNLinesOfCode;
         oldNLinesOfCode = countLinesOfCode();
+        //
+        //
         if (shouldOptimize()) {
             if (CLI.debug) {
                 System.out.println("Before optimization");
@@ -317,11 +304,6 @@ public class Compilation {
             dataflowOptimizer.optimize();
             programIr.methodList = dataflowOptimizer.getOptimizedMethods();
             nLinesOfCodeReductionFactor = (oldNLinesOfCode - countLinesOfCode()) / oldNLinesOfCode;
-            if (CLI.debug) {
-                System.out.println("After optimization");
-                System.out.println(programIr.mergeProgram());
-                System.out.format("lines of code reduced by a factor of: %f\n", nLinesOfCodeReductionFactor);
-            }
 
         }
         compilationState = CompilationState.DATAFLOW_OPTIMIZED;
@@ -329,6 +311,15 @@ public class Compilation {
 
     private void generateAssembly() {
         assert compilationState == CompilationState.DATAFLOW_OPTIMIZED;
+        Utils.insertAllocateInstructions(programIr);
+//        Interpreter interpreter = new Interpreter(programIr.mergeProgram());
+//        interpreter.interpret();
+
+        if (CLI.debug) {
+            System.out.println("After optimization");
+            System.out.println(programIr.mergeProgram());
+            System.out.format("lines of code reduced by a factor of: %f\n", nLinesOfCodeReductionFactor);
+        }
 
         X64CodeConverter x64CodeConverter;
         if (shouldOptimize()) {

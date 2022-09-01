@@ -19,7 +19,6 @@ import static edu.mit.compilers.grammar.TokenType.*;
 
 public class DecafParser {
     public final DecafScanner scanner;
-
     private boolean showTrace = false;
     private ArrayList<Token> tokens;
     private int currentTokenIndex;
@@ -192,14 +191,14 @@ public class DecafParser {
         ) {
             Token token = consumeTokenNoCheck();
             Expression rhs = parseMulDivRemExpr();
-            switch (token.tokenType()) {
-                case MOD:
-                    return BinaryOpExpression.of(lhs, new ArithmeticOperator(token.tokenPosition(), DecafScanner.MOD), rhs);
-                case MULTIPLY:
-                    return BinaryOpExpression.of(lhs, new ArithmeticOperator(token.tokenPosition(), DecafScanner.MULTIPLY), rhs);
-                default:
-                    return BinaryOpExpression.of(lhs, new ArithmeticOperator(token.tokenPosition(), DecafScanner.DIVIDE), rhs);
-            }
+            return switch (token.tokenType()) {
+                case MOD ->
+                        BinaryOpExpression.of(lhs, new ArithmeticOperator(token.tokenPosition(), DecafScanner.MOD), rhs);
+                case MULTIPLY ->
+                        BinaryOpExpression.of(lhs, new ArithmeticOperator(token.tokenPosition(), DecafScanner.MULTIPLY), rhs);
+                default ->
+                        BinaryOpExpression.of(lhs, new ArithmeticOperator(token.tokenPosition(), DecafScanner.DIVIDE), rhs);
+            };
         }
         return lhs;
     }

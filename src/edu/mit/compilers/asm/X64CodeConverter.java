@@ -37,9 +37,9 @@ import edu.mit.compilers.codegen.codes.StringLiteralAllocation;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.codegen.names.ConstantName;
-import edu.mit.compilers.codegen.names.MemoryAddressName;
-import edu.mit.compilers.codegen.names.StringConstantName;
+import edu.mit.compilers.codegen.names.NumericalConstant;
+import edu.mit.compilers.codegen.names.MemoryAddress;
+import edu.mit.compilers.codegen.names.StringConstant;
 import edu.mit.compilers.ssa.Phi;
 import edu.mit.compilers.utils.Operators;
 import edu.mit.compilers.utils.ProgramIr;
@@ -64,8 +64,8 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     /**
      * Convenient constants to keep track of
      */
-    private static final ConstantName ZERO = ConstantName.zero();
-    private static final ConstantName ONE = ConstantName.one();
+    private static final NumericalConstant ZERO = NumericalConstant.zero();
+    private static final NumericalConstant ONE = NumericalConstant.one();
     /**
      * We need a minimum of 2 registers to keep track of array indices,
      * because of situations like this:
@@ -80,7 +80,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     /**
      * Provides a mapping of an array to its index register
      */
-    private final Map<MemoryAddressName, X64Register> memoryAddressToIndexRegister = new HashMap<>();
+    private final Map<MemoryAddress, X64Register> memoryAddressToIndexRegister = new HashMap<>();
 
     /**
      * Provides a mapping of an index to its register
@@ -133,7 +133,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
     private final Map<Method, Map<Instruction, Set<X64Register>>> methodToLiveRegistersInfo;
 
-    private final Map<MemoryAddressName, Value> memoryAddressToArrayMap = new HashMap<>();
+    private final Map<MemoryAddress, Value> memoryAddressToArrayMap = new HashMap<>();
 
     private final Map<Value, String> resolvedLocationCache = new HashMap<>();
 
@@ -188,7 +188,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
     public X64Builder visit(ConditionalBranch jumpIfFalse, X64Builder x64builder) {
         if (lastComparisonOperator == null) {
-            if (jumpIfFalse.condition instanceof ConstantName) {
+            if (jumpIfFalse.condition instanceof NumericalConstant) {
                 return x64builder
                         .addLine(x64InstructionLine(X64Instruction.movq, jumpIfFalse.condition, COPY_TEMP_REGISTER))
                         .addLine(x64InstructionLine(X64Instruction.cmpq, ZERO, COPY_TEMP_REGISTER))
@@ -234,7 +234,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     @Override
     public X64Builder visit(RuntimeException runtimeException, X64Builder x64Builder) {
         return x64Builder
-                .addLine(x64InstructionLine(X64Instruction.mov, new ConstantName((long) runtimeException.errorCode, Type.Int), "%edi"))
+                .addLine(x64InstructionLine(X64Instruction.mov, new NumericalConstant((long) runtimeException.errorCode, Type.Int), "%edi"))
                 .addLine(x64InstructionLine(X64Instruction.call, "exit"));
     }
 
@@ -516,7 +516,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
             var argumentResidentRegister = residentArgumentToRegister.getOrDefault(argument, null);
             // if the argument is stored in the stack, just move it from the stack to parameter register
             if (argumentResidentRegister == X64Register.STACK) {
-                if (argument instanceof StringConstantName)
+                if (argument instanceof StringConstant)
                     instructions.add(x64InstructionLine(X64Instruction.leaq, resolveName(argument), pushParameterX64RegisterMap.get(argument)));
                 else {
                     instructions.add(x64InstructionLine(X64Instruction.movq, resolveName(argument), pushParameterX64RegisterMap.get(argument)));
@@ -609,7 +609,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         return String.format("%s(%s)", index, X64Register.RBP);
     }
 
-    private String resolveMemoryAddressName(MemoryAddressName name) {
+    private String resolveMemoryAddressName(MemoryAddress name) {
         var base = memoryAddressToArrayMap.get(name);
         var indexRegister = Objects.requireNonNull(memoryAddressToIndexRegister.get(name));
         String resolvedLocation;
@@ -642,9 +642,9 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     }
 
     private String resolveNonRegisterMappedName(Value name) {
-        if (globals.contains(name) || name instanceof StringConstantName) {
+        if (globals.contains(name) || name instanceof StringConstant) {
             return String.format("%s(%s)", name.toString(), "%rip");
-        } else if (name instanceof ConstantName) {
+        } else if (name instanceof NumericalConstant) {
             return name.toString();
         } else {
             return String.format("-%s(%s)", currentMethod.nameToStackOffset.get(name.toString()), X64Register.RBP);
@@ -656,8 +656,8 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         if (resolvedLocationCache.containsKey(name))
             return resolvedLocationCache.get(name);
         // attempt to resolve a memory address
-        if (name instanceof MemoryAddressName)
-            return resolveMemoryAddressName((MemoryAddressName) name);
+        if (name instanceof MemoryAddress)
+            return resolveMemoryAddressName((MemoryAddress) name);
         // attempt to find the register for a name
         Optional<String> register = resolveRegisterMappedName(name);
         if (register.isPresent())
@@ -699,7 +699,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
                 // If we are planning to use RDX, we spill it first
                 if (!resolveName(binaryInstruction.getStore()).equals(X64Register.RDX.toString()))
                     x64builder.addLine(x64InstructionLine(X64Instruction.movq, X64Register.RDX, getNextStackLocation(X64Register.RDX.toString())));
-                if (binaryInstruction.sndOperand instanceof ConstantName) {
+                if (binaryInstruction.sndOperand instanceof NumericalConstant) {
                     x64builder
                             .addLine(x64InstructionLine(X64Instruction.movq, resolveName(binaryInstruction.fstOperand), X64Register.RAX))
                             .addLine(x64InstructionLine(X64Instruction.movq, resolveName(binaryInstruction.sndOperand), COPY_TEMP_REGISTER))

@@ -6,7 +6,7 @@ import java.util.Optional;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.MemoryAddressName;
+import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 import edu.mit.compilers.utils.Utils;
@@ -31,12 +31,6 @@ public class AllocateInstruction extends StoreInstruction {
     @Override
     public List<Value> getAllNames() {
         return List.of(variable);
-    }
-
-    @Override
-    public String repr() {
-        final var allocateString = Utils.coloredPrint("allocate", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s%s = %s %s", DOUBLE_INDENT, variable.repr(), allocateString, variable.getType().getColoredSourceCode());
     }
 
     @Override
@@ -68,13 +62,19 @@ public class AllocateInstruction extends StoreInstruction {
 
     @Override
     public Optional<Operand> getOperandNoArray() {
-        if (variable instanceof MemoryAddressName)
+        if (variable instanceof MemoryAddress)
             return Optional.empty();
         return Optional.of(getOperand());
     }
 
     @Override
     public String toString() {
-        return repr();
+        return String.format("%s%s = %s %s", DOUBLE_INDENT, variable, "allocate", variable.getType().getSourceCode());
+    }
+
+    @Override
+    public String syntaxHighlightedToString() {
+        final var allocateString = Utils.coloredPrint("allocate", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
+        return String.format("%s%s = %s %s", DOUBLE_INDENT, variable.repr(), allocateString, variable.getType().getColoredSourceCode());
     }
 }

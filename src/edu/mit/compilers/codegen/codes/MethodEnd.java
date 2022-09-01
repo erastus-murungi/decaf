@@ -19,10 +19,6 @@ public class MethodEnd extends Instruction {
     public String methodName() {
         return ((MethodDefinition) source).methodName.getLabel();
     }
-    @Override
-    public String toString() {
-        return String.format("%s%s %s", DOUBLE_INDENT, "exit method", ((MethodDefinition)source).methodName.getLabel());
-    }
 
     @Override
     public <T, E> T accept(InstructionVisitor<T, E> visitor , E extra) {
@@ -35,13 +31,18 @@ public class MethodEnd extends Instruction {
     }
 
     @Override
-    public String repr() {
+    public Instruction copy() {
+        return new MethodEnd((MethodDefinition) source);
+    }
+
+    @Override
+    public String toString() {
         return "}\n";
     }
 
     @Override
-    public Instruction copy() {
-        return new MethodEnd((MethodDefinition) source);
+    public String syntaxHighlightedToString() {
+        return toString();
     }
 
 }

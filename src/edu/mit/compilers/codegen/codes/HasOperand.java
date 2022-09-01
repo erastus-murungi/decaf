@@ -3,7 +3,7 @@ package edu.mit.compilers.codegen.codes;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.MemoryAddressName;
+import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.dataflow.operand.Operand;
 
 import java.util.List;
@@ -31,7 +31,7 @@ public abstract class HasOperand extends Instruction {
     public List<Value> getOperandNamesNoArray() {
         return getOperandNames()
                 .stream()
-                .filter(abstractName -> !(abstractName instanceof MemoryAddressName))
+                .filter(abstractName -> !(abstractName instanceof MemoryAddress))
                 .collect(Collectors.toList());
     }
 

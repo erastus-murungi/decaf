@@ -16,7 +16,7 @@ import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.ConstantName;
+import edu.mit.compilers.codegen.names.NumericalConstant;
 import edu.mit.compilers.dataflow.analyses.ReachingDefinitions;
 
 public class ConstantPropagationPass extends OptimizationPass {
@@ -47,8 +47,8 @@ public class ConstantPropagationPass extends OptimizationPass {
         for (Instruction instruction : basicBlock.getInstructionList()) {
             indexOfInstruction++;
             if (instruction instanceof CopyInstruction) {
-                if (((CopyInstruction) instruction).getValue() instanceof ConstantName) {
-                    ConstantName constant = (ConstantName) ((CopyInstruction) instruction).getValue();
+                if (((CopyInstruction) instruction).getValue() instanceof NumericalConstant) {
+                    NumericalConstant constant = (NumericalConstant) ((CopyInstruction) instruction).getValue();
                     for (HasOperand hasOperand : reachingDefinitions(indexOfInstruction, basicBlock.getInstructionList())) {
                         hasOperand.replace(((CopyInstruction) instruction).getStore(), constant);
                     }
@@ -57,13 +57,13 @@ public class ConstantPropagationPass extends OptimizationPass {
         }
     }
 
-    private static Map<Value, ConstantName> getStoreToConstantMapping(Collection<StoreInstruction> storeInstructionInstructions) {
-        var storeNameToStoreInstructionMap = new HashMap<Value, ConstantName>();
+    private static Map<Value, NumericalConstant> getStoreToConstantMapping(Collection<StoreInstruction> storeInstructionInstructions) {
+        var storeNameToStoreInstructionMap = new HashMap<Value, NumericalConstant>();
         for (StoreInstruction storeInstruction : storeInstructionInstructions) {
             if (storeInstruction instanceof CopyInstruction) {
                 var assignment = (CopyInstruction) storeInstruction;
-                if (assignment.getValue() instanceof ConstantName) {
-                    storeNameToStoreInstructionMap.put(storeInstruction.getStore(), (ConstantName) assignment.getValue());
+                if (assignment.getValue() instanceof NumericalConstant) {
+                    storeNameToStoreInstructionMap.put(storeInstruction.getStore(), (NumericalConstant) assignment.getValue());
                 }
             }
         }

@@ -1,7 +1,6 @@
 package edu.mit.compilers.cfg;
 
 import edu.mit.compilers.codegen.codes.Label;
-import edu.mit.compilers.symbolTable.SymbolTable;
 
 import java.util.Collections;
 import java.util.List;

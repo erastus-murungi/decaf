@@ -36,7 +36,7 @@ public class GlobalAllocation extends Instruction {
     }
 
     @Override
-    public String repr() {
+    public String syntaxHighlightedToString() {
         return String.format("global %s %s", variableName.getType().getSourceCode(), variableName.repr());
     }
 

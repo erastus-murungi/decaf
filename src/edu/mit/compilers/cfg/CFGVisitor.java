@@ -5,7 +5,7 @@ import java.util.*;
 import edu.mit.compilers.ast.*;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.ir.Visitor;
-import edu.mit.compilers.symbolTable.SymbolTable;
+import edu.mit.compilers.symboltable.SymbolTable;
 
 
 public class CFGVisitor implements Visitor<BasicBlocksPair> {

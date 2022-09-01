@@ -4,7 +4,7 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.MemoryAddressName;
+import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.dataflow.operand.BinaryOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.utils.Operators;
@@ -31,11 +31,8 @@ public class BinaryInstruction extends StoreInstruction {
         this.sndOperand = sndOperand;
     }
 
-    @Override
-    public String toString() {
-        if (getComment().isPresent())
-            return String.format("%s%s = %s %s %s%s%s", DOUBLE_INDENT, getStore(), fstOperand, operator, sndOperand, DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s = %s %s %s", DOUBLE_INDENT, getStore(), fstOperand, operator, sndOperand);
+    public BinaryInstruction(LValue result, Value fstOperand, String operator, Value sndOperand) {
+        this(result, fstOperand, operator, sndOperand, String.format("%s = %s %s %s", result, fstOperand, operator, sndOperand), null);
     }
 
     @Override
@@ -49,20 +46,13 @@ public class BinaryInstruction extends StoreInstruction {
     }
 
     @Override
-    public String repr() {
-        if (getComment().isPresent())
-            return String.format("%s%s: %s = %s %s, %s %s%s", DOUBLE_INDENT, getStore().repr(), getStore().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand.repr(), sndOperand.repr(), DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s: %s = %s %s, %s", DOUBLE_INDENT, getStore().repr(), getStore().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand.repr(), sndOperand.repr());
-    }
-
-    @Override
     public Instruction copy() {
         return new BinaryInstruction(getStore(), fstOperand, operator, sndOperand, getComment().orElse(null), source);
     }
 
     @Override
     public Optional<Operand> getOperandNoArray() {
-        if (getStore() instanceof MemoryAddressName || fstOperand instanceof MemoryAddressName || sndOperand instanceof MemoryAddressName)
+        if (getStore() instanceof MemoryAddress || fstOperand instanceof MemoryAddress || sndOperand instanceof MemoryAddress)
             return Optional.empty();
         return Optional.of(new BinaryOperand(this));
     }
@@ -88,6 +78,19 @@ public class BinaryInstruction extends StoreInstruction {
     @Override
     public List<Value> getOperandNames() {
         return List.of(fstOperand, sndOperand);
+    }
+
+    @Override
+    public String toString() {
+        if (getComment().isPresent())
+            return String.format("%s%s = %s %s %s%s%s", DOUBLE_INDENT, getStore(), fstOperand, operator, sndOperand, DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s = %s %s %s", DOUBLE_INDENT, getStore(), fstOperand, operator, sndOperand);
+    }
+
+    public String syntaxHighlightedToString() {
+        if (getComment().isPresent())
+            return String.format("%s%s: %s = %s %s, %s %s%s", DOUBLE_INDENT, getStore().repr(), getStore().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand.repr(), sndOperand.repr(), DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s: %s = %s %s, %s", DOUBLE_INDENT, getStore().repr(), getStore().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand.repr(), sndOperand.repr());
     }
 
 }

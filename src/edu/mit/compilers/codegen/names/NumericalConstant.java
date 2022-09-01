@@ -6,25 +6,31 @@ import edu.mit.compilers.ast.BooleanLiteral;
 import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.ast.IntLiteral;
 
-public class ConstantName extends Value {
-    public ConstantName(Long value, Type type) {
+public class NumericalConstant extends Constant {
+    private final Long value;
+    public NumericalConstant(Long value, Type type) {
         super(type, String.valueOf(value));
+        this.value = value;
     }
 
-    public static ConstantName fromIntLiteral(IntLiteral intLiteral) {
-        return new ConstantName(intLiteral.convertToLong(), Type.Int);
+    public Long getValue() {
+        return value;
     }
 
-    public static ConstantName fromBooleanLiteral(BooleanLiteral booleanLiteral) {
-        return new ConstantName(booleanLiteral.convertToLong(), Type.Bool);
+    public static NumericalConstant fromIntLiteral(IntLiteral intLiteral) {
+        return new NumericalConstant(intLiteral.convertToLong(), Type.Int);
     }
 
-    public static ConstantName zero() {
-        return new ConstantName(0L, Type.Int);
+    public static NumericalConstant fromBooleanLiteral(BooleanLiteral booleanLiteral) {
+        return new NumericalConstant(booleanLiteral.convertToLong(), Type.Bool);
     }
 
-    public static ConstantName one() {
-        return new ConstantName(1L, Type.Int);
+    public static NumericalConstant zero() {
+        return new NumericalConstant(0L, Type.Int);
+    }
+
+    public static NumericalConstant one() {
+        return new NumericalConstant(1L, Type.Int);
     }
 
     @Override
@@ -37,7 +43,7 @@ public class ConstantName extends Value {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-        ConstantName that = (ConstantName) o;
+        NumericalConstant that = (NumericalConstant) o;
         return Objects.equals(getLabel(), that.getLabel());
     }
 
@@ -47,8 +53,8 @@ public class ConstantName extends Value {
     }
 
     @Override
-    public ConstantName copy() {
-        return new ConstantName(Long.parseLong(getLabel()), type);
+    public NumericalConstant copy() {
+        return new NumericalConstant(Long.parseLong(getLabel()), type);
     }
 
     @Override

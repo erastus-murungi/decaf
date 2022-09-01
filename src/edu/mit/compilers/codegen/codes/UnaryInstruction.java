@@ -4,7 +4,7 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.MemoryAddressName;
+import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnaryOperand;
 import edu.mit.compilers.utils.Operators;
@@ -40,7 +40,7 @@ public class UnaryInstruction extends StoreInstruction {
     }
 
     @Override
-    public String repr() {
+    public String syntaxHighlightedToString() {
         return toString();
     }
 
@@ -51,7 +51,7 @@ public class UnaryInstruction extends StoreInstruction {
 
     @Override
     public Optional<Operand> getOperandNoArray() {
-        if (operand instanceof MemoryAddressName || getStore() instanceof MemoryAddressName)
+        if (operand instanceof MemoryAddress || getStore() instanceof MemoryAddress)
             return Optional.empty();
         return Optional.of(new UnaryOperand(this));
     }

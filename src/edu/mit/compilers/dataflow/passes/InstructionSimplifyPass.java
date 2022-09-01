@@ -16,18 +16,19 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.ConstantName;
+import edu.mit.compilers.codegen.names.NumericalConstant;
+import edu.mit.compilers.utils.Utils;
 
 public class InstructionSimplifyPass extends OptimizationPass {
-    static final ConstantName mZero = new ConstantName(0L, Type.Int);
-    static final ConstantName mOne = new ConstantName(1L, Type.Int);
+    static final NumericalConstant mZero = new NumericalConstant(0L, Type.Int);
+    static final NumericalConstant mOne = new NumericalConstant(1L, Type.Int);
 
-    private static ConstantName getZero() {
-        return new ConstantName(0L, Type.Bool);
+    private static NumericalConstant getZero() {
+        return new NumericalConstant(0L, Type.Bool);
     }
 
-    private static ConstantName getOne() {
-        return new ConstantName(1L, Type.Int);
+    private static NumericalConstant getOne() {
+        return new NumericalConstant(1L, Type.Int);
     }
 
     public static boolean matchBinOpOperandsCommutative(BinaryInstruction instruction,
@@ -111,9 +112,9 @@ public class InstructionSimplifyPass extends OptimizationPass {
     }
 
     private Instruction simplifyQuadruple(BinaryInstruction binaryInstruction) {
-        var aLong = InstructionSimplifyIrPass.symbolicallyEvaluate(String.format("%s %s %s", binaryInstruction.fstOperand.getLabel(), binaryInstruction.operator, binaryInstruction.sndOperand.getLabel()));
+        var aLong = Utils.symbolicallyEvaluate(String.format("%s %s %s", binaryInstruction.fstOperand.getLabel(), binaryInstruction.operator, binaryInstruction.sndOperand.getLabel()));
         if (aLong.isPresent()) {
-            return CopyInstruction.noMetaData(binaryInstruction.getStore(), new ConstantName(aLong.get(), Type.Int));
+            return CopyInstruction.noMetaData(binaryInstruction.getStore(), new NumericalConstant(aLong.get(), Type.Int));
         }
         Instruction newTac = null;
         switch (binaryInstruction.operator) {

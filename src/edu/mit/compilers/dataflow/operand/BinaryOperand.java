@@ -23,8 +23,7 @@ public class BinaryOperand extends Operand {
 
     @Override
     public boolean isContainedIn(StoreInstruction storeInstruction) {
-        if (storeInstruction instanceof BinaryInstruction) {
-            BinaryInstruction binaryInstruction = (BinaryInstruction) storeInstruction;
+        if (storeInstruction instanceof BinaryInstruction binaryInstruction) {
             return new BinaryOperand(binaryInstruction).equals(this);
         }
         return false;

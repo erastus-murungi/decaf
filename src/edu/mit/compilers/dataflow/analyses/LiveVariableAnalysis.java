@@ -5,7 +5,7 @@ import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.codegen.names.MemoryAddressName;
+import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.dataflow.usedef.Def;
 import edu.mit.compilers.dataflow.usedef.Use;
@@ -105,7 +105,7 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
         for (Instruction tac : tacReversed) {
             if (tac instanceof StoreInstruction) {
                 var hasResult = (StoreInstruction) tac;
-                if (!(hasResult.getStore() instanceof MemoryAddressName)) {
+                if (!(hasResult.getStore() instanceof MemoryAddress)) {
                     defSet.add(new Def(hasResult));
                 }
             }

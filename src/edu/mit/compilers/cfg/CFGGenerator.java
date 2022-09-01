@@ -8,7 +8,7 @@ import edu.mit.compilers.dataflow.passes.BranchFoldingPass;
 import edu.mit.compilers.descriptors.GlobalDescriptor;
 import edu.mit.compilers.descriptors.MethodDescriptor;
 import edu.mit.compilers.exceptions.DecafException;
-import edu.mit.compilers.symbolTable.SymbolTable;
+import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Utils;
 
 import java.util.*;

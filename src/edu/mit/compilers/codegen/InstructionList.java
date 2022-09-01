@@ -66,7 +66,7 @@ public class InstructionList extends ArrayList<Instruction> {
     @Override
     public String toString() {
         return stream()
-                .map(Instruction::repr)
+                .map(Instruction::syntaxHighlightedToString)
                 .collect(Collectors.joining("\n"));
     }
 

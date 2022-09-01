@@ -4,7 +4,7 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.MemoryAddressName;
+import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 import edu.mit.compilers.utils.Utils;
@@ -24,6 +24,10 @@ public class CopyInstruction extends StoreInstruction implements Cloneable {
         this.value = operand;
     }
 
+    public CopyInstruction(LValue dst, Value operand) {
+        this(dst, operand, null, String.format("%s = %s", dst, operand));
+    }
+
     public static CopyInstruction noMetaData(LValue dst, Value operand) {
         return new CopyInstruction(dst, operand, null, "");
     }
@@ -39,24 +43,13 @@ public class CopyInstruction extends StoreInstruction implements Cloneable {
     }
 
     @Override
-    public String repr() {
-        var storeString = Utils.coloredPrint("store", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s%s %s, %s", DOUBLE_INDENT, storeString, value.repr(), getStore().repr());
-    }
-
-    @Override
     public Instruction copy() {
         return new CopyInstruction(getStore(), value, source, getComment().orElse(null));
     }
 
     @Override
-    public String toString() {
-        return repr();
-    }
-
-    @Override
     public Optional<Operand> getOperandNoArray() {
-        if (value instanceof MemoryAddressName)
+        if (value instanceof MemoryAddress)
             return Optional.empty();
         return Optional.of(new UnmodifiedOperand(value));
     }
@@ -93,6 +86,17 @@ public class CopyInstruction extends StoreInstruction implements Cloneable {
             replaced = true;
         }
         return replaced;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s%s %s, %s", DOUBLE_INDENT, "store", value.repr(), getStore().repr());
+    }
+
+    @Override
+    public String syntaxHighlightedToString() {
+        var storeString = Utils.coloredPrint("store", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
+        return String.format("%s%s %s, %s", DOUBLE_INDENT, storeString, value.repr(), getStore().repr());
     }
 
 }

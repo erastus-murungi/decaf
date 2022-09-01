@@ -1,7 +1,7 @@
 package edu.mit.compilers.descriptors;
 
 import edu.mit.compilers.ast.MethodDefinition;
-import edu.mit.compilers.symbolTable.SymbolTable; 
+import edu.mit.compilers.symboltable.SymbolTable;
 
 /**
  * A method descriptor contains:

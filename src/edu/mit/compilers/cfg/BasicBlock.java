@@ -4,9 +4,11 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
 import edu.mit.compilers.codegen.codes.AllocateInstruction;
+import edu.mit.compilers.codegen.codes.ConditionalBranch;
 import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
+import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.ssa.Phi;
 
 import java.util.ArrayList;
@@ -108,7 +110,7 @@ public abstract class BasicBlock {
     public String getLinesOfCodeString() {
         if (astNodes.isEmpty()) {
             if (!instructionList.isEmpty()) {
-                return instructionList.get(0).repr();
+                return instructionList.get(0).syntaxHighlightedToString();
             }
         }
         return astNodes
@@ -164,5 +166,21 @@ public abstract class BasicBlock {
 
     public boolean phiPresent() {
         return instructionList.stream().anyMatch(instruction -> instruction instanceof Phi);
+    }
+
+    public void addInstructionToTail(Instruction instruction) {
+        if (this instanceof BasicBlockBranchLess) {
+            getInstructionList().add(instruction);
+        } else {
+            var instructionList = getInstructionList();
+            int last = instructionList.size() - 1;
+            var inst = instructionList.get(last);
+            while (last >= 0 && (inst instanceof ConditionalBranch || inst instanceof UnconditionalJump)) {
+                inst = instructionList.get(last);
+                last --;
+            }
+            instructionList.add(last, instruction);
+        }
+
     }
 }

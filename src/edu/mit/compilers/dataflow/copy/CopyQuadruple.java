@@ -10,18 +10,7 @@ import java.util.Objects;
 // a pair (u, v, pos, block), such that u <- v is a copy assignment
 // and pos is the position in block is the block where the assignment occurs
 // adapted from page 358 of the whale book
-public class CopyQuadruple {
-    public final LValue u;
-    public final Value v;
-    public final int position;
-    public final BasicBlock basicBlock;
-
-    public CopyQuadruple(LValue u, Value v, int position, BasicBlock basicBlock) {
-        this.u = u;
-        this.v = v;
-        this.position = position;
-        this.basicBlock = basicBlock;
-    }
+public record CopyQuadruple(LValue u, Value v, int position, BasicBlock basicBlock) {
 
     @Override
     public String toString() {

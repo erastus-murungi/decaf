@@ -28,12 +28,6 @@ public class ReturnInstruction extends HasOperand {
     }
 
     @Override
-    public String toString() {
-        final var returnString = Utils.coloredPrint("return", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s%s %s", DOUBLE_INDENT, returnString, getReturnAddress().isEmpty() ? " " : getReturnAddress().get().repr());
-    }
-
-    @Override
     public <T, E> T accept(InstructionVisitor<T, E> visitor, E extra) {
         return visitor.visit(this, extra);
     }
@@ -43,11 +37,6 @@ public class ReturnInstruction extends HasOperand {
         if (returnAddress == null)
             return Collections.emptyList();
         return List.of(returnAddress);
-    }
-
-    @Override
-    public String repr() {
-        return toString();
     }
 
     @Override
@@ -74,5 +63,15 @@ public class ReturnInstruction extends HasOperand {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s%s %s", DOUBLE_INDENT, "return", getReturnAddress().isEmpty() ? " " : getReturnAddress().get().repr());
+    }
+    @Override
+    public String syntaxHighlightedToString() {
+        final var returnString = Utils.coloredPrint("return", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
+        return String.format("%s%s %s", DOUBLE_INDENT, returnString, getReturnAddress().isEmpty() ? " " : getReturnAddress().get().repr());
     }
 }

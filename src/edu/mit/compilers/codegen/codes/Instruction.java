@@ -2,10 +2,13 @@ package edu.mit.compilers.codegen.codes;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
+import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.Value;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public abstract class Instruction {
     public AST source;
@@ -38,7 +41,14 @@ public abstract class Instruction {
 
     public abstract List<Value> getAllNames();
 
-    public abstract String repr();
+    public abstract String syntaxHighlightedToString();
 
     public abstract Instruction copy();
+
+    public Collection<LValue> getAllLValues() {
+        return getAllNames().stream()
+                            .filter(value -> (value instanceof LValue))
+                            .map(value -> (LValue) value)
+                            .collect(Collectors.toList());
+    }
 }

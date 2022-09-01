@@ -54,7 +54,7 @@ public class Label extends Instruction {
     }
 
     @Override
-    public String repr() {
+    public String syntaxHighlightedToString() {
         return toString();
     }
 

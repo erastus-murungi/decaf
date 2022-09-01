@@ -5,7 +5,7 @@ import java.util.List;
 import edu.mit.compilers.codegen.CodegenAstVisitor;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.ir.Visitor;
-import edu.mit.compilers.symbolTable.SymbolTable;
+import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 
 public class Assignment extends AST {

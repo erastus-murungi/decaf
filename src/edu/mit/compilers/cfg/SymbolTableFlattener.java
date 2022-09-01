@@ -1,7 +1,6 @@
 package edu.mit.compilers.cfg;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Queue;
 import java.util.TreeSet;
@@ -13,8 +12,8 @@ import edu.mit.compilers.ast.Name;
 import edu.mit.compilers.descriptors.Descriptor;
 import edu.mit.compilers.descriptors.GlobalDescriptor;
 import edu.mit.compilers.descriptors.MethodDescriptor;
-import edu.mit.compilers.symbolTable.SymbolTable;
-import edu.mit.compilers.symbolTable.SymbolTableType;
+import edu.mit.compilers.symboltable.SymbolTable;
+import edu.mit.compilers.symboltable.SymbolTableType;
 import edu.mit.compilers.utils.Pair;
 
 public class SymbolTableFlattener {

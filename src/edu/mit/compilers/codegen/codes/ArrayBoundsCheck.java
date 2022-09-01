@@ -36,20 +36,10 @@ public class ArrayBoundsCheck extends HasOperand {
     }
 
     @Override
-    public String repr() {
-        return toString();
-    }
-
-    @Override
     public Instruction copy() {
         return new ArrayBoundsCheck(getAddress, boundsIndex);
     }
 
-    @Override
-    public String toString() {
-        final var checkBoundsString = Utils.coloredPrint("checkbounds", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s%s %s %s, %s, %s", DOUBLE_INDENT, checkBoundsString, getAddress.getStore().toString(), getAddress.getBaseAddress().getType().getColoredSourceCode(), getAddress.getIndex().repr(), getAddress.getLength().orElseThrow().repr());
-    }
 
     @Override
     public Operand getOperand() {
@@ -65,4 +55,15 @@ public class ArrayBoundsCheck extends HasOperand {
     public boolean replace(Value oldName, Value newName) {
         return getAddress.replace(oldName, newName);
     }
+
+    @Override
+    public String toString() {
+        return String.format("%s%s %s %s, %s, %s", DOUBLE_INDENT, "checkbounds", getAddress.getStore().toString(), getAddress.getBaseAddress().getType().getColoredSourceCode(), getAddress.getIndex().repr(), getAddress.getLength().orElseThrow().repr());
+    }
+
+    public String syntaxHighlightedToString() {
+        final var checkBoundsString = Utils.coloredPrint("checkbounds", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
+        return String.format("%s%s %s %s, %s, %s", DOUBLE_INDENT, checkBoundsString, getAddress.getStore().toString(), getAddress.getBaseAddress().getType().getColoredSourceCode(), getAddress.getIndex().repr(), getAddress.getLength().orElseThrow().repr());
+    }
+
 }

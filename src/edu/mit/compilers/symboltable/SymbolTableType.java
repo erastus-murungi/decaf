@@ -1,4 +1,4 @@
-package edu.mit.compilers.symbolTable;
+package edu.mit.compilers.symboltable;
 
 public enum SymbolTableType {
     Parameter,

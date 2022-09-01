@@ -30,7 +30,7 @@ public class RuntimeException extends Instruction {
     }
 
     @Override
-    public String repr() {
+    public String syntaxHighlightedToString() {
         return toString();
     }
 

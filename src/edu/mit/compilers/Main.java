@@ -3,9 +3,9 @@ package edu.mit.compilers;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
-import edu.mit.compilers.tools.CLI;
+import edu.mit.compilers.interpreter.Interpreter;
+import edu.mit.compilers.utils.CLI;
 import edu.mit.compilers.utils.Compilation;
-import edu.mit.compilers.utils.TestRunner;
 
 class Main {
     public static void main(String[] args) throws FileNotFoundException {

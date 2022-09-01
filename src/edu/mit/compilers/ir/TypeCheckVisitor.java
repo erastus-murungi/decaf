@@ -10,7 +10,7 @@ import edu.mit.compilers.descriptors.Descriptor;
 import edu.mit.compilers.descriptors.MethodDescriptor;
 import edu.mit.compilers.exceptions.DecafSemanticException;
 import edu.mit.compilers.grammar.DecafScanner;
-import edu.mit.compilers.symbolTable.SymbolTable;
+import edu.mit.compilers.symboltable.SymbolTable;
 
 public class TypeCheckVisitor implements Visitor<Type> {
     SymbolTable methods;

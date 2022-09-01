@@ -20,8 +20,8 @@ import edu.mit.compilers.cfg.BasicBlockWithBranch;
 import edu.mit.compilers.cfg.CFGVisitor;
 import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.cfg.SymbolTableFlattener;
-import edu.mit.compilers.codegen.codes.AllocateInstruction;
 import edu.mit.compilers.codegen.codes.ConditionalBranch;
+import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.GlobalAllocation;
 import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.Method;
@@ -29,11 +29,11 @@ import edu.mit.compilers.codegen.codes.MethodEnd;
 import edu.mit.compilers.codegen.codes.RuntimeException;
 import edu.mit.compilers.codegen.codes.StringLiteralAllocation;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.TemporaryName;
+import edu.mit.compilers.codegen.names.Temporary;
 import edu.mit.compilers.codegen.names.Variable;
 import edu.mit.compilers.descriptors.GlobalDescriptor;
 import edu.mit.compilers.exceptions.DecafException;
-import edu.mit.compilers.symbolTable.SymbolTable;
+import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.ProgramIr;
 
@@ -66,11 +66,19 @@ public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<I
         var methodInstructionList = new InstructionList();
         var method = new Method(methodDefinition);
         methodInstructionList.add(method);
+        methodInstructionList.addAll(
+                method.methodDefinition.parameterList
+                        .stream()
+                        .map(
+                                parameterName -> new CopyInstruction(new Variable(parameterName.getName(), parameterName.getType()), new Variable(parameterName.getName() + "_arg", parameterName.getType()), null, null)
+                        )
+                        .toList()
+        );
 
         methodInstructionList.addAll(
                 cfgGenerationErrors.stream()
                                    .map(error -> new RuntimeException(error.getMessage(), -2, error))
-                                   .collect(Collectors.toList()));
+                                   .toList());
         // if the errors list is non-empty, set hasRuntimeException to true
         method.setHasRuntimeException(!cfgGenerationErrors.isEmpty());
 
@@ -86,12 +94,6 @@ public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<I
         methodStart.setInstructionList(entryBasicBlockInstructionList);
         method.entryBlock = methodStart;
         method.exitBlock = currentMethodExitNop;
-        method.entryBlock.getInstructionList()
-                         .addAll(1, ProgramIr.getLocals(method, globalNames)
-                                             .stream()
-                                             .map(AllocateInstruction::new)
-                                             .collect(Collectors.toUnmodifiableList())
-                         );
         method.unoptimizedInstructionList = TraceScheduler.flattenIr(method);
         return method;
     }
@@ -197,7 +199,7 @@ public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<I
         visitedBasicBlocks.add(basicBlockWithBranch);
 
         var condition = basicBlockWithBranch.getBranchCondition();
-        var conditionInstructionList = condition.accept(currentAstToInstructionListConverter, TemporaryName.generateTemporaryName(Type.Bool));
+        var conditionInstructionList = condition.accept(currentAstToInstructionListConverter, Temporary.generateTemporaryName(Type.Bool));
         conditionInstructionList.add(0, basicBlockWithBranch.getLabel());
 
         basicBlockWithBranch.getTrueTarget()

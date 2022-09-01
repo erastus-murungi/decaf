@@ -3,9 +3,9 @@ package edu.mit.compilers.ir;
 import edu.mit.compilers.ast.*;
 import edu.mit.compilers.exceptions.DecafSemanticException;
 import edu.mit.compilers.grammar.TokenPosition;
-import edu.mit.compilers.symbolTable.SymbolTable;
+import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.descriptors.*;
-import edu.mit.compilers.symbolTable.SymbolTableType;
+import edu.mit.compilers.symboltable.SymbolTableType;
 import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.Utils;
 

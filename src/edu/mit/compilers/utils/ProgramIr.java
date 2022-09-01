@@ -16,7 +16,7 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.MemoryAddressName;
+import edu.mit.compilers.codegen.names.MemoryAddress;
 
 public class ProgramIr {
     public InstructionList headerInstructions;
@@ -65,7 +65,7 @@ public class ProgramIr {
 
         for (Instruction instruction : flattened) {
             for (Value name : instruction.getAllNames()) {
-                if (name instanceof MemoryAddressName && !globals.contains(name)) {
+                if (name instanceof MemoryAddress && !globals.contains(name)) {
                     uniqueNames.add(name);
                 }
             }
@@ -73,7 +73,7 @@ public class ProgramIr {
 
         for (Instruction instruction : flattened) {
             for (var name : instruction.getAllNames()) {
-                if (!(name instanceof MemoryAddressName) && !globals.contains(name)) {
+                if (!(name instanceof MemoryAddress) && !globals.contains(name)) {
                     uniqueNames.add(name);
                 }
             }
@@ -113,6 +113,6 @@ public class ProgramIr {
         locals.addAll(0, methodParamNamesList
                 .stream()
                 .sorted(Comparator.comparing(Value::toString))
-                .collect(Collectors.toList()));
+                .toList());
     }
 }

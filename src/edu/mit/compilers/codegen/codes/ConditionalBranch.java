@@ -35,7 +35,7 @@ public class ConditionalBranch extends HasOperand {
     }
 
     @Override
-    public String repr() {
+    public String syntaxHighlightedToString() {
         var ifString =  Utils.coloredPrint("if false", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
 //        var ifString =  "if false";
         var goTo =  Utils.coloredPrint("goto", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);

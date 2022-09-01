@@ -4,7 +4,7 @@ import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.names.LValue;
 
 public class LiveInterval {
-    private InstructionList instructionList;
+    private final InstructionList instructionList;
     LValue variable;
     int startPoint;
     int endPoint;

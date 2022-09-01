@@ -5,7 +5,7 @@ import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
-import edu.mit.compilers.symbolTable.SymbolTable;
+import edu.mit.compilers.symboltable.SymbolTable;
 
 public class RelationalOperator extends BinOperator {
     public RelationalOperator(TokenPosition tokenPosition, @DecafScanner.RelationalOperator String op) {

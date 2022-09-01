@@ -5,10 +5,10 @@ import edu.mit.compilers.codegen.codes.StringLiteralAllocation;
 
 import java.util.Objects;
 
-public class StringConstantName extends Value {
+public class StringConstant extends Constant {
     StringLiteralAllocation stringConstant;
 
-    public StringConstantName(StringLiteralAllocation stringConstant) {
+    public StringConstant(StringLiteralAllocation stringConstant) {
         super(Type.String, stringConstant.label);
         this.stringConstant = stringConstant;
     }
@@ -23,13 +23,13 @@ public class StringConstantName extends Value {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-        StringConstantName that = (StringConstantName) o;
+        StringConstant that = (StringConstant) o;
         return Objects.equals(stringConstant.stringConstant, that.stringConstant.stringConstant);
     }
 
     @Override
     public Value copy() {
-        return new StringConstantName((StringLiteralAllocation) stringConstant.copy());
+        return new StringConstant((StringLiteralAllocation) stringConstant.copy());
     }
 
     @Override
@@ -45,5 +45,10 @@ public class StringConstantName extends Value {
     @Override
     public void renameForSsa(int versionNumber) {
         throw new IllegalStateException();
+    }
+
+    @Override
+    public String getValue() {
+        return stringConstant.stringConstant;
     }
 }

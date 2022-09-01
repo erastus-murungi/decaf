@@ -21,7 +21,7 @@ import edu.mit.compilers.dataflow.ssapasses.CommonSubExpressionEliminationSsaPas
 import edu.mit.compilers.dataflow.ssapasses.CopyPropagationSsaPass;
 import edu.mit.compilers.dataflow.ssapasses.DeadStoreEliminationSsaPass;
 import edu.mit.compilers.dataflow.ssapasses.SccpSsaPass;
-import edu.mit.compilers.tools.CLI;
+import edu.mit.compilers.utils.CLI;
 import edu.mit.compilers.utils.Utils;
 
 public class DataflowOptimizer {
@@ -122,7 +122,7 @@ public class DataflowOptimizer {
 //        addPass(OptimizationPassType.CopyPropagation);
 //        addPass(OptimizationPassType.CommonSubExpression);
 //        addPass(OptimizationPassType.DeadCodeElimination);
-        addPass(OptimizationPassType.PeepHoleOptimization);
+//        addPass(OptimizationPassType.PeepHoleOptimization);
 //        addPass(OptimizationPassType.DeadStoreElimination);
 //        addPass(OptimizationPassType.ConstantPropagation);
 //        addPass(OptimizationPassType.InstructionSimplification);

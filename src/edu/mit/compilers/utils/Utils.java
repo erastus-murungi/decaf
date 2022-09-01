@@ -2,25 +2,33 @@ package edu.mit.compilers.utils;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.Block;
-import edu.mit.compilers.ast.Program;
-import edu.mit.compilers.ast.StringLiteral;
+import edu.mit.compilers.cfg.BasicBlock;
+import edu.mit.compilers.codegen.codes.AllocateInstruction;
+import edu.mit.compilers.codegen.codes.Instruction;
+import edu.mit.compilers.codegen.codes.Method;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class Utils {
     // adopted from Java 15
-  public static final long WORD_SIZE = 8;
+    public static final long WORD_SIZE = 8;
+
     public static String translateEscapes(String string) {
         if (string.isEmpty()) {
             return "";
@@ -268,5 +276,49 @@ public class Utils {
                 ANSI_BRIGHT_BG_BLACK, ANSI_BRIGHT_BG_RED, ANSI_BRIGHT_BG_GREEN, ANSI_BRIGHT_BG_YELLOW,
                 ANSI_BRIGHT_BG_BLUE, ANSI_BRIGHT_BG_PURPLE, ANSI_BRIGHT_BG_CYAN, ANSI_BRIGHT_BG_WHITE
         };
+    }
+
+    public static void insertAllocateInstructions(ProgramIr programIr) {
+        programIr.methodList.forEach(
+                method -> method.entryBlock.getInstructionList()
+                                           .addAll(1, ProgramIr.getLocals(method, programIr.globals)
+                                                               .stream()
+                                                               .map(AllocateInstruction::new)
+                                                               .toList()
+                                           )
+        );
+
+    }
+
+    public static boolean containsAlphabeticCharacters(String string) {
+        return string.matches(".*[a-zA-Z]+.*");
+    }
+
+    public static Optional<Long> symbolicallyEvaluate(String string) {
+        // this check is necessary because the evaluator evaluates variables like 'e' and 'pi'
+        if (containsAlphabeticCharacters(string)) {
+            return Optional.empty();
+        }
+        var expression = new com.udojava.evalex.Expression(string);
+        try {
+            var res = expression.setPrecision(100)
+                                .eval();
+            return Optional.of(res.longValue());
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+
+    public static void printSsaCfg(Collection<Method> methodCollection, String filename) {
+        var copy = new HashMap<String, BasicBlock>();
+        methodCollection.forEach(methodBegin -> copy.put(methodBegin.methodName(), methodBegin.entryBlock));
+        GraphVizPrinter.printGraph(copy,
+                (basicBlock -> basicBlock.getInstructionList()
+                                         .stream()
+                                         .map(Instruction::toString)
+                                         .collect(Collectors.joining("\n"))),
+                filename
+        );
     }
 }

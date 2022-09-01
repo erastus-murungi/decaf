@@ -35,7 +35,7 @@ public class UnconditionalJump extends Instruction {
     }
 
     @Override
-    public String repr() {
+    public String syntaxHighlightedToString() {
         var goTo =  Utils.coloredPrint("goto", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
 //        var goTo =  "goto";
         if (goToLabel == null)

@@ -65,11 +65,6 @@ public class Phi extends StoreInstruction {
     }
 
     @Override
-    public String repr() {
-        return toString();
-    }
-
-    @Override
     public Instruction copy() {
         return new Phi(getStore(), basicBlockToAssignableNameMapping);
     }
@@ -77,12 +72,6 @@ public class Phi extends StoreInstruction {
     @Override
     public Optional<Operand> getOperandNoArray() {
         return Optional.empty();
-    }
-
-    @Override
-    public String toString() {
-        String rhs = basicBlockToAssignableNameMapping.values().stream().map(Value::repr).collect(Collectors.joining(", "));
-        return String.format("%s%s: %s = phi (%s)", DOUBLE_INDENT, getStore().repr(), getStore().getType().getColoredSourceCode(), rhs);
     }
 
     @Override
@@ -96,5 +85,17 @@ public class Phi extends StoreInstruction {
     @Override
     public int hashCode() {
         return Objects.hash(basicBlockToAssignableNameMapping.values());
+    }
+
+    @Override
+    public String toString() {
+        String rhs = basicBlockToAssignableNameMapping.values().stream().map(Value::repr).collect(Collectors.joining(", "));
+        return String.format("%s%s: %s = phi (%s)", DOUBLE_INDENT, getStore().repr(), getStore().getType().getSourceCode(), rhs);
+    }
+
+    @Override
+    public String syntaxHighlightedToString() {
+        String rhs = basicBlockToAssignableNameMapping.values().stream().map(Value::repr).collect(Collectors.joining(", "));
+        return String.format("%s%s: %s = phi (%s)", DOUBLE_INDENT, getStore().repr(), getStore().getType().getColoredSourceCode(), rhs);
     }
 }

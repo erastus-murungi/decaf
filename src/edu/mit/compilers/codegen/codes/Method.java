@@ -60,15 +60,11 @@ public class Method extends Instruction {
     public Method(MethodDefinition methodDefinition) {
         super(methodDefinition);
         this.methodDefinition = methodDefinition;
-        parameterNames =  methodDefinition.parameterList.stream()
-                                             .map(methodDefinitionParameter -> new Variable(methodDefinitionParameter.getName(), methodDefinitionParameter.getType()))
-                                             .collect(Collectors.toList());
+        parameterNames = methodDefinition.parameterList.stream()
+                                                       .map(methodDefinitionParameter -> new Variable(methodDefinitionParameter.getName() + "_arg", methodDefinitionParameter.getType()))
+                                                       .collect(Collectors.toList());
     }
 
-    @Override
-    public String toString() {
-        return String.format("%s:\n%s%s", methodDefinition.methodName.getLabel(), DOUBLE_INDENT, "enter method");
-    }
 
     @Override
     public <T, E> T accept(InstructionVisitor<T, E> visitor, E extra) {
@@ -80,14 +76,32 @@ public class Method extends Instruction {
         return Collections.emptyList();
     }
 
-    @Override
-    public String repr() {
-        var defineString = Utils.coloredPrint("define", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s @%s -> %s {%s", defineString, methodDefinition.methodName.getLabel(), methodDefinition.returnType.getSourceCode(), DOUBLE_INDENT);
-    }
 
     @Override
     public Instruction copy() {
         return new Method(methodDefinition);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s @%s(%s) -> %s {%s", "define",
+                methodDefinition.methodName.getLabel(),
+                parameterNames.stream()
+                              .map(parameterName -> parameterName.getType()
+                                                                 .getSourceCode() + " " + parameterName.repr())
+                              .collect(Collectors.joining(", ")),
+                methodDefinition.returnType.getSourceCode(), DOUBLE_INDENT);
+    }
+
+    @Override
+    public String syntaxHighlightedToString() {
+        var defineString = Utils.coloredPrint("define", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
+        return String.format("%s @%s(%s) -> %s {%s", defineString,
+                methodDefinition.methodName.getLabel(),
+                parameterNames.stream()
+                              .map(parameterName -> parameterName.getType()
+                                                                 .getColoredSourceCode() + " " + parameterName.repr())
+                              .collect(Collectors.joining(", ")),
+                methodDefinition.returnType.getSourceCode(), DOUBLE_INDENT);
     }
 }

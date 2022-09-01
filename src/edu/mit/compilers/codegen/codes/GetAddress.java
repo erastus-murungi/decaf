@@ -8,8 +8,8 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.ConstantName;
-import edu.mit.compilers.codegen.names.MemoryAddressName;
+import edu.mit.compilers.codegen.names.NumericalConstant;
+import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.dataflow.operand.GetAddressOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.utils.Utils;
@@ -18,13 +18,13 @@ import edu.mit.compilers.utils.Utils;
 public class GetAddress extends StoreInstruction {
     private Value baseAddress;
     private Value index;
-    private final ConstantName length;
+    private final NumericalConstant length;
 
-    public Optional<ConstantName> getLength() {
+    public Optional<NumericalConstant> getLength() {
         return Optional.ofNullable(length);
     }
 
-    public GetAddress(AST source, Value baseAddress, Value index, LValue dest, ConstantName length) {
+    public GetAddress(AST source, Value baseAddress, Value index, LValue dest, NumericalConstant length) {
         super(dest, source);
         this.baseAddress = baseAddress;
         this.index = index;
@@ -41,8 +41,8 @@ public class GetAddress extends StoreInstruction {
         return baseAddress;
     }
 
-    public MemoryAddressName getStore() {
-        return (MemoryAddressName) super.getStore();
+    public MemoryAddress getStore() {
+        return (MemoryAddress) super.getStore();
     }
 
     @Override
@@ -56,7 +56,7 @@ public class GetAddress extends StoreInstruction {
     }
 
     @Override
-    public String repr() {
+    public String syntaxHighlightedToString() {
         final var getAddressString = Utils.coloredPrint("getaddr", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
         return String.format("%s%s = %s %s %s, %s", DOUBLE_INDENT, getStore().repr(), getAddressString, baseAddress.repr(), baseAddress.getType().getColoredSourceCode(), getIndex().repr());
     }

@@ -20,12 +20,11 @@ import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.ConditionalBranch;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.Variable;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
-import edu.mit.compilers.tools.CLI;
 import edu.mit.compilers.utils.GraphVizPrinter;
 import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.Utils;
@@ -63,7 +62,7 @@ public class RegisterAllocation {
         programIr.methodList.forEach(methodBegin -> copy.put(methodBegin.methodName(), methodBegin.entryBlock));
         GraphVizPrinter.printGraph(copy,
                 (basicBlock -> basicBlock.getInstructionList().stream()
-                        .map(Instruction::repr)
+                        .map(Instruction::syntaxHighlightedToString)
                         .collect(Collectors.joining("\n"))),
                 "cfg_ir"
         );
@@ -103,7 +102,7 @@ public class RegisterAllocation {
             var basicBlocks = DataFlowAnalysis.getReversePostOrder(method.entryBlock);
             basicBlocks.forEach(basicBlock -> {
                 if (basicBlock.getInstructionList().size() > 1)
-                    throw new IllegalStateException("failed linearization of " + basicBlock.getLinesOfCodeString());
+                    throw new IllegalStateException("failed linearization of " + basicBlock.getLinesOfCodeString() + "\n" + basicBlock.getInstructionList().toString());
                 if (basicBlock.getInstructionList().size() == 1)
                     instructionToLiveVariablesMap.put(basicBlock.getInstructionList().get(0), liveVariableAnalysis.liveOut(basicBlock));
             });
@@ -121,11 +120,11 @@ public class RegisterAllocation {
         for (Instruction instruction : instructionList) {
             var liveOut = instructionToLiveVariablesMap.get(instruction);
             if (liveOut != null) {
-                var s = instruction.repr()
+                var s = instruction.syntaxHighlightedToString()
                         .split("#")[0];
                 output.add(String.format("%3d:    ", index) + s + "\t        // live out =  " + prettyPrintLive(liveOut));
             } else {
-                output.add(String.format("%3d:    ", index) + instruction.repr());
+                output.add(String.format("%3d:    ", index) + instruction.syntaxHighlightedToString());
             }
             index += 1;
         }
@@ -143,8 +142,7 @@ public class RegisterAllocation {
     private void correctSuccessors(BasicBlock oldBlock, BasicBlock newBlock, Method method) {
         var predecessors = oldBlock.getPredecessors();
         for (BasicBlock predecessor : predecessors) {
-            if (predecessor instanceof BasicBlockBranchLess) {
-                var branchLess = (BasicBlockBranchLess) predecessor;
+            if (predecessor instanceof BasicBlockBranchLess branchLess) {
                 branchLess.setSuccessor(newBlock);
             } else {
                 var withBranch = (BasicBlockWithBranch) predecessor;

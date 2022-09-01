@@ -1,7 +1,9 @@
-package edu.mit.compilers.symbolTable;
+package edu.mit.compilers.symboltable;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import edu.mit.compilers.ast.Block;
@@ -87,7 +89,8 @@ public class SymbolTable {
     }
 
     private static String padRight(String s, Optional<Integer> n) {
-        return n.map(integer -> s + " ".repeat(integer + 4 - s.length())).orElse(s);
+        return n.map(integer -> s + " ".repeat(integer + 4 - s.length()))
+                .orElse(s);
     }
 
 
@@ -95,7 +98,6 @@ public class SymbolTable {
         return myToString("", suffix);
     }
 
-    @SuppressWarnings("unchecked")
     public String myToString(String indent, String suffix) {
         String repeat = " ".repeat(Math.max(0, indent.length() - 8));
         String repeat1 = "-".repeat(Math.min(indent.length(), 8));
@@ -107,14 +109,31 @@ public class SymbolTable {
         final String BUILTIN_TYPES = "Builtin Types";
         final String ARRAY_LENGTH = "Array Length";
 
-        Optional<Integer> maxLengthIds = Stream.concat(Stream.of(IDENTIFIER, "-".repeat(IDENTIFIER.length())), this.entries.keySet().stream().map(Object::toString)).map(String::length).reduce(Math::max);
+        Optional<Integer> maxLengthIds = Stream.concat(Stream.of(IDENTIFIER, "-".repeat(IDENTIFIER.length())), this.entries.keySet()
+                                                                                                                           .stream()
+                                                                                                                           .map(Object::toString))
+                                               .map(String::length)
+                                               .reduce(Math::max);
 
-        Stream<String> maxLengthIdsStream = Stream.concat(Stream.of(IDENTIFIER, "-".repeat(IDENTIFIER.length())), this.entries.keySet().stream().map(Object::toString));
+        Stream<String> maxLengthIdsStream = Stream.concat(Stream.of(IDENTIFIER, "-".repeat(IDENTIFIER.length())), this.entries.keySet()
+                                                                                                                              .stream()
+                                                                                                                              .map(Object::toString));
 
-        List<String> ids = maxLengthIdsStream.map(((String s) -> padRight(s, maxLengthIds))).collect(Collectors.toList());
+        List<String> ids = maxLengthIdsStream.map(((String s) -> padRight(s, maxLengthIds)))
+                                             .toList();
 
-        Optional<Integer> maxMethodD = Stream.concat(Stream.of(DESCRIPTOR_CLASSES, "-".repeat(DESCRIPTOR_CLASSES.length())), this.entries.keySet().stream().map(Object::getClass).map(Class::getSimpleName)).map(String::length).reduce(Math::max);
-        List<String> descriptorTypes = Stream.concat(Stream.of(DESCRIPTOR_CLASSES, "-".repeat(DESCRIPTOR_CLASSES.length())), this.entries.values().stream().map(Object::getClass).map(Class::getSimpleName)).map(s -> padRight(s, maxMethodD)).collect(Collectors.toList());
+        Optional<Integer> maxMethodD = Stream.concat(Stream.of(DESCRIPTOR_CLASSES, "-".repeat(DESCRIPTOR_CLASSES.length())), this.entries.keySet()
+                                                                                                                                         .stream()
+                                                                                                                                         .map(Object::getClass)
+                                                                                                                                         .map(Class::getSimpleName))
+                                             .map(String::length)
+                                             .reduce(Math::max);
+        List<String> descriptorTypes = Stream.concat(Stream.of(DESCRIPTOR_CLASSES, "-".repeat(DESCRIPTOR_CLASSES.length())), this.entries.values()
+                                                                                                                                         .stream()
+                                                                                                                                         .map(Object::getClass)
+                                                                                                                                         .map(Class::getSimpleName))
+                                             .map(s -> padRight(s, maxMethodD))
+                                             .toList();
 
         List<Descriptor> list1 = new ArrayList<>(this.entries.values());
         List<String> builtins = new ArrayList<>();
@@ -123,16 +142,25 @@ public class SymbolTable {
             String toString = type.toString();
             builtins.add(toString);
         }
-        Optional<Integer> maxLengthTypes = Stream.concat(Stream.of(BUILTIN_TYPES, "-".repeat(BUILTIN_TYPES.length())), builtins.stream()).map(String::length).reduce(Math::max);
-        List<String> builtinTypes = Stream.concat(Stream.of(BUILTIN_TYPES, "-".repeat(BUILTIN_TYPES.length())), builtins.stream()).map(Object::toString).map((String s) -> padRight(s, maxLengthTypes)).collect(Collectors.toList());
+        Optional<Integer> maxLengthTypes = Stream.concat(Stream.of(BUILTIN_TYPES, "-".repeat(BUILTIN_TYPES.length())), builtins.stream())
+                                                 .map(String::length)
+                                                 .reduce(Math::max);
+        List<String> builtinTypes = Stream.concat(Stream.of(BUILTIN_TYPES, "-".repeat(BUILTIN_TYPES.length())), builtins.stream())
+                                          .map(Object::toString)
+                                          .map((String s) -> padRight(s, maxLengthTypes))
+                                          .toList();
 
         List<String> list = new ArrayList<>();
         for (Descriptor descriptor : list1) {
             String o = (descriptor instanceof ArrayDescriptor) ? ((ArrayDescriptor) descriptor).size.toString() : "N / A";
             list.add(o);
         }
-        Optional<Integer> maxLengthArraySize = Stream.concat(Stream.of(ARRAY_LENGTH, "-".repeat(ARRAY_LENGTH.length())), list.stream()).map(String::length).reduce(Math::max);
-        List<String> arraySizes = Stream.concat(Stream.of(ARRAY_LENGTH, "-".repeat(ARRAY_LENGTH.length())), list.stream()).map(s -> padRight(s, maxLengthArraySize)).collect(Collectors.toList());
+        Optional<Integer> maxLengthArraySize = Stream.concat(Stream.of(ARRAY_LENGTH, "-".repeat(ARRAY_LENGTH.length())), list.stream())
+                                                     .map(String::length)
+                                                     .reduce(Math::max);
+        List<String> arraySizes = Stream.concat(Stream.of(ARRAY_LENGTH, "-".repeat(ARRAY_LENGTH.length())), list.stream())
+                                        .map(s -> padRight(s, maxLengthArraySize))
+                                        .toList();
 
 
         List<String> rows = new ArrayList<>();
@@ -142,6 +170,7 @@ public class SymbolTable {
         }
         return String.join("\n", rows);
     }
+
     public boolean isEmpty() {
         return entries.isEmpty();
     }

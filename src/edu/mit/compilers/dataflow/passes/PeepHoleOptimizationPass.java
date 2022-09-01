@@ -14,7 +14,7 @@ import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.ConstantName;
+import edu.mit.compilers.codegen.names.NumericalConstant;
 
 public class PeepHoleOptimizationPass extends OptimizationPass {
     public PeepHoleOptimizationPass(Set<LValue> globalVariables, Method method) {
@@ -93,7 +93,7 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
                 var instruction = basicBlock.getInstructionList().get(indexOfInstruction);
                 if (instruction instanceof ArrayBoundsCheck) {
                     ArrayBoundsCheck arrayBoundsCheck = (ArrayBoundsCheck) instruction;
-                    if (arrayBoundsCheck.getAddress.getIndex() instanceof ConstantName) {
+                    if (arrayBoundsCheck.getAddress.getIndex() instanceof NumericalConstant) {
                         var index = Long.parseLong(arrayBoundsCheck.getAddress.getIndex().getLabel());
                         var length = Long.parseLong(arrayBoundsCheck.getAddress.getLength()
                                 .orElseThrow().getLabel());

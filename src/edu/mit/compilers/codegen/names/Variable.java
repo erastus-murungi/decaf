@@ -7,6 +7,11 @@ public class Variable extends LValue {
         super(label, type);
     }
 
+    public Variable(String label, Type type, Integer versionNumber) {
+        super(label, type);
+        this.versionNumber = versionNumber;
+    }
+
     @Override
     public String toString() {
         return getLabel();
@@ -14,7 +19,7 @@ public class Variable extends LValue {
 
     @Override
     public Variable copy() {
-        return new Variable(label, type);
+        return new Variable(label, type, versionNumber);
     }
 
     @Override

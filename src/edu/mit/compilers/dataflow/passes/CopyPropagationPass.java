@@ -11,7 +11,7 @@ import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.MemoryAddressName;
+import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.dataflow.analyses.AvailableCopies;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
@@ -71,7 +71,7 @@ public class CopyPropagationPass extends OptimizationPass {
             if (instruction instanceof StoreInstruction) {
                 var hasResult = (StoreInstruction) instruction;
                 var resultLocation = hasResult.getStore();
-                if (!(resultLocation instanceof MemoryAddressName)) {
+                if (!(resultLocation instanceof MemoryAddress)) {
                     for (var assignableName : new ArrayList<>(copies.keySet())) {
                         var replacer = copies.get(assignableName);
                         if (assignableName.equals(resultLocation) ||

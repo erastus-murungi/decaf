@@ -39,7 +39,7 @@ public class StringLiteralAllocation extends Instruction {
     }
 
     @Override
-    public String repr() {
+    public String syntaxHighlightedToString() {
         return String.format("@.%s = %s%s%s", label, stringConstant, DOUBLE_INDENT, "# " + size() + " bytes");
     }
 

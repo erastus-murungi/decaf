@@ -26,8 +26,7 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
 
         for (BasicBlock basicBlock : getBasicBlockList()) {
             for (StoreInstruction storeInstruction: basicBlock.getStores()) {
-                if (storeInstruction instanceof CopyInstruction) {
-                    var copyInstruction = (CopyInstruction) storeInstruction;
+                if (storeInstruction instanceof CopyInstruction copyInstruction) {
                     var replacer = copyInstruction.getValue();
                     var toBeReplaced = copyInstruction.getStore();
                     copiesMap.put(toBeReplaced, replacer);
@@ -38,8 +37,7 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
 
         for (BasicBlock basicBlock : dom.preorder()) {
             for (Instruction instruction: basicBlock.getInstructionList()) {
-                if (instruction instanceof HasOperand) {
-                    var hasOperand = (HasOperand) instruction;
+                if (instruction instanceof HasOperand hasOperand) {
                     for (LValue toBeReplaced: hasOperand.getLValues()) {
                         if (copiesMap.containsKey(toBeReplaced)) {
                             var replacer = copiesMap.get(toBeReplaced);

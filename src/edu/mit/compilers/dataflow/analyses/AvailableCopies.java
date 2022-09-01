@@ -4,7 +4,7 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.MemoryAddressName;
+import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.dataflow.copy.CopyQuadruple;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
@@ -33,7 +33,7 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
             if (basicBlock.equals(entryBlock)) continue;
             var copiesForBasicBlock = new HashMap<Value, Value>();
             for (CopyQuadruple copyQuadruple : in(basicBlock)) {
-                copiesForBasicBlock.put(copyQuadruple.u, copyQuadruple.v);
+                copiesForBasicBlock.put(copyQuadruple.u(), copyQuadruple.v());
             }
             availableCopies.put(basicBlock, copiesForBasicBlock);
         }
@@ -101,7 +101,7 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
 
         for (StoreInstruction storeInstruction : basicBlock.getStores()) {
             // check to see whether any existing assignments are invalidated by this one
-            if (!(storeInstruction.getStore() instanceof MemoryAddressName)) {
+            if (!(storeInstruction.getStore() instanceof MemoryAddress)) {
                 final LValue resulLocation = storeInstruction.getStore();
                 // remove any copy's where u, or v are being reassigned by "resultLocation"
                 copyQuadruples.removeIf(copyQuadruple -> copyQuadruple.contains(resulLocation));
@@ -124,10 +124,10 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
         var superSet = new HashSet<>(allValues);
         var killedCopyQuadruples = new HashSet<CopyQuadruple>();
         for (StoreInstruction storeInstruction : basicBlock.getStores()) {
-            if (!(storeInstruction.getStore() instanceof MemoryAddressName)) {
+            if (!(storeInstruction.getStore() instanceof MemoryAddress)) {
                 final LValue resulLocation = storeInstruction.getStore();
                 for (CopyQuadruple copyQuadruple : superSet) {
-                    if (copyQuadruple.basicBlock != basicBlock && copyQuadruple.contains(resulLocation)) {
+                    if (copyQuadruple.basicBlock() != basicBlock && copyQuadruple.contains(resulLocation)) {
                         killedCopyQuadruples.add(copyQuadruple);
                     }
                 }

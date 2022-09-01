@@ -9,6 +9,7 @@ import java.util.Stack;
 import edu.mit.compilers.ast.*;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
+import edu.mit.compilers.utils.Utils;
 
 // This file implements routines for folding instructions into simpler forms
 // that do not require creating new instructions.  This does constant folding
@@ -60,8 +61,7 @@ public class InstructionSimplifyIrPass {
 
 
     private static Expression trySimplifyEqInstruction(Expression expression) {
-        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.EQ)) {
-            var eqInstruction = (BinaryOpExpression) expression;
+        if (expression instanceof BinaryOpExpression eqInstruction && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.EQ)) {
             // X == true -> X
             // true == X -> X
             var X = eqInstruction.lhs;
@@ -81,8 +81,7 @@ public class InstructionSimplifyIrPass {
     }
 
     private static Expression trySimplifyNeqInstruction(Expression expression) {
-        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.NEQ)) {
-            var eqInstruction = (BinaryOpExpression) expression;
+        if (expression instanceof BinaryOpExpression eqInstruction && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.NEQ)) {
             // X != false -> X
             // false != X -> X
             var X = eqInstruction.lhs;
@@ -103,8 +102,7 @@ public class InstructionSimplifyIrPass {
     }
 
     private static Expression tryCollapseUnaryExpression(Expression expression) {
-        if (expression instanceof UnaryOpExpression) {
-            var unaryOpExpression = (UnaryOpExpression) expression;
+        if (expression instanceof UnaryOpExpression unaryOpExpression) {
             if (unaryOpExpression.getUnaryOperator().label.equals(DecafScanner.MINUS)) {
                 if (unaryOpExpression.operand instanceof IntLiteral) {
                     return new DecimalLiteral(unaryOpExpression.tokenPosition, "-" + unaryOpExpression.operand.getSourceCode());
@@ -127,14 +125,10 @@ public class InstructionSimplifyIrPass {
         return expression;
     }
 
-    public static boolean containsAlphabeticCharacters(String string) {
-        return string.matches(".*[a-zA-Z]+.*");
-    }
-
     public static Expression tryFoldConstantExpression(Expression expression) {
         if (expression instanceof Literal)
             return expression;
-        var maybeEvaluatedLong = symbolicallyEvaluate(expression.getSourceCode());
+        var maybeEvaluatedLong = Utils.symbolicallyEvaluate(expression.getSourceCode());
         if (maybeEvaluatedLong.isPresent())
             return new DecimalLiteral(expression.tokenPosition, maybeEvaluatedLong.get().toString());
         return expression;
@@ -178,20 +172,6 @@ public class InstructionSimplifyIrPass {
                         .equals(rhsExpected.getSourceCode());
     }
 
-    public static Optional<Long> symbolicallyEvaluate(String string) {
-        // this check is necessary because the evaluator evaluates variables like 'e' and 'pi'
-        if (containsAlphabeticCharacters(string)) {
-            return Optional.empty();
-        }
-        var expression = new com.udojava.evalex.Expression(string);
-        try {
-            var res = expression.setPrecision(100).eval();
-            return Optional.of(res.longValue());
-        } catch (Exception e) {
-            return Optional.empty();
-        }
-    }
-
 
     private static Expression trySimplifyAddInstruction(Expression expression) {
         if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.PLUS)) {
@@ -224,8 +204,7 @@ public class InstructionSimplifyIrPass {
     }
 
     private static Expression trySimplifySubInstruction(Expression expression) {
-        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.MINUS)) {
-            var subInstruction = (BinaryOpExpression) expression;
+        if (expression instanceof BinaryOpExpression subInstruction && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.MINUS)) {
             // X - X -> 0
             var X = subInstruction.lhs;
             if (matchBinOpOperands(subInstruction, X, X)) {
@@ -241,8 +220,7 @@ public class InstructionSimplifyIrPass {
     }
 
     private static Expression trySimplifyDivInstruction(Expression expression) {
-        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.DIVIDE)) {
-            var divInstruction = (BinaryOpExpression) expression;
+        if (expression instanceof BinaryOpExpression divInstruction && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.DIVIDE)) {
             // X / X -> 1
             var X = divInstruction.lhs;
             if (matchBinOpOperands(divInstruction, X, X)) {
@@ -263,8 +241,7 @@ public class InstructionSimplifyIrPass {
     }
 
     private static Expression trySimplifyModInstruction(Expression expression) {
-        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.MOD)) {
-            var modInstruction = (BinaryOpExpression) expression;
+        if (expression instanceof BinaryOpExpression modInstruction && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.MOD)) {
             // 0 % X -> 0
             var X = modInstruction.rhs;
             if (matchBinOpOperands(modInstruction, mZero, X)) {
