@@ -10,6 +10,7 @@ import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.dataflow.usedef.Def;
 import edu.mit.compilers.dataflow.usedef.Use;
 import edu.mit.compilers.dataflow.usedef.UseDef;
+import edu.mit.compilers.utils.SetUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -75,7 +76,7 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
             out.put(B, meet(B));
 
             // IN[B] = USE[B] ∪ (IN[B] - DEF[B])
-            in.put(B, union(use(B), difference(out(B), def(B))));
+            in.put(B, SetUtils.union(use(B), SetUtils.difference(out(B), def(B))));
 
             if (!in(B).equals(oldIn)) {
                 workList.addAll(B.getPredecessors());

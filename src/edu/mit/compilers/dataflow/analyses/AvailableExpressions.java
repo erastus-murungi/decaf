@@ -7,6 +7,7 @@ import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.grammar.DecafScanner;
+import edu.mit.compilers.utils.SetUtils;
 
 import java.util.*;
 
@@ -62,7 +63,7 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
             in.put(B, meet(B));
 
             // OUT[B] = gen[B] ∪ IN[B] - KILL[B]
-            out.put(B, union(gen(B), difference(in(B), kill(B))));
+            out.put(B, SetUtils.union(gen(B), SetUtils.difference(in(B), kill(B))));
 
             if (!out(B).equals(oldOut)) {
                 workList.addAll(B.getSuccessors());

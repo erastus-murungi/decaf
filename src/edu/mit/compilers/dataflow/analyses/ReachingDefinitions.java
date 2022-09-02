@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.dataflow.Direction;
+import edu.mit.compilers.utils.SetUtils;
 
 /**
  * A definition d_x : x = e reaches a program point p if it appears without a redefinition on some path
@@ -94,7 +95,7 @@ public class ReachingDefinitions extends DataFlowAnalysis<StoreInstruction> {
             in.put(B, meet(B));
 
             // OUT[B] = gen[B] ∪ IN[B] - KILL[B]
-            out.put(B, union(gen(B), difference(in(B), kill(B))));
+            out.put(B, SetUtils.union(gen(B), SetUtils.difference(in(B), kill(B))));
 
             if (!out(B).equals(oldOut)) {
                 workList.addAll(B.getSuccessors());

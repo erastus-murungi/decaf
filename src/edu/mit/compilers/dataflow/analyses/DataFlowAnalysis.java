@@ -72,18 +72,6 @@ public abstract class DataFlowAnalysis<Value> {
 
     public abstract void runWorkList();
 
-    public HashSet<Value> difference(Set<Value> first, Set<Value> second) {
-        var firstCopy = new HashSet<>(first);
-        firstCopy.removeAll(second);
-        return firstCopy;
-    }
-
-    public HashSet<Value> union(Set<Value> first, Set<Value> second) {
-        var firstCopy = new HashSet<>(first);
-        firstCopy.addAll(second);
-        return firstCopy;
-    }
-
     public static List<BasicBlock> getReversePostOrder(BasicBlock entryPoint) {
         List<List<BasicBlock>> stronglyConnectedComponents = findStronglyConnectedComponents(entryPoint);
         Collections.reverse(stronglyConnectedComponents);

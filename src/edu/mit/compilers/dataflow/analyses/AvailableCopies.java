@@ -8,6 +8,7 @@ import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.dataflow.copy.CopyQuadruple;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
+import edu.mit.compilers.utils.SetUtils;
 
 import java.util.*;
 
@@ -76,7 +77,7 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
             in.put(B, meet(B));
 
             // OUT[B] = gen[B] ∪ IN[B] - KILL[B]
-            out.put(B, union(copy(B), difference(in(B), kill(B))));
+            out.put(B, SetUtils.union(copy(B), SetUtils.difference(in(B), kill(B))));
 
             if (!out(B).equals(oldOut)) {
                 workList.addAll(B.getSuccessors());
@@ -120,7 +121,7 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
     }
 
 
-    private HashSet<CopyQuadruple> kill(BasicBlock basicBlock) {
+    private Set<CopyQuadruple> kill(BasicBlock basicBlock) {
         var superSet = new HashSet<>(allValues);
         var killedCopyQuadruples = new HashSet<CopyQuadruple>();
         for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
