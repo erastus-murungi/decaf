@@ -56,7 +56,7 @@ public abstract class DataFlowAnalysis<Value> {
                 .filter(basicBlock -> basicBlock instanceof NOP)
                 .map(basicBlock -> (NOP) basicBlock)
                 .filter(nop -> nop != entryBlock)
-                .collect(Collectors.toList());
+                .toList();
         if (exitBlockList.size() != 1)
             throw new IllegalStateException("expected 1 exit node, found " + exitBlockList.size());
         exitBlock = exitBlockList.get(0);

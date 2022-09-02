@@ -86,13 +86,10 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
     // an instruction makes a variable "live" it references it
     private Set<UseDef> use(BasicBlock basicBlock) {
         var useSet = new HashSet<UseDef>();
-        final var tacReversed = basicBlock.getCopyOfInstructionList();
-        Collections.reverse(tacReversed);
-        for (Instruction tac : tacReversed) {
-            if (tac instanceof HasOperand) {
-                var hasOperand = (HasOperand) tac;
-                hasOperand.getOperandLValues()
-                        .forEach(abstractName -> useSet.add(new Use(abstractName, tac)));
+        for (Instruction instruction : basicBlock.getInstructionListReversed()) {
+            if (instruction instanceof HasOperand hasOperand) {
+                hasOperand.getOperandScalarVariables()
+                        .forEach(lValue -> useSet.add(new Use(lValue, instruction)));
             }
         }
         return useSet;
@@ -100,13 +97,10 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
 
     private Set<UseDef> def(BasicBlock basicBlock) {
         var defSet = new HashSet<UseDef>();
-        final var tacReversed = basicBlock.getCopyOfInstructionList();
-        Collections.reverse(tacReversed);
-        for (Instruction tac : tacReversed) {
-            if (tac instanceof StoreInstruction) {
-                var hasResult = (StoreInstruction) tac;
-                if (!(hasResult.getStore() instanceof MemoryAddress)) {
-                    defSet.add(new Def(hasResult));
+        for (Instruction instruction : basicBlock.getInstructionListReversed()) {
+            if (instruction instanceof StoreInstruction storeInstruction) {
+                if (!(storeInstruction.getStore() instanceof MemoryAddress)) {
+                    defSet.add(new Def(storeInstruction));
                 }
             }
         }

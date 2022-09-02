@@ -39,7 +39,7 @@ public class LinearScan {
                 if (active.size() == X64Register.N_AVAILABLE_REGISTERS) {
                     spillAtInterval(i, varToReg);
                 } else {
-                    varToReg.put(i.variable, availableRegisters.remove(0));
+                    varToReg.put(i.variable(), availableRegisters.remove(0));
                     active.add(i);
                     active.sort(LiveInterval::compareEndpoint);
                 }
@@ -52,26 +52,26 @@ public class LinearScan {
         active.sort(LiveInterval::compareEndpoint);
         var toRemove = new ArrayList<LiveInterval>();
         for (LiveInterval j : active) {
-            if (j.endPoint >= i.startPoint) {
+            if (j.endPoint() >= i.startPoint()) {
                 for (LiveInterval interval : toRemove) active.remove(interval);
                 return;
             }
             toRemove.add(j);
-            availableRegisters.add(varToReg.get(j.variable));
+            availableRegisters.add(varToReg.get(j.variable()));
         }
         for (LiveInterval j : toRemove) active.remove(j);
     }
 
     public void spillAtInterval(LiveInterval i, Map<Value, X64Register> varToReg) {
         LiveInterval spill = active.get(active.size() - 1);
-        if (spill.endPoint > i.endPoint) {
-            varToReg.put(i.variable, varToReg.get(spill.variable));
-            varToReg.put(spill.variable, X64Register.STACK);
+        if (spill.endPoint() > i.endPoint()) {
+            varToReg.put(i.variable(), varToReg.get(spill.variable()));
+            varToReg.put(spill.variable(), X64Register.STACK);
             active.remove(spill);
             active.add(i);
             active.sort(LiveInterval::compareEndpoint);
         } else {
-            varToReg.put(i.variable, X64Register.STACK);
+            varToReg.put(i.variable(), X64Register.STACK);
         }
     }
 }

@@ -99,7 +99,7 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
     private HashSet<CopyQuadruple> copy(BasicBlock basicBlock) {
         var copyQuadruples = new HashSet<CopyQuadruple>();
 
-        for (StoreInstruction storeInstruction : basicBlock.getStores()) {
+        for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
             // check to see whether any existing assignments are invalidated by this one
             if (!(storeInstruction.getStore() instanceof MemoryAddress)) {
                 final LValue resulLocation = storeInstruction.getStore();
@@ -123,7 +123,7 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
     private HashSet<CopyQuadruple> kill(BasicBlock basicBlock) {
         var superSet = new HashSet<>(allValues);
         var killedCopyQuadruples = new HashSet<CopyQuadruple>();
-        for (StoreInstruction storeInstruction : basicBlock.getStores()) {
+        for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
             if (!(storeInstruction.getStore() instanceof MemoryAddress)) {
                 final LValue resulLocation = storeInstruction.getStore();
                 for (CopyQuadruple copyQuadruple : superSet) {

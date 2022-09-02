@@ -24,7 +24,6 @@ import edu.mit.compilers.codegen.names.Variable;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
 import edu.mit.compilers.dataflow.dominator.ImmediateDominator;
-import edu.mit.compilers.registerallocation.LiveInterval;
 import edu.mit.compilers.registerallocation.LiveIntervals;
 import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.ProgramIr;
@@ -57,22 +56,9 @@ public class SSA {
     private SSA() {
     }
 
-    private static Set<LValue> computeAllVariablesSet(List<BasicBlock> basicBlocks) {
-        return (
-                basicBlocks.stream()
-                           .flatMap(basicBlock -> basicBlock.getInstructionList()
-                                                            .stream())
-                           .flatMap(instruction -> instruction.getAllValues()
-                                                              .stream())
-                           .filter(abstractName -> abstractName instanceof LValue)
-                           .map(abstractName -> (LValue) abstractName)
-                           .collect(Collectors.toUnmodifiableSet())
-        );
-    }
-
     private static Set<BasicBlock> getBasicBlocksModifyingVariable(LValue V, List<BasicBlock> basicBlocks) {
         return basicBlocks.stream()
-                          .filter(basicBlock -> basicBlock.getStores()
+                          .filter(basicBlock -> basicBlock.getStoreInstructions()
                                                           .stream()
                                                           .map(StoreInstruction::getStore)
                                                           .anyMatch(abstractName -> abstractName.equals(V)))
@@ -80,7 +66,7 @@ public class SSA {
     }
 
     private static Set<LValue> getStoreLocations(BasicBlock X) {
-        return X.getStores()
+        return X.getStoreInstructions()
                 .stream()
                 .map(StoreInstruction::getStore)
                 .map(LValue::copy)
@@ -164,9 +150,9 @@ public class SSA {
     }
 
     private static void initializeForSsaDestruction(List<BasicBlock> basicBlocks, HashMap<LValue, Stack<LValue>> stacks) {
-        computeAllVariablesSet(basicBlocks).stream()
-                                .map(LValue::copy)
-                                .forEach(a -> {
+        Utils.getAllLValuesInBasicBlocks(basicBlocks).stream()
+                                               .map(LValue::copy)
+                                               .forEach(a -> {
                                             stacks.put(a, new Stack<>());
                                             stacks.get(a)
                                                   .add(a.copy());
@@ -175,7 +161,7 @@ public class SSA {
     }
 
     private static Collection<Set<LValue>> phiWebDiscovery(List<BasicBlock> basicBlocks) {
-        var unionFind = new UnionFind<>(computeAllVariablesSet(basicBlocks));
+        var unionFind = new UnionFind<>(Utils.getAllLValuesInBasicBlocks(basicBlocks));
         for (var phiNode : getAllPhiNodes(basicBlocks)) {
             for (var operand : phiNode.getOperandValues()) {
                 unionFind.union(phiNode.getStore(), (LValue) operand);
@@ -207,7 +193,7 @@ public class SSA {
     private static void placePhiFunctions(BasicBlock entryBlock, List<BasicBlock> basicBlocks, ImmediateDominator immediateDominator) {
         var liveVariableAnalysis = new LiveVariableAnalysis(entryBlock);
 
-        var allVariables = computeAllVariablesSet(basicBlocks);
+        var allVariables = Utils.getAllLValuesInBasicBlocks(basicBlocks);
         for (var V : allVariables) {
             var hasAlready = new HashSet<BasicBlock>();
             var everOnWorkList = new HashSet<BasicBlock>();
@@ -241,14 +227,14 @@ public class SSA {
     private static void renameVariables(BasicBlock entryBlock, ImmediateDominator immediateDominator, List<BasicBlock> basicBlocks) {
         var stacks = new HashMap<LValue, Stack<Integer>>();
         var counters = new HashMap<LValue, Integer>();
-        initialize(computeAllVariablesSet(basicBlocks), stacks, counters);
+        initialize(Utils.getAllLValuesInBasicBlocks(basicBlocks), stacks, counters);
         rename(entryBlock, immediateDominator, counters, stacks);
     }
 
     private static void verify(List<BasicBlock> basicBlocks) {
         var seen = new HashSet<LValue>();
         for (var B : basicBlocks) {
-            for (var store : B.getStores()) {
+            for (var store : B.getStoreInstructions()) {
                 if (seen.contains(store.getStore())) {
                     throw new IllegalStateException(store.getStore() + " store redefined");
                 } else {

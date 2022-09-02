@@ -25,7 +25,7 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
         var copiesMap = new HashMap<LValue, Value>();
 
         for (BasicBlock basicBlock : getBasicBlockList()) {
-            for (StoreInstruction storeInstruction: basicBlock.getStores()) {
+            for (StoreInstruction storeInstruction: basicBlock.getStoreInstructions()) {
                 if (storeInstruction instanceof CopyInstruction copyInstruction) {
                     var replacer = copyInstruction.getValue();
                     var toBeReplaced = copyInstruction.getStore();

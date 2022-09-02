@@ -25,7 +25,7 @@ public class RegisterAllocation {
     private Map<Instruction, Set<X64Register>> computeInstructionToLiveRegistersMap(ProgramIr programIr, List<LiveInterval> liveIntervals, Map<Value, X64Register> registerMap) {
         var instructionToLiveRegistersMap = new HashMap<Instruction, Set<X64Register>>();
         if (!liveIntervals.isEmpty()) {
-            var instructionList = liveIntervals.get(0).getInstructionList();
+            var instructionList = liveIntervals.get(0).instructionList();
             IntStream.range(0, instructionList.size())
                     .forEach(indexOfInstruction -> instructionToLiveRegistersMap.put(instructionList.get(indexOfInstruction),
                             getLiveRegistersAtPoint(programIr, liveIntervals, indexOfInstruction, registerMap)));
@@ -35,8 +35,8 @@ public class RegisterAllocation {
 
     private Set<X64Register> getLiveRegistersAtPoint(ProgramIr programIr, Collection<LiveInterval> liveIntervals, int index, Map<Value, X64Register> registerMap) {
         return liveIntervals.stream()
-                            .filter(liveInterval -> liveInterval.startPoint <= index && liveInterval.endPoint >= index)
-                            .map(liveInterval -> liveInterval.variable)
+                            .filter(liveInterval -> liveInterval.startPoint() <= index && liveInterval.endPoint() >= index)
+                            .map(LiveInterval::variable)
                             .filter(name -> !programIr.getGlobals().contains(name))
                             .map(registerMap::get)
                             .collect(Collectors.toUnmodifiableSet());
@@ -56,20 +56,12 @@ public class RegisterAllocation {
     }
 
     public RegisterAllocation(ProgramIr programIr) {
-//        this.programIr = programIr;
         this.unModified = programIr.mergeProgram();
         var liveIntervalsUtil = new LiveIntervals(programIr);
         var linearScan = new LinearScan(List.of(X64Register.regsToAllocate), liveIntervalsUtil.methodToLiveIntervalsMap);
         linearScan.allocate();
         variableToRegisterMap.putAll(linearScan.getVariableToRegisterMapping());
         computeMethodToLiveRegistersInfo(programIr, liveIntervalsUtil.methodToLiveIntervalsMap);
-//        if (CLI.debug) {
-//            printLiveVariables();
-//            printLinearizedCfg();
-//            programIr.methodList.forEach(this::printLiveIntervals);
-//            variableToRegisterMap.forEach(((methodBegin, registerMap) ->
-//                    System.out.println(registerMap)));
-//        }
     }
 
     public Map<Method, Map<Value, X64Register>> getVariableToRegisterMap() {

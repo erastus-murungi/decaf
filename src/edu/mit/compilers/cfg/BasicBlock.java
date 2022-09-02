@@ -13,6 +13,7 @@ import edu.mit.compilers.ssa.Phi;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -42,6 +43,12 @@ public abstract class BasicBlock {
 
     public InstructionList getInstructionList() {
         return instructionList;
+    }
+
+    public List<Instruction> getInstructionListReversed() {
+        var copyInstructionList = getCopyOfInstructionList();
+        Collections.reverse(copyInstructionList);
+        return copyInstructionList;
     }
 
     public void setInstructionList(InstructionList instructionList) {
@@ -127,7 +134,7 @@ public abstract class BasicBlock {
      * get only TACs which change values of variables
      * @return Iterator of Assignment TACs
      */
-    public List<StoreInstruction> getStores() {
+    public List<StoreInstruction> getStoreInstructions() {
         return instructionList.stream()
                 .filter(tac -> tac instanceof StoreInstruction)
                 .map(tac -> (StoreInstruction) tac)

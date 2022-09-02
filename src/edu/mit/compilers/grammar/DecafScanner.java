@@ -4,7 +4,6 @@ package edu.mit.compilers.grammar;
 
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
-import java.io.PrintStream;
 import java.lang.annotation.Retention;
 import java.util.ArrayList;
 import java.util.List;
@@ -235,19 +234,21 @@ public class DecafScanner {
                 else if (currentSubstringMatches(CONDITIONAL_AND))
                     return handleCompoundOperator(tokenPosition, TokenType.CONDITIONAL_AND, CONDITIONAL_AND);
                 else {
-                    switch (String.valueOf(c)) {
-                        case NOT : return handleSingleOperator(tokenPosition, TokenType.NOT, NOT);
-                        case PLUS : return handleSingleOperator(tokenPosition, TokenType.PLUS, PLUS);
-                        case MINUS : return handleSingleOperator(tokenPosition, TokenType.MINUS, MINUS);
-                        case MULTIPLY : return handleSingleOperator(tokenPosition, TokenType.MULTIPLY, MULTIPLY);
-                        case DIVIDE : return handleSingleOperator(tokenPosition, TokenType.DIVIDE, DIVIDE);
-                        case ASSIGN : return handleSingleOperator(tokenPosition, TokenType.ASSIGN, ASSIGN);
-                        case LT : return handleSingleOperator(tokenPosition, TokenType.LT, LT);
-                        case GT : return handleSingleOperator(tokenPosition, TokenType.GT, GT);
-                        case TERNARY_QUESTION_MARK : return handleSingleOperator(tokenPosition, TokenType.TERNARY_QUESTION_MARK, TERNARY_QUESTION_MARK);
-                        case TERNARY_COLON : return handleSingleOperator(tokenPosition, TokenType.TERNARY_COLON, TERNARY_COLON);
-                        default : throw getContextualException(tokenPosition, "unrecognized character " + c);
-                    }
+                    return switch (String.valueOf(c)) {
+                        case NOT -> handleSingleOperator(tokenPosition, TokenType.NOT, NOT);
+                        case PLUS -> handleSingleOperator(tokenPosition, TokenType.PLUS, PLUS);
+                        case MINUS -> handleSingleOperator(tokenPosition, TokenType.MINUS, MINUS);
+                        case MULTIPLY -> handleSingleOperator(tokenPosition, TokenType.MULTIPLY, MULTIPLY);
+                        case DIVIDE -> handleSingleOperator(tokenPosition, TokenType.DIVIDE, DIVIDE);
+                        case ASSIGN -> handleSingleOperator(tokenPosition, TokenType.ASSIGN, ASSIGN);
+                        case LT -> handleSingleOperator(tokenPosition, TokenType.LT, LT);
+                        case GT -> handleSingleOperator(tokenPosition, TokenType.GT, GT);
+                        case TERNARY_QUESTION_MARK ->
+                                handleSingleOperator(tokenPosition, TokenType.TERNARY_QUESTION_MARK, TERNARY_QUESTION_MARK);
+                        case TERNARY_COLON ->
+                                handleSingleOperator(tokenPosition, TokenType.TERNARY_COLON, TERNARY_COLON);
+                        default -> throw getContextualException(tokenPosition, "unrecognized character " + c);
+                    };
                 }
             }
         }
@@ -287,19 +288,9 @@ public class DecafScanner {
                 }
             } else {
                 switch (c) {
-                    case '/' : {
-                        state = completed;
-                        break;
-                    }
-
-                    case '*' : {
-                        state = waitingForForwardSlash;
-                        break;
-                    }
-                    default : {
-                        state = waitingForStar;
-                        break;
-                    }
+                    case '/' -> state = completed;
+                    case '*' -> state = waitingForForwardSlash;
+                    default -> state = waitingForStar;
                 }
             }
             consumeCharacterNoCheck();
@@ -323,11 +314,9 @@ public class DecafScanner {
         consumeCharacterNoCheck();
         char c = inputString.charAt(stringIndex);
         switch (c) {
-            case 'n': case '"': case 't': case 'r': case '\'': case '\\' : {
-                consumeCharacterNoCheck();
-                break;
-            }
-            default : throw getContextualException(tokenPosition, "Invalid back-slashed character \"" + "\\" + c + "\"");
+            case 'n', '"', 't', 'r', '\'', '\\' -> consumeCharacterNoCheck();
+            default ->
+                    throw getContextualException(tokenPosition, "Invalid back-slashed character \"" + "\\" + c + "\"");
         }
     }
 
@@ -384,66 +373,21 @@ public class DecafScanner {
         String idLexeme = inputString.substring(stringIndex, i);
         TokenType tokenType;
         switch (idLexeme) {
-            case RESERVED_FOR :  {
-                tokenType = TokenType.RESERVED_FOR;
-                break;
-            }
-            case RESERVED_IF :  {
-                tokenType = TokenType.RESERVED_IF;
-                break;
-            }
-            case RESERVED_IMPORT :  {
-                tokenType = TokenType.RESERVED_IMPORT;
-                break;
-            }
-            case RESERVED_INT : {
-                tokenType = TokenType.RESERVED_INT;
-                break;
-            }
-            case RESERVED_LEN : {
-                tokenType = TokenType.RESERVED_LEN;
-                break;
-            }
-            case RESERVED_RETURN : {
-                tokenType = TokenType.RESERVED_RETURN;
-                break;
-            }
-            case RESERVED_ELSE :  {
-                tokenType = TokenType.RESERVED_ELSE;
-                break;
-            }
-            case RESERVED_CONTINUE :  {
-                tokenType = TokenType.RESERVED_CONTINUE;
-                break;
-            }
-            case RESERVED_BREAK :  {
-                tokenType = TokenType.RESERVED_BREAK;
-                break;
-            }
-            case RESERVED_WHILE :  {
-                tokenType = TokenType.RESERVED_WHILE;
-                break;
-            }
-            case RESERVED_VOID :  {
-                tokenType = TokenType.RESERVED_VOID;
-                break;
-            }
-            case RESERVED_BOOL :  {
-                tokenType = TokenType.RESERVED_BOOL;
-                break;
-            }
-            case RESERVED_TRUE :  {
-                tokenType = TokenType.RESERVED_TRUE;
-                break;
-            }
-            case RESERVED_FALSE :  {
-                tokenType = TokenType.RESERVED_FALSE;
-                break;
-            }
-            default : {
-                tokenType = TokenType.ID;
-                break;
-            } 
+            case RESERVED_FOR -> tokenType = TokenType.RESERVED_FOR;
+            case RESERVED_IF -> tokenType = TokenType.RESERVED_IF;
+            case RESERVED_IMPORT -> tokenType = TokenType.RESERVED_IMPORT;
+            case RESERVED_INT -> tokenType = TokenType.RESERVED_INT;
+            case RESERVED_LEN -> tokenType = TokenType.RESERVED_LEN;
+            case RESERVED_RETURN -> tokenType = TokenType.RESERVED_RETURN;
+            case RESERVED_ELSE -> tokenType = TokenType.RESERVED_ELSE;
+            case RESERVED_CONTINUE -> tokenType = TokenType.RESERVED_CONTINUE;
+            case RESERVED_BREAK -> tokenType = TokenType.RESERVED_BREAK;
+            case RESERVED_WHILE -> tokenType = TokenType.RESERVED_WHILE;
+            case RESERVED_VOID -> tokenType = TokenType.RESERVED_VOID;
+            case RESERVED_BOOL -> tokenType = TokenType.RESERVED_BOOL;
+            case RESERVED_TRUE -> tokenType = TokenType.RESERVED_TRUE;
+            case RESERVED_FALSE -> tokenType = TokenType.RESERVED_FALSE;
+            default -> tokenType = TokenType.ID;
         }
 
         consumeMultipleCharactersNoCheck(i - stringIndex);
@@ -506,17 +450,9 @@ public class DecafScanner {
         final char c = inputString.charAt(stringIndex);
 
         switch (c) {
-            case '\r': case '\n' : {
-                consumeNewlineCharacter(String.valueOf(c));
-                break;
-            }
-            case ' ': case '\t' : {
-                consumeCharacterNoCheck();
-                break;
-            } 
-            default : {
-                throw getContextualException(tokenPosition, "unexpected whitespace char " + c);
-            }
+            case '\r', '\n' -> consumeNewlineCharacter(String.valueOf(c));
+            case ' ', '\t' -> consumeCharacterNoCheck();
+            default -> throw getContextualException(tokenPosition, "unexpected whitespace char " + c);
         }
         return makeToken(tokenPosition, TokenType.WHITESPACE, String.valueOf(c));
     }
@@ -530,31 +466,19 @@ public class DecafScanner {
 
     private void updateHighlighter(Token token) {
         switch (token.tokenType()) {
-            case EOF : {
-                break;
-            }
-            case ID : {
-                syntaxLines.add(Utils.coloredPrint(token.lexeme(), Utils.ANSIColorConstants.ANSI_BLUE));
-                break;
-            }
-            case CHAR_LITERAL: case STRING_LITERAL: case RESERVED_FALSE: case RESERVED_TRUE: case HEX_LITERAL: case DECIMAL_LITERAL : {
-                syntaxLines.add(Utils.coloredPrint(token.lexeme(), Utils.ANSIColorConstants.ANSI_GREEN));
-                break;
-            }
-            default : {
-                if (token.tokenType().toString().startsWith("RESERVED")) {
+            case EOF -> {}
+            case ID -> syntaxLines.add(Utils.coloredPrint(token.lexeme(), Utils.ANSIColorConstants.ANSI_BLUE));
+            case CHAR_LITERAL, STRING_LITERAL, RESERVED_FALSE, RESERVED_TRUE, HEX_LITERAL, DECIMAL_LITERAL ->
+                    syntaxLines.add(Utils.coloredPrint(token.lexeme(), Utils.ANSIColorConstants.ANSI_GREEN));
+            default -> {
+                if (token.tokenType()
+                         .toString()
+                         .startsWith("RESERVED")) {
                     syntaxLines.add(Utils.coloredPrint(token.lexeme(), Utils.ANSIColorConstants.ANSI_PURPLE));
                 } else {
                     syntaxLines.add(token.lexeme());
                 }
-                break;
             }
-        }
-    }
-
-    public void syntaxHighlight(PrintStream out) {
-        for (String string : syntaxLines) {
-            out.print(string);
         }
     }
 

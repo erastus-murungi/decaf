@@ -88,7 +88,7 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
         var superSet = new HashSet<>(allValues);
         var killedExpressions = new HashSet<Operand>();
 
-        for (StoreInstruction assignment : basicBlock.getStores()) {
+        for (StoreInstruction assignment : basicBlock.getStoreInstructions()) {
             // add all the computations that contain operands
             // that get re-assigned by the current stmt to
             // killedExpressions
@@ -103,7 +103,7 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
 
     private HashSet<Operand> gen(BasicBlock basicBlock) {
         var validComputations = new HashSet<Operand>();
-        for (StoreInstruction assignment : basicBlock.getStores()) {
+        for (StoreInstruction assignment : basicBlock.getStoreInstructions()) {
             if (assignment instanceof UnaryInstruction || assignment instanceof BinaryInstruction) {
                 assignment.getOperandNoArray()
                         .ifPresent(validComputations::add);

@@ -348,32 +348,12 @@ public class Compilation {
                 for (token = scanner.nextToken(); token.isNotEOF(); token = scanner.nextToken()) {
                     String text;
                     switch (token.tokenType()) {
-                        case ID: {
-                            text = "IDENTIFIER" + " " + token.lexeme();
-                            break;
-                        }
-                        case STRING_LITERAL: {
-                            text = "STRINGLITERAL" + " " + token.lexeme();
-                            break;
-                        }
-                        case CHAR_LITERAL: {
-                            text = "CHARLITERAL" + " " + token.lexeme();
-                            break;
-                        }
-                        case HEX_LITERAL:
-                        case DECIMAL_LITERAL: {
-                            text = "INTLITERAL" + " " + token.lexeme();
-                            break;
-                        }
-                        case RESERVED_FALSE:
-                        case RESERVED_TRUE: {
-                            text = "BOOLEANLITERAL" + " " + token.lexeme();
-                            break;
-                        }
-                        default: {
-                            text = token.lexeme();
-                            break;
-                        }
+                        case ID -> text = "IDENTIFIER" + " " + token.lexeme();
+                        case STRING_LITERAL -> text = "STRINGLITERAL" + " " + token.lexeme();
+                        case CHAR_LITERAL -> text = "CHARLITERAL" + " " + token.lexeme();
+                        case HEX_LITERAL, DECIMAL_LITERAL -> text = "INTLITERAL" + " " + token.lexeme();
+                        case RESERVED_FALSE, RESERVED_TRUE -> text = "BOOLEANLITERAL" + " " + token.lexeme();
+                        default -> text = token.lexeme();
                     }
                     outputStream.println(token.tokenPosition()
                                               .line() + 1 + " " + text);

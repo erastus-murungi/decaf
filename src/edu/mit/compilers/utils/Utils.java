@@ -329,4 +329,25 @@ public class Utils {
         );
     }
 
+
+    public static Set<LValue> getAllLValuesInInstructionList(InstructionList instructionList) {
+        return instructionList.stream()
+                       .flatMap(instruction -> instruction.getAllLValues()
+                                                          .stream())
+                       .collect(Collectors.toSet());
+
+    }
+
+    public static Set<LValue> getAllLValuesInBasicBlocks(List<BasicBlock> basicBlocks) {
+        return (
+                basicBlocks.stream()
+                           .flatMap(basicBlock -> basicBlock.getInstructionList()
+                                                            .stream())
+                           .flatMap(instruction -> instruction.getAllValues()
+                                                              .stream())
+                           .filter(abstractName -> abstractName instanceof LValue)
+                           .map(abstractName -> (LValue) abstractName)
+                           .collect(Collectors.toUnmodifiableSet())
+        );
+    }
 }

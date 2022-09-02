@@ -3,30 +3,7 @@ package edu.mit.compilers.registerallocation;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.names.LValue;
 
-public class LiveInterval {
-    private final InstructionList instructionList;
-    LValue variable;
-    int startPoint;
-    int endPoint;
-    String methodName;
-
-
-    public LValue getVariable() {
-        return variable;
-    }
-
-    public InstructionList getInstructionList() {
-        return instructionList;
-    }
-
-    public LiveInterval(LValue variable, int startPoint, int endPoint, InstructionList instructionList, String methodName) {
-        this.variable = variable;
-        this.startPoint = startPoint;
-        this.endPoint = endPoint;
-        this.instructionList = instructionList;
-        this.methodName = methodName;
-    }
-
+public record LiveInterval(LValue variable, int startPoint, int endPoint, InstructionList instructionList, String methodName) {
     public int compareStartPoint(LiveInterval other) {
         if(startPoint == other.startPoint)
             return 0;
@@ -37,15 +14,5 @@ public class LiveInterval {
         if(endPoint == other.endPoint)
             return 0;
         return endPoint < other.endPoint ? -1 : 1;
-    }
-
-    @Override
-    public String toString() {
-        return "LiveInterval{" +
-                "variable=" + variable.repr() +
-                ", start=" + startPoint +
-                ", end=" + endPoint +
-                ", methodName='" + methodName + '\'' +
-                '}';
     }
 }

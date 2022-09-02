@@ -23,13 +23,13 @@ public class ReachingDefinitions extends DataFlowAnalysis<StoreInstruction> {
     private Set<StoreInstruction> gen(BasicBlock basicBlock) {
         var seenStoreVariables = new HashSet<>();
         var seenAgain = new HashSet<>();
-        for (StoreInstruction storeInstruction : basicBlock.getStores()) {
+        for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
             if (seenStoreVariables.contains(storeInstruction.getStore())) {
                 seenAgain.add(storeInstruction.getStore());
             }
             seenStoreVariables.add(storeInstruction.getStore());
         }
-        return basicBlock.getStores()
+        return basicBlock.getStoreInstructions()
                          .stream()
                          .filter(store -> !seenAgain.contains(store.getStore()))
                          .collect(Collectors.toUnmodifiableSet());
@@ -105,7 +105,7 @@ public class ReachingDefinitions extends DataFlowAnalysis<StoreInstruction> {
     public Set<StoreInstruction> kill(BasicBlock basicBlock) {
         // we kill any definition
         var genSet = gen(basicBlock);
-        var defined = basicBlock.getStores()
+        var defined = basicBlock.getStoreInstructions()
                                 .stream()
                                 .map(StoreInstruction::getStore)
                                 .collect(Collectors.toUnmodifiableSet());

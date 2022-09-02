@@ -99,7 +99,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
 
         final var tacList = basicBlock.getInstructionList();
 
-        for (StoreInstruction storeInstruction : basicBlock.getStores()) {
+        for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
             // we don't cache expressions involving array variables
             if (storeInstruction instanceof BinaryInstruction || storeInstruction instanceof UnaryInstruction) {
                 storeInstruction.getOperandNoArray()
@@ -131,7 +131,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
 
             for (Operand availableExpression : availableExpressionsForBlock) {
                 // walk up a nodes dominators and replace this expression with the earliest instance of the store
-                for (StoreInstruction storeInstruction : basicBlock.getStores()) {
+                for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
                     if (storeInstruction instanceof UnaryInstruction || storeInstruction instanceof BinaryInstruction) {
                         if (availableExpression.isContainedIn(storeInstruction) && !isReassignedBeforeUse(basicBlock, availableExpression, storeInstruction)) {
                             final var expressionName = findExpressionAmongDominators(basicBlock, availableExpression, dom);
