@@ -11,3 +11,15 @@ src/.idea/
 
 out/
 *.iml
+build/
+dot/
+
+ssa*
+dom*
+cfg*
+tests/
+test.asm
+main
+symbolTables.pdf
+dotsource.dot
+

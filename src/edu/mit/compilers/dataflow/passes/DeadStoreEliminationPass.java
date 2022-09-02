@@ -102,8 +102,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                     if ((globalVariables.contains(store) &&
                             (!method.isMain()) || anySubsequentFunctionCalls(copyOfInstructionList.subList(0, copyOfInstructionList.indexOf(possibleStoreInstruction))))
                             || allOperandNamesConstant(possibleStoreInstruction)) {
-                        if (possibleStoreInstruction instanceof HasOperand)
-                            namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandValues());
+                        namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandValues());
                         instructionListToUpdate.add(possibleStoreInstruction);
                         continue;
                     }
@@ -136,7 +135,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
         int indexOfInstruction = -1;
         for (var possibleStoreInstruction : copyOfInstructionList) {
             ++indexOfInstruction;
-            if (possibleStoreInstruction instanceof StoreInstruction) {
+            if (possibleStoreInstruction instanceof StoreInstruction storeInstruction) {
                 if (possibleStoreInstruction instanceof FunctionCallWithResult) {
                     instructionListToUpdate.add(possibleStoreInstruction);
                     continue;
@@ -148,7 +147,6 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                     continue;
                 }
 
-                var storeInstruction = ((StoreInstruction) possibleStoreInstruction);
                 var store = storeInstruction.getStore();
 
                 if (!(store instanceof MemoryAddress)) {
@@ -197,8 +195,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
         // we start our check from indexOfStoreInstructionInBlock + 1
         for (var indexOfInstruction = indexOfStoreInstructionInBlock + 1; indexOfInstruction < blockInstructionList.size(); indexOfInstruction++) {
             var possibleStoreInstruction = blockInstructionList.get(indexOfInstruction);
-            if (possibleStoreInstruction instanceof StoreInstruction) {
-                var candidateStoreInstruction = (StoreInstruction) possibleStoreInstruction;
+            if (possibleStoreInstruction instanceof StoreInstruction candidateStoreInstruction) {
                 if (candidateStoreInstruction.getStore()
                                              .equals(storeInstruction.getStore())) {
                     /* add the operands
@@ -218,16 +215,13 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                      *  We first add the operands (a, b) to `usedNames` before breaking
                      *  Without doing so we report that a = 0 is never used before the reassignment at line 5
                      */
-                    if (candidateStoreInstruction instanceof HasOperand) {
-                        var storeInstructionWithOperand = ((HasOperand) candidateStoreInstruction);
-                        usedNames.addAll(storeInstructionWithOperand.getOperandValues());
-                    }
+                    var storeInstructionWithOperand = ((HasOperand) candidateStoreInstruction);
+                    usedNames.addAll(storeInstructionWithOperand.getOperandValues());
                     break;
                 }
             }
             // add all names on the right-hand side;
-            if (possibleStoreInstruction instanceof HasOperand) {
-                var storeInstructionWithOperand = ((HasOperand) possibleStoreInstruction);
+            if (possibleStoreInstruction instanceof HasOperand storeInstructionWithOperand) {
                 usedNames.addAll(storeInstructionWithOperand.getOperandValues());
             }
         }
@@ -269,8 +263,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
 
         for (var indexOfInstruction = indexOfStoreInstructionInBlock + 1; indexOfInstruction < blockInstructionList.size(); indexOfInstruction++) {
             var possibleStoreInstruction = blockInstructionList.get(indexOfInstruction);
-            if (possibleStoreInstruction instanceof StoreInstruction) {
-                var candidateStoreInstruction = (StoreInstruction) possibleStoreInstruction;
+            if (possibleStoreInstruction instanceof StoreInstruction candidateStoreInstruction) {
                 // check if we are indeed overwriting the store
                 if (candidateStoreInstruction.getStore()
                                              .equals(storeInstruction.getStore())) {
