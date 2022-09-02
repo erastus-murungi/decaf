@@ -28,10 +28,6 @@ public class FunctionCallNoResult extends HasOperand implements FunctionCall {
     public MethodCall getMethod() {
         return (MethodCall) source;
     }
-    @Override
-    public String toString() {
-        return String.format("%s%s %s %s%s", DOUBLE_INDENT, "call", getMethodName(), DOUBLE_INDENT, getComment().isPresent() ? " #  " + getComment().get() : "");
-    }
 
     @Override
     public <T, E> T accept(InstructionVisitor<T, E> visitor, E extra) {
@@ -64,6 +60,12 @@ public class FunctionCallNoResult extends HasOperand implements FunctionCall {
             i += 1;
         }
         return replaced;
+    }
+
+    @Override
+    public String toString() {
+        var args = arguments.stream().map(Value::repr).collect(Collectors.joining(", "));
+        return String.format("%s%s %s @%s(%s) %s%s", DOUBLE_INDENT, "call", getMethodReturnType(), getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " #  " + getComment().get() : "");
     }
 
     @Override

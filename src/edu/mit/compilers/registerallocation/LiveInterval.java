@@ -10,6 +10,11 @@ public class LiveInterval {
     int endPoint;
     String methodName;
 
+
+    public LValue getVariable() {
+        return variable;
+    }
+
     public InstructionList getInstructionList() {
         return instructionList;
     }

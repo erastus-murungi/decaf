@@ -24,7 +24,10 @@ import edu.mit.compilers.codegen.names.Variable;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
 import edu.mit.compilers.dataflow.dominator.ImmediateDominator;
+import edu.mit.compilers.registerallocation.LiveInterval;
+import edu.mit.compilers.registerallocation.LiveIntervals;
 import edu.mit.compilers.utils.Pair;
+import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.UnionFind;
 import edu.mit.compilers.utils.Utils;
 
@@ -39,7 +42,7 @@ public class SSA {
         Utils.printSsaCfg(List.of(method), "ssa_before_" + method.methodName());
     }
 
-    public static void deconstruct(Method method) {
+    public static void deconstruct(Method method, ProgramIr programIr) {
         Utils.printSsaCfg(List.of(method), "ssa_after_opt_" + method.methodName());
 
         var entryBlock = method.entryBlock;
@@ -48,6 +51,8 @@ public class SSA {
         verify(basicBlocks);
         deconstructSsa(entryBlock, basicBlocks,immediateDominator);
         Utils.printSsaCfg(List.of(method), "ssa_after_" + method.methodName());
+        var liveIntervals = new LiveIntervals(method, programIr);
+        liveIntervals.prettyPrintLiveIntervals(method);
     }
     private SSA() {
     }
@@ -391,7 +396,7 @@ public class SSA {
         return results;
     }
 
-    private void unRenameInBasicBlock(BasicBlock X) {
+    private static void unRenameInBasicBlock(BasicBlock X) {
         X.getInstructionList()
          .stream()
          .flatMap(instruction -> instruction.getAllValues()
