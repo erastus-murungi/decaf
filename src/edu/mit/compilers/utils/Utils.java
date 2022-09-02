@@ -3,9 +3,16 @@ package edu.mit.compilers.utils;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.Block;
 import edu.mit.compilers.cfg.BasicBlock;
+import edu.mit.compilers.codegen.InstructionList;
+import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.AllocateInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
+import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
+import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
+import edu.mit.compilers.registerallocation.LiveInterval;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -321,4 +328,5 @@ public class Utils {
                 filename
         );
     }
+
 }

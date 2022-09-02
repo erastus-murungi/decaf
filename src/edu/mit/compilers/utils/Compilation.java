@@ -302,7 +302,7 @@ public class Compilation {
 
     private void generateAssembly() {
         assert compilationState == CompilationState.DATAFLOW_OPTIMIZED;
-        programIr.methodList.forEach(SSA::deconstruct);
+        programIr.methodList.forEach(method -> SSA.deconstruct(method, programIr));
         Utils.insertAllocateInstructions(programIr);
 //        Interpreter interpreter = new Interpreter(programIr.mergeProgram());
 //        interpreter.interpret();
@@ -317,7 +317,7 @@ public class Compilation {
         if (shouldOptimize()) {
             programIr.findGlobals();
             var registerAllocation = new RegisterAllocation(programIr);
-            x64CodeConverter = new X64CodeConverter(registerAllocation.unModified, programIr, registerAllocation.getVariableToRegisterMap(), registerAllocation.getMethodToLiveRegistersInfo());
+            x64CodeConverter = new X64CodeConverter(registerAllocation.getUnModified(), programIr, registerAllocation.getVariableToRegisterMap(), registerAllocation.getMethodToLiveRegistersInfo());
         } else {
             x64CodeConverter = new X64CodeConverter(programIr.mergeProgram(), programIr);
         }

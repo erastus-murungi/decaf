@@ -32,11 +32,6 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
     }
 
     @Override
-    public String toString() {
-        return String.format("%s%s = %s %s %s %s%s", DOUBLE_INDENT, getStore(), "call", getMethodReturnType(), getMethodName() , DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
-    }
-
-    @Override
     public <T, E> T accept(InstructionVisitor<T, E> visitor, E extra) {
         return visitor.visit(this, extra);
     }
@@ -53,6 +48,12 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
         var callString =  Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
         var args = arguments.stream().map(Value::repr).collect(Collectors.joining(", "));
         return String.format("%s%s: %s = %s @%s(%s) %s%s", DOUBLE_INDENT, getStore().repr(), getMethodReturnType(), callString, getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
+    }
+
+    @Override
+    public String toString() {
+        var args = arguments.stream().map(Value::repr).collect(Collectors.joining(", "));
+        return String.format("%s%s: %s = %s @%s(%s) %s%s", DOUBLE_INDENT, getStore().repr(), getMethodReturnType(), "call", getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
     }
 
     @Override
