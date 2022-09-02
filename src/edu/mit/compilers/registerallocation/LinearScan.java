@@ -45,7 +45,6 @@ public class LinearScan {
                 }
             }
         }
-//        System.out.println(varToRegMap);
     }
 
     public void expireOldIntervals(LiveInterval i, Map<Value, X64Register> varToReg) {

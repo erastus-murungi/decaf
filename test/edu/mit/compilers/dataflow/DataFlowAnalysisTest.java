@@ -37,17 +37,17 @@ public class DataFlowAnalysisTest {
     @Test
     public void test_simpleForLoopReversePostOrderCorrect() {
         assertEquals(basicBlockList.size(), 4);
-        assertEquals( 3,       basicBlockList.get(0).lines.size());
-        assertEquals( "int i", basicBlockList.get(0).lines.get(0).getSourceCode());
-        assertEquals( "int a", basicBlockList.get(0).lines.get(1).getSourceCode());
-        assertEquals( "i = 0", basicBlockList.get(0).lines.get(2).getSourceCode());
+        assertEquals( 3,       basicBlockList.get(0).getAstNodes().size());
+        assertEquals( "int i", basicBlockList.get(0).getAstNodes().get(0).getSourceCode());
+        assertEquals( "int a", basicBlockList.get(0).getAstNodes().get(1).getSourceCode());
+        assertEquals( "i = 0", basicBlockList.get(0).getAstNodes().get(2).getSourceCode());
 
-        assertEquals( 2,        basicBlockList.get(1).lines.size());
-        assertEquals( "a += i", basicBlockList.get(1).lines.get(0).getSourceCode());
-        assertEquals( "i ++",   basicBlockList.get(1).lines.get(1).getSourceCode());
+        assertEquals( 2,        basicBlockList.get(1).getAstNodes().size());
+        assertEquals( "a += i", basicBlockList.get(1).getAstNodes().get(0).getSourceCode());
+        assertEquals( "i ++",   basicBlockList.get(1).getAstNodes().get(1).getSourceCode());
 
-        assertEquals( 1,        basicBlockList.get(2).lines.size());
-        assertEquals( "i < 10", basicBlockList.get(2).lines.get(0).getSourceCode());
+        assertEquals( 1,        basicBlockList.get(2).getAstNodes().size());
+        assertEquals( "i < 10", basicBlockList.get(2).getAstNodes().get(0).getSourceCode());
 
 
         assertTrue(basicBlockList.get(3) instanceof NOP);
