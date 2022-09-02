@@ -17,7 +17,7 @@ public class StringLiteralAllocation extends Instruction {
         super(null);
         this.label = TemporaryNameIndexGenerator.getNextStringLiteralIndex();
         this.stringConstant = stringConstant;
-        this.stringConstantEscaped = Utils.translateEscapes(stringConstant.substring(1, stringConstant.length() - 1));
+        this.stringConstantEscaped = stringConstant.substring(1, stringConstant.length() - 1).translateEscapes();
     }
 
     public int size() {

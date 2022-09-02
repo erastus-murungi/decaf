@@ -15,7 +15,7 @@ public class BooleanLiteral extends IntLiteral {
 
     @Override
     public Long convertToLong() {
-        if (Boolean.parseBoolean(Utils.translateEscapes(literal))) {
+        if (Boolean.parseBoolean(literal.translateEscapes())) {
             return 1L;
         } else {
             return 0L;

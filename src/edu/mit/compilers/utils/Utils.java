@@ -36,84 +36,6 @@ public class Utils {
     // adopted from Java 15
     public static final long WORD_SIZE = 8;
 
-    public static String translateEscapes(String string) {
-        if (string.isEmpty()) {
-            return "";
-        }
-        char[] chars = string.toCharArray();
-        int length = chars.length;
-        int from = 0;
-        int to = 0;
-        while (from < length) {
-            char ch = chars[from++];
-            if (ch == '\\') {
-                ch = from < length ? chars[from++] : '\0';
-                switch (ch) {
-                    case 'b':
-                        ch = '\b';
-                        break;
-                    case 'f':
-                        ch = '\f';
-                        break;
-                    case 'n':
-                        ch = '\n';
-                        break;
-                    case 'r':
-                        ch = '\r';
-                        break;
-                    case 's':
-                        ch = ' ';
-                        break;
-                    case 't':
-                        ch = '\t';
-                        break;
-                    case '\'':
-                    case '\"':
-                    case '\\':
-                        // as is
-                        break;
-                    case '0':
-                    case '1':
-                    case '2':
-                    case '3':
-                    case '4':
-                    case '5':
-                    case '6':
-                    case '7':
-                        int limit = Integer.min(from + (ch <= '3' ? 2 : 1), length);
-                        int code = ch - '0';
-                        while (from < limit) {
-                            ch = chars[from];
-                            if (ch < '0' || '7' < ch) {
-                                break;
-                            }
-                            from++;
-                            code = (code << 3) | (ch - '0');
-                        }
-                        ch = (char) code;
-                        break;
-                    case '\n':
-                        continue;
-                    case '\r':
-                        if (from < length && chars[from] == '\n') {
-                            from++;
-                        }
-                        continue;
-                    default: {
-                        String msg = String.format(
-                                "Invalid escape sequence: \\%c \\\\u%04X",
-                                ch, (int) ch);
-                        throw new IllegalArgumentException(msg);
-                    }
-                }
-            }
-
-            chars[to++] = ch;
-        }
-
-        return new String(chars, 0, to);
-    }
-
     public static final String SPACE = " ";
     public static final String EMPTY = "";
 
@@ -146,38 +68,6 @@ public class Utils {
         return results;
     }
 
-    // Adapted from
-    // https://github.com/apache/commons-lang/blob/3adea508fbf48deb760eb71c7239dbd0ba351830/src/main/java/org/apache/commons/lang3/StringUtils.java#L5570
-    public static String canonicalizeWhiteSpace(final String str) {
-        if (str.isEmpty()) {
-            return str;
-        }
-        final int size = str.length();
-        final char[] newChars = new char[size];
-        int count = 0;
-        int whitespacesCount = 0;
-        boolean startWhitespaces = true;
-
-        for (int i = 0; i < size; i++) {
-            final char actualChar = str.charAt(i);
-            final boolean isWhitespace = Character.isWhitespace(actualChar);
-            if (isWhitespace) {
-                if (whitespacesCount == 0 && !startWhitespaces) {
-                    newChars[count++] = SPACE.charAt(0);
-                }
-                whitespacesCount++;
-            } else {
-                startWhitespaces = false;
-                newChars[count++] = (actualChar == 160 ? 32 : actualChar);
-                whitespacesCount = 0;
-            }
-        }
-        if (startWhitespaces) {
-            return EMPTY;
-        }
-        return new String(newChars, 0, count - (whitespacesCount > 0 ? 1 : 0)).trim();
-    }
-
     private static String replace(final Pattern pattern, final String original) {
         int lastIndex = 0;
         StringBuilder output = new StringBuilder();
@@ -193,19 +83,6 @@ public class Utils {
             output.append(original, lastIndex, original.length());
         }
         return output.toString();
-    }
-
-    // Adapted from:
-    // https://stackoverflow.com/questions/241327/remove-c-and-c-comments-using-python
-    public static String stripAllComments(String str) {
-        final Pattern pattern = Pattern.compile(
-                "//.*?$|/\\*.*?\\*/|'(?:\\\\.|[^\\\\'])*'|\"(?:\\\\.|[^\\\\\"])*\"",
-                Pattern.DOTALL | Pattern.MULTILINE);
-        final String ret = replace(pattern, str);
-        if (ret.contains("*")) {
-            throw new IllegalArgumentException("Nested block comments found");
-        }
-        return ret;
     }
 
     public static String coloredPrint(String string, String color) {
