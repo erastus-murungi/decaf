@@ -23,6 +23,7 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
+import edu.mit.compilers.utils.TarjanSCC;
 
 
 public class FunctionInlinePass {
@@ -57,7 +58,7 @@ public class FunctionInlinePass {
 
     private Map<InstructionList, List<Integer>> findCallSites(Method method, String functionName) {
         var callSites = new HashMap<InstructionList, List<Integer>>();
-        for (BasicBlock basicBlock : DataFlowAnalysis.getReversePostOrder(method.entryBlock)) {
+        for (BasicBlock basicBlock : TarjanSCC.getReversePostOrder(method.entryBlock)) {
             var threeAddressCodeList = basicBlock.getInstructionList();
             callSites.put(threeAddressCodeList, new ArrayList<>());
             IntStream.range(0, threeAddressCodeList.size())

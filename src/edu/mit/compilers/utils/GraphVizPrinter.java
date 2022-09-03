@@ -32,6 +32,7 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.BasicBlockWithBranch;
 import edu.mit.compilers.cfg.BasicBlockBranchLess;
 import edu.mit.compilers.cfg.NOP;
+import edu.mit.compilers.registerallocation.InterferenceGraph;
 import edu.mit.compilers.symboltable.SymbolTable;
 
 import java.io.*;
@@ -72,7 +73,9 @@ public class GraphVizPrinter {
     /**
      * Detects the client's operating system.
      */
-    private final static String osName = System.getProperty("os.name").replaceAll("\\s", "").toLowerCase(Locale.ROOT);
+    private final static String osName = System.getProperty("os.name")
+                                               .replaceAll("\\s", "")
+                                               .toLowerCase(Locale.ROOT);
     /**
      * ##############################################################
      * #                    Linux Configurations                    #
@@ -395,9 +398,13 @@ public class GraphVizPrinter {
     public static String writeDominatorGraph(Map<BasicBlock, BasicBlock> immediateDominators) {
         List<String> nodes = new ArrayList<>();
         List<String> edges = new ArrayList<>();
-        for (Map.Entry<BasicBlock, BasicBlock> entry: immediateDominators.entrySet()) {
-            nodes.add(String.format("   %s [shape=record, label=%s, color=blue];", entry.getKey().hashCode(), "\"<from_node>" + escape(entry.getKey().toString()).replace(" ", "\u2007") + "\""));
-            edges.add(String.format("   %s -> %s;", entry.getValue().hashCode() + ":from_node", entry.getKey().hashCode() + ":from_node"));
+        for (Map.Entry<BasicBlock, BasicBlock> entry : immediateDominators.entrySet()) {
+            nodes.add(String.format("   %s [shape=record, label=%s, color=blue];", entry.getKey()
+                                                                                        .hashCode(), "\"<from_node>" + escape(entry.getKey()
+                                                                                                                                   .toString()).replace(" ", "\u2007") + "\""));
+            edges.add(String.format("   %s -> %s;", entry.getValue()
+                                                         .hashCode() + ":from_node", entry.getKey()
+                                                                                          .hashCode() + ":from_node"));
         }
 
         nodes.addAll(edges);
@@ -412,6 +419,45 @@ public class GraphVizPrinter {
         createDotGraph(writeDominatorGraph(immediateDominators), "dom");
     }
 
+    public static void printInterferenceGraph(InterferenceGraph interferenceGraph, String fileName) {
+        createDotGraph(writeInterferenceGraph(interferenceGraph), fileName);
+    }
+
+    public static String writeInterferenceGraph(InterferenceGraph interferenceGraph) {
+        List<String> nodes = new ArrayList<>();
+        List<String> edges = new ArrayList<>();
+        for (var entry : interferenceGraph.getUniqueInterferenceGraphEdges()) {
+            nodes.add(String.format("   %s [shape=ellipse, style=filled, fillcolor=gray, label=\"%s\"];", entry.first()
+                                                                                                               .hashCode(), escape(entry.first()
+                                                                                                                                        .toString()).replace(" ", "\u2007")));
+            nodes.add(String.format("   %s [shape=ellipse, style=filled, fillcolor=gray, label=\"%s\"];", entry.second()
+                                                                                                               .hashCode(), escape(entry.second()
+                                                                                                                                        .toString()).replace(" ", "\u2007")));
+            edges.add(String.format("   %s -> %s [arrowhead=none];", entry.first()
+                                                                          .hashCode(), entry.second()
+                                                                                            .hashCode()));
+        }
+
+        for (var entry : interferenceGraph.getUniqueMoveEdges()) {
+            nodes.add(String.format("   %s [shape=ellipse, style=filled, fillcolor=gray, label=\"%s\"];", entry.first()
+                                                                                                               .hashCode(), escape(entry.first()
+                                                                                                                                        .toString()).replace(" ", "\u2007")));
+            nodes.add(String.format("   %s [shape=ellipse, style=filled, fillcolor=gray, label=\"%s\"];", entry.second()
+                                                                                                               .hashCode(), escape(entry.second()
+                                                                                                                                        .toString()).replace(" ", "\u2007")));
+            edges.add(String.format("   %s -> %s [arrowhead=none, style=dotted, label=\"%s\"];", entry.first()
+                                                                                                      .hashCode(), entry.second()
+                                                                                                                        .hashCode(), String.format("%s <=> %s", escape(entry.first.liveInterval()
+                                                                                                                                                                                  .variable()
+                                                                                                                                                                                  .toString()), escape(entry.second.liveInterval()
+                                                                                                                                                                                                                   .variable()
+                                                                                                                                                                                                                   .toString()))));
+        }
+
+        nodes.addAll(edges);
+        return String.join("\n", nodes);
+    }
+
     public static String writeSymbolTable(AST root,
                                           HashMap<String, SymbolTable> methods) {
         List<String> subGraphs = new ArrayList<>();// add this node
@@ -422,14 +468,14 @@ public class GraphVizPrinter {
 
         while (!stack.isEmpty()) {
             AST ast = stack.pop();
-            for (Pair<String, AST> astPair: ast.getChildren()) {
+            for (Pair<String, AST> astPair : ast.getChildren()) {
                 AST child = astPair.second;
                 if (child instanceof Block) {
                     SymbolTable blockSymbolTable = ((Block) child).blockSymbolTable;
                     if (blockSymbolTable.isEmpty())
                         continue;
                     nodes.add(String.format("   %s [shape=record, label=%s, color=blue];", blockSymbolTable.hashCode(), "\"<from_node>" + escape(blockSymbolTable.toString()).replace(" ", "\u2007") + "\""));
-                    for (SymbolTable symbolTable: blockSymbolTable.children) {
+                    for (SymbolTable symbolTable : blockSymbolTable.children) {
                         if (symbolTable.isEmpty())
                             continue;
                         edges.add(String.format("   %s -> %s;", blockSymbolTable.hashCode() + ":from_node", symbolTable.hashCode() + ":from_node"));
@@ -440,7 +486,7 @@ public class GraphVizPrinter {
                     if (blockSymbolTable.isEmpty())
                         continue;
                     nodes.add(String.format("   %s [shape=record, label=%s, color=blue];", blockSymbolTable.hashCode(), "\"<from_node>" + escape(blockSymbolTable.myToString(((MethodDefinition) child).methodName.getLabel())).replace(" ", "\u2007") + "\""));
-                    for (SymbolTable symbolTable: blockSymbolTable.children) {
+                    for (SymbolTable symbolTable : blockSymbolTable.children) {
                         if (symbolTable.isEmpty())
                             continue;
                         edges.add(String.format("   %s -> %s;", blockSymbolTable.hashCode() + ":from_node", symbolTable.hashCode() + ":from_node"));
@@ -472,14 +518,13 @@ public class GraphVizPrinter {
                 nodes.add(String.format("   %s [shape=record, style=filled, fillcolor=gray, label=%s];", cfgBlock.hashCode(), "\"<from_node>" + escape(labelFunction.apply(cfgBlock)) + "\""));
                 BasicBlock autoChild = ((NOP) cfgBlock).getSuccessor();
                 if (autoChild != null) {
-                    edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_node", autoChild.hashCode()+ ":from_node"));
+                    edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_node", autoChild.hashCode() + ":from_node"));
                     if (!seen.contains(autoChild)) {
                         stack.push(autoChild);
                         seen.add(autoChild);
                     }
                 }
-            }
-            else if (cfgBlock instanceof BasicBlockBranchLess) {
+            } else if (cfgBlock instanceof BasicBlockBranchLess) {
                 nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"<from_node>" + escape(labelFunction.apply(cfgBlock)) + "\""));
                 BasicBlock autoChild = ((BasicBlockBranchLess) cfgBlock).getSuccessor();
                 if (autoChild != null) {
@@ -501,7 +546,7 @@ public class GraphVizPrinter {
                     edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_false", falseChild.hashCode() + ":from_node"));
                 }
                 if (trueChild != null) {
-                    if ((!seen.contains(trueChild)))  {
+                    if ((!seen.contains(trueChild))) {
                         stack.push(trueChild);
                         seen.add(trueChild);
                     }
@@ -540,7 +585,7 @@ public class GraphVizPrinter {
     }
 
     public static void printSymbolTables(AST root,
-                                  HashMap<String, SymbolTable> methods) {
+                                         HashMap<String, SymbolTable> methods) {
         GraphVizPrinter.createDotGraph(writeSymbolTable(root, methods), "symbolTables");
 //        if (!osName.equals("windows")) {
 //            try {
@@ -555,13 +600,13 @@ public class GraphVizPrinter {
 
     /**
      * escape()
-     *
+     * <p>
      * Escape a give String to make it safe to be printed or stored.
      *
      * @param s The input String.
      * @return The output String.
      **/
-    public static String escape(String s){
+    public static String escape(String s) {
         return s.replace("\\", "\\\\")
                 .replace("\t", "\\t")
                 .replace("\b", "\\b")

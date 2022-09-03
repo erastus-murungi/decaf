@@ -61,7 +61,7 @@ public class Method extends Instruction {
         super(methodDefinition);
         this.methodDefinition = methodDefinition;
         parameterNames = methodDefinition.parameterList.stream()
-                                                       .map(methodDefinitionParameter -> new Variable(methodDefinitionParameter.getName() + "_arg", methodDefinitionParameter.getType()))
+                                                       .map(methodDefinitionParameter -> new Variable(methodDefinitionParameter.getName(), methodDefinitionParameter.getType()))
                                                        .collect(Collectors.toList());
     }
 

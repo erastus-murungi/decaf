@@ -12,6 +12,7 @@ import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
+import edu.mit.compilers.utils.TarjanSCC;
 
 /**
  * Finds a greedy trace of the basic blocks in a CFG
@@ -38,7 +39,7 @@ public class TraceScheduler {
     }
 
     private void findBasicBlocks(Method method) {
-        basicBlocks = DataFlowAnalysis.getReversePostOrder(method.entryBlock);
+        basicBlocks = TarjanSCC.getReversePostOrder(method.entryBlock);
     }
 
     public TraceScheduler(Method method, boolean addJumps) {

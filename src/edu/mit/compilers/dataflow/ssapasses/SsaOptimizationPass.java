@@ -10,6 +10,7 @@ import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.passes.OptimizationPass;
+import edu.mit.compilers.utils.TarjanSCC;
 
 public abstract class SsaOptimizationPass<T> extends OptimizationPass {
     protected Set<LValue> globalVariables;
@@ -32,7 +33,7 @@ public abstract class SsaOptimizationPass<T> extends OptimizationPass {
         super(globalVariables, method);
         this.globalVariables = globalVariables;
         this.method = method;
-        basicBlockList = DataFlowAnalysis.getReversePostOrder(getEntryBasicBlock());
+        basicBlockList = TarjanSCC.getReversePostOrder(getEntryBasicBlock());
     }
 
     protected BasicBlock getEntryBasicBlock() {

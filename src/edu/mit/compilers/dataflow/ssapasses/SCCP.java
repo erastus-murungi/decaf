@@ -1,7 +1,7 @@
 package edu.mit.compilers.dataflow.ssapasses;
 
-import static edu.mit.compilers.dataflow.analyses.DataFlowAnalysis.correctPredecessors;
-import static edu.mit.compilers.dataflow.analyses.DataFlowAnalysis.getReversePostOrder;
+import static edu.mit.compilers.utils.TarjanSCC.correctPredecessors;
+import static edu.mit.compilers.utils.TarjanSCC.getReversePostOrder;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;

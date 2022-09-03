@@ -9,6 +9,7 @@ import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
+import edu.mit.compilers.utils.TarjanSCC;
 
 public abstract class OptimizationPass {
     Set<LValue> globalVariables;
@@ -24,7 +25,7 @@ public abstract class OptimizationPass {
         this.globalVariables = globalVariables;
         this.method = method;
         this.entryBlock = method.entryBlock;
-        this.basicBlocks = DataFlowAnalysis.getReversePostOrder(entryBlock);
+        this.basicBlocks = TarjanSCC.getReversePostOrder(entryBlock);
     }
 
     // return true if changes happened

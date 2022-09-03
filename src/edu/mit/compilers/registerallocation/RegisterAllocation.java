@@ -57,7 +57,7 @@ public class RegisterAllocation {
 
     public RegisterAllocation(ProgramIr programIr) {
         this.unModified = programIr.mergeProgram();
-        var liveIntervalsUtil = new LiveIntervals(programIr);
+        var liveIntervalsUtil = new LiveIntervalsUtil(programIr);
         var linearScan = new LinearScan(List.of(X64Register.regsToAllocate), liveIntervalsUtil.methodToLiveIntervalsMap);
         linearScan.allocate();
         variableToRegisterMap.putAll(linearScan.getVariableToRegisterMapping());

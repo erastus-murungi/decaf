@@ -640,7 +640,7 @@ public class DecafParser {
 
         final Name initId = parseName(DecafScanner.IDENTIFIER, ExprContext.STORE);
 
-
+        consumeToken(ASSIGN, DecafScanner.ASSIGN);
         final Expression initializationExpression = parseOrExpr();
         final Initialization initialization = new Initialization(initId, initializationExpression);
 

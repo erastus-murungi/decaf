@@ -24,16 +24,19 @@ import edu.mit.compilers.codegen.names.Variable;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
 import edu.mit.compilers.dataflow.dominator.ImmediateDominator;
-import edu.mit.compilers.registerallocation.LiveIntervals;
+import edu.mit.compilers.registerallocation.Coalesce;
+import edu.mit.compilers.registerallocation.InterferenceGraph;
+import edu.mit.compilers.registerallocation.LiveIntervalsUtil;
 import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.ProgramIr;
+import edu.mit.compilers.utils.TarjanSCC;
 import edu.mit.compilers.utils.UnionFind;
 import edu.mit.compilers.utils.Utils;
 
 public class SSA {
     public static void construct(Method method) {
         var entryBlock = method.entryBlock;
-        var basicBlocks = DataFlowAnalysis.getReversePostOrder(entryBlock);
+        var basicBlocks = TarjanSCC.getReversePostOrder(entryBlock);
         var immediateDominator = new ImmediateDominator(entryBlock);
         placePhiFunctions(entryBlock, basicBlocks, immediateDominator);
         renameVariables(entryBlock, immediateDominator, basicBlocks);
@@ -45,13 +48,12 @@ public class SSA {
         Utils.printSsaCfg(List.of(method), "ssa_after_opt_" + method.methodName());
 
         var entryBlock = method.entryBlock;
-        var basicBlocks = DataFlowAnalysis.getReversePostOrder(entryBlock);
+        var basicBlocks = TarjanSCC.getReversePostOrder(entryBlock);
         var immediateDominator = new ImmediateDominator(entryBlock);
         verify(basicBlocks);
         deconstructSsa(entryBlock, basicBlocks,immediateDominator);
+        Coalesce.doIt(method, programIr);
         Utils.printSsaCfg(List.of(method), "ssa_after_" + method.methodName());
-        var liveIntervals = new LiveIntervals(method, programIr);
-        liveIntervals.prettyPrintLiveIntervals(method);
     }
     private SSA() {
     }

@@ -18,13 +18,13 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
 import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.SetUtils;
+import edu.mit.compilers.utils.TarjanSCC;
 import edu.mit.compilers.utils.Utils;
 
-public class LiveIntervals {
+public class LiveIntervalsUtil {
     final private ProgramIr programIr;
 
     /**
@@ -44,7 +44,7 @@ public class LiveIntervals {
 
     private final Map<Method, Map<Value, LiveInterval>> methodToMappingOfValuesToLiveIntervals = new HashMap<>();
 
-    public LiveIntervals(ProgramIr programIr) {
+    public LiveIntervalsUtil(ProgramIr programIr) {
         this.programIr = programIr;
         computeLivenessInformation();
         computeLiveIntervals();
@@ -52,7 +52,7 @@ public class LiveIntervals {
     }
 
 
-    public LiveIntervals(Method method, ProgramIr programIr) {
+    public LiveIntervalsUtil(Method method, ProgramIr programIr) {
         this.programIr = programIr;
         computeMethodLivenessInformation(method);
         var liveIntervals = computeMethodLiveIntervals(method);
@@ -60,28 +60,37 @@ public class LiveIntervals {
         methodToLiveIntervalsMap.put(method, liveIntervals);
     }
 
+    public Collection<LiveInterval> getLiveIntervals(Method method) {
+        return methodToLiveIntervalsMap.get(method);
+    }
+
+    public Map<Value, LiveInterval> getValueToLiveIntervalMappingForMethod(Method method) {
+        return methodToMappingOfValuesToLiveIntervals.get(method);
+    }
+
     private void validateMethodLiveIntervals(Collection<LiveInterval> liveIntervals) {
         checkStartComesBeforeEnd(liveIntervals);
     }
 
     private void validateLiveIntervals() {
-        methodToLiveIntervalsMap.values()
-                                .forEach(this::checkStartComesBeforeEnd);
+        programIr.methodList.forEach(
+                method ->
+                        validateMethodLiveIntervals(getLiveIntervals(method))
+        );
     }
 
 
     private boolean isLiveAtPoint(Method method, Value value, int index) {
         var liveInterval = methodToMappingOfValuesToLiveIntervals.get(method)
-                                                                          .get(value);
+                                                                 .get(value);
         return liveInterval.startPoint() <= index && index < liveInterval.endPoint();
     }
 
 
     private void computeMethodLivenessInformation(Method method) {
-        var liveVariableAnalysis = new LiveVariableAnalysis(method.entryBlock);
-        var basicBlocks = DataFlowAnalysis.getReversePostOrder(method.entryBlock);
+        var basicBlocks = TarjanSCC.getReversePostOrder(method.entryBlock);
         basicBlocks.forEach(basicBlock ->
-                computeLiveOutForBasicBlock(basicBlock, liveVariableAnalysis));
+                computeLiveOutForSetBasicBlock(basicBlock, new LiveVariableAnalysis(method.entryBlock)));
     }
 
     private Set<Value> ref(Instruction instruction) {
@@ -97,7 +106,7 @@ public class LiveIntervals {
     }
 
 
-    private void computeLiveOutForBasicBlock(BasicBlock basicBlock, LiveVariableAnalysis liveVariableAnalysis) {
+    private void computeLiveOutForSetBasicBlock(BasicBlock basicBlock, LiveVariableAnalysis liveVariableAnalysis) {
         var liveIn = liveVariableAnalysis.liveIn(basicBlock);
         var liveOut = liveVariableAnalysis.liveOut(basicBlock);
 
@@ -109,13 +118,14 @@ public class LiveIntervals {
 
         Set<Value> outLive = new HashSet<>(liveOut);
 
-        Set<Value> globalOut = SetUtils.difference(outLive, SetUtils.difference(outLive, basicBlock.getStoreInstructions()
+        // values which are live outside this block and therefore should be conserved
+        Set<Value> outGlobal = SetUtils.difference(outLive, SetUtils.difference(outLive, basicBlock.getStoreInstructions()
                                                                                                    .stream()
                                                                                                    .map(StoreInstruction::getStore)
                                                                                                    .collect(Collectors.toUnmodifiableSet())));
 
         for (Instruction instruction : basicBlock.getInstructionListReversed()) {
-            outLive = SetUtils.union(SetUtils.union(SetUtils.difference(outLive, def(instruction)), ref(instruction)), globalOut);
+            outLive = SetUtils.union(SetUtils.union(SetUtils.difference(outLive, def(instruction)), ref(instruction)), outGlobal);
             instructionToLiveVariablesMap.put(instruction, outLive);
         }
     }
@@ -169,14 +179,12 @@ public class LiveIntervals {
     private int findLastUseSlot(InstructionList instructionList, Value value) {
         int loc = instructionList.size() - 1;
         for (; loc >= 0; loc--) {
-            if (getLiveVariablesAtInstruction(instructionList.get(loc)).contains(value))
+            var instruction = instructionList.get(loc);
+            if (instructionToLiveVariablesMap.getOrDefault(instruction, Collections.emptySet())
+                                             .contains(value))
                 break;
         }
         return loc + 1;
-    }
-
-    private Set<Value> getLiveVariablesAtInstruction(Instruction instruction) {
-        return instructionToLiveVariablesMap.getOrDefault(instruction, Collections.emptySet());
     }
 
     private void checkStartComesBeforeEnd(Collection<LiveInterval> liveIntervals) {
@@ -188,8 +196,14 @@ public class LiveIntervals {
     }
 
 
+    public static boolean liveIntervalsInterfere(LiveInterval a, LiveInterval b) {
+        var overlap =  Math.abs(Math.min(a.startPoint(), b.endPoint() - 1) - Math.max(a.startPoint(), b.endPoint() - 1));
+        return overlap > 0;
+    }
+
+
     public void prettyPrintLiveIntervals(Method method) {
-        var liveIntervals = methodToLiveIntervalsMap.get(method);
+        var liveIntervals = getLiveIntervals(method);
         if (liveIntervals.isEmpty())
             return;
         var instructionList = liveIntervals.stream()

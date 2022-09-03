@@ -65,14 +65,6 @@ public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<I
         var methodInstructionList = new InstructionList();
         var method = new Method(methodDefinition);
         methodInstructionList.add(method);
-        methodInstructionList.addAll(
-                method.methodDefinition.parameterList
-                        .stream()
-                        .map(
-                                parameterName -> new CopyInstruction(new Variable(parameterName.getName(), parameterName.getType()), new Variable(parameterName.getName() + "_arg", parameterName.getType()), null, null)
-                        )
-                        .toList()
-        );
 
         methodInstructionList.addAll(
                 cfgGenerationErrors.stream()

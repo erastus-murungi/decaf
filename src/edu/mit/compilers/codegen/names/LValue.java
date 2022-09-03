@@ -27,6 +27,10 @@ public abstract class LValue extends Value {
         this.versionNumber = lValue.versionNumber;
     }
 
+    public void clearVersionNumber() {
+        versionNumber = null;
+    }
+
     public void unRenameForSsa() {
         versionNumber = null;
     }

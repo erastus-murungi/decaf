@@ -281,7 +281,7 @@ public class Compilation {
     }
 
     private void runDataflowOptimizationPasses() {
-        assert compilationState == CompilationState.IR_GENERATED;
+        assert compilationState == CompilationState.SSA_GENERATED;
         double oldNLinesOfCode;
         oldNLinesOfCode = countLinesOfCode();
 

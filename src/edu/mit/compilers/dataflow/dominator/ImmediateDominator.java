@@ -1,6 +1,6 @@
 package edu.mit.compilers.dataflow.dominator;
 
-import static edu.mit.compilers.dataflow.analyses.DataFlowAnalysis.correctPredecessors;
+import static edu.mit.compilers.utils.TarjanSCC.correctPredecessors;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.NOP;

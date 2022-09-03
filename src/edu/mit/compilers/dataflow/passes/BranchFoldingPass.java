@@ -11,12 +11,13 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.BasicBlockBranchLess;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
+import edu.mit.compilers.utils.TarjanSCC;
 
 public class BranchFoldingPass {
     public static void run(Collection<BasicBlock> basicBlocks) {
         for (BasicBlock entryBlock: basicBlocks) {
-            DataFlowAnalysis.correctPredecessors(entryBlock);
-            mergeTails(DataFlowAnalysis.getReversePostOrder(entryBlock));
+            TarjanSCC.correctPredecessors(entryBlock);
+            mergeTails(TarjanSCC.getReversePostOrder(entryBlock));
         }
     }
 
