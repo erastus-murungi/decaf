@@ -21,16 +21,12 @@ import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.Variable;
-import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
 import edu.mit.compilers.dataflow.dominator.ImmediateDominator;
 import edu.mit.compilers.registerallocation.Coalesce;
-import edu.mit.compilers.registerallocation.InterferenceGraph;
-import edu.mit.compilers.registerallocation.LiveIntervalsUtil;
 import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.TarjanSCC;
-import edu.mit.compilers.utils.UnionFind;
 import edu.mit.compilers.utils.Utils;
 
 public class SSA {
@@ -142,15 +138,6 @@ public class SSA {
         }
     }
 
-    private static List<Phi> getAllPhiNodes(List<BasicBlock> basicBlocks) {
-        return basicBlocks.stream()
-                          .map(
-                                  BasicBlock::getPhiFunctions
-                          )
-                          .flatMap(List::stream)
-                          .toList();
-    }
-
     private static void initializeForSsaDestruction(List<BasicBlock> basicBlocks, HashMap<LValue, Stack<LValue>> stacks) {
         Utils.getAllLValuesInBasicBlocks(basicBlocks).stream()
                                                .map(LValue::copy)
@@ -160,16 +147,6 @@ public class SSA {
                                                   .add(a.copy());
                                         }
                                 );
-    }
-
-    private static Collection<Set<LValue>> phiWebDiscovery(List<BasicBlock> basicBlocks) {
-        var unionFind = new UnionFind<>(Utils.getAllLValuesInBasicBlocks(basicBlocks));
-        for (var phiNode : getAllPhiNodes(basicBlocks)) {
-            for (var operand : phiNode.getOperandValues()) {
-                unionFind.union(phiNode.getStore(), (LValue) operand);
-            }
-        }
-        return unionFind.toSets();
     }
 
     private static void addPhiNodeForVatY(LValue V, BasicBlock Y, Collection<BasicBlock> basicBlocksModifyingV) {
@@ -254,8 +231,6 @@ public class SSA {
     }
 
     private static void deconstructSsa(BasicBlock entryBlock, List<BasicBlock> basicBlocks, ImmediateDominator immediateDominator) {
-//        Collection<Set<LValue>> webs = phiWebDiscovery(basicBlocks);
-//        System.out.println(webs);
         var stacks = new HashMap<LValue, Stack<LValue>>();
         initializeForSsaDestruction(basicBlocks, stacks);
         insertCopies(entryBlock, immediateDominator, new LiveVariableAnalysis(entryBlock), stacks);
@@ -327,7 +302,7 @@ public class SSA {
         }
 
 
-        /* Pass Two: Set up the worklist of initial copies */
+        /* Pass Two: Set up the workList of initial copies */
         for (var srcDest : new ArrayList<>(copySet)) {
             var dst = srcDest.second();
             if (!usedByAnother.contains(dst)) {
@@ -336,7 +311,7 @@ public class SSA {
             }
         }
 
-        /* Pass Three: Iterate over the worklist, inserting copies */
+        /* Pass Three: Iterate over the workList, inserting copies */
         while (!workList.isEmpty() || !copySet.isEmpty()) {
             while (!workList.isEmpty()) {
                 var srcDest = workList.pop();
@@ -384,13 +359,4 @@ public class SSA {
         return results;
     }
 
-    private static void unRenameInBasicBlock(BasicBlock X) {
-        X.getInstructionList()
-         .stream()
-         .flatMap(instruction -> instruction.getAllValues()
-                                            .stream())
-         .filter(abstractName -> abstractName instanceof LValue)
-         .map(abstractName -> (LValue) abstractName)
-         .forEach(LValue::unRenameForSsa);
-    }
 }
