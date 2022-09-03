@@ -4,7 +4,7 @@ import edu.mit.compilers.ast.*;
 import edu.mit.compilers.ast.ConditionalOperator;
 import edu.mit.compilers.ast.UnaryOperator;
 
-import static edu.mit.compilers.cfg.CFGVisitor.rotateBinaryOpExpression;
+import static edu.mit.compilers.cfg.ControlFlowGraphVisitor.rotateBinaryOpExpression;
 import static edu.mit.compilers.grammar.DecafScanner.*;
 
 public class ShortCircuitProcessor {
@@ -12,7 +12,7 @@ public class ShortCircuitProcessor {
     private ShortCircuitProcessor() {
     }
 
-    public static BasicBlockWithBranch shortCircuit(BasicBlockWithBranch conditionalBlock) {
+    public static BasicBlock shortCircuit(BasicBlock conditionalBlock) {
         return shortCircuitImpl(conditionalBlock);
     }
 
@@ -33,15 +33,12 @@ public class ShortCircuitProcessor {
         expression = extractParenthesized(expression);
 
         // Apply De Morgan's Laws
-        if (expression instanceof UnaryOpExpression) {
-            final UnaryOpExpression unaryOpExpression = (UnaryOpExpression) expression;
+        if (expression instanceof final UnaryOpExpression unaryOpExpression) {
             if (unaryOpExpression.getUnaryOperator().label.equals(NOT)) {
                 final UnaryOperator unaryNot = unaryOpExpression.getUnaryOperator();
                 final Expression operand = extractParenthesized(unaryOpExpression.operand);
-                if (operand instanceof BinaryOpExpression) {
-                    BinaryOpExpression binaryOpExpression = (BinaryOpExpression) operand;
-                    if (binaryOpExpression.op instanceof ConditionalOperator) {
-                        final ConditionalOperator operator = (ConditionalOperator) binaryOpExpression.op;
+                if (operand instanceof BinaryOpExpression binaryOpExpression) {
+                    if (binaryOpExpression.op instanceof final ConditionalOperator operator) {
                         if (operator.label.equals(CONDITIONAL_AND)) {
 
                             // Not (A and B) is the same as Not A or Not B.
@@ -64,13 +61,11 @@ public class ShortCircuitProcessor {
         return expression;
     }
 
-    private static BasicBlockWithBranch shortCircuitImpl(BasicBlockWithBranch basicBlockWithBranch) {
-        final Expression expression = simplify(basicBlockWithBranch.getBranchCondition());
+    private static BasicBlock shortCircuitImpl(BasicBlock basicBlockWithBranch) {
+        final Expression expression = simplify(basicBlockWithBranch.getBranchCondition().orElseThrow());
 
-        if (expression instanceof BinaryOpExpression) {
-            BinaryOpExpression conditional = (BinaryOpExpression) expression;
-            if (conditional.op instanceof ConditionalOperator) {
-                ConditionalOperator operator = (ConditionalOperator) conditional.op;
+        if (expression instanceof BinaryOpExpression conditional) {
+            if (conditional.op instanceof ConditionalOperator operator) {
 
                 basicBlockWithBranch.getFalseTarget()
                                     .removePredecessor(basicBlockWithBranch);
@@ -80,14 +75,14 @@ public class ShortCircuitProcessor {
                 final Expression c1 = rotateBinaryOpExpression(conditional.lhs);
                 final Expression c2 = rotateBinaryOpExpression(conditional.rhs);
 
-                BasicBlockWithBranch b1, b2;
+                BasicBlock b1, b2;
 
                 if (operator.label.equals(CONDITIONAL_AND)) {
-                    b2 = shortCircuitImpl(new BasicBlockWithBranch(c2, basicBlockWithBranch.getTrueTarget(), basicBlockWithBranch.getFalseTarget()));
-                    b1 = shortCircuitImpl(new BasicBlockWithBranch(c1, b2, basicBlockWithBranch.getFalseTarget()));
+                    b2 = shortCircuitImpl(BasicBlock.branch(c2, basicBlockWithBranch.getTrueTarget(), basicBlockWithBranch.getFalseTarget()));
+                    b1 = shortCircuitImpl(BasicBlock.branch(c1, b2, basicBlockWithBranch.getFalseTarget()));
                 } else {
-                    b2 = shortCircuitImpl(new BasicBlockWithBranch(c2, basicBlockWithBranch.getTrueTarget(), basicBlockWithBranch.getFalseTarget()));
-                    b1 = shortCircuitImpl(new BasicBlockWithBranch(c1, basicBlockWithBranch.getTrueTarget(), b2));
+                    b2 = shortCircuitImpl(BasicBlock.branch(c2, basicBlockWithBranch.getTrueTarget(), basicBlockWithBranch.getFalseTarget()));
+                    b1 = shortCircuitImpl(BasicBlock.branch(c1, basicBlockWithBranch.getTrueTarget(), b2));
                 }
 
                 // TODO: improve the parent pointer logic here by removing checks

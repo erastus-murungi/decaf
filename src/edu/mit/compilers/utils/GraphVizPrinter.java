@@ -29,8 +29,6 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.Block;
 import edu.mit.compilers.ast.MethodDefinition;
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.cfg.BasicBlockWithBranch;
-import edu.mit.compilers.cfg.BasicBlockBranchLess;
 import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.registerallocation.InterferenceGraph;
 import edu.mit.compilers.symboltable.SymbolTable;
@@ -524,9 +522,9 @@ public class GraphVizPrinter {
                         seen.add(autoChild);
                     }
                 }
-            } else if (cfgBlock instanceof BasicBlockBranchLess) {
+            } else if (cfgBlock.hasNoBranch()) {
                 nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"<from_node>" + escape(labelFunction.apply(cfgBlock)) + "\""));
-                BasicBlock autoChild = ((BasicBlockBranchLess) cfgBlock).getSuccessor();
+                BasicBlock autoChild = cfgBlock.getSuccessor();
                 if (autoChild != null) {
                     edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_node", autoChild.hashCode() + ":from_node"));
                     if (!seen.contains(autoChild)) {
@@ -534,10 +532,10 @@ public class GraphVizPrinter {
                         seen.add(autoChild);
                     }
                 }
-            } else if (cfgBlock instanceof BasicBlockWithBranch) {
+            } else if (cfgBlock.hasBranch()) {
                 nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"{<from_node>" + escape(labelFunction.apply(cfgBlock)) + "|{<from_true> T|<from_false>F}" + "}\""));
-                BasicBlock falseChild = ((BasicBlockWithBranch) cfgBlock).getFalseTarget();
-                BasicBlock trueChild = ((BasicBlockWithBranch) cfgBlock).getTrueTarget();
+                BasicBlock falseChild = cfgBlock.getFalseTarget();
+                BasicBlock trueChild = cfgBlock.getTrueTarget();
                 if (falseChild != null) {
                     if ((!seen.contains(falseChild))) {
                         stack.push(falseChild);

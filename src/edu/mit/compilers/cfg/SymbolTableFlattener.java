@@ -33,8 +33,7 @@ public class SymbolTableFlattener {
     public HashMap<String, SymbolTable> createCFGSymbolTables() {
         for (HashMap.Entry<String, Descriptor> methodEntry : methods.entries.entrySet()) {
             // is this check necessary? does a method table only contain one entry of type MethodDescriptor?
-            if (methodEntry.getValue() instanceof MethodDescriptor) {
-                MethodDescriptor methodDesc = (MethodDescriptor) methodEntry.getValue();
+            if (methodEntry.getValue() instanceof MethodDescriptor methodDesc) {
                 SymbolTable methodVars = new SymbolTable(null, SymbolTableType.Method, methodDesc.methodDefinition.block);
                 cfgMethods.put(methodEntry.getKey(), methodVars);
 

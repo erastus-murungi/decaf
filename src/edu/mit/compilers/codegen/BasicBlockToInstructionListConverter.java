@@ -14,14 +14,10 @@ import edu.mit.compilers.ast.MethodDefinition;
 import edu.mit.compilers.ast.Program;
 import edu.mit.compilers.ast.StringLiteral;
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.cfg.BasicBlockBranchLess;
-import edu.mit.compilers.cfg.BasicBlockVisitor;
-import edu.mit.compilers.cfg.BasicBlockWithBranch;
-import edu.mit.compilers.cfg.CFGVisitor;
+import edu.mit.compilers.cfg.ControlFlowGraphVisitor;
 import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.cfg.SymbolTableFlattener;
 import edu.mit.compilers.codegen.codes.ConditionalBranch;
-import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.GlobalAllocation;
 import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.Method;
@@ -36,7 +32,7 @@ import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.ProgramIr;
 
-public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<InstructionList> {
+public class BasicBlockToInstructionListConverter {
     private final List<DecafException> cfgGenerationErrors;
     private final Set<LValue> globalNames = new HashSet<>();
     private final Set<BasicBlock> visitedBasicBlocks = new HashSet<>();
@@ -73,7 +69,7 @@ public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<I
         // if the errors list is non-empty, set hasRuntimeException to true
         method.setHasRuntimeException(!cfgGenerationErrors.isEmpty());
 
-        final var entryBasicBlockInstructionList = methodStart.accept(this);
+        final var entryBasicBlockInstructionList = visit(methodStart);
         entryBasicBlockInstructionList.addAll(0, methodInstructionList);
 
         currentMethodExitNop.setLabel(methodExitLabel);
@@ -142,7 +138,7 @@ public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<I
 
     public BasicBlockToInstructionListConverter(GlobalDescriptor globalDescriptor,
                                                 List<DecafException> cfgGenerationErrors,
-                                                CFGVisitor cfgVisitor,
+                                                ControlFlowGraphVisitor cfgVisitor,
                                                 Program program) {
         SymbolTableFlattener symbolTableFlattener = new SymbolTableFlattener(globalDescriptor);
         this.perMethodSymbolTables = symbolTableFlattener.createCFGSymbolTables();
@@ -166,8 +162,16 @@ public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<I
         return programIr;
     }
 
-    @Override
-    public InstructionList visit(BasicBlockBranchLess basicBlockBranchLess) {
+
+    public InstructionList visit(BasicBlock basicBlock) {
+        return switch (basicBlock.getBasicBlockType()) {
+            case NO_BRANCH -> visitBasicBlockBranchLess(basicBlock);
+            case BRANCH -> visitBasicBlockWithBranch(basicBlock);
+            default -> visitNOP((NOP) basicBlock);
+        };
+    }
+
+    public InstructionList visitBasicBlockBranchLess(BasicBlock basicBlockBranchLess) {
         if (visitedBasicBlocks.contains(basicBlockBranchLess))
             return basicBlockBranchLess.getInstructionList();
         visitedBasicBlocks.add(basicBlockBranchLess);
@@ -175,42 +179,37 @@ public class BasicBlockToInstructionListConverter implements BasicBlockVisitor<I
         instructionList.add(basicBlockBranchLess.getLabel());
         for (var line : basicBlockBranchLess.getAstNodes())
             instructionList.addAll(line.accept(currentAstToInstructionListConverter, null));
-        basicBlockBranchLess.getSuccessor()
-                            .accept(this);
+        visit(basicBlockBranchLess.getSuccessor());
         basicBlockBranchLess.setInstructionList(instructionList);
         return instructionList;
     }
 
 
-    @Override
-    public InstructionList visit(BasicBlockWithBranch basicBlockWithBranch) {
+    public InstructionList visitBasicBlockWithBranch(BasicBlock basicBlockWithBranch) {
         if (visitedBasicBlocks.contains(basicBlockWithBranch))
             return basicBlockWithBranch.getInstructionList();
 
         visitedBasicBlocks.add(basicBlockWithBranch);
 
-        var condition = basicBlockWithBranch.getBranchCondition();
+        var condition = basicBlockWithBranch.getBranchCondition().orElseThrow();
         var conditionInstructionList = condition.accept(currentAstToInstructionListConverter, Variable.genTemp(Type.Bool));
         conditionInstructionList.add(0, basicBlockWithBranch.getLabel());
 
-        basicBlockWithBranch.getTrueTarget()
-                            .accept(this);
-        basicBlockWithBranch.getFalseTarget()
-                            .accept(this);
+        visit(basicBlockWithBranch.getTrueTarget());
+        visit(basicBlockWithBranch.getFalseTarget());
 
         var branchCondition =
                 new ConditionalBranch(condition,
                         conditionInstructionList.place,
                         basicBlockWithBranch.getFalseTarget()
-                                            .getLabel(), "if !(" + basicBlockWithBranch.getBranchCondition()
+                                            .getLabel(), "if !(" + basicBlockWithBranch.getBranchCondition().orElseThrow()
                                                                                        .getSourceCode() + ")");
         conditionInstructionList.add(branchCondition);
         basicBlockWithBranch.setInstructionList(conditionInstructionList);
         return conditionInstructionList;
     }
 
-    @Override
-    public InstructionList visit(NOP nop) {
+    public InstructionList visitNOP(NOP nop) {
         this.currentMethodExitNop = nop;
         visitedBasicBlocks.add(nop);
         return nop.getInstructionList();

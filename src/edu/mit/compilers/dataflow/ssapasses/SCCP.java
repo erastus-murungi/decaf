@@ -10,8 +10,6 @@ import java.util.Queue;
 import java.util.Set;
 
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.cfg.BasicBlockBranchLess;
-import edu.mit.compilers.cfg.BasicBlockWithBranch;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
 import edu.mit.compilers.codegen.codes.ConditionalBranch;
 import edu.mit.compilers.codegen.codes.CopyInstruction;
@@ -91,15 +89,14 @@ public class SCCP {
                 longVal.ifPresent(aLong -> valueLatticeElementMap.put(unaryInstruction.getStore(), LatticeElement.constant(aLong)));
             }
         } else if (instruction instanceof ConditionalBranch conditionalBranch) {
-            var branch = (BasicBlockWithBranch) basicBlock;
             var condition = valueLatticeElementMap.get(conditionalBranch.condition);
             if (LatticeElement.meet(condition, LatticeElement.constant(0L))
                               .isBottom()) {
-                flowEdges.add(branch.getTrueTarget());
+                flowEdges.add(basicBlock.getTrueTarget());
             }
             if (LatticeElement.meet(condition, LatticeElement.constant(1L))
                               .isBottom()) {
-                flowEdges.add(branch.getFalseTarget());
+                flowEdges.add(basicBlock.getFalseTarget());
             }
         } else if (instruction instanceof UnconditionalJump unconditionalJump) {
             if (!reachable.contains(unconditionalJump.getTarget()))
@@ -142,8 +139,7 @@ public class SCCP {
                         if (instruction instanceof ReturnInstruction && !lValueToDefMapping.containsKey(lValue))
                             continue;
                         ssaEdges.add(new SsaEdge(lValueToDefMapping.computeIfAbsent(lValue, key -> {
-                            throw new IllegalStateException(lValue + " not found" + basicBlock.getInstructionList()
-                                                                                              .toString());
+                            throw new IllegalStateException(lValue + " not found" + basicBlock.getInstructionList());
                         }), hasOperand, basicBlock));
                     }
                 }
@@ -181,8 +177,8 @@ public class SCCP {
 
                     // (d) If then node only contains one outgoing flow edge, add that edge to the
                     //     flowWorkList
-                    if (flowEdge instanceof BasicBlockBranchLess) {
-                        flowEdges.add(((BasicBlockBranchLess) flowEdge).getSuccessor());
+                    if (flowEdge.hasNoBranchNotNOP()) {
+                        flowEdges.add(flowEdge.getSuccessor());
                     }
                 }
             }

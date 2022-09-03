@@ -1,9 +1,9 @@
 package edu.mit.compilers.dataflow;
 
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.cfg.CFGGenerator;
+import edu.mit.compilers.cfg.ControlFlowGraph;
 import edu.mit.compilers.cfg.NOP;
-import edu.mit.compilers.cfg.CFGVisitor;
+import edu.mit.compilers.cfg.ControlFlowGraphVisitor;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
@@ -29,8 +29,8 @@ public class DataFlowAnalysisTest {
 
         DecafSemanticChecker semChecker = new DecafSemanticChecker(parser.getRoot());
         semChecker.runChecks(decafExceptionProcessor);
-        CFGGenerator cfgGenerator = new CFGGenerator(parser.getRoot(), semChecker.globalDescriptor);
-        CFGVisitor visitor = cfgGenerator.buildiCFG();
+        ControlFlowGraph cfgGenerator = new ControlFlowGraph(parser.getRoot(), semChecker.globalDescriptor);
+        ControlFlowGraphVisitor visitor = cfgGenerator.build();
         basicBlockList = DataFlowAnalysis.getReversePostOrder(visitor.methodCFGBlocks.get("main"));
     }
 

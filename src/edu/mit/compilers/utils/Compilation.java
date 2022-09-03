@@ -12,11 +12,10 @@ import java.util.Locale;
 import edu.mit.compilers.asm.X64CodeConverter;
 import edu.mit.compilers.asm.X64Program;
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.cfg.CFGGenerator;
-import edu.mit.compilers.cfg.CFGVisitor;
+import edu.mit.compilers.cfg.ControlFlowGraph;
+import edu.mit.compilers.cfg.ControlFlowGraphVisitor;
 import edu.mit.compilers.codegen.BasicBlockToInstructionListConverter;
 import edu.mit.compilers.codegen.InstructionList;
-import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.dataflow.DataflowOptimizer;
 import edu.mit.compilers.dataflow.passes.InstructionSimplifyIrPass;
 import edu.mit.compilers.grammar.DecafParser;
@@ -32,9 +31,9 @@ public class Compilation {
     private DecafScanner scanner;
     private DecafParser parser;
     private DecafSemanticChecker semanticChecker;
-    private CFGGenerator cfgGenerator;
+    private ControlFlowGraph cfgGenerator;
     private BasicBlockToInstructionListConverter basicBlockToInstructionListConverter;
-    private CFGVisitor cfgVisitor;
+    private ControlFlowGraphVisitor cfgVisitor;
 
     private ProgramIr programIr;
 
@@ -250,8 +249,8 @@ public class Compilation {
             }
         }
 
-        cfgGenerator = new CFGGenerator(parser.getRoot(), semanticChecker.globalDescriptor);
-        cfgVisitor = cfgGenerator.buildiCFG();
+        cfgGenerator = new ControlFlowGraph(parser.getRoot(), semanticChecker.globalDescriptor);
+        cfgVisitor = cfgGenerator.build();
         compilationState = CompilationState.CFG_GENERATED;
     }
 

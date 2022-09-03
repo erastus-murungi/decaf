@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import edu.mit.compilers.cfg.BasicBlockWithBranch;
+import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.codes.ConditionalBranch;
 import edu.mit.compilers.codegen.codes.Method;
@@ -36,7 +36,7 @@ public class BranchSimplificationPass extends OptimizationPass {
                 .findFirst();
     }
 
-    private Boolean getStateOfBlockCondition(BasicBlockWithBranch basicBlockWithBranch) {
+    private Boolean getStateOfBlockCondition(BasicBlock basicBlockWithBranch) {
         Optional<ConditionalBranch> conditionalJump = getConditional(basicBlockWithBranch.getInstructionList());
         if (conditionalJump.isPresent()) {
             if (isTrue(conditionalJump.get())) {
@@ -47,7 +47,7 @@ public class BranchSimplificationPass extends OptimizationPass {
         return null;
     }
 
-    private void removeFalseBranch(BasicBlockWithBranch basicBlockWithBranch) {
+    private void removeFalseBranch(BasicBlock basicBlockWithBranch) {
 //        // if (true) || if (1)
 //        // just reduce this to the true branch
 //        var trueChild = basicBlockWithBranch.trueChild;
@@ -67,7 +67,7 @@ public class BranchSimplificationPass extends OptimizationPass {
 //        noChanges = false;
     }
 
-    private void removeTrueBranch(BasicBlockWithBranch basicBlockWithBranch) {
+    private void removeTrueBranch(BasicBlock basicBlockWithBranch) {
 //        // if (false) || if (0)
 //        // just reduce this to the true branch
 //        var trueChild = basicBlockWithBranch.trueChild;
@@ -123,18 +123,17 @@ public class BranchSimplificationPass extends OptimizationPass {
     }
 
     private void removeUselessBranches() {
-        List<BasicBlockWithBranch> evaluateToTrue = new ArrayList<>();
-        List<BasicBlockWithBranch> evaluateToFalse = new ArrayList<>();
+        List<BasicBlock> evaluateToTrue = new ArrayList<>();
+        List<BasicBlock> evaluateToFalse = new ArrayList<>();
         for (var basicBlock : basicBlocks) {
-            if (basicBlock instanceof BasicBlockWithBranch) {
-                BasicBlockWithBranch basicBlockWithBranch = (BasicBlockWithBranch) basicBlock;
-                Boolean evaluatesTrueBranch = getStateOfBlockCondition(basicBlockWithBranch);
+            if (basicBlock.hasBranch()) {
+                Boolean evaluatesTrueBranch = getStateOfBlockCondition(basicBlock);
                 if (evaluatesTrueBranch == null)
                     continue;
                 if (evaluatesTrueBranch)
-                    evaluateToTrue.add(basicBlockWithBranch);
+                    evaluateToTrue.add(basicBlock);
                 else
-                    evaluateToFalse.add(basicBlockWithBranch);
+                    evaluateToFalse.add(basicBlock);
             }
         }
         if (evaluateToFalse.isEmpty() || evaluateToTrue.isEmpty())

@@ -9,8 +9,6 @@ import java.util.stream.Collectors;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.cfg.BasicBlockBranchLess;
-import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.utils.TarjanSCC;
 
 public class BranchFoldingPass {
@@ -41,7 +39,7 @@ public class BranchFoldingPass {
             if (basicBlock.getPredecessors().size() > 1 && haveSameSuccessor(basicBlock.getPredecessors())) {
                 var commonInstructions = getCommonInstructions(basicBlock.getPredecessors());
                 if (commonInstructions.isPresent()) {
-                    var common = new BasicBlockBranchLess();
+                    var common = BasicBlock.noBranch();
                     common.addAstNodes(commonInstructions.get());
                     realignPointers(basicBlock.getPredecessors(), common, basicBlock);
                 }
@@ -50,12 +48,12 @@ public class BranchFoldingPass {
     }
 
 
-    private static void realignPointers(List<BasicBlock> basicBlocks, BasicBlockBranchLess common, BasicBlock successor) {
+    private static void realignPointers(List<BasicBlock> basicBlocks, BasicBlock common, BasicBlock successor) {
         assert haveSameSuccessor(basicBlocks);
         for (BasicBlock basicBlock : basicBlocks) {
             // remove the instructions
             basicBlock.removeAstNodes(common.getAstNodes());
-            ((BasicBlockBranchLess) basicBlock).setSuccessor(common);
+            basicBlock.setSuccessor(common);
             common.addPredecessor(basicBlock);
         }
         successor.clearPredecessors();
@@ -72,8 +70,8 @@ public class BranchFoldingPass {
                 .mapToInt(Integer::intValue)
                 .min();
         var collected = basicBlocks.stream()
-                .map(basicBlock -> new ArrayList<>(basicBlock.getAstNodes()))
-                .collect(Collectors.toUnmodifiableList());
+                                   .map(basicBlock -> new ArrayList<>(basicBlock.getAstNodes()))
+                                   .toList();
         collected.forEach(Collections::reverse);
 
         if (minSize.isPresent()) {
