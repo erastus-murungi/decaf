@@ -16,7 +16,8 @@ dot/
 
 ssa*
 dom*
-cfg*
+cfg.pdf
+cfg_ir.pdf
 tests/
 test.asm
 main
