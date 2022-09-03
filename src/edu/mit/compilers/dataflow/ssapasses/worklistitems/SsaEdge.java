@@ -17,4 +17,9 @@ public record SsaEdge(StoreInstruction def, Instruction use, BasicBlock useSite)
     public boolean useIsPhi() {
         return use instanceof Phi;
     }
+
+    @Override
+    public String toString() {
+        return String.format("%s in [%s] -> %s", def.getStore(), def.toString().strip(), use.toString().strip());
+    }
 }

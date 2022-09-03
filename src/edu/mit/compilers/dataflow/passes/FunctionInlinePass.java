@@ -13,16 +13,15 @@ import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
 import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.FunctionCall;
+import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
 import edu.mit.compilers.codegen.codes.HasOperand;
+import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
 import edu.mit.compilers.codegen.codes.MethodEnd;
 import edu.mit.compilers.codegen.codes.ReturnInstruction;
-import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.utils.TarjanSCC;
 
 

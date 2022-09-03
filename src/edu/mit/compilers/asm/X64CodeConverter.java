@@ -738,7 +738,7 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
     @Override
     public X64Builder visit(UnconditionalJump unconditionalJump, X64Builder x64builder) {
-        return x64builder.addLine(x64InstructionLine(X64Instruction.jmp, x64Label(unconditionalJump.goToLabel.getLabelForAsm())));
+        return x64builder.addLine(x64InstructionLine(X64Instruction.jmp, x64Label(unconditionalJump.getTarget().getLabel().getLabelForAsm())));
     }
 
     @Override

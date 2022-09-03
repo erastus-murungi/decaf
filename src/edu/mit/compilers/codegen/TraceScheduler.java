@@ -61,7 +61,7 @@ public class TraceScheduler {
 
     private void traceBasicBlock(BasicBlock basicBlock, Set<BasicBlock> tracedBasicBlocksSet) {
         if (tracedBasicBlocksSet.contains(basicBlock)) {
-            if (addJumps) trace.add(InstructionList.of(new UnconditionalJump(basicBlock.getLabel())));
+            if (addJumps) trace.add(InstructionList.of(new UnconditionalJump(basicBlock)));
             return;
         }
         trace.add(basicBlock.getInstructionList());

@@ -133,9 +133,7 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
             throw new IllegalArgumentException("second assignment is a null pointer");
         }
 
-        if (a instanceof BinaryInstruction && b instanceof BinaryInstruction) {
-            final BinaryInstruction aQuad = (BinaryInstruction) a;
-            final BinaryInstruction bQuad = (BinaryInstruction) b;
+        if (a instanceof final BinaryInstruction aQuad && b instanceof final BinaryInstruction bQuad) {
             if (aQuad.operator.equals(bQuad.operator)) {
                 final String operator = aQuad.operator;
                 if (operatorIsCommutative(operator)) {
@@ -145,9 +143,7 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
                     return aQuad.fstOperand.equals(bQuad.fstOperand) && aQuad.sndOperand.equals(bQuad.sndOperand);
                 }
             }
-        } else if (a instanceof UnaryInstruction && b instanceof UnaryInstruction) {
-            final UnaryInstruction aUnaryInstruction = (UnaryInstruction) a;
-            final UnaryInstruction bUnaryInstruction = (UnaryInstruction) b;
+        } else if (a instanceof final UnaryInstruction aUnaryInstruction && b instanceof final UnaryInstruction bUnaryInstruction) {
             if (aUnaryInstruction.operator.equals(bUnaryInstruction.operator)) {
                 return aUnaryInstruction.operand.equals(bUnaryInstruction.operand);
             }

@@ -1,6 +1,5 @@
 package edu.mit.compilers.dataflow.ssapasses;
 
-import static edu.mit.compilers.utils.TarjanSCC.correctPredecessors;
 import static edu.mit.compilers.utils.TarjanSCC.getReversePostOrder;
 
 import java.util.ArrayDeque;
@@ -13,7 +12,6 @@ import java.util.Set;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.BasicBlockBranchLess;
 import edu.mit.compilers.cfg.BasicBlockWithBranch;
-import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
 import edu.mit.compilers.codegen.codes.ConditionalBranch;
 import edu.mit.compilers.codegen.codes.CopyInstruction;
@@ -22,100 +20,90 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.ReturnInstruction;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
+import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.NumericalConstant;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.dominator.ImmediateDominator;
-import edu.mit.compilers.dataflow.ssapasses.worklistitems.FlowEdge;
 import edu.mit.compilers.dataflow.ssapasses.worklistitems.SsaEdge;
 import edu.mit.compilers.ssa.Phi;
 import edu.mit.compilers.utils.Utils;
 
 public class SCCP {
-    public static final String ENTRY_BLOCK_LABEL = "entry";
-    Queue<FlowEdge> flowEdges = new ArrayDeque<>();
+    Queue<BasicBlock> flowEdges = new ArrayDeque<>();
     Queue<SsaEdge> ssaEdges = new ArrayDeque<>();
-    Set<FlowEdge> executable = new HashSet<>();
+    Set<BasicBlock> reachable = new HashSet<>();
 
-    Map<Instruction, Map<Value, LatticeElement>> m = new HashMap<>();
+    Map<Value, LatticeElement> valueLatticeElementMap = new HashMap<>();
 
-    BasicBlockBranchLess entryBlock;
+    Set<BasicBlock> visited = new HashSet<>();
+
+    BasicBlock entryBlock;
 
     public SCCP(BasicBlock entryBlock) {
-        this.entryBlock = preprocess(entryBlock);
+        this.entryBlock = entryBlock;
         initializeWorkSets();
         runWorkList();
-    }
-
-    private NOP preprocess(BasicBlock entryBlock) {
-        var entry = new NOP(ENTRY_BLOCK_LABEL);
-        entry.setSuccessor(entryBlock);
-        correctPredecessors(entry);
-        return entry;
-    }
-
-    public Set<LatticeElement> meet(BasicBlock basicBlock) {
-        return null;
-    }
-
-    public Set<LatticeElement> transferFunction(LatticeElement latticeElement) {
-        return null;
     }
 
     public void initializeWorkSets() {
         for (BasicBlock basicBlock : getReversePostOrder(entryBlock)) {
             for (Instruction instruction : basicBlock.getInstructionList()) {
-                var n = new HashMap<Value, LatticeElement>();
                 for (Value v : instruction.getAllValues()) {
                     if (v instanceof LValue) {
-                        n.put(v, LatticeElement.top());
+                        valueLatticeElementMap.put(v, LatticeElement.top());
                     } else if (v instanceof NumericalConstant numericalConstant) {
-                        n.put(v, LatticeElement.constant(numericalConstant.getValue()));
+                        valueLatticeElementMap.put(v, LatticeElement.constant(numericalConstant.getValue()));
                     }
                 }
-                m.put(instruction, n);
             }
         }
-        this.flowEdges.add(new FlowEdge(entryBlock, entryBlock.getSuccessor()));
+        this.flowEdges.add(entryBlock);
         getSsaEdges();
     }
 
     private void visitPhi(Phi phi) {
-        var lattices = m.get(phi);
-        var values = phi.getOperandValues().stream().map(lattices::get).toList();
-        lattices.put(phi.getStore(), LatticeElement.meet(values));
+        var values = phi.getOperandValues()
+                        .stream()
+                        .map(valueLatticeElementMap::get)
+                        .toList();
+        valueLatticeElementMap.put(phi.getStore(), LatticeElement.meet(values));
     }
 
     private void visitExpression(Instruction instruction, BasicBlock basicBlock) {
-        var lattices = m.get(instruction);
         if (instruction instanceof CopyInstruction copyInstruction) {
-            lattices.put(copyInstruction.getStore(), lattices.get(copyInstruction.getValue()));
+            valueLatticeElementMap.put(copyInstruction.getStore(), valueLatticeElementMap.get(copyInstruction.getValue()));
         } else if (instruction instanceof BinaryInstruction binaryInstruction) {
-            var a = lattices.get(binaryInstruction.fstOperand);
-            var b  = lattices.get(binaryInstruction.sndOperand);
+            var a = valueLatticeElementMap.get(binaryInstruction.fstOperand);
+            var b = valueLatticeElementMap.get(binaryInstruction.sndOperand);
             if (!a.isBottom() && !b.isBottom()) {
                 if (a.isConstant() && b.isConstant()) {
                     var longVal = Utils.symbolicallyEvaluate(String.format("%d %s %d", a.getValue(), binaryInstruction.operator, b.getValue()));
-                    longVal.ifPresent(aLong -> lattices.put(binaryInstruction.getStore(), LatticeElement.constant(aLong)));
+                    longVal.ifPresent(aLong -> valueLatticeElementMap.put(binaryInstruction.getStore(), LatticeElement.constant(aLong)));
                 } else {
-                    lattices.put(binaryInstruction.getStore(), LatticeElement.meet(a, b));
+                    valueLatticeElementMap.put(binaryInstruction.getStore(), LatticeElement.meet(a, b));
                 }
             }
         } else if (instruction instanceof UnaryInstruction unaryInstruction) {
-            var a = lattices.get(unaryInstruction.operand);
+            var a = valueLatticeElementMap.get(unaryInstruction.operand);
             if (a.isConstant()) {
                 var longVal = Utils.symbolicallyEvaluate(String.format("%s (%d)", unaryInstruction.operator, a.getValue()));
-                longVal.ifPresent(aLong -> lattices.put(unaryInstruction.getStore(), LatticeElement.constant(aLong)));
+                longVal.ifPresent(aLong -> valueLatticeElementMap.put(unaryInstruction.getStore(), LatticeElement.constant(aLong)));
             }
         } else if (instruction instanceof ConditionalBranch conditionalBranch) {
             var branch = (BasicBlockWithBranch) basicBlock;
-            var condition = lattices.get(conditionalBranch.condition);
-            if (LatticeElement.meet(condition, LatticeElement.constant(0L)).isBottom()) {
-                flowEdges.add(new FlowEdge(branch, branch.getFalseTarget()));
+            var condition = valueLatticeElementMap.get(conditionalBranch.condition);
+            if (LatticeElement.meet(condition, LatticeElement.constant(0L))
+                              .isBottom()) {
+                flowEdges.add(branch.getTrueTarget());
             }
-             if (LatticeElement.meet(condition, LatticeElement.constant(1L)).isBottom()) {
-                flowEdges.add(new FlowEdge(branch, branch.getTrueTarget()));
+            if (LatticeElement.meet(condition, LatticeElement.constant(1L))
+                              .isBottom()) {
+                flowEdges.add(branch.getFalseTarget());
             }
+        } else if (instruction instanceof UnconditionalJump unconditionalJump) {
+            if (!reachable.contains(unconditionalJump.getTarget()))
+                flowEdges.add(unconditionalJump.getTarget());
         }
 
     }
@@ -123,19 +111,19 @@ public class SCCP {
     public int countIncomingExecutableEdges(BasicBlock block) {
         int count = 0;
         for (var pred : block.getPredecessors()) {
-            if (executable.contains(new FlowEdge(pred, block))) {
+            if (reachable.contains(pred)) {
                 count++;
             }
         }
         return count;
     }
 
-    private boolean isExecutable(FlowEdge flowEdge) {
-        return executable.contains(flowEdge);
+    private boolean isReachable(BasicBlock flowEdge) {
+        return reachable.contains(flowEdge);
     }
 
-    private void setExecutable(FlowEdge flowEdge) {
-        executable.add(flowEdge);
+    private void setReachable(BasicBlock flowEdge) {
+        reachable.add(flowEdge);
     }
 
     private void getSsaEdges() {
@@ -154,7 +142,8 @@ public class SCCP {
                         if (instruction instanceof ReturnInstruction && !lValueToDefMapping.containsKey(lValue))
                             continue;
                         ssaEdges.add(new SsaEdge(lValueToDefMapping.computeIfAbsent(lValue, key -> {
-                            throw new IllegalStateException(lValue + " not found" + basicBlock.getInstructionList().toString());
+                            throw new IllegalStateException(lValue + " not found" + basicBlock.getInstructionList()
+                                                                                              .toString());
                         }), hasOperand, basicBlock));
                     }
                 }
@@ -163,31 +152,37 @@ public class SCCP {
         this.ssaEdges.addAll(ssaEdges);
     }
 
+    /**
+     * ♦ Use two wor lists: SSAWorkList & CFGWorkList:
+     * ♦ SSAWorkList determines values.
+     * ♦ CFGWorkList governs reachability.
+     * ♦ Don’t propagate into operation until its block is reachable.
+     */
+
     public void runWorkList() {
         while (!flowEdges.isEmpty() && !ssaEdges.isEmpty()) {
             while (!flowEdges.isEmpty()) {
                 var flowEdge = flowEdges.remove();
-                if (!isExecutable(flowEdge)) {
-                    setExecutable(flowEdge);
-                    var x = flowEdge.start();
-                    var y = flowEdge.sink();
+                if (!isReachable(flowEdge)) {
+                    setReachable(flowEdge);
                     // (b) Perform Visit-phi for all the phi functions at the destination node
-                    y.getPhiFunctions()
-                     .forEach(this::visitPhi);
+                    flowEdge.getPhiFunctions()
+                            .forEach(this::visitPhi);
 
                     // (c) If only one of the ExecutableFlags associated with the incoming
                     //     program flow graph edges is true (i.e. this the first time this
                     //     node has been evaluated), then perform VisitExpression for all expressions
                     //     in this node.
-                    if (countIncomingExecutableEdges(x) == 1) {
-                        y.getNonPhiInstructions()
-                         .forEach(instruction -> visitExpression(instruction, y));
+                    if (!visited.contains(flowEdge)) {
+                        flowEdge.getNonPhiInstructions()
+                                .forEach(instruction -> visitExpression(instruction, flowEdge));
+                        visited.add(flowEdge);
                     }
 
                     // (d) If then node only contains one outgoing flow edge, add that edge to the
                     //     flowWorkList
-                    if (y instanceof BasicBlockBranchLess) {
-                        flowEdges.add(new FlowEdge(x, ((BasicBlockBranchLess) x).getSuccessor()));
+                    if (flowEdge instanceof BasicBlockBranchLess) {
+                        flowEdges.add(((BasicBlockBranchLess) flowEdge).getSuccessor());
                     }
                 }
             }

@@ -26,14 +26,12 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
             var indicesToRemove = new ArrayList<Integer>();
             for (var indexOfCode = 0; indexOfCode < basicBlock.getInstructionList().size(); indexOfCode++) {
                 var tac = basicBlock.getInstructionList().get(indexOfCode);
-                if (tac instanceof UnconditionalJump) {
-                    var unconditionalJump = (UnconditionalJump) tac;
+                if (tac instanceof UnconditionalJump unconditionalJump) {
 
                     if (indexOfCode + 1 < basicBlock.getInstructionList().size()) {
                         var nextTac = basicBlock.getInstructionList().get(indexOfCode + 1);
-                        if (nextTac instanceof Label) {
-                            var label = (Label) nextTac;
-                            if (unconditionalJump.goToLabel.equals(label)) {
+                        if (nextTac instanceof Label label) {
+                            if (unconditionalJump.getTarget().getLabel().equals(label)) {
                                 indicesToRemove.add(indexOfCode);
                             }
                         }
@@ -57,7 +55,7 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
             if (instruction instanceof ConditionalBranch) {
                 allLabelsJumpedTo.add(((ConditionalBranch) instruction).falseLabel);
             } else if (instruction instanceof UnconditionalJump) {
-                allLabelsJumpedTo.add(((UnconditionalJump) instruction).goToLabel);
+                allLabelsJumpedTo.add(((UnconditionalJump) instruction).getTarget().getLabel());
             }
         return allLabelsJumpedTo;
     }
@@ -68,8 +66,7 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
             var indicesToRemove = new ArrayList<Integer>();
             for (var indexOfCode = 0; indexOfCode < basicBlock.getInstructionList().size(); indexOfCode++) {
                 var tac = basicBlock.getInstructionList().get(indexOfCode);
-                if (tac instanceof Label) {
-                    var label = (Label) tac;
+                if (tac instanceof Label label) {
                     if (!allLabelsJumpedTo.contains(label)) {
                         indicesToRemove.add(indexOfCode);
                     }
@@ -91,8 +88,7 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
             var indicesToRemove = new ArrayList<Integer>();
             for (var indexOfInstruction = 0; indexOfInstruction < basicBlock.getInstructionList().size(); indexOfInstruction++) {
                 var instruction = basicBlock.getInstructionList().get(indexOfInstruction);
-                if (instruction instanceof ArrayBoundsCheck) {
-                    ArrayBoundsCheck arrayBoundsCheck = (ArrayBoundsCheck) instruction;
+                if (instruction instanceof ArrayBoundsCheck arrayBoundsCheck) {
                     if (arrayBoundsCheck.getAddress.getIndex() instanceof NumericalConstant) {
                         var index = Long.parseLong(arrayBoundsCheck.getAddress.getIndex().getLabel());
                         var length = Long.parseLong(arrayBoundsCheck.getAddress.getLength()

@@ -1,5 +1,6 @@
 package edu.mit.compilers.codegen.codes;
 
+import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.utils.Utils;
@@ -9,19 +10,15 @@ import java.util.List;
 import java.util.Objects;
 
 public class UnconditionalJump extends Instruction {
-    public final Label goToLabel;
+    public final BasicBlock target;
 
-    public UnconditionalJump(Label goToLabel) {
-        super(null);
-        this.goToLabel = goToLabel;
-        if (goToLabel == null) {
-            System.out.println("stop");
-        }
+    public BasicBlock getTarget() {
+        return target;
     }
 
-    @Override
-    public String toString() {
-        return String.format("%s%s %s", DOUBLE_INDENT, "goto", goToLabel.getLabel());
+    public UnconditionalJump(BasicBlock target) {
+        super(null);
+        this.target = target;
     }
 
     @Override
@@ -35,17 +32,19 @@ public class UnconditionalJump extends Instruction {
     }
 
     @Override
+    public String toString() {
+        return String.format("%s%s %s", DOUBLE_INDENT, "goto", getTarget().getLabel().getLabel());
+    }
+
+    @Override
     public String syntaxHighlightedToString() {
         var goTo =  Utils.coloredPrint("goto", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-//        var goTo =  "goto";
-        if (goToLabel == null)
-            System.out.println("stop");
-        return String.format("%s%s %s", DOUBLE_INDENT, goTo, goToLabel.getLabel());
+        return String.format("%s%s %s", DOUBLE_INDENT, goTo, getTarget().getLabel().getLabel());
     }
 
     @Override
     public Instruction copy() {
-        return new UnconditionalJump(goToLabel);
+        return new UnconditionalJump(getTarget());
     }
 
     @Override
@@ -53,11 +52,11 @@ public class UnconditionalJump extends Instruction {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         UnconditionalJump that = (UnconditionalJump) o;
-        return Objects.equals(goToLabel, that.goToLabel);
+        return Objects.equals(getTarget().getLabel(), that.getTarget().getLabel());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(goToLabel);
+        return Objects.hash(getTarget().getLabel());
     }
 }
