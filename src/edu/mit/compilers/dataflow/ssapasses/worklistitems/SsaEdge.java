@@ -6,33 +6,15 @@ import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.ssa.Phi;
 
 
-public class SsaEdge {
-    /**
-     * The instruction which defines this variable
-     */
-    private final StoreInstruction def;
-    private final Instruction use;
-    private final BasicBlock useSite;
-
-    public SsaEdge(StoreInstruction def, Instruction use, BasicBlock useSite) {
-        this.def = def;
-        this.use = use;
-        this.useSite = useSite;
-    }
-
-    public BasicBlock getUseSite() {
-        return useSite;
-    }
+/**
+ *
+ * @param def the {@link Instruction} where a variable where was first defined
+ * @param use a specific use of an {@link Instruction}
+ * @param useSite the {@link BasicBlock} where the use is
+ */
+public record SsaEdge(StoreInstruction def, Instruction use, BasicBlock useSite) {
 
     public boolean useIsPhi() {
         return use instanceof Phi;
-    }
-
-    public StoreInstruction getDef() {
-        return def;
-    }
-
-    public Instruction getUse() {
-        return use;
     }
 }

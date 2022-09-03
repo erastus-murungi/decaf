@@ -1,5 +1,6 @@
 package edu.mit.compilers.dataflow.ssapasses;
 
+import java.util.Collection;
 import java.util.Objects;
 
 // This class represents lattice values for constants.
@@ -35,14 +36,11 @@ public class LatticeElement {
 
     @Override
     public String toString() {
-        switch (latticeElementType) {
-            case TOP:
-                return "⊤";
-            case BOTTOM:
-                return "⊥";
-            default:
-                return String.format("const %s", value);
-        }
+        return switch (latticeElementType) {
+            case TOP -> "⊤";
+            case BOTTOM -> "⊥";
+            default -> String.format("const %s", value);
+        };
     }
 
     @Override
@@ -56,5 +54,46 @@ public class LatticeElement {
     @Override
     public int hashCode() {
         return Objects.hash(latticeElementType, value);
+    }
+
+
+    /**
+     * TOP Λ x = x		∀ x
+     * 	ci Λ cj = ci 		if ci = cj
+     * 	ci Λ cj = BOT 	if ci ≠ cj
+     * 	BOT Λ x = BOT	∀ x
+     *
+     * @param x a lattice element
+     * @param y another lattice element
+     * @return x Λ y
+     */
+    public static LatticeElement meet(LatticeElement x, LatticeElement y) {
+        assert x != null && y != null;
+        if (x.latticeElementType == LatticeElementType.TOP)
+            return y;
+        else if (y.latticeElementType == LatticeElementType.TOP || x.equals(y))
+            return x;
+        return LatticeElement.bottom();
+    }
+
+    public static LatticeElement meet(Collection<LatticeElement> xs) {
+        return xs.stream().reduce(LatticeElement.top(), LatticeElement::meet);
+    }
+
+    public boolean isBottom() {
+        return latticeElementType.equals(LatticeElementType.BOTTOM);
+    }
+
+    public boolean isTop() {
+        return latticeElementType.equals(LatticeElementType.TOP);
+    }
+
+    public boolean isConstant() {
+        return latticeElementType.equals(LatticeElementType.CONSTANT);
+    }
+
+    public Long getValue() {
+        assert value != null && latticeElementType.equals(LatticeElementType.CONSTANT);
+        return value;
     }
 }

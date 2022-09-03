@@ -137,7 +137,7 @@ public class DataflowOptimizer {
 //        addPass(OptimizationPassType.CopyPropagationSsa);
 //        addPass(OptimizationPassType.RedundantPhiEliminationPass);
 //        addPass(OptimizationPassType.DeadStoreEliminationSsa);
-//        addPass(OptimizationPassType.SccpSsa);
+        addPass(OptimizationPassType.SccpSsa);
     }
 
     public List<Method> getOptimizedMethods() {
@@ -179,8 +179,8 @@ public class DataflowOptimizer {
                     System.out.println(TraceScheduler.flattenIr(optimizationPass.getMethod()));
                     System.out.println(Utils.coloredPrint(String.valueOf(changesHappenedForOpt), Utils.ANSIColorConstants.ANSI_GREEN_BOLD));
                 }
-                if (run % toOptimizeMethods.size() == 0)
-                    runInterProceduralPasses();
+//                if (run % toOptimizeMethods.size() == 0)
+//                    runInterProceduralPasses();
             }
             if (!changesHappened) {
                 break;
