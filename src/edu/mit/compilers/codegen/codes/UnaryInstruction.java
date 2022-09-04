@@ -29,31 +29,31 @@ public class UnaryInstruction extends StoreInstruction {
 
     @Override
     public List<Value> getAllValues() {
-        return List.of(getStore(), operand);
+        return List.of(getDestination(), operand);
     }
 
     @Override
     public String syntaxHighlightedToString() {
         if (getComment().isPresent())
-            return String.format("%s%s = %s %s %s %s", DOUBLE_INDENT, getStore(), Operators.getColoredUnaryOperatorName(operator), operand.repr(), DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s = %s %s", DOUBLE_INDENT, getStore(), Operators.getColoredUnaryOperatorName(operator), operand.repr());
+            return String.format("%s%s = %s %s %s %s", DOUBLE_INDENT, getDestination(), Operators.getColoredUnaryOperatorName(operator), operand.repr(), DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s = %s %s", DOUBLE_INDENT, getDestination(), Operators.getColoredUnaryOperatorName(operator), operand.repr());
     }
 
     @Override
     public String toString() {
         if (getComment().isPresent())
-            return String.format("%s%s = %s %s %s %s", DOUBLE_INDENT, getStore(), Operators.getUnaryOperatorName(operator), operand.repr(), DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s = %s %s", DOUBLE_INDENT, getStore(), Operators.getOperatorName(operator), operand.repr());
+            return String.format("%s%s = %s %s %s %s", DOUBLE_INDENT, getDestination(), Operators.getUnaryOperatorName(operator), operand.repr(), DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s = %s %s", DOUBLE_INDENT, getDestination(), Operators.getOperatorName(operator), operand.repr());
     }
 
     @Override
     public Instruction copy() {
-        return new UnaryInstruction(getStore(), operator, operand, source);
+        return new UnaryInstruction(getDestination(), operator, operand, source);
     }
 
     @Override
     public Optional<Operand> getOperandNoArray() {
-        if (operand instanceof MemoryAddress || getStore() instanceof MemoryAddress)
+        if (operand instanceof MemoryAddress || getDestination() instanceof MemoryAddress)
             return Optional.empty();
         return Optional.of(new UnaryOperand(this));
     }
@@ -64,7 +64,7 @@ public class UnaryInstruction extends StoreInstruction {
         clone.operand = operand;
         clone.operator = operator;
         clone.setComment(getComment().orElse(null));
-        clone.setStore(store);
+        clone.setDestination(destination);
         clone.source = source;
         return clone;
     }

@@ -8,7 +8,6 @@ import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.utils.TarjanSCC;
 
 public abstract class OptimizationPass {
@@ -35,7 +34,7 @@ public abstract class OptimizationPass {
     public static boolean isTrivialAssignment(Instruction instruction) {
         if (instruction instanceof CopyInstruction) {
             var assign = (CopyInstruction) instruction;
-            return assign.getStore().equals(assign.getValue());
+            return assign.getDestination().equals(assign.getValue());
         }
         return false;
     }

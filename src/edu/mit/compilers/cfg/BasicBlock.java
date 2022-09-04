@@ -178,6 +178,7 @@ public class BasicBlock {
         basicBlock.branchCondition = branchCondition;
         basicBlock.setTrueTarget(trueTarget);
         basicBlock.setFalseTarget(falseTarget);
+        basicBlock.addAstNode(branchCondition);
         return basicBlock;
     }
 

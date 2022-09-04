@@ -76,7 +76,7 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
         if (!(indexInstructionList.place instanceof NumericalConstant)) {
             locationArrayInstructionList.add(new ArrayBoundsCheck(getAddressInstruction, TemporaryNameIndexGenerator.getNextArrayBoundsCheckLabelIndex()));
         }
-        locationArrayInstructionList.place = getAddressInstruction.getStore();
+        locationArrayInstructionList.place = getAddressInstruction.getDestination();
         return locationArrayInstructionList;
     }
 
@@ -241,7 +241,7 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
                                       .convertToLong(); i++) {
                 var getAddressInstruction = new GetAddress(array, arrayName, new NumericalConstant(i, Type.Int), generateAddressName(fieldDeclaration.getType()), arrayLength);
                 instructionList.add(getAddressInstruction);
-                instructionList.add(new CopyInstruction(getAddressInstruction.getStore().copy(), NumericalConstant.zero(), array, String.format("%s[%s] = 0", arrayName, i)));
+                instructionList.add(new CopyInstruction(getAddressInstruction.getDestination().copy(), NumericalConstant.zero(), array, String.format("%s[%s] = 0", arrayName, i)));
             }
         }
         return instructionList;

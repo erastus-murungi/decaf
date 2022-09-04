@@ -1,5 +1,7 @@
 package edu.mit.compilers.registerallocation;
 
+import com.google.common.graph.Graph;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -65,7 +67,7 @@ public class Coalesce {
                     }
                 }
                 if (instruction instanceof CopyInstruction copyInstruction) {
-                    if (copyInstruction.getStore().equals(copyInstruction.getValue()))
+                    if (copyInstruction.getDestination().equals(copyInstruction.getValue()))
                         continue;
                 }
                 instructions.add(instruction);

@@ -136,8 +136,8 @@ public class FunctionInlinePass {
                 assert replacement.get(0) instanceof ReturnInstruction;
                 var methodReturn = (ReturnInstruction) replacement.get(0);
                 var methodCallSetResult = (FunctionCallWithResult) targetTacList.get(indexOfCallSite);
-                newTacList.add(CopyInstruction.noMetaData(methodCallSetResult.getStore(), methodReturn.getReturnAddress()
-                                                                                                      .orElseThrow()));
+                newTacList.add(CopyInstruction.noMetaData(methodCallSetResult.getDestination(), methodReturn.getReturnAddress()
+                                                                                                            .orElseThrow()));
 
                 replacement.remove(0);
             }

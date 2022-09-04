@@ -102,15 +102,15 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
 
         for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
             // check to see whether any existing assignments are invalidated by this one
-            if (!(storeInstruction.getStore() instanceof MemoryAddress)) {
-                final LValue resulLocation = storeInstruction.getStore();
+            if (!(storeInstruction.getDestination() instanceof MemoryAddress)) {
+                final LValue resulLocation = storeInstruction.getDestination();
                 // remove any copy's where u, or v are being reassigned by "resultLocation"
                 copyQuadruples.removeIf(copyQuadruple -> copyQuadruple.contains(resulLocation));
             }
             var computation = storeInstruction.getOperand();
             if (computation instanceof UnmodifiedOperand) {
                 Value name = ((UnmodifiedOperand) computation).value;
-                copyQuadruples.add(new CopyQuadruple(storeInstruction.getStore(), name,
+                copyQuadruples.add(new CopyQuadruple(storeInstruction.getDestination(), name,
                         basicBlock
                                 .getCopyOfInstructionList()
                                 .indexOf(storeInstruction), basicBlock));
@@ -125,8 +125,8 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
         var superSet = new HashSet<>(allValues);
         var killedCopyQuadruples = new HashSet<CopyQuadruple>();
         for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
-            if (!(storeInstruction.getStore() instanceof MemoryAddress)) {
-                final LValue resulLocation = storeInstruction.getStore();
+            if (!(storeInstruction.getDestination() instanceof MemoryAddress)) {
+                final LValue resulLocation = storeInstruction.getDestination();
                 for (CopyQuadruple copyQuadruple : superSet) {
                     if (copyQuadruple.basicBlock() != basicBlock && copyQuadruple.contains(resulLocation)) {
                         killedCopyQuadruples.add(copyQuadruple);

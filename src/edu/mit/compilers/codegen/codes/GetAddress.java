@@ -41,8 +41,8 @@ public class GetAddress extends StoreInstruction {
         return baseAddress;
     }
 
-    public MemoryAddress getStore() {
-        return (MemoryAddress) super.getStore();
+    public MemoryAddress getDestination() {
+        return (MemoryAddress) super.getDestination();
     }
 
     @Override
@@ -52,18 +52,18 @@ public class GetAddress extends StoreInstruction {
 
     @Override
     public List<Value> getAllValues() {
-        return List.of(baseAddress, getIndex(), getStore());
+        return List.of(baseAddress, getIndex(), getDestination());
     }
 
     @Override
     public String syntaxHighlightedToString() {
         final var getAddressString = Utils.coloredPrint("getaddr", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s%s = %s %s %s, %s", DOUBLE_INDENT, getStore().repr(), getAddressString, baseAddress.repr(), baseAddress.getType().getColoredSourceCode(), getIndex().repr());
+        return String.format("%s%s = %s %s %s, %s", DOUBLE_INDENT, getDestination().repr(), getAddressString, baseAddress.repr(), baseAddress.getType().getColoredSourceCode(), getIndex().repr());
     }
 
     @Override
     public Instruction copy() {
-        return new GetAddress(source, baseAddress, index, getStore(), length);
+        return new GetAddress(source, baseAddress, index, getDestination(), length);
     }
 
     @Override

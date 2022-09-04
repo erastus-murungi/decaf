@@ -100,7 +100,7 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
         var defSet = new HashSet<UseDef>();
         for (Instruction instruction : basicBlock.getInstructionListReversed()) {
             if (instruction instanceof StoreInstruction storeInstruction) {
-                if (!(storeInstruction.getStore() instanceof MemoryAddress)) {
+                if (!(storeInstruction.getDestination() instanceof MemoryAddress)) {
                     defSet.add(new Def(storeInstruction));
                 }
             }

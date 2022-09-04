@@ -115,7 +115,7 @@ public class Interpreter {
             }
 
             if (instruction instanceof AllocateInstruction allocateInstruction) {
-                env.put(allocateInstruction.getStore(), null);
+                env.put(allocateInstruction.getDestination(), null);
             } else if (instruction instanceof CopyInstruction copyInstruction) {
                 env.put(getStoreOnlyIffExistsInEnv(copyInstruction, env), Optional.of(resolveValue(copyInstruction.getValue())));
             } else if (instruction instanceof BinaryInstruction binaryInstruction) {
@@ -130,10 +130,10 @@ public class Interpreter {
     }
 
     public LValue getStoreOnlyIffExistsInEnv(StoreInstruction storeInstruction, Map<LValue, Optional<Constant>> env) {
-        if (!env.containsKey(storeInstruction.getStore())) {
-            throw new IllegalStateException("`" + storeInstruction.getStore() + "` not found in scope");
+        if (!env.containsKey(storeInstruction.getDestination())) {
+            throw new IllegalStateException("`" + storeInstruction.getDestination() + "` not found in scope");
         } else {
-            return storeInstruction.getStore();
+            return storeInstruction.getDestination();
         }
     }
 

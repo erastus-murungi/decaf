@@ -37,7 +37,7 @@ public class DeadStoreEliminationSsaPass extends SsaOptimizationPass<Void> {
             var deadStores = basicBlock.getStoreInstructions()
                                        .stream()
                                        .filter(storeInstruction -> !used.contains(
-                                               storeInstruction.getStore()) && (
+                                               storeInstruction.getDestination()) && (
                                                        storeInstruction instanceof CopyInstruction ||
                                                        storeInstruction instanceof UnaryInstruction ||
                                                        storeInstruction instanceof BinaryInstruction ||

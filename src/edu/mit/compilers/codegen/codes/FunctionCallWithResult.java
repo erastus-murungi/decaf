@@ -39,7 +39,7 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
     @Override
     public List<Value> getAllValues() {
         var args = new ArrayList<>(getArguments());
-        args.add(getStore());
+        args.add(getDestination());
         return args;
     }
 
@@ -47,23 +47,23 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
     public String syntaxHighlightedToString() {
         var callString =  Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
         var args = arguments.stream().map(Value::repr).collect(Collectors.joining(", "));
-        return String.format("%s%s: %s = %s @%s(%s) %s%s", DOUBLE_INDENT, getStore().repr(), getMethodReturnType(), callString, getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
+        return String.format("%s%s: %s = %s @%s(%s) %s%s", DOUBLE_INDENT, getDestination().repr(), getMethodReturnType(), callString, getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
     }
 
     @Override
     public String toString() {
         var args = arguments.stream().map(Value::repr).collect(Collectors.joining(", "));
-        return String.format("%s%s: %s = %s @%s(%s) %s%s", DOUBLE_INDENT, getStore().repr(), getMethodReturnType(), "call", getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
+        return String.format("%s%s: %s = %s @%s(%s) %s%s", DOUBLE_INDENT, getDestination().repr(), getMethodReturnType(), "call", getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
     }
 
     @Override
     public Instruction copy() {
-        return new FunctionCallWithResult((MethodCall) source, getStore(), arguments, getComment().orElse(null));
+        return new FunctionCallWithResult((MethodCall) source, getDestination(), arguments, getComment().orElse(null));
     }
 
     @Override
     public Optional<Operand> getOperandNoArray() {
-        if (getStore() instanceof MemoryAddress)
+        if (getDestination() instanceof MemoryAddress)
             return Optional.empty();
         return Optional.of(new MethodCallOperand(this));
     }

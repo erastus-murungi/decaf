@@ -160,7 +160,7 @@ public class DataflowOptimizer {
     }
 
     private void runInterProceduralPasses() {
-        FunctionInlinePass functionInlinePass = new FunctionInlinePass(toOptimizeMethods);
+        var functionInlinePass = new FunctionInlinePass(toOptimizeMethods);
         toOptimizeMethods = functionInlinePass.run();
     }
 

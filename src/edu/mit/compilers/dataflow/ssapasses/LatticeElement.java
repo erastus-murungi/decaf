@@ -6,11 +6,17 @@ import java.util.Objects;
 // This class represents lattice values for constants.
 public class LatticeElement {
     private enum LatticeElementType {
-        /** Maybe a constant */
+        /**
+         * Maybe a constant
+         */
         TOP,
-        /** Definitely not a constant */
+        /**
+         * Definitely not a constant
+         */
         BOTTOM,
-        /** Definitely a constant */
+        /**
+         * Definitely a constant
+         */
         CONSTANT,
     }
 
@@ -59,9 +65,9 @@ public class LatticeElement {
 
     /**
      * TOP Λ x = x		∀ x
-     * 	ci Λ cj = ci 		if ci = cj
-     * 	ci Λ cj = BOT 	if ci ≠ cj
-     * 	BOT Λ x = BOT	∀ x
+     * ci Λ cj = ci 		if ci = cj
+     * ci Λ cj = BOT 	if ci ≠ cj
+     * BOT Λ x = BOT	∀ x
      *
      * @param x a lattice element
      * @param y another lattice element
@@ -69,15 +75,30 @@ public class LatticeElement {
      */
     public static LatticeElement meet(LatticeElement x, LatticeElement y) {
         assert x != null && y != null;
-        if (x.latticeElementType == LatticeElementType.TOP)
-            return y;
-        else if (y.latticeElementType == LatticeElementType.TOP || x.equals(y))
-            return x;
+        switch (x.latticeElementType) {
+            case TOP -> {
+                if (y.isBottom())
+                    return LatticeElement.bottom();
+                return LatticeElement.top();
+            }
+            case CONSTANT -> {
+                if (y.isTop())
+                    return LatticeElement.top();
+                else if (y.isBottom())
+                    return LatticeElement.bottom();
+                // c1 + c2
+                return LatticeElement.bottom();
+            }
+            case BOTTOM -> {
+                return LatticeElement.bottom();
+            }
+        };
         return LatticeElement.bottom();
     }
 
     public static LatticeElement meet(Collection<LatticeElement> xs) {
-        return xs.stream().reduce(LatticeElement.top(), LatticeElement::meet);
+        return xs.stream()
+                 .reduce(LatticeElement.top(), LatticeElement::meet);
     }
 
     public boolean isBottom() {

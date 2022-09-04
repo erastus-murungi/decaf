@@ -9,6 +9,9 @@ import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.ir.DecafSemanticChecker;
 import edu.mit.compilers.utils.DecafExceptionProcessor;
+import edu.mit.compilers.utils.GraphVizPrinter;
+import edu.mit.compilers.utils.TarjanSCC;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -20,7 +23,7 @@ public class DataFlowAnalysisTest {
     List<BasicBlock> basicBlockList;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         final String simpleForLoop = "void main() {int i; int a; for (i = 0; i < 10; i++) {a += i;}}";
         DecafExceptionProcessor decafExceptionProcessor = new DecafExceptionProcessor(simpleForLoop);
         DecafScanner scanner = new DecafScanner(simpleForLoop, decafExceptionProcessor);
@@ -31,7 +34,7 @@ public class DataFlowAnalysisTest {
         semChecker.runChecks(decafExceptionProcessor);
         ControlFlowGraph cfgGenerator = new ControlFlowGraph(parser.getRoot(), semChecker.globalDescriptor);
         ControlFlowGraphVisitor visitor = cfgGenerator.build();
-        basicBlockList = DataFlowAnalysis.getReversePostOrder(visitor.methodCFGBlocks.get("main"));
+        basicBlockList = TarjanSCC.getReversePostOrder(visitor.methodCFGBlocks.get("main"));
     }
 
     @Test
@@ -51,6 +54,6 @@ public class DataFlowAnalysisTest {
 
 
         assertTrue(basicBlockList.get(3) instanceof NOP);
-        assertEquals("Exit main", ((NOP) basicBlockList.get(3)).getNopLabel().orElseThrow());
+        assertEquals("exit_main", ((NOP) basicBlockList.get(3)).getNopLabel().orElseThrow());
     }
 }

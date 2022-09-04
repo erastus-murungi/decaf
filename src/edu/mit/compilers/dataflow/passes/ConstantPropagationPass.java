@@ -26,11 +26,11 @@ public class ConstantPropagationPass extends OptimizationPass {
 
     private List<HasOperand> reachingDefinitions(int indexOfDefinition, InstructionList instructionList) {
         var rds = new ArrayList<HasOperand>();
-        var store = ((StoreInstruction) instructionList.get(indexOfDefinition)).getStore();
+        var store = ((StoreInstruction) instructionList.get(indexOfDefinition)).getDestination();
         for (int indexOfInstruction = indexOfDefinition + 1; indexOfInstruction < instructionList.size(); indexOfInstruction++) {
             var instruction = instructionList.get(indexOfInstruction);
             if (instruction instanceof StoreInstruction) {
-                if (((StoreInstruction) instruction).getStore()
+                if (((StoreInstruction) instruction).getDestination()
                                                     .equals(store))
                     break;
             } else {
@@ -50,7 +50,7 @@ public class ConstantPropagationPass extends OptimizationPass {
                 if (((CopyInstruction) instruction).getValue() instanceof NumericalConstant) {
                     NumericalConstant constant = (NumericalConstant) ((CopyInstruction) instruction).getValue();
                     for (HasOperand hasOperand : reachingDefinitions(indexOfInstruction, basicBlock.getInstructionList())) {
-                        hasOperand.replace(((CopyInstruction) instruction).getStore(), constant);
+                        hasOperand.replace(((CopyInstruction) instruction).getDestination(), constant);
                     }
                 }
             }
@@ -63,7 +63,7 @@ public class ConstantPropagationPass extends OptimizationPass {
             if (storeInstruction instanceof CopyInstruction) {
                 var assignment = (CopyInstruction) storeInstruction;
                 if (assignment.getValue() instanceof NumericalConstant) {
-                    storeNameToStoreInstructionMap.put(storeInstruction.getStore(), (NumericalConstant) assignment.getValue());
+                    storeNameToStoreInstructionMap.put(storeInstruction.getDestination(), (NumericalConstant) assignment.getValue());
                 }
             }
         }

@@ -63,11 +63,11 @@ public class InterferenceGraph {
                                               .filter(copyInstruction -> copyInstruction.getValue() instanceof LValue)
                                               .collect(Collectors.toUnmodifiableSet());
         for (var copyInstruction: copyInstructions) {
-            var a = new Node(varToLivIntervals.get(copyInstruction.getStore()));
+            var a = new Node(varToLivIntervals.get(copyInstruction.getDestination()));
             var b = new Node(varToLivIntervals.get(copyInstruction.getValue()));
             if (!LiveIntervalsUtil.liveIntervalsInterfere(a.liveInterval(), b.liveInterval())) {
                 insertMoveEdge(
-                        new Node(varToLivIntervals.get(copyInstruction.getStore())),
+                        new Node(varToLivIntervals.get(copyInstruction.getDestination())),
                         new Node(varToLivIntervals.get(copyInstruction.getValue())));
             }
         }

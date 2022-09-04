@@ -566,6 +566,9 @@ public class GraphVizPrinter {
     public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks) {
         printGraph(methodCFGBlocks, (BasicBlock::getLinesOfCodeString), "cfg");
     }
+    public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks, String filename) {
+        printGraph(methodCFGBlocks, (BasicBlock::getLinesOfCodeString), filename);
+    }
 
     public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks, Function<BasicBlock, String> labelFunction, String graphFilename) {
         final String[] graph = new String[methodCFGBlocks.size()];

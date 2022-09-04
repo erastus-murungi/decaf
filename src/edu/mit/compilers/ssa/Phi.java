@@ -1,6 +1,7 @@
 package edu.mit.compilers.ssa;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -18,15 +19,25 @@ import edu.mit.compilers.dataflow.operand.PhiOperand;
 
 public class Phi extends StoreInstruction {
     private final Map<BasicBlock, Value> basicBlockToAssignableNameMapping;
+    private final Map<Value, BasicBlock> valueBasicBlockMap;
 
     public Phi(LValue v, Map<BasicBlock, Value> xs) {
         super(v, null);
         assert xs.size() > 2;
         basicBlockToAssignableNameMapping = xs;
+        valueBasicBlockMap = new HashMap<>();
+        for (var entry: basicBlockToAssignableNameMapping.entrySet()) {
+            valueBasicBlockMap.put(entry.getValue(), entry.getKey());
+        }
     }
 
     public Value getVariableForB(BasicBlock B) {
         return basicBlockToAssignableNameMapping.get(B);
+    }
+
+    public BasicBlock getBasicBlockForV(Value value) {
+        assert valueBasicBlockMap.containsKey(value);
+        return valueBasicBlockMap.get(value);
     }
 
     @Override
@@ -60,13 +71,13 @@ public class Phi extends StoreInstruction {
     @Override
     public List<Value> getAllValues() {
         var allNames = getOperandValues();
-        allNames.add(getStore());
+        allNames.add(getDestination());
         return allNames;
     }
 
     @Override
     public Instruction copy() {
-        return new Phi(getStore(), basicBlockToAssignableNameMapping);
+        return new Phi(getDestination(), basicBlockToAssignableNameMapping);
     }
 
     @Override
@@ -79,7 +90,7 @@ public class Phi extends StoreInstruction {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Phi phi = (Phi) o;
-        return Objects.equals(basicBlockToAssignableNameMapping.values(), phi.basicBlockToAssignableNameMapping.values()) && Objects.equals(getStore(), phi.getStore());
+        return Objects.equals(basicBlockToAssignableNameMapping.values(), phi.basicBlockToAssignableNameMapping.values()) && Objects.equals(getDestination(), phi.getDestination());
     }
 
     @Override
@@ -90,12 +101,12 @@ public class Phi extends StoreInstruction {
     @Override
     public String toString() {
         String rhs = basicBlockToAssignableNameMapping.values().stream().map(Value::repr).collect(Collectors.joining(", "));
-        return String.format("%s%s: %s = phi (%s)", DOUBLE_INDENT, getStore().repr(), getStore().getType().getSourceCode(), rhs);
+        return String.format("%s%s: %s = phi (%s)", DOUBLE_INDENT, getDestination().repr(), getDestination().getType().getSourceCode(), rhs);
     }
 
     @Override
     public String syntaxHighlightedToString() {
         String rhs = basicBlockToAssignableNameMapping.values().stream().map(Value::repr).collect(Collectors.joining(", "));
-        return String.format("%s%s: %s = phi (%s)", DOUBLE_INDENT, getStore().repr(), getStore().getType().getColoredSourceCode(), rhs);
+        return String.format("%s%s: %s = phi (%s)", DOUBLE_INDENT, getDestination().repr(), getDestination().getType().getColoredSourceCode(), rhs);
     }
 }

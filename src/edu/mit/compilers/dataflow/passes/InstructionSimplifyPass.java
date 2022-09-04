@@ -68,7 +68,7 @@ public class InstructionSimplifyPass extends OptimizationPass {
         // 0 + X -> X
         var X = getNonZero(addInstruction);
         if (matchBinOpOperandsCommutative(addInstruction, mZero, X)) {
-            return CopyInstruction.noMetaData(addInstruction.getStore(), X);
+            return CopyInstruction.noMetaData(addInstruction.getDestination(), X);
         }
         return addInstruction;
     }
@@ -80,15 +80,15 @@ public class InstructionSimplifyPass extends OptimizationPass {
         var X = getNotEq(eqInstruction, mOne);
         if (X.getType().equals(Type.Bool)) {
             if (matchBinOpOperandsCommutative(eqInstruction, X, mOne))
-                return CopyInstruction.noMetaData(eqInstruction.getStore(), X);
+                return CopyInstruction.noMetaData(eqInstruction.getDestination(), X);
             // true == true -> true
             if (matchBinOpOperands(eqInstruction, mOne, mOne)) {
-                return CopyInstruction.noMetaData(eqInstruction.getStore(), mOne);
+                return CopyInstruction.noMetaData(eqInstruction.getDestination(), mOne);
             }
             // true == false -> false
             // false == true -> false
             if (matchBinOpOperandsCommutative(eqInstruction, mOne, mZero)) {
-                return CopyInstruction.noMetaData(eqInstruction.getStore(), getZero());
+                return CopyInstruction.noMetaData(eqInstruction.getDestination(), getZero());
             }
         }
         return eqInstruction;
@@ -101,12 +101,12 @@ public class InstructionSimplifyPass extends OptimizationPass {
         // X * 0 -> 0
         final var X = getNonZero(multiplyInstruction);
         if (matchBinOpOperandsCommutative(multiplyInstruction, mZero, X)) {
-            return CopyInstruction.noMetaData(multiplyInstruction.getStore(), getZero());
+            return CopyInstruction.noMetaData(multiplyInstruction.getDestination(), getZero());
         }
         // X * 1 -> X
         // 1 * X -> X
         if (matchBinOpOperandsCommutative(multiplyInstruction, mOne, X)) {
-            return CopyInstruction.noMetaData(multiplyInstruction.getStore(), X);
+            return CopyInstruction.noMetaData(multiplyInstruction.getDestination(), X);
         }
         return multiplyInstruction;
     }
@@ -114,7 +114,7 @@ public class InstructionSimplifyPass extends OptimizationPass {
     private Instruction simplifyQuadruple(BinaryInstruction binaryInstruction) {
         var aLong = Utils.symbolicallyEvaluate(String.format("%s %s %s", binaryInstruction.fstOperand.getLabel(), binaryInstruction.operator, binaryInstruction.sndOperand.getLabel()));
         if (aLong.isPresent()) {
-            return CopyInstruction.noMetaData(binaryInstruction.getStore(), new NumericalConstant(aLong.get(), Type.Int));
+            return CopyInstruction.noMetaData(binaryInstruction.getDestination(), new NumericalConstant(aLong.get(), Type.Int));
         }
         Instruction newTac = null;
         switch (binaryInstruction.operator) {

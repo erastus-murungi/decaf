@@ -70,6 +70,7 @@ public class ControlFlowGraph {
 
         visitor.methodCFGBlocks.forEach((k, v) -> {
             NOPRemovalUtil.exit = visitor.methodToExitNOP.get(k);
+            assert v.getSuccessor() != null;
             NOPRemovalUtil.visit(v.getSuccessor());
         });
 

@@ -29,21 +29,21 @@ public class RedundantPhiEliminationPass extends SsaOptimizationPass<Void> {
                 for (var instruction : basicBlock.getInstructionList()) {
                     if (instruction instanceof Phi phi) {
                          // x=phi(x,x,x) (remove only)
-                        if (phi.getOperandLValues().stream().allMatch(lValue -> lValue.equals(phi.getStore()))) {
+                        if (phi.getOperandLValues().stream().allMatch(lValue -> lValue.equals(phi.getDestination()))) {
                             changesHappened = true;
                             continue;
                         }
                         // 2) x=phi(y,y,y) (regard as `x=y` and do copy propagation)
                         if (phi.getOperandLValues().stream().distinct().count() == 1) {
                             var y = phi.getOperandLValues().stream().findFirst().orElseThrow();
-                            instructionList.add(CopyInstruction.noMetaData(phi.getStore(), y));
+                            instructionList.add(CopyInstruction.noMetaData(phi.getDestination(), y));
                             changesHappened = true;
                             continue;
                         }
                         // 3) x=phi(y,y,x) (regard as `x=y` and do copy propagation)
-                        if (phi.getOperandLValues().stream().filter(value -> value.equals(phi.getStore())).count() == 1) {
-                            var y = phi.getOperandLValues().stream().filter(value -> !value.equals(phi.getStore())).findFirst().orElseThrow();
-                            instructionList.add(CopyInstruction.noMetaData(phi.getStore(), y));
+                        if (phi.getOperandLValues().stream().filter(value -> value.equals(phi.getDestination())).count() == 1) {
+                            var y = phi.getOperandLValues().stream().filter(value -> !value.equals(phi.getDestination())).findFirst().orElseThrow();
+                            instructionList.add(CopyInstruction.noMetaData(phi.getDestination(), y));
                             changesHappened = true;
                             continue;
                         }

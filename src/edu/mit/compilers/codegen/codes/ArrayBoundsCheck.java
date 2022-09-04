@@ -58,12 +58,12 @@ public class ArrayBoundsCheck extends HasOperand {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s %s, %s, %s", DOUBLE_INDENT, "checkbounds", getAddress.getStore().toString(), getAddress.getBaseAddress().getType().getColoredSourceCode(), getAddress.getIndex().repr(), getAddress.getLength().orElseThrow().repr());
+        return String.format("%s%s %s %s, %s, %s", DOUBLE_INDENT, "checkbounds", getAddress.getDestination().toString(), getAddress.getBaseAddress().getType().getColoredSourceCode(), getAddress.getIndex().repr(), getAddress.getLength().orElseThrow().repr());
     }
 
     public String syntaxHighlightedToString() {
         final var checkBoundsString = Utils.coloredPrint("checkbounds", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s%s %s %s, %s, %s", DOUBLE_INDENT, checkBoundsString, getAddress.getStore().toString(), getAddress.getBaseAddress().getType().getColoredSourceCode(), getAddress.getIndex().repr(), getAddress.getLength().orElseThrow().repr());
+        return String.format("%s%s %s %s, %s, %s", DOUBLE_INDENT, checkBoundsString, getAddress.getDestination().toString(), getAddress.getBaseAddress().getType().getColoredSourceCode(), getAddress.getIndex().repr(), getAddress.getLength().orElseThrow().repr());
     }
 
 }

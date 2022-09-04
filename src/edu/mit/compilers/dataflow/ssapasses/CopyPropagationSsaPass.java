@@ -28,7 +28,7 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
             for (StoreInstruction storeInstruction: basicBlock.getStoreInstructions()) {
                 if (storeInstruction instanceof CopyInstruction copyInstruction) {
                     var replacer = copyInstruction.getValue();
-                    var toBeReplaced = copyInstruction.getStore();
+                    var toBeReplaced = copyInstruction.getDestination();
                     copiesMap.put(toBeReplaced, replacer);
                     // as a quick optimization, we could delete this storeInstruction here
                 }

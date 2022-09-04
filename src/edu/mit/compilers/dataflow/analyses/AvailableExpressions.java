@@ -94,7 +94,7 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
             // that get re-assigned by the current stmt to
             // killedExpressions
             for (Operand comp : superSet) {
-                if (comp.contains(assignment.getStore())) {
+                if (comp.contains(assignment.getDestination())) {
                     killedExpressions.add(comp);
                 }
             }
@@ -109,7 +109,7 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
                 assignment.getOperandNoArray()
                         .ifPresent(validComputations::add);
             }
-            validComputations.removeIf((operand -> operand.contains(assignment.getStore())));
+            validComputations.removeIf((operand -> operand.contains(assignment.getDestination())));
         }
         return validComputations;
     }

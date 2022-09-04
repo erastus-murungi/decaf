@@ -31,7 +31,7 @@ public class CommonSubExpressionEliminationSsaPass extends SsaOptimizationPass<S
                                     LValue expressionStoreLocation,
                                     Integer indexOfInstructionToBeReplaced) {
 
-        var replacer = CopyInstruction.noMetaData(storeInstruction.getStore(), expressionStoreLocation);
+        var replacer = CopyInstruction.noMetaData(storeInstruction.getDestination(), expressionStoreLocation);
         instructionList.replaceIfContainsInstructionAtIndex(indexOfInstructionToBeReplaced, storeInstruction, replacer);
         optimizationResults.add(new OptimizationResult<>(
                 this.getClass(), storeInstruction, replacer
@@ -58,7 +58,7 @@ public class CommonSubExpressionEliminationSsaPass extends SsaOptimizationPass<S
                         StoreInstruction Y = (StoreInstruction) X.getInstructionList()
                                                                  .get(expressionToIndexInBasicBlock.get(cachableExpression));
                         // do the replacement
-                        performReplacement(storeInstruction, instructionList, Y.getStore(), indexOfInstruction);
+                        performReplacement(storeInstruction, instructionList, Y.getDestination(), indexOfInstruction);
                         changesHappened = true;
                     } else {
                         expressionToBasicBlock.put(cachableExpression, basicBlock);

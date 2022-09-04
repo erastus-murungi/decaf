@@ -8,29 +8,29 @@ import java.util.Optional;
 import java.util.Set;
 
 public abstract class StoreInstruction extends HasOperand implements Cloneable {
-    protected LValue store;
+    protected LValue destination;
 
-    public StoreInstruction(LValue store, AST source) {
+    public StoreInstruction(LValue destination, AST source) {
         super(source);
-        this.store = store;
+        this.destination = destination;
     }
 
-    public StoreInstruction(LValue store) {
+    public StoreInstruction(LValue destination) {
         super();
-        this.store = store;
+        this.destination = destination;
     }
 
-    public StoreInstruction(LValue store, AST source, String comment) {
+    public StoreInstruction(LValue destination, AST source, String comment) {
         super(source, comment);
-        this.store = store;
+        this.destination = destination;
     }
 
-    public LValue getStore() {
-        return store;
+    public LValue getDestination() {
+        return destination;
     }
 
-    public void setStore(LValue dst) {
-        this.store = dst;
+    public void setDestination(LValue dst) {
+        this.destination = dst;
     }
 
     public abstract Optional<Operand> getOperandNoArray();
@@ -49,7 +49,7 @@ public abstract class StoreInstruction extends HasOperand implements Cloneable {
         try {
             StoreInstruction clone = (StoreInstruction) super.clone();
             // TODO: copy mutable state here, so the clone can't change the internals of the original
-            clone.store = store;
+            clone.destination = destination;
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new AssertionError();

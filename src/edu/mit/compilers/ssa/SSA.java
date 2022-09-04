@@ -58,7 +58,7 @@ public class SSA {
         return basicBlocks.stream()
                           .filter(basicBlock -> basicBlock.getStoreInstructions()
                                                           .stream()
-                                                          .map(StoreInstruction::getStore)
+                                                          .map(StoreInstruction::getDestination)
                                                           .anyMatch(abstractName -> abstractName.equals(V)))
                           .collect(Collectors.toUnmodifiableSet());
     }
@@ -66,7 +66,7 @@ public class SSA {
     private static Set<LValue> getStoreLocations(BasicBlock X) {
         return X.getStoreInstructions()
                 .stream()
-                .map(StoreInstruction::getStore)
+                .map(StoreInstruction::getDestination)
                 .map(LValue::copy)
                 .collect(Collectors.toUnmodifiableSet());
     }
@@ -98,7 +98,7 @@ public class SSA {
         final var stores = getStoreLocations(X);
 
         for (Phi phi : X.getPhiFunctions()) {
-            genName(phi.getStore(), counters, stacks);
+            genName(phi.getDestination(), counters, stacks);
         }
 
         for (Instruction instruction : X.getInstructionList()) {
@@ -112,7 +112,7 @@ public class SSA {
                 }
             }
             if (instruction instanceof StoreInstruction) {
-                var V = ((StoreInstruction) instruction).getStore();
+                var V = ((StoreInstruction) instruction).getDestination();
                 genName(V, counters, stacks);
             }
         }
@@ -214,10 +214,10 @@ public class SSA {
         var seen = new HashSet<LValue>();
         for (var B : basicBlocks) {
             for (var store : B.getStoreInstructions()) {
-                if (seen.contains(store.getStore())) {
-                    throw new IllegalStateException(store.getStore() + " store redefined");
+                if (seen.contains(store.getDestination())) {
+                    throw new IllegalStateException(store.getDestination() + " store redefined");
                 } else {
-                    seen.add(store.getStore());
+                    seen.add(store.getDestination());
                 }
                 if (store instanceof Phi) {
                     var s = store.getOperandValues()
@@ -259,7 +259,7 @@ public class SSA {
                 var Vs = ((HasOperand) instruction).getOperandLValues();
                 for (var V : Vs) {
                     if (instruction instanceof StoreInstruction storeInstruction) {
-                        if (storeInstruction.getStore().equals(stacks.get(V).peek()))
+                        if (storeInstruction.getDestination().equals(stacks.get(V).peek()))
                             continue;
                     }
                         V.renameForSsa(stacks.get(V)
@@ -292,7 +292,7 @@ public class SSA {
         for (var successor : basicBlock.getSuccessors()) {
             for (var phi : successor.getPhiFunctions()) {
                 var src = phi.getVariableForB(basicBlock);
-                var dst = phi.getStore();
+                var dst = phi.getDestination();
                 copySet.add(new Pair<>(src, dst));
                 map.put(src, src);
                 map.put(dst, dst);

@@ -92,7 +92,7 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
 
         // Evaluate the condition
         final Expression condition = rotateBinaryOpExpression(forStatement.terminatingCondition);
-        BasicBlock evaluateBlock = ShortCircuitProcessor.shortCircuit(BasicBlock.branch(condition, null, null));
+        var evaluateBlock = ShortCircuitProcessor.shortCircuit(BasicBlock.branch(condition, null, null));
         incrementBlock.setSuccessor(evaluateBlock);
         evaluateBlock.addPredecessor(incrementBlock);
 

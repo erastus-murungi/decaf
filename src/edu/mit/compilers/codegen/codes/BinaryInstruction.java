@@ -42,17 +42,17 @@ public class BinaryInstruction extends StoreInstruction {
 
     @Override
     public List<Value> getAllValues() {
-        return List.of(getStore(), fstOperand, sndOperand);
+        return List.of(getDestination(), fstOperand, sndOperand);
     }
 
     @Override
     public Instruction copy() {
-        return new BinaryInstruction(getStore(), fstOperand, operator, sndOperand, getComment().orElse(null), source);
+        return new BinaryInstruction(getDestination(), fstOperand, operator, sndOperand, getComment().orElse(null), source);
     }
 
     @Override
     public Optional<Operand> getOperandNoArray() {
-        if (getStore() instanceof MemoryAddress || fstOperand instanceof MemoryAddress || sndOperand instanceof MemoryAddress)
+        if (getDestination() instanceof MemoryAddress || fstOperand instanceof MemoryAddress || sndOperand instanceof MemoryAddress)
             return Optional.empty();
         return Optional.of(new BinaryOperand(this));
     }
@@ -83,14 +83,14 @@ public class BinaryInstruction extends StoreInstruction {
     @Override
     public String toString() {
         if (getComment().isPresent())
-            return String.format("%s%s = %s %s %s%s%s", DOUBLE_INDENT, getStore(), fstOperand, operator, sndOperand, DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s = %s %s %s", DOUBLE_INDENT, getStore(), fstOperand, operator, sndOperand);
+            return String.format("%s%s = %s %s %s%s%s", DOUBLE_INDENT, getDestination(), fstOperand, operator, sndOperand, DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s = %s %s %s", DOUBLE_INDENT, getDestination(), fstOperand, operator, sndOperand);
     }
 
     public String syntaxHighlightedToString() {
         if (getComment().isPresent())
-            return String.format("%s%s: %s = %s %s, %s %s%s", DOUBLE_INDENT, getStore().repr(), getStore().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand.repr(), sndOperand.repr(), DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s: %s = %s %s, %s", DOUBLE_INDENT, getStore().repr(), getStore().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand.repr(), sndOperand.repr());
+            return String.format("%s%s: %s = %s %s, %s %s%s", DOUBLE_INDENT, getDestination().repr(), getDestination().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand.repr(), sndOperand.repr(), DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s: %s = %s %s, %s", DOUBLE_INDENT, getDestination().repr(), getDestination().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand.repr(), sndOperand.repr());
     }
 
 }

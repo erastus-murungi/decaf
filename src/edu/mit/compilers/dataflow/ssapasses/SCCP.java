@@ -2,12 +2,16 @@ package edu.mit.compilers.dataflow.ssapasses;
 
 import static edu.mit.compilers.utils.TarjanSCC.getReversePostOrder;
 
-import java.util.ArrayDeque;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
+import java.util.Stack;
+import java.util.stream.Collectors;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
@@ -28,14 +32,12 @@ import edu.mit.compilers.ssa.Phi;
 import edu.mit.compilers.utils.Utils;
 
 public class SCCP {
-    Queue<BasicBlock> flowEdges = new ArrayDeque<>();
-    Queue<SsaEdge> ssaEdges = new ArrayDeque<>();
-    Set<BasicBlock> reachable = new HashSet<>();
-
-    Map<Value, LatticeElement> valueLatticeElementMap = new HashMap<>();
-
-    Set<BasicBlock> visited = new HashSet<>();
-
+    Stack<BasicBlock> flowGraphWorkList = new Stack<>();
+    Stack<SsaEdge> ssaWorkList = new Stack<>();
+    Set<BasicBlock> reachableBasicBlocks = new HashSet<>();
+    Map<Value, LatticeElement> latticeValues = new HashMap<>();
+    Set<BasicBlock> visitedBasicBlocks = new HashSet<>();
+    Set<SsaEdge> ssaEdgeList = Collections.emptySet();
     BasicBlock entryBlock;
 
     public SCCP(BasicBlock entryBlock) {
@@ -49,58 +51,84 @@ public class SCCP {
             for (Instruction instruction : basicBlock.getInstructionList()) {
                 for (Value v : instruction.getAllValues()) {
                     if (v instanceof LValue) {
-                        valueLatticeElementMap.put(v, LatticeElement.top());
+                        latticeValues.put(v, LatticeElement.top());
                     } else if (v instanceof NumericalConstant numericalConstant) {
-                        valueLatticeElementMap.put(v, LatticeElement.constant(numericalConstant.getValue()));
+                        latticeValues.put(v, LatticeElement.constant(numericalConstant.getValue()));
                     }
                 }
             }
         }
-        this.flowEdges.add(entryBlock);
-        getSsaEdges();
+        this.flowGraphWorkList.add(entryBlock);
+        computeSsaEdges();
+    }
+
+    private List<SsaEdge> getSsaEdgesForVariable(LValue lValue) {
+        return ssaEdgeList.stream()
+                          .filter(ssaEdge -> ssaEdge.getValue()
+                                                    .equals(lValue))
+                          .toList();
     }
 
     private void visitPhi(Phi phi) {
         var values = phi.getOperandValues()
                         .stream()
-                        .map(valueLatticeElementMap::get)
-                        .toList();
-        valueLatticeElementMap.put(phi.getStore(), LatticeElement.meet(values));
+                        .map(value -> reachableBasicBlocks.contains(phi.getBasicBlockForV(value)) ? latticeValues.get(value) : LatticeElement.top())
+                        .collect(Collectors.toList());
+        var newLatticeElement = LatticeElement.meet(values);
+        if (!newLatticeElement.equals(latticeValues.get(phi.getDestination()))) {
+            latticeValues.put(phi.getDestination(), LatticeElement.meet(values));
+            ssaWorkList.addAll(getSsaEdgesForVariable(phi.getDestination()));
+        }
     }
 
     private void visitExpression(Instruction instruction, BasicBlock basicBlock) {
         if (instruction instanceof CopyInstruction copyInstruction) {
-            valueLatticeElementMap.put(copyInstruction.getStore(), valueLatticeElementMap.get(copyInstruction.getValue()));
+            var updated = latticeValues.get(copyInstruction.getValue());
+            if (!updated.equals(latticeValues.get(copyInstruction.getDestination()))) {
+                latticeValues.put(copyInstruction.getDestination(), updated);
+                ssaWorkList.addAll(getSsaEdgesForVariable(copyInstruction.getDestination()));
+            }
         } else if (instruction instanceof BinaryInstruction binaryInstruction) {
-            var a = valueLatticeElementMap.get(binaryInstruction.fstOperand);
-            var b = valueLatticeElementMap.get(binaryInstruction.sndOperand);
+            var a = latticeValues.get(binaryInstruction.fstOperand);
+            var b = latticeValues.get(binaryInstruction.sndOperand);
             if (!a.isBottom() && !b.isBottom()) {
+                @NotNull LatticeElement updated;
                 if (a.isConstant() && b.isConstant()) {
-                    var longVal = Utils.symbolicallyEvaluate(String.format("%d %s %d", a.getValue(), binaryInstruction.operator, b.getValue()));
-                    longVal.ifPresent(aLong -> valueLatticeElementMap.put(binaryInstruction.getStore(), LatticeElement.constant(aLong)));
+                    var longVal = Utils.symbolicallyEvaluate(String.format("%d %s %d", a.getValue(), binaryInstruction.operator, b.getValue()))
+                                       .orElseThrow();
+                    updated = LatticeElement.constant(longVal);
                 } else {
-                    valueLatticeElementMap.put(binaryInstruction.getStore(), LatticeElement.meet(a, b));
+                    updated = LatticeElement.meet(a, b);
+                }
+                if (updated != latticeValues.get(binaryInstruction.getDestination())) {
+                    latticeValues.put(binaryInstruction.getDestination(), updated);
+                    ssaWorkList.addAll(getSsaEdgesForVariable(binaryInstruction.getDestination()));
                 }
             }
         } else if (instruction instanceof UnaryInstruction unaryInstruction) {
-            var a = valueLatticeElementMap.get(unaryInstruction.operand);
+            var a = latticeValues.get(unaryInstruction.operand);
             if (a.isConstant()) {
-                var longVal = Utils.symbolicallyEvaluate(String.format("%s (%d)", unaryInstruction.operator, a.getValue()));
-                longVal.ifPresent(aLong -> valueLatticeElementMap.put(unaryInstruction.getStore(), LatticeElement.constant(aLong)));
+                var longVal = Utils.symbolicallyEvaluate(String.format("%s (%d)", unaryInstruction.operator, a.getValue()))
+                                   .orElseThrow();
+                var updated = LatticeElement.constant(longVal);
+                if (updated.equals(latticeValues.get(unaryInstruction.getDestination()))) {
+                    latticeValues.put(unaryInstruction.getDestination(), updated);
+                    ssaWorkList.addAll(getSsaEdgesForVariable(unaryInstruction.getDestination()));
+                }
             }
         } else if (instruction instanceof ConditionalBranch conditionalBranch) {
-            var condition = valueLatticeElementMap.get(conditionalBranch.condition);
+            var condition = latticeValues.get(conditionalBranch.condition);
             if (LatticeElement.meet(condition, LatticeElement.constant(0L))
                               .isBottom()) {
-                flowEdges.add(basicBlock.getTrueTarget());
+                flowGraphWorkList.add(basicBlock.getTrueTarget());
             }
             if (LatticeElement.meet(condition, LatticeElement.constant(1L))
                               .isBottom()) {
-                flowEdges.add(basicBlock.getFalseTarget());
+                flowGraphWorkList.add(basicBlock.getFalseTarget());
             }
         } else if (instruction instanceof UnconditionalJump unconditionalJump) {
-            if (!reachable.contains(unconditionalJump.getTarget()))
-                flowEdges.add(unconditionalJump.getTarget());
+            if (!reachableBasicBlocks.contains(unconditionalJump.getTarget()))
+                flowGraphWorkList.add(unconditionalJump.getTarget());
         }
 
     }
@@ -108,7 +136,7 @@ public class SCCP {
     public int countIncomingExecutableEdges(BasicBlock block) {
         int count = 0;
         for (var pred : block.getPredecessors()) {
-            if (reachable.contains(pred)) {
+            if (reachableBasicBlocks.contains(pred)) {
                 count++;
             }
         }
@@ -116,24 +144,27 @@ public class SCCP {
     }
 
     private boolean isReachable(BasicBlock flowEdge) {
-        return reachable.contains(flowEdge);
+        return reachableBasicBlocks.contains(flowEdge);
     }
 
-    private void setReachable(BasicBlock flowEdge) {
-        reachable.add(flowEdge);
+    private void setReachableBasicBlocks(BasicBlock flowEdge) {
+        reachableBasicBlocks.add(flowEdge);
     }
 
-    private void getSsaEdges() {
-        ImmediateDominator immediateDominator = new ImmediateDominator(entryBlock);
-        Set<SsaEdge> ssaEdges = new HashSet<>();
-        Map<LValue, StoreInstruction> lValueToDefMapping = new HashMap<>();
+    private void computeSsaEdges() {
+        var immediateDominator = new ImmediateDominator(entryBlock);
+        var ssaEdges = new HashSet<SsaEdge>();
+        var lValueToDefMapping = new HashMap<LValue, StoreInstruction>();
+
         for (BasicBlock basicBlock : immediateDominator.preorder()) {
+            basicBlock.getStoreInstructions()
+                      .forEach(
+                              storeInstruction -> lValueToDefMapping.put(storeInstruction.getDestination(), storeInstruction)
+                      );
+        }
 
+        for (BasicBlock basicBlock : immediateDominator.preorder()) {
             for (Instruction instruction : basicBlock.getInstructionList()) {
-                if (instruction instanceof StoreInstruction storeInstruction) {
-                    lValueToDefMapping.put(storeInstruction.getStore(), storeInstruction);
-                }
-
                 if (instruction instanceof HasOperand hasOperand) {
                     for (LValue lValue : hasOperand.getOperandLValues()) {
                         if (instruction instanceof ReturnInstruction && !lValueToDefMapping.containsKey(lValue))
@@ -145,7 +176,10 @@ public class SCCP {
                 }
             }
         }
-        this.ssaEdges.addAll(ssaEdges);
+
+
+        this.ssaEdgeList = ssaEdges;
+        this.ssaWorkList.addAll(ssaEdges);
     }
 
     /**
@@ -156,11 +190,11 @@ public class SCCP {
      */
 
     public void runWorkList() {
-        while (!flowEdges.isEmpty() && !ssaEdges.isEmpty()) {
-            while (!flowEdges.isEmpty()) {
-                var flowEdge = flowEdges.remove();
+        while (!flowGraphWorkList.isEmpty() || !ssaWorkList.isEmpty()) {
+            while (!flowGraphWorkList.isEmpty()) {
+                var flowEdge = flowGraphWorkList.pop();
                 if (!isReachable(flowEdge)) {
-                    setReachable(flowEdge);
+                    setReachableBasicBlocks(flowEdge);
                     // (b) Perform Visit-phi for all the phi functions at the destination node
                     flowEdge.getPhiFunctions()
                             .forEach(this::visitPhi);
@@ -169,21 +203,21 @@ public class SCCP {
                     //     program flow graph edges is true (i.e. this the first time this
                     //     node has been evaluated), then perform VisitExpression for all expressions
                     //     in this node.
-                    if (!visited.contains(flowEdge)) {
+                    if (!visitedBasicBlocks.contains(flowEdge)) {
                         flowEdge.getNonPhiInstructions()
                                 .forEach(instruction -> visitExpression(instruction, flowEdge));
-                        visited.add(flowEdge);
+                        visitedBasicBlocks.add(flowEdge);
                     }
 
                     // (d) If then node only contains one outgoing flow edge, add that edge to the
                     //     flowWorkList
                     if (flowEdge.hasNoBranchNotNOP()) {
-                        flowEdges.add(flowEdge.getSuccessor());
+                        flowGraphWorkList.add(flowEdge.getSuccessor());
                     }
                 }
             }
-            while (!ssaEdges.isEmpty()) {
-                var ssaEdge = ssaEdges.remove();
+            while (!ssaWorkList.isEmpty()) {
+                var ssaEdge = ssaWorkList.pop();
 
                 // (4) If the item is an SSA edge from the SSAWorkList and the destination of that
                 //     edge is a phi-function, perform visit-phi
@@ -200,5 +234,13 @@ public class SCCP {
                 }
             }
         }
+    }
+
+    public Map<Value, LatticeElement> getLatticeValues() {
+        return latticeValues;
+    }
+
+    public Set<BasicBlock> getReachableBasicBlocks() {
+        return reachableBasicBlocks;
     }
 }

@@ -92,7 +92,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
             // check if this a possible store instruction
             if (possibleStoreInstruction instanceof StoreInstruction) {
                 // grab the store location
-                var store = ((StoreInstruction) possibleStoreInstruction).getStore();
+                var store = ((StoreInstruction) possibleStoreInstruction).getDestination();
 
                 // ignore arrays for now
                 if (!(store instanceof MemoryAddress)) {
@@ -147,7 +147,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                     continue;
                 }
 
-                var store = storeInstruction.getStore();
+                var store = storeInstruction.getDestination();
 
                 if (!(store instanceof MemoryAddress)) {
                     if (globalVariables.contains(store) && (!method.isMain()) || anySubsequentFunctionCalls(copyOfInstructionList.subList(0, copyOfInstructionList.indexOf(possibleStoreInstruction)))) {
@@ -196,8 +196,8 @@ public class DeadStoreEliminationPass extends OptimizationPass {
         for (var indexOfInstruction = indexOfStoreInstructionInBlock + 1; indexOfInstruction < blockInstructionList.size(); indexOfInstruction++) {
             var possibleStoreInstruction = blockInstructionList.get(indexOfInstruction);
             if (possibleStoreInstruction instanceof StoreInstruction candidateStoreInstruction) {
-                if (candidateStoreInstruction.getStore()
-                                             .equals(storeInstruction.getStore())) {
+                if (candidateStoreInstruction.getDestination()
+                                             .equals(storeInstruction.getDestination())) {
                     /* add the operands
                      * Before breaking, we add the operands of this assignment too
                      * we add this extra check because of stores of inputs like:
@@ -225,7 +225,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                 usedNames.addAll(storeInstructionWithOperand.getOperandValues());
             }
         }
-        return usedNames.contains(storeInstruction.getStore());
+        return usedNames.contains(storeInstruction.getDestination());
     }
 
     /**
@@ -265,8 +265,8 @@ public class DeadStoreEliminationPass extends OptimizationPass {
             var possibleStoreInstruction = blockInstructionList.get(indexOfInstruction);
             if (possibleStoreInstruction instanceof StoreInstruction candidateStoreInstruction) {
                 // check if we are indeed overwriting the store
-                if (candidateStoreInstruction.getStore()
-                                             .equals(storeInstruction.getStore())) {
+                if (candidateStoreInstruction.getDestination()
+                                             .equals(storeInstruction.getDestination())) {
                     return false;
                 }
             }

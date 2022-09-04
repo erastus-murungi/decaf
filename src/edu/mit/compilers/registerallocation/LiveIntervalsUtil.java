@@ -101,7 +101,7 @@ public class LiveIntervalsUtil {
 
     private Set<Value> def(Instruction instruction) {
         if (instruction instanceof StoreInstruction storeInstruction)
-            return Set.of(storeInstruction.getStore());
+            return Set.of(storeInstruction.getDestination());
         return Collections.emptySet();
     }
 
@@ -121,7 +121,7 @@ public class LiveIntervalsUtil {
         // values which are live outside this block and therefore should be conserved
         Set<Value> outGlobal = SetUtils.difference(outLive, SetUtils.difference(outLive, basicBlock.getStoreInstructions()
                                                                                                    .stream()
-                                                                                                   .map(StoreInstruction::getStore)
+                                                                                                   .map(StoreInstruction::getDestination)
                                                                                                    .collect(Collectors.toUnmodifiableSet())));
 
         for (Instruction instruction : basicBlock.getInstructionListReversed()) {

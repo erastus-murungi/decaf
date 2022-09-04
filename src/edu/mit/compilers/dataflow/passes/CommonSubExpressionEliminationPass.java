@@ -47,7 +47,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
 
         if (expressionToVariable.containsKey(operand)) {
             // this computation has been made before, so swap it with the variable that already stores the value
-            var replacer = CopyInstruction.noMetaData(storeInstruction.getStore(), expressionToVariable.get(operand));
+            var replacer = CopyInstruction.noMetaData(storeInstruction.getDestination(), expressionToVariable.get(operand));
             var indexOfOldCode = instructionToPositionInInstructionList.get(storeInstruction);
             /* we check if the oldCode is indeed present in the tac list.
                if it is not, this method throws an IllegalArgumentException
@@ -58,7 +58,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
         }
         // the operand already doesn't contain any array name
         if (!operand.containsAny(globalVariables)) {
-            expressionToVariable.put(operand, storeInstruction.getStore());
+            expressionToVariable.put(operand, storeInstruction.getDestination());
         }
     }
 
@@ -66,7 +66,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
                                                  HashMap<Operand, Value> expressionToVariable) {
         // we iterate through a copy of the keys to prevent a ConcurrentCoModificationException
         for (Operand operand : new ArrayList<>(expressionToVariable.keySet())) {
-            if (operand.contains(storeInstruction.getStore())) {
+            if (operand.contains(storeInstruction.getDestination())) {
                 expressionToVariable.remove(operand);
             }
         }
@@ -135,11 +135,11 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
                     if (storeInstruction instanceof UnaryInstruction || storeInstruction instanceof BinaryInstruction) {
                         if (availableExpression.isContainedIn(storeInstruction) && !isReassignedBeforeUse(basicBlock, availableExpression, storeInstruction)) {
                             final var expressionName = findExpressionAmongDominators(basicBlock, availableExpression, dom);
-                            final var assign = CopyInstruction.noMetaData(storeInstruction.getStore(), expressionName);
+                            final var assign = CopyInstruction.noMetaData(storeInstruction.getDestination(), expressionName);
                             swapOut(basicBlock.getInstructionList(), instructionToIndexMapping, storeInstruction, assign);
                             break;
                         }
-                        if (availableExpression.contains(storeInstruction.getStore())) {
+                        if (availableExpression.contains(storeInstruction.getDestination())) {
                             break;
                         }
                     }
@@ -165,7 +165,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
                                                 .get(indexOfCode);
             if (instruction instanceof StoreInstruction) {
                 StoreInstruction storeInstruction = ((StoreInstruction) instruction);
-                if (operand.contains(storeInstruction.getStore()) && !isTrivialAssignment(instruction)) {
+                if (operand.contains(storeInstruction.getDestination()) && !isTrivialAssignment(instruction)) {
                     return true;
                 }
             }
@@ -181,7 +181,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
                 if (instruction instanceof BinaryInstruction || instruction instanceof UnaryInstruction) {
                     final var storeInstruction = (StoreInstruction) instruction;
                     if (operand.isContainedIn(storeInstruction)) {
-                        return storeInstruction.getStore();
+                        return storeInstruction.getDestination();
                     }
                 }
             }

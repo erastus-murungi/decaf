@@ -33,7 +33,7 @@ public class CopyPropagationPass extends OptimizationPass {
             // we want to eventually propagate so that a = $0
             notConverged = false;
             for (var toBeReplaced : hasOperand.getOperandScalarVariables()) {
-                if (hasOperand instanceof StoreInstruction && ((StoreInstruction) hasOperand).getStore()
+                if (hasOperand instanceof StoreInstruction && ((StoreInstruction) hasOperand).getDestination()
                                                                                              .equals(toBeReplaced))
                     continue;
                 if (copies.containsKey(toBeReplaced)) {
@@ -70,7 +70,7 @@ public class CopyPropagationPass extends OptimizationPass {
 
             if (instruction instanceof StoreInstruction) {
                 var hasResult = (StoreInstruction) instruction;
-                var resultLocation = hasResult.getStore();
+                var resultLocation = hasResult.getDestination();
                 if (!(resultLocation instanceof MemoryAddress)) {
                     for (var assignableName : new ArrayList<>(copies.keySet())) {
                         var replacer = copies.get(assignableName);
