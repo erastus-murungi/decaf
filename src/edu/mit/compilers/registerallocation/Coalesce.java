@@ -1,7 +1,5 @@
 package edu.mit.compilers.registerallocation;
 
-import com.google.common.graph.Graph;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -32,12 +30,12 @@ public class Coalesce {
             }
             var sets = unionFind.toSets();
             var allUses = sets.stream()
-                              .filter(nodes -> nodes.size() > 1)
-                              .map(nodes -> nodes.stream()
-                                                 .map(node -> node.liveInterval()
-                                                                  .variable().copy())
-                                                 .collect(Collectors.toUnmodifiableSet()))
-                              .toList();
+                    .filter(nodes -> nodes.size() > 1)
+                    .map(nodes -> nodes.stream()
+                            .map(node -> node.liveInterval()
+                                    .variable().copy())
+                            .collect(Collectors.toUnmodifiableSet()))
+                    .toList();
             if (allUses.isEmpty())
                 break;
             for (var uses : allUses) {
@@ -53,8 +51,8 @@ public class Coalesce {
             return false;
         var basicBlocks = TarjanSCC.getReversePostOrder(method.entryBlock);
         var newName = uses.stream()
-                          .min(Comparator.comparing(Object::toString))
-                          .orElseThrow().copy();
+                .min(Comparator.comparing(Object::toString))
+                .orElseThrow().copy();
         if (newName.getVersionNumber().equals(0))
             newName.clearVersionNumber();
         for (BasicBlock basicBlock : basicBlocks) {

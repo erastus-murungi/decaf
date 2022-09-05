@@ -1,14 +1,14 @@
 package edu.mit.compilers.ast;
 
-import edu.mit.compilers.codegen.CodegenAstVisitor;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.ir.Visitor;
-import edu.mit.compilers.symboltable.SymbolTable;
-import edu.mit.compilers.grammar.TokenPosition;
-import edu.mit.compilers.utils.Pair;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.grammar.TokenPosition;
+import edu.mit.compilers.ir.Visitor;
+import edu.mit.compilers.symboltable.SymbolTable;
+import edu.mit.compilers.utils.Pair;
 
 public class MethodDefinition extends AST {
     final public TokenPosition tokenPosition;
@@ -69,14 +69,14 @@ public class MethodDefinition extends AST {
         return String.format("%s %s(%s) {\n    %s\n}",
                 returnType.getSourceCode(),
                 methodName.getSourceCode(),
-                String.join( ",\n" + indent, params)
-                        , block.getSourceCode());
+                String.join(",\n" + indent, params)
+                , block.getSourceCode());
     }
 
     @Override
-  public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
-    return visitor.visit(this, curSymbolTable);
-  }
+    public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
+        return visitor.visit(this, curSymbolTable);
+    }
 
     public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, LValue resultLocation) {
         return null;

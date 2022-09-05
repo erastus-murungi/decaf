@@ -5,24 +5,8 @@ import java.util.Objects;
 
 // This class represents lattice values for constants.
 public class LatticeElement {
-    private enum LatticeElementType {
-        /**
-         * Maybe a constant
-         */
-        TOP,
-        /**
-         * Definitely not a constant
-         */
-        BOTTOM,
-        /**
-         * Definitely a constant
-         */
-        CONSTANT,
-    }
-
-    public LatticeElementType latticeElementType;
     private final Long value;
-
+    public LatticeElementType latticeElementType;
     private LatticeElement(LatticeElementType latticeElementType, Long value) {
         this.latticeElementType = latticeElementType;
         this.value = value;
@@ -39,29 +23,6 @@ public class LatticeElement {
     public static LatticeElement constant(Long value) {
         return new LatticeElement(LatticeElementType.CONSTANT, value);
     }
-
-    @Override
-    public String toString() {
-        return switch (latticeElementType) {
-            case TOP -> "⊤";
-            case BOTTOM -> "⊥";
-            default -> String.format("const %s", value);
-        };
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        LatticeElement that = (LatticeElement) o;
-        return latticeElementType == that.latticeElementType && Objects.equals(value, that.value);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(latticeElementType, value);
-    }
-
 
     /**
      * TOP Λ x = x		∀ x
@@ -86,19 +47,43 @@ public class LatticeElement {
                     return LatticeElement.top();
                 else if (y.isBottom())
                     return LatticeElement.bottom();
-                // c1 + c2
+                // x Λ y = x 		if x = y
+                if (x.getValue().equals(y.getValue()))
+                    return x;
                 return LatticeElement.bottom();
             }
             case BOTTOM -> {
                 return LatticeElement.bottom();
             }
-        };
+        }
         return LatticeElement.bottom();
     }
 
     public static LatticeElement meet(Collection<LatticeElement> xs) {
         return xs.stream()
-                 .reduce(LatticeElement.top(), LatticeElement::meet);
+                .reduce(LatticeElement.top(), LatticeElement::meet);
+    }
+
+    @Override
+    public String toString() {
+        return switch (latticeElementType) {
+            case TOP -> "⊤";
+            case BOTTOM -> "⊥";
+            default -> String.format("const %s", value);
+        };
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        LatticeElement that = (LatticeElement) o;
+        return latticeElementType == that.latticeElementType && Objects.equals(value, that.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(latticeElementType, value);
     }
 
     public boolean isBottom() {
@@ -116,5 +101,20 @@ public class LatticeElement {
     public Long getValue() {
         assert value != null && latticeElementType.equals(LatticeElementType.CONSTANT);
         return value;
+    }
+
+    private enum LatticeElementType {
+        /**
+         * Maybe a constant
+         */
+        TOP,
+        /**
+         * Definitely not a constant
+         */
+        BOTTOM,
+        /**
+         * Definitely a constant
+         */
+        CONSTANT,
     }
 }

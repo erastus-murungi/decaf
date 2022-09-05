@@ -15,7 +15,6 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.cfg.ControlFlowGraph;
 import edu.mit.compilers.cfg.ControlFlowGraphVisitor;
 import edu.mit.compilers.codegen.BasicBlockToInstructionListConverter;
-import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.dataflow.DataflowOptimizer;
 import edu.mit.compilers.dataflow.passes.InstructionSimplifyIrPass;
 import edu.mit.compilers.grammar.DecafParser;
@@ -42,7 +41,41 @@ public class Compilation {
     private CompilationState compilationState;
 
     private double nLinesOfCodeReductionFactor = 0.0D;
-    private int nLinesRemovedByAssemblyOptimizer = 0;
+    private final int nLinesRemovedByAssemblyOptimizer = 0;
+
+    public Compilation(String filenameOrSourceCode, boolean debug, boolean isFilename) throws FileNotFoundException {
+        if (isFilename) {
+            CLI.outfile = filenameOrSourceCode;
+            specificTestFileInitialize(new FileInputStream(filenameOrSourceCode));
+        } else {
+            this.sourceCode = filenameOrSourceCode;
+        }
+        initialize();
+        CLI.debug = debug;
+        CLI.target = CLI.Action.ASSEMBLY;
+        CLI.opts = new boolean[]{true};
+
+    }
+
+    public Compilation() throws FileNotFoundException {
+        defaultInitialize();
+        initialize();
+    }
+
+    public Compilation(InputStream inputStream, boolean debug) throws FileNotFoundException {
+        specificTestFileInitialize(inputStream);
+        initialize();
+        CLI.debug = debug;
+    }
+
+    public Compilation(String filename, boolean debug) throws FileNotFoundException {
+        this(filename, debug, false);
+    }
+
+    public Compilation(InputStream inputStream) throws FileNotFoundException {
+        specificTestFileInitialize(inputStream);
+        initialize();
+    }
 
     public int getNLinesRemovedByAssemblyOptimizer() {
         return nLinesRemovedByAssemblyOptimizer;
@@ -54,19 +87,6 @@ public class Compilation {
 
     public AST getAstRoot() {
         return parser.getRoot();
-    }
-
-    enum CompilationState {
-        INITIALIZED,
-        SCANNED,
-        PARSED,
-        SEM_CHECKED,
-        CFG_GENERATED,
-        SSA_GENERATED,
-        IR_GENERATED,
-        DATAFLOW_OPTIMIZED,
-        ASSEMBLED,
-        COMPLETED
     }
 
     private void runNextStep() {
@@ -89,7 +109,7 @@ public class Compilation {
         assert compilationState == CompilationState.ASSEMBLED;
         if (osName.equals("macosx")) {
             try {
-                Process process = Runtime.getRuntime().exec("clang " + CLI.outfile + " -mllvm --x86-asm-syntax=att -o main");
+                var process = Runtime.getRuntime().exec("clang " + "/Users/erastusmurungi/IdeaProjects/compiler/test.s" + " -mllvm --x86-asm-syntax=att -o main");
                 process.waitFor();
                 System.out.println(Utils.getStringFromInputStream(process.getErrorStream()));
                 System.out.println(Utils.getStringFromInputStream(process.getInputStream()));
@@ -99,7 +119,7 @@ public class Compilation {
                 throw new RuntimeException(e);
             }
             try {
-                Process process = Runtime.getRuntime().exec("./main");
+                var process = Runtime.getRuntime().exec("/Users/erastusmurungi/IdeaProjects/compiler/main");
                 process.waitFor();
                 System.out.println(Utils.getStringFromInputStream(process.getErrorStream()));
                 System.out.println(Utils.getStringFromInputStream(process.getInputStream()));
@@ -121,46 +141,11 @@ public class Compilation {
         }
     }
 
-    public Compilation(String filenameOrSourceCode, boolean debug, boolean isFilename) throws FileNotFoundException {
-        if (isFilename) {
-            CLI.outfile = filenameOrSourceCode;
-            specificTestFileInitialize(new FileInputStream(filenameOrSourceCode));
-        }
-        else {
-            this.sourceCode = filenameOrSourceCode;
-        }
-        initialize();
-        CLI.debug = debug;
-        CLI.target = CLI.Action.ASSEMBLY;
-        CLI.opts = new boolean[]{true};
-
-    }
-
-    public Compilation() throws FileNotFoundException {
-        defaultInitialize();
-        initialize();
-    }
-
     private void specificTestFileInitialize(InputStream inputStream) {
         CLI.opts = new boolean[]{true};
         CLI.target = CLI.Action.ASSEMBLY;
         CLI.debug = true;
         sourceCode = Utils.getStringFromInputStream(inputStream);
-    }
-
-    public Compilation(InputStream inputStream, boolean debug) throws FileNotFoundException {
-        specificTestFileInitialize(inputStream);
-        initialize();
-        CLI.debug = debug;
-    }
-
-    public Compilation(String filename, boolean debug) throws FileNotFoundException {
-        this(filename, debug, false);
-    }
-
-    public Compilation(InputStream inputStream) throws FileNotFoundException {
-        specificTestFileInitialize(inputStream);
-        initialize();
     }
 
     private void defaultInitialize() throws FileNotFoundException {
@@ -219,8 +204,8 @@ public class Compilation {
     }
 
     private void generateCFGVisualizationPdfs() {
-        var copy = new HashMap<>(cfgVisitor.methodCFGBlocks);
-        copy.put("globals", cfgVisitor.initialGlobalBlock);
+        var copy = new HashMap<>(cfgVisitor.methodNameToEntryBlock);
+        copy.put("globals", cfgVisitor.global);
 //        GraphVizPrinter.printGraph(copy, (basicBlock -> basicBlock.threeAddressCodeList.getCodes().stream().map(ThreeAddressCode::repr).collect(Collectors.joining("\n"))));
         GraphVizPrinter.printGraph(copy);
     }
@@ -239,13 +224,13 @@ public class Compilation {
             if (CLI.debug) {
                 System.out.println("before InstructionSimplifyPass");
                 System.out.println(parser.getRoot()
-                                         .getSourceCode());
+                        .getSourceCode());
             }
             InstructionSimplifyIrPass.run(parser.getRoot());
             if (CLI.debug) {
                 System.out.println("after InstructionSimplifyPass");
                 System.out.println(parser.getRoot()
-                                         .getSourceCode());
+                        .getSourceCode());
             }
         }
 
@@ -268,10 +253,9 @@ public class Compilation {
     }
 
     private int countLinesOfCode() {
-        return programIr.mergeProgram()
-                        .size();
+        return programIr.toSingleInstructionList()
+                .size();
     }
-
 
     private void generateSsa() {
         assert compilationState == CompilationState.IR_GENERATED;
@@ -301,6 +285,7 @@ public class Compilation {
 
     private void generateAssembly() {
         assert compilationState == CompilationState.DATAFLOW_OPTIMIZED;
+
         programIr.methodList.forEach(method -> SSA.deconstruct(method, programIr));
         Utils.insertAllocateInstructions(programIr);
 //        Interpreter interpreter = new Interpreter(programIr.mergeProgram());
@@ -316,9 +301,9 @@ public class Compilation {
         if (shouldOptimize()) {
             programIr.findGlobals();
             var registerAllocation = new RegisterAllocation(programIr);
-            x64CodeConverter = new X64CodeConverter(registerAllocation.getUnModified(), programIr, registerAllocation.getVariableToRegisterMap(), registerAllocation.getMethodToLiveRegistersInfo());
+            x64CodeConverter = new X64CodeConverter(programIr, registerAllocation.getVariableToRegisterMap(), registerAllocation.getMethodToLiveRegistersInfo());
         } else {
-            x64CodeConverter = new X64CodeConverter(programIr.mergeProgram(), programIr);
+            x64CodeConverter = new X64CodeConverter(programIr);
         }
         X64Program x64program = x64CodeConverter.convert();
         if (shouldOptimize()) {
@@ -329,13 +314,6 @@ public class Compilation {
         outputStream.println(x64program);
         System.out.println(x64program);
         compilationState = CompilationState.ASSEMBLED;
-    }
-
-    public InstructionList getInstructionList() {
-        if (compilationState != CompilationState.IR_GENERATED && compilationState != CompilationState.ASSEMBLED) {
-            throw new IllegalStateException("instruction list has not been created yet");
-        }
-        return programIr.mergeProgram();
     }
 
     private void patternMatchTest() {
@@ -355,7 +333,7 @@ public class Compilation {
                         default -> text = token.lexeme();
                     }
                     outputStream.println(token.tokenPosition()
-                                              .line() + 1 + " " + text);
+                            .line() + 1 + " " + text);
                 }
                 done = true;
             } catch (Exception e) {
@@ -366,5 +344,18 @@ public class Compilation {
                 System.exit(1);
             }
         }
+    }
+
+    enum CompilationState {
+        INITIALIZED,
+        SCANNED,
+        PARSED,
+        SEM_CHECKED,
+        CFG_GENERATED,
+        SSA_GENERATED,
+        IR_GENERATED,
+        DATAFLOW_OPTIMIZED,
+        ASSEMBLED,
+        COMPLETED
     }
 }

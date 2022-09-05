@@ -24,12 +24,16 @@ import edu.mit.compilers.codegen.names.Variable;
 import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
 import edu.mit.compilers.dataflow.dominator.ImmediateDominator;
 import edu.mit.compilers.registerallocation.Coalesce;
+import edu.mit.compilers.utils.CLI;
 import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.TarjanSCC;
 import edu.mit.compilers.utils.Utils;
 
 public class SSA {
+    private SSA() {
+    }
+
     public static void construct(Method method) {
         var entryBlock = method.entryBlock;
         var basicBlocks = TarjanSCC.getReversePostOrder(entryBlock);
@@ -37,30 +41,31 @@ public class SSA {
         placePhiFunctions(entryBlock, basicBlocks, immediateDominator);
         renameVariables(entryBlock, immediateDominator, basicBlocks);
         verify(basicBlocks);
-        Utils.printSsaCfg(List.of(method), "ssa_before_" + method.methodName());
+        if (CLI.debug)
+            Utils.printSsaCfg(List.of(method), "ssa_before_" + method.methodName());
     }
 
     public static void deconstruct(Method method, ProgramIr programIr) {
-        Utils.printSsaCfg(List.of(method), "ssa_after_opt_" + method.methodName());
+        if (CLI.debug)
+            Utils.printSsaCfg(List.of(method), "ssa_after_opt_" + method.methodName());
 
         var entryBlock = method.entryBlock;
         var basicBlocks = TarjanSCC.getReversePostOrder(entryBlock);
         var immediateDominator = new ImmediateDominator(entryBlock);
         verify(basicBlocks);
-        deconstructSsa(entryBlock, basicBlocks,immediateDominator);
+        deconstructSsa(entryBlock, basicBlocks, immediateDominator);
         Coalesce.doIt(method, programIr);
-        Utils.printSsaCfg(List.of(method), "ssa_after_" + method.methodName());
-    }
-    private SSA() {
+        if (CLI.debug)
+            Utils.printSsaCfg(List.of(method), "ssa_after_" + method.methodName());
     }
 
     private static Set<BasicBlock> getBasicBlocksModifyingVariable(LValue V, List<BasicBlock> basicBlocks) {
         return basicBlocks.stream()
-                          .filter(basicBlock -> basicBlock.getStoreInstructions()
-                                                          .stream()
-                                                          .map(StoreInstruction::getDestination)
-                                                          .anyMatch(abstractName -> abstractName.equals(V)))
-                          .collect(Collectors.toUnmodifiableSet());
+                .filter(basicBlock -> basicBlock.getStoreInstructions()
+                        .stream()
+                        .map(StoreInstruction::getDestination)
+                        .anyMatch(abstractName -> abstractName.equals(V)))
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private static Set<LValue> getStoreLocations(BasicBlock X) {
@@ -73,15 +78,15 @@ public class SSA {
 
     private static void initialize(Set<LValue> allVariables, Map<LValue, Stack<Integer>> stacks, Map<LValue, Integer> counters) {
         allVariables.stream()
-                    .map(Value::copy)
-                    .map(name -> (LValue) name)
-                    .forEach(
-                            a -> {
-                                counters.put(a, 0);
-                                stacks.put(a, new Stack<>());
-                                stacks.get(a)
-                                      .add(0);
-                            });
+                .map(Value::copy)
+                .map(name -> (LValue) name)
+                .forEach(
+                        a -> {
+                            counters.put(a, 0);
+                            stacks.put(a, new Stack<>());
+                            stacks.get(a)
+                                    .add(0);
+                        });
     }
 
     private static void genName(LValue V, Map<LValue, Integer> counters, Map<LValue, Stack<Integer>> stacks) {
@@ -89,7 +94,7 @@ public class SSA {
         var copyV = (LValue) V.copy();
         V.renameForSsa(i);
         stacks.get(copyV)
-              .push(i);
+                .push(i);
         counters.put(copyV, i + 1);
     }
 
@@ -108,7 +113,7 @@ public class SSA {
                 var Vs = ((HasOperand) instruction).getOperandLValues();
                 for (var V : Vs) {
                     V.renameForSsa(stacks.get(V)
-                                         .peek());
+                            .peek());
                 }
             }
             if (instruction instanceof StoreInstruction) {
@@ -121,10 +126,10 @@ public class SSA {
             for (Phi phi : Y.getPhiFunctions()) {
                 var V = phi.getVariableForB(X);
                 if (stacks.get(V)
-                          .isEmpty())
+                        .isEmpty())
                     continue;
                 V.renameForSsa(stacks.get(V)
-                                     .peek());
+                        .peek());
             }
         }
 
@@ -134,33 +139,33 @@ public class SSA {
 
         for (var store : stores) {
             stacks.get(store)
-                  .pop();
+                    .pop();
         }
     }
 
     private static void initializeForSsaDestruction(List<BasicBlock> basicBlocks, HashMap<LValue, Stack<LValue>> stacks) {
         Utils.getAllLValuesInBasicBlocks(basicBlocks).stream()
-                                               .map(LValue::copy)
-                                               .forEach(a -> {
-                                            stacks.put(a, new Stack<>());
-                                            stacks.get(a)
-                                                  .add(a.copy());
-                                        }
-                                );
+                .map(LValue::copy)
+                .forEach(a -> {
+                            stacks.put(a, new Stack<>());
+                            stacks.get(a)
+                                    .add(a.copy());
+                        }
+                );
     }
 
     private static void addPhiNodeForVatY(LValue V, BasicBlock Y, Collection<BasicBlock> basicBlocksModifyingV) {
         int nCopiesOfV = (int) Y.getPredecessors()
-                                .stream()
-                                .filter(basicBlocksModifyingV::contains)
-                                .count();
+                .stream()
+                .filter(basicBlocksModifyingV::contains)
+                .count();
         if (nCopiesOfV > 1) {
             var blockToVariable = new HashMap<BasicBlock, Value>();
             for (var P : Y.getPredecessors()) {
                 blockToVariable.put(P, V.copy());
             }
             Y.getInstructionList()
-             .add(1, new Phi(V.copy(), blockToVariable));
+                    .add(1, new Phi(V.copy(), blockToVariable));
         }
     }
 
@@ -189,7 +194,7 @@ public class SSA {
                     if (!hasAlready.contains(Y)) {
                         // we only insert a phi node for variable V if is live on entry to X
                         if (liveVariableAnalysis.liveIn(X)
-                                                .contains(V)) {
+                                .contains(V)) {
                             addPhiNodeForVatY(V, Y, basicBlocksModifyingV);
                         }
                         hasAlready.add(Y);
@@ -221,13 +226,18 @@ public class SSA {
                 }
                 if (store instanceof Phi) {
                     var s = store.getOperandValues()
-                                 .size();
+                            .size();
                     if (s < 2) {
                         throw new IllegalStateException(store.syntaxHighlightedToString() + " has " + s + "operands");
                     }
                 }
             }
         }
+    }
+
+    public static void verify(Method method) {
+        var basicBlocks = TarjanSCC.getReversePostOrder(method.entryBlock);
+        SSA.verify(basicBlocks);
     }
 
     private static void deconstructSsa(BasicBlock entryBlock, List<BasicBlock> basicBlocks, ImmediateDominator immediateDominator) {
@@ -240,12 +250,12 @@ public class SSA {
     private static void removePhiNodes(List<BasicBlock> basicBlocks) {
         for (BasicBlock basicBlock : basicBlocks) {
             basicBlock.getInstructionList()
-                      .reset(
-                              basicBlock.getInstructionList()
-                                        .stream()
-                                        .filter(instruction -> !(instruction instanceof Phi))
-                                        .collect(Collectors.toList())
-                      );
+                    .reset(
+                            basicBlock.getInstructionList()
+                                    .stream()
+                                    .filter(instruction -> !(instruction instanceof Phi))
+                                    .collect(Collectors.toList())
+                    );
         }
     }
 
@@ -262,8 +272,8 @@ public class SSA {
                         if (storeInstruction.getDestination().equals(stacks.get(V).peek()))
                             continue;
                     }
-                        V.renameForSsa(stacks.get(V)
-                                         .peek());
+                    V.renameForSsa(stacks.get(V)
+                            .peek());
                 }
             }
         }
@@ -275,7 +285,7 @@ public class SSA {
 
         for (var name : pushed) {
             stacks.get(name)
-                  .pop();
+                    .pop();
         }
         pushed.clear();
     }
@@ -324,7 +334,7 @@ public class SSA {
                     dstOwner.getInstructionList()
                             .add(1, copyInstruction);
                     stacks.get(dst)
-                          .push(temp);
+                            .push(temp);
                     stacks.put(temp, new Stack<>());
                     stacks.get(temp).add(temp.copy());
                     pushed.add(dst);

@@ -12,9 +12,9 @@ import edu.mit.compilers.codegen.names.Value;
 
 public class LinearScan {
     private final List<X64Register> availableRegisters = new ArrayList<>();
-    private List<LiveInterval> active = new ArrayList<>();
     private final Map<Method, Map<Value, X64Register>> varToRegMap = new HashMap<>();
     private final Map<Method, List<LiveInterval>> liveIntervals;
+    private List<LiveInterval> active = new ArrayList<>();
 
     public LinearScan(Collection<X64Register> availableRegisters, Map<Method, List<LiveInterval>> liveIntervals) {
         this.availableRegisters.addAll(availableRegisters);

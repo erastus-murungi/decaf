@@ -16,12 +16,18 @@ public class ArithmeticOperator extends BinOperator {
     @Override
     public String opRep() {
         switch (label) {
-            case DecafScanner.PLUS: return "Add";
-            case DecafScanner.MINUS: return "Sub";
-            case DecafScanner.MULTIPLY: return "Multiply";
-            case DecafScanner.DIVIDE: return "Divide";
-            case DecafScanner.MOD: return "Mod";
-            default: throw new IllegalArgumentException("please register a display string for: " + label);
+            case DecafScanner.PLUS:
+                return "Add";
+            case DecafScanner.MINUS:
+                return "Sub";
+            case DecafScanner.MULTIPLY:
+                return "Multiply";
+            case DecafScanner.DIVIDE:
+                return "Divide";
+            case DecafScanner.MOD:
+                return "Mod";
+            default:
+                throw new IllegalArgumentException("please register a display string for: " + label);
         }
     }
 
@@ -38,12 +44,18 @@ public class ArithmeticOperator extends BinOperator {
     @Override
     public String getSourceCode() {
         switch (label) {
-            case DecafScanner.PLUS: return "+";
-            case DecafScanner.MINUS: return "-";
-            case DecafScanner.MULTIPLY: return "*";
-            case DecafScanner.DIVIDE: return "/";
-            case DecafScanner.MOD: return "%";
-            default: throw new IllegalArgumentException("please register a display string for: " + label);
+            case DecafScanner.PLUS:
+                return "+";
+            case DecafScanner.MINUS:
+                return "-";
+            case DecafScanner.MULTIPLY:
+                return "*";
+            case DecafScanner.DIVIDE:
+                return "/";
+            case DecafScanner.MOD:
+                return "%";
+            default:
+                throw new IllegalArgumentException("please register a display string for: " + label);
         }
     }
 

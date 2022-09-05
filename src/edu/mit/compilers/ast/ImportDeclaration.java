@@ -1,25 +1,25 @@
 package edu.mit.compilers.ast;
 
+import static edu.mit.compilers.grammar.DecafScanner.RESERVED_IMPORT;
+
+import java.util.List;
+
 import edu.mit.compilers.codegen.CodegenAstVisitor;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 
-import java.util.List;
-
-import static edu.mit.compilers.grammar.DecafScanner.RESERVED_IMPORT;
-
 public class ImportDeclaration extends Declaration {
     public final Name nameId;
+
+    public ImportDeclaration(Name nameId) {
+        this.nameId = nameId;
+    }
 
     @Override
     public Type getType() {
         return Type.Undefined;
-    }
-
-    public ImportDeclaration(Name nameId) {
-        this.nameId = nameId;
     }
 
     @Override

@@ -1,10 +1,10 @@
 package edu.mit.compilers.dataflow.operand;
 
+import java.util.Objects;
+
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.names.Value;
-
-import java.util.Objects;
 
 public class UnaryOperand extends Operand {
     public final Value operand;
@@ -14,6 +14,7 @@ public class UnaryOperand extends Operand {
         this.operand = unaryInstruction.operand;
         this.operator = unaryInstruction.operator;
     }
+
     @Override
     public boolean contains(Value name) {
         return this.operand.equals(name);
@@ -21,8 +22,7 @@ public class UnaryOperand extends Operand {
 
     @Override
     public boolean isContainedIn(StoreInstruction storeInstruction) {
-        if (storeInstruction instanceof UnaryInstruction) {
-            UnaryInstruction unaryInstruction = (UnaryInstruction) storeInstruction;
+        if (storeInstruction instanceof UnaryInstruction unaryInstruction) {
             return new UnaryOperand(unaryInstruction).equals(this);
         }
         return false;

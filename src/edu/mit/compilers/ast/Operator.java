@@ -1,11 +1,11 @@
 package edu.mit.compilers.ast;
 
 
-import edu.mit.compilers.grammar.TokenPosition;
-import edu.mit.compilers.utils.Pair;
-
 import java.util.Collections;
 import java.util.List;
+
+import edu.mit.compilers.grammar.TokenPosition;
+import edu.mit.compilers.utils.Pair;
 
 
 public abstract class Operator extends AST {

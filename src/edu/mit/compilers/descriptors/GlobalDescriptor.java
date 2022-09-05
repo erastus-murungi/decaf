@@ -1,10 +1,10 @@
 package edu.mit.compilers.descriptors;
 
+import java.util.TreeSet;
+
 import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.symboltable.SymbolTableType;
-
-import java.util.*;
 
 
 /**

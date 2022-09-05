@@ -1,25 +1,25 @@
 package edu.mit.compilers.ast;
 
+import java.util.List;
+
 import edu.mit.compilers.codegen.CodegenAstVisitor;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 
-import java.util.List;
-
-public class UnaryOpExpression extends Expression implements HasExpression  {
-    private UnaryOperator unaryOperator;
+public class UnaryOpExpression extends Expression implements HasExpression {
     public Expression operand;
-
-    public UnaryOperator getUnaryOperator() {
-        return unaryOperator;
-    }
+    private final UnaryOperator unaryOperator;
 
     public UnaryOpExpression(UnaryOperator unaryOperator, Expression operand) {
         super(unaryOperator.tokenPosition);
         this.unaryOperator = unaryOperator;
         this.operand = operand;
+    }
+
+    public UnaryOperator getUnaryOperator() {
+        return unaryOperator;
     }
 
     @Override

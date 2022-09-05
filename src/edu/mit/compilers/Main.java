@@ -3,7 +3,6 @@ package edu.mit.compilers;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
-import edu.mit.compilers.interpreter.Interpreter;
 import edu.mit.compilers.utils.CLI;
 import edu.mit.compilers.utils.Compilation;
 
@@ -14,7 +13,7 @@ class Main {
         CLI.outfile = "test.s";
 //        String sourceCode = "import printf; \n void main() {int x; x = (1 + 6 * 3); printf(\"%d\", x);}";
 //        new Compilation(sourceCode).run();
-          new Compilation(new FileInputStream("tests/ssa/ssa1.dcf"), true).run();
+        new Compilation(new FileInputStream("tests/ssa/ssa1.dcf"), true).run();
 //        new Compilation().run();
 //        TestRunner.run();
     }

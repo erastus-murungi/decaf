@@ -12,7 +12,7 @@ import edu.mit.compilers.symboltable.SymbolTable;
  *      <li> a reference to local symbol table (localSymbolTable)
  *
  *      <li> a reference to the method parameters symbol table (parameterSymbolTable)
- *</ul>
+ * </ul>
  */
 public class MethodDescriptor extends Descriptor {
     public MethodDefinition methodDefinition;

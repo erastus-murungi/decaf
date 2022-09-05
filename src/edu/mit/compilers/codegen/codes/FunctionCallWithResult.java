@@ -8,9 +8,9 @@ import java.util.stream.Collectors;
 
 import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddress;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.operand.MethodCallOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.utils.Utils;
@@ -26,6 +26,7 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
     public Stack<Value> getArguments() {
         return arguments;
     }
+
     @Override
     public MethodCall getMethod() {
         return (MethodCall) source;
@@ -45,7 +46,7 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
 
     @Override
     public String syntaxHighlightedToString() {
-        var callString =  Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
+        var callString = Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
         var args = arguments.stream().map(Value::repr).collect(Collectors.joining(", "));
         return String.format("%s%s: %s = %s @%s(%s) %s%s", DOUBLE_INDENT, getDestination().repr(), getMethodReturnType(), callString, getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
     }
@@ -79,7 +80,7 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
     }
 
     @Override
-    public boolean replace(Value oldName, Value newName) {
+    public boolean replaceValue(Value oldName, Value newName) {
         var replaced = false;
         int i = 0;
         for (Value value : arguments) {

@@ -1,18 +1,12 @@
 package edu.mit.compilers.dataflow.passes;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
-import edu.mit.compilers.codegen.codes.ConditionalBranch;
-import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.codes.Instruction;
-import edu.mit.compilers.codegen.codes.UnconditionalJump;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.NumericalConstant;
 
@@ -21,67 +15,6 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
         super(globalVariables, method);
     }
 
-    private void eliminateRedundantJumps() {
-        for (var basicBlock : basicBlocks) {
-            var indicesToRemove = new ArrayList<Integer>();
-            for (var indexOfCode = 0; indexOfCode < basicBlock.getInstructionList().size(); indexOfCode++) {
-                var tac = basicBlock.getInstructionList().get(indexOfCode);
-                if (tac instanceof UnconditionalJump unconditionalJump) {
-
-                    if (indexOfCode + 1 < basicBlock.getInstructionList().size()) {
-                        var nextTac = basicBlock.getInstructionList().get(indexOfCode + 1);
-                        if (nextTac instanceof Label label) {
-                            if (unconditionalJump.getTarget().getLabel().equals(label)) {
-                                indicesToRemove.add(indexOfCode);
-                            }
-                        }
-                    }
-                }
-            }
-            for (var index : indicesToRemove) {
-                basicBlock.getInstructionList()
-                        .set(index, null);
-            }
-            basicBlock.getInstructionList().reset(basicBlock.getCopyOfInstructionList()
-                    .stream()
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList()));
-        }
-    }
-
-    private Set<Label> findAllLabelsJumpedTo() {
-        var allLabelsJumpedTo = new HashSet<Label>();
-        for (Instruction instruction : TraceScheduler.flattenIr(method))
-            if (instruction instanceof ConditionalBranch) {
-                allLabelsJumpedTo.add(((ConditionalBranch) instruction).falseLabel);
-            } else if (instruction instanceof UnconditionalJump) {
-                allLabelsJumpedTo.add(((UnconditionalJump) instruction).getTarget().getLabel());
-            }
-        return allLabelsJumpedTo;
-    }
-
-    private void eliminateUnUsedJumps() {
-        final var allLabelsJumpedTo = findAllLabelsJumpedTo();
-        for (var basicBlock : basicBlocks) {
-            var indicesToRemove = new ArrayList<Integer>();
-            for (var indexOfCode = 0; indexOfCode < basicBlock.getInstructionList().size(); indexOfCode++) {
-                var tac = basicBlock.getInstructionList().get(indexOfCode);
-                if (tac instanceof Label label) {
-                    if (!allLabelsJumpedTo.contains(label)) {
-                        indicesToRemove.add(indexOfCode);
-                    }
-                }
-            }
-            for (var index : indicesToRemove) {
-                basicBlock.getInstructionList()
-                        .set(index, null);
-            }
-            basicBlock.getInstructionList().reset(basicBlock.getCopyOfInstructionList()
-                    .stream()
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList()));
-        }
-    }
 
     private void removeTrivialBoundsChecks() {
         for (var basicBlock : basicBlocks) {
@@ -115,8 +48,6 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
     @Override
     public boolean runFunctionPass() {
         final var oldCodes = entryBlock.getCopyOfInstructionList();
-        eliminateRedundantJumps();
-        eliminateUnUsedJumps();
         removeTrivialBoundsChecks();
         return !oldCodes.equals(entryBlock.getInstructionList());
     }

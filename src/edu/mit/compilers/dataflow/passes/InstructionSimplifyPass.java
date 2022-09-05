@@ -9,19 +9,23 @@ import java.util.Set;
 
 import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.codes.CopyInstruction;
-import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
+import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
+import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
-import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.NumericalConstant;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.utils.Utils;
 
 public class InstructionSimplifyPass extends OptimizationPass {
     static final NumericalConstant mZero = new NumericalConstant(0L, Type.Int);
     static final NumericalConstant mOne = new NumericalConstant(1L, Type.Int);
+
+    public InstructionSimplifyPass(Set<LValue> globalVariables, Method method) {
+        super(globalVariables, method);
+    }
 
     private static NumericalConstant getZero() {
         return new NumericalConstant(0L, Type.Bool);
@@ -47,10 +51,6 @@ public class InstructionSimplifyPass extends OptimizationPass {
                 .equals(lhsExpected) &&
                 rhsActual
                         .equals(rhsExpected);
-    }
-
-    public InstructionSimplifyPass(Set<LValue> globalVariables, Method method) {
-        super(globalVariables, method);
     }
 
     private static Value getNotEq(BinaryInstruction binaryInstruction, Value expected) {

@@ -4,12 +4,10 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.ControlFlowGraph;
 import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.cfg.ControlFlowGraphVisitor;
-import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.ir.DecafSemanticChecker;
 import edu.mit.compilers.utils.DecafExceptionProcessor;
-import edu.mit.compilers.utils.GraphVizPrinter;
 import edu.mit.compilers.utils.TarjanSCC;
 
 import org.junit.Before;
@@ -34,7 +32,7 @@ public class DataFlowAnalysisTest {
         semChecker.runChecks(decafExceptionProcessor);
         ControlFlowGraph cfgGenerator = new ControlFlowGraph(parser.getRoot(), semChecker.globalDescriptor);
         ControlFlowGraphVisitor visitor = cfgGenerator.build();
-        basicBlockList = TarjanSCC.getReversePostOrder(visitor.methodCFGBlocks.get("main"));
+        basicBlockList = TarjanSCC.getReversePostOrder(visitor.methodNameToEntryBlock.get("main"));
     }
 
     @Test

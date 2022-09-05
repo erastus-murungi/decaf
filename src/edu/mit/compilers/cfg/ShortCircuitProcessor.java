@@ -1,11 +1,16 @@
 package edu.mit.compilers.cfg;
 
-import edu.mit.compilers.ast.*;
-import edu.mit.compilers.ast.ConditionalOperator;
-import edu.mit.compilers.ast.UnaryOperator;
-
 import static edu.mit.compilers.cfg.ControlFlowGraphVisitor.rotateBinaryOpExpression;
-import static edu.mit.compilers.grammar.DecafScanner.*;
+import static edu.mit.compilers.grammar.DecafScanner.CONDITIONAL_AND;
+import static edu.mit.compilers.grammar.DecafScanner.CONDITIONAL_OR;
+import static edu.mit.compilers.grammar.DecafScanner.NOT;
+
+import edu.mit.compilers.ast.BinaryOpExpression;
+import edu.mit.compilers.ast.ConditionalOperator;
+import edu.mit.compilers.ast.Expression;
+import edu.mit.compilers.ast.ParenthesizedExpression;
+import edu.mit.compilers.ast.UnaryOpExpression;
+import edu.mit.compilers.ast.UnaryOperator;
 
 public class ShortCircuitProcessor {
     // to prevent object creation
@@ -68,9 +73,9 @@ public class ShortCircuitProcessor {
             if (conditional.op instanceof ConditionalOperator operator) {
 
                 basicBlockWithBranch.getFalseTarget()
-                                    .removePredecessor(basicBlockWithBranch);
+                        .removePredecessor(basicBlockWithBranch);
                 basicBlockWithBranch.getTrueTarget()
-                                    .removePredecessor(basicBlockWithBranch);
+                        .removePredecessor(basicBlockWithBranch);
 
                 final Expression c1 = rotateBinaryOpExpression(conditional.lhs);
                 final Expression c2 = rotateBinaryOpExpression(conditional.rhs);
@@ -87,21 +92,21 @@ public class ShortCircuitProcessor {
 
                 // TODO: improve the parent pointer logic here by removing checks
                 if (basicBlockWithBranch.getTrueTarget()
-                                        .doesNotContainPredecessor(b1) && b1.getTrueTarget() == basicBlockWithBranch.getTrueTarget())
+                        .doesNotContainPredecessor(b1) && b1.getTrueTarget() == basicBlockWithBranch.getTrueTarget())
                     basicBlockWithBranch.getTrueTarget()
-                                        .addPredecessor(b1);
+                            .addPredecessor(b1);
                 if (basicBlockWithBranch.getFalseTarget()
-                                        .doesNotContainPredecessor(b1) && b1.getFalseTarget() == basicBlockWithBranch.getFalseTarget())
+                        .doesNotContainPredecessor(b1) && b1.getFalseTarget() == basicBlockWithBranch.getFalseTarget())
                     basicBlockWithBranch.getFalseTarget()
-                                        .addPredecessor(b1);
+                            .addPredecessor(b1);
                 if (basicBlockWithBranch.getTrueTarget()
-                                        .doesNotContainPredecessor(b2) && b2.getTrueTarget() == basicBlockWithBranch.getTrueTarget())
+                        .doesNotContainPredecessor(b2) && b2.getTrueTarget() == basicBlockWithBranch.getTrueTarget())
                     basicBlockWithBranch.getTrueTarget()
-                                        .addPredecessor(b2);
+                            .addPredecessor(b2);
                 if (basicBlockWithBranch.getFalseTarget()
-                                        .doesNotContainPredecessor(b2) && b2.getFalseTarget() == basicBlockWithBranch.getFalseTarget())
+                        .doesNotContainPredecessor(b2) && b2.getFalseTarget() == basicBlockWithBranch.getFalseTarget())
                     basicBlockWithBranch.getFalseTarget()
-                                        .addPredecessor(b2);
+                            .addPredecessor(b2);
                 if (b2.doesNotContainPredecessor(b1) && (b1.getFalseTarget() == b2 || b1.getTrueTarget() == b2))
                     b2.addPredecessor(b1);
                 return b1;

@@ -1,117 +1,24 @@
 package edu.mit.compilers.dataflow.analyses;
 
+import com.google.common.collect.Sets;
+
+import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.grammar.DecafScanner;
-import edu.mit.compilers.utils.SetUtils;
-
-import java.util.*;
 
 public class AvailableExpressions extends DataFlowAnalysis<Operand> {
     public AvailableExpressions(BasicBlock entry) {
         super(entry);
-    }
-
-    @Override
-    public void computeUniversalSetsOfValues() {
-        allValues = new HashSet<>();
-        for (BasicBlock basicBlock : basicBlocks)
-            allValues.addAll(gen(basicBlock));
-    }
-
-    @Override
-    public void initializeWorkSets() {
-        out = new HashMap<>();
-        in = new HashMap<>();
-
-        for (BasicBlock basicBlock : basicBlocks) {
-            out.put(basicBlock, allValues); // all expressions are available at initialization time
-            in.put(basicBlock, new HashSet<>());
-        }
-
-        // IN[entry] = ∅
-        in.put(entryBlock, new HashSet<>());
-        out.put(entryBlock, gen(entryBlock));
-    }
-
-
-    @Override
-    public Set<Operand> transferFunction(Operand domainElement) {
-        return null;
-    }
-
-    @Override
-    public Direction direction() {
-        return Direction.FORWARDS;
-    }
-
-    @Override
-    public void runWorkList() {
-        var workList = new ArrayDeque<>(basicBlocks);
-        workList.remove(entryBlock);
-
-        while (!workList.isEmpty()) {
-            final BasicBlock B = workList.pop();
-            var oldOut = out(B);
-
-
-            // IN[B] = intersect OUT[p] for all p in predecessors
-            in.put(B, meet(B));
-
-            // OUT[B] = gen[B] ∪ IN[B] - KILL[B]
-            out.put(B, SetUtils.union(gen(B), SetUtils.difference(in(B), kill(B))));
-
-            if (!out(B).equals(oldOut)) {
-                workList.addAll(B.getSuccessors());
-            }
-        }
-    }
-
-    @Override
-    public Set<Operand> meet(BasicBlock basicBlock) {
-        if (basicBlock.getPredecessors()
-                .isEmpty())
-            return Collections.emptySet();
-
-        var inSet = new HashSet<>(allValues);
-
-        for (BasicBlock block : basicBlock.getPredecessors())
-            inSet.retainAll(out.get(block));
-        return inSet;
-    }
-
-
-    private HashSet<Operand> kill(BasicBlock basicBlock) {
-        var superSet = new HashSet<>(allValues);
-        var killedExpressions = new HashSet<Operand>();
-
-        for (StoreInstruction assignment : basicBlock.getStoreInstructions()) {
-            // add all the computations that contain operands
-            // that get re-assigned by the current stmt to
-            // killedExpressions
-            for (Operand comp : superSet) {
-                if (comp.contains(assignment.getDestination())) {
-                    killedExpressions.add(comp);
-                }
-            }
-        }
-        return killedExpressions;
-    }
-
-    private HashSet<Operand> gen(BasicBlock basicBlock) {
-        var validComputations = new HashSet<Operand>();
-        for (StoreInstruction assignment : basicBlock.getStoreInstructions()) {
-            if (assignment instanceof UnaryInstruction || assignment instanceof BinaryInstruction) {
-                assignment.getOperandNoArray()
-                        .ifPresent(validComputations::add);
-            }
-            validComputations.removeIf((operand -> operand.contains(assignment.getDestination())));
-        }
-        return validComputations;
     }
 
     public static boolean operatorIsCommutative(String operator) {
@@ -149,5 +56,101 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
             }
         }
         return false;
+    }
+
+    @Override
+    public void computeUniversalSetsOfValues() {
+        allValues = new HashSet<>();
+        for (BasicBlock basicBlock : basicBlocks)
+            allValues.addAll(gen(basicBlock));
+    }
+
+    @Override
+    public void initializeWorkSets() {
+        out = new HashMap<>();
+        in = new HashMap<>();
+
+        for (BasicBlock basicBlock : basicBlocks) {
+            out.put(basicBlock, allValues); // all expressions are available at initialization time
+            in.put(basicBlock, new HashSet<>());
+        }
+
+        // IN[entry] = ∅
+        in.put(entryBlock, new HashSet<>());
+        out.put(entryBlock, gen(entryBlock));
+    }
+
+    @Override
+    public Set<Operand> transferFunction(Operand domainElement) {
+        return null;
+    }
+
+    @Override
+    public Direction direction() {
+        return Direction.FORWARDS;
+    }
+
+    @Override
+    public void runWorkList() {
+        var workList = new ArrayDeque<>(basicBlocks);
+        workList.remove(entryBlock);
+
+        while (!workList.isEmpty()) {
+            final BasicBlock B = workList.pop();
+            var oldOut = out(B);
+
+
+            // IN[B] = intersect OUT[p] for all p in predecessors
+            in.put(B, meet(B));
+
+            // OUT[B] = gen[B] ∪ IN[B] - KILL[B]
+            out.put(B, Sets.union(gen(B), Sets.difference(in(B), kill(B))));
+
+            if (!out(B).equals(oldOut)) {
+                workList.addAll(B.getSuccessors());
+            }
+        }
+    }
+
+    @Override
+    public Set<Operand> meet(BasicBlock basicBlock) {
+        if (basicBlock.getPredecessors()
+                .isEmpty())
+            return Collections.emptySet();
+
+        var inSet = new HashSet<>(allValues);
+
+        for (BasicBlock block : basicBlock.getPredecessors())
+            inSet.retainAll(out.get(block));
+        return inSet;
+    }
+
+    private HashSet<Operand> kill(BasicBlock basicBlock) {
+        var superSet = new HashSet<>(allValues);
+        var killedExpressions = new HashSet<Operand>();
+
+        for (StoreInstruction assignment : basicBlock.getStoreInstructions()) {
+            // add all the computations that contain operands
+            // that get re-assigned by the current stmt to
+            // killedExpressions
+            for (Operand comp : superSet) {
+                if (comp.contains(assignment.getDestination())) {
+                    killedExpressions.add(comp);
+                }
+            }
+        }
+        return killedExpressions;
+    }
+
+    private HashSet<Operand> gen(BasicBlock basicBlock) {
+        var validComputations = new HashSet<Operand>();
+        for (StoreInstruction assignment : basicBlock.getStoreInstructions()) {
+            if (assignment instanceof UnaryInstruction || assignment instanceof BinaryInstruction) {
+                assignment.getOperandNoArray()
+                        .ifPresent(validComputations::add);
+            }
+            validComputations.removeIf((operand -> operand.contains(assignment.getDestination())));
+        }
+        return validComputations;
     }
 }

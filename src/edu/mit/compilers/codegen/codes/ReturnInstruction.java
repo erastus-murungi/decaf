@@ -1,15 +1,15 @@
 package edu.mit.compilers.codegen.codes;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 import edu.mit.compilers.utils.Utils;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 
 public class ReturnInstruction extends HasOperand {
     private Value returnAddress;
@@ -57,7 +57,7 @@ public class ReturnInstruction extends HasOperand {
     }
 
     @Override
-    public boolean replace(Value oldName, Value newName) {
+    public boolean replaceValue(Value oldName, Value newName) {
         if (oldName.equals(returnAddress)) {
             returnAddress = newName;
             return true;
@@ -69,6 +69,7 @@ public class ReturnInstruction extends HasOperand {
     public String toString() {
         return String.format("%s%s %s", DOUBLE_INDENT, "return", getReturnAddress().isEmpty() ? " " : getReturnAddress().get().repr());
     }
+
     @Override
     public String syntaxHighlightedToString() {
         final var returnString = Utils.coloredPrint("return", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);

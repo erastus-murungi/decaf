@@ -6,29 +6,29 @@ import java.util.Optional;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.NumericalConstant;
 import edu.mit.compilers.codegen.names.MemoryAddress;
+import edu.mit.compilers.codegen.names.NumericalConstant;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.operand.GetAddressOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.utils.Utils;
 
 
 public class GetAddress extends StoreInstruction {
+    private final NumericalConstant length;
     private Value baseAddress;
     private Value index;
-    private final NumericalConstant length;
-
-    public Optional<NumericalConstant> getLength() {
-        return Optional.ofNullable(length);
-    }
 
     public GetAddress(AST source, Value baseAddress, Value index, LValue dest, NumericalConstant length) {
         super(dest, source);
         this.baseAddress = baseAddress;
         this.index = index;
         this.length = length;
+    }
+
+    public Optional<NumericalConstant> getLength() {
+        return Optional.ofNullable(length);
     }
 
     public Value getIndex() {
@@ -79,7 +79,7 @@ public class GetAddress extends StoreInstruction {
     }
 
     @Override
-    public boolean replace(Value oldName, Value newName) {
+    public boolean replaceValue(Value oldName, Value newName) {
         var replaced = false;
         if (oldName == baseAddress) {
             baseAddress = newName;

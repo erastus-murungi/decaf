@@ -12,10 +12,6 @@ public interface FunctionCall {
         return getMethod().isImported;
     }
 
-    default int numberOfArguments() {
-        return getMethod().methodCallParameterList.size();
-    }
-
     default String getMethodName() {
         return getMethod().nameId.getLabel();
     }
@@ -24,6 +20,6 @@ public interface FunctionCall {
         return getMethod().getType().getSourceCode();
     }
 
-    public Stack<Value> getArguments();
+    Stack<Value> getArguments();
 }
 

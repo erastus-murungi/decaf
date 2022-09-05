@@ -9,18 +9,18 @@ import edu.mit.compilers.ssa.Phi;
 public class PhiOperand extends Operand {
     private final Phi phi;
 
-    public Phi getPhi() {
-        return phi;
-    }
-
     public PhiOperand(Phi phi) {
         this.phi = phi;
+    }
+
+    public Phi getPhi() {
+        return phi;
     }
 
     @Override
     public boolean contains(Value comp) {
         return phi.getOperandValues()
-                  .contains(comp);
+                .contains(comp);
     }
 
     @Override

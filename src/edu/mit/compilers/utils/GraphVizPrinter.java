@@ -25,6 +25,24 @@ package edu.mit.compilers.utils;
  ******************************************************************************
  */
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
+import java.util.function.Function;
+
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.Block;
 import edu.mit.compilers.ast.MethodDefinition;
@@ -32,10 +50,6 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.registerallocation.InterferenceGraph;
 import edu.mit.compilers.symboltable.SymbolTable;
-
-import java.io.*;
-import java.util.*;
-import java.util.function.Function;
 
 /**
  * <dl>
@@ -72,8 +86,8 @@ public class GraphVizPrinter {
      * Detects the client's operating system.
      */
     private final static String osName = System.getProperty("os.name")
-                                               .replaceAll("\\s", "")
-                                               .toLowerCase(Locale.ROOT);
+            .replaceAll("\\s", "")
+            .toLowerCase(Locale.ROOT);
     /**
      * ##############################################################
      * #                    Linux Configurations                    #
@@ -122,6 +136,261 @@ public class GraphVizPrinter {
      * Define the index in the image size array.
      */
     private int currentDpiPos = 7;
+    /**
+     * The source of the graph written in dot language.
+     */
+    private StringBuilder graph = new StringBuilder();
+
+    /**
+     * Constructor: creates a new GraphViz object that will contain
+     * a graph.
+     */
+    public GraphVizPrinter() {
+    }
+
+    public static void createDotGraph(String dotFormat, String fileName) {
+        GraphVizPrinter gv = new GraphVizPrinter();
+        gv.addln(gv.start_graph());
+        gv.add(dotFormat);
+        gv.addln(gv.end_graph());
+        // String type = "gif";
+        String type = "pdf";
+        // gv.increaseDpi();
+        gv.decreaseDpi();
+        gv.decreaseDpi();
+        File out = new File(fileName + "." + type);
+        gv.writeGraphToFile(gv.getGraph(gv.getDotSource(), type), out);
+    }
+
+    public static String writeDominatorGraph(Map<BasicBlock, BasicBlock> immediateDominators) {
+        List<String> nodes = new ArrayList<>();
+        List<String> edges = new ArrayList<>();
+        for (Map.Entry<BasicBlock, BasicBlock> entry : immediateDominators.entrySet()) {
+            nodes.add(String.format("   %s [shape=record, label=%s, color=blue];", entry.getKey()
+                    .hashCode(), "\"<from_node>" + escape(entry.getKey()
+                    .toString()).replace(" ", "\u2007") + "\""));
+            edges.add(String.format("   %s -> %s;", entry.getValue()
+                    .hashCode() + ":from_node", entry.getKey()
+                    .hashCode() + ":from_node"));
+        }
+
+        nodes.addAll(edges);
+        return String.join("\n", nodes);
+    }
+
+    public static void printDominatorTree(Map<BasicBlock, BasicBlock> immediateDominators) {
+        createDotGraph(writeDominatorGraph(immediateDominators), "dom");
+    }
+
+    public static void printInterferenceGraph(InterferenceGraph interferenceGraph, String fileName) {
+        createDotGraph(writeInterferenceGraph(interferenceGraph), fileName);
+    }
+
+    public static String writeInterferenceGraph(InterferenceGraph interferenceGraph) {
+        List<String> nodes = new ArrayList<>();
+        List<String> edges = new ArrayList<>();
+        for (var entry : interferenceGraph.getUniqueInterferenceGraphEdges()) {
+            nodes.add(String.format("   %s [shape=ellipse, style=filled, fillcolor=gray, label=\"%s\"];", entry.first()
+                    .hashCode(), escape(entry.first()
+                    .toString()).replace(" ", "\u2007")));
+            nodes.add(String.format("   %s [shape=ellipse, style=filled, fillcolor=gray, label=\"%s\"];", entry.second()
+                    .hashCode(), escape(entry.second()
+                    .toString()).replace(" ", "\u2007")));
+            edges.add(String.format("   %s -> %s [arrowhead=none];", entry.first()
+                    .hashCode(), entry.second()
+                    .hashCode()));
+        }
+
+        for (var entry : interferenceGraph.getUniqueMoveEdges()) {
+            nodes.add(String.format("   %s [shape=ellipse, style=filled, fillcolor=gray, label=\"%s\"];", entry.first()
+                    .hashCode(), escape(entry.first()
+                    .toString()).replace(" ", "\u2007")));
+            nodes.add(String.format("   %s [shape=ellipse, style=filled, fillcolor=gray, label=\"%s\"];", entry.second()
+                    .hashCode(), escape(entry.second()
+                    .toString()).replace(" ", "\u2007")));
+            edges.add(String.format("   %s -> %s [arrowhead=none, style=dotted, label=\"%s\"];", entry.first()
+                    .hashCode(), entry.second()
+                    .hashCode(), String.format("%s <=> %s", escape(entry.first.liveInterval()
+                    .variable()
+                    .toString()), escape(entry.second.liveInterval()
+                    .variable()
+                    .toString()))));
+        }
+
+        nodes.addAll(edges);
+        return String.join("\n", nodes);
+    }
+
+    public static String writeSymbolTable(AST root,
+                                          HashMap<String, SymbolTable> methods) {
+        List<String> subGraphs = new ArrayList<>();// add this node
+        Stack<AST> stack = new Stack<>();
+        List<String> nodes = new ArrayList<>();
+        List<String> edges = new ArrayList<>();
+        stack.push(root);
+
+        while (!stack.isEmpty()) {
+            AST ast = stack.pop();
+            for (Pair<String, AST> astPair : ast.getChildren()) {
+                AST child = astPair.second;
+                if (child instanceof Block) {
+                    SymbolTable blockSymbolTable = ((Block) child).blockSymbolTable;
+                    if (blockSymbolTable.isEmpty())
+                        continue;
+                    nodes.add(String.format("   %s [shape=record, label=%s, color=blue];", blockSymbolTable.hashCode(), "\"<from_node>" + escape(blockSymbolTable.toString()).replace(" ", "\u2007") + "\""));
+                    for (SymbolTable symbolTable : blockSymbolTable.children) {
+                        if (symbolTable.isEmpty())
+                            continue;
+                        edges.add(String.format("   %s -> %s;", blockSymbolTable.hashCode() + ":from_node", symbolTable.hashCode() + ":from_node"));
+                    }
+                }
+                if (child instanceof MethodDefinition) {
+                    SymbolTable blockSymbolTable = methods.get(((MethodDefinition) child).methodName.getLabel());
+                    if (blockSymbolTable.isEmpty())
+                        continue;
+                    nodes.add(String.format("   %s [shape=record, label=%s, color=blue];", blockSymbolTable.hashCode(), "\"<from_node>" + escape(blockSymbolTable.myToString(((MethodDefinition) child).methodName.getLabel())).replace(" ", "\u2007") + "\""));
+                    for (SymbolTable symbolTable : blockSymbolTable.children) {
+                        if (symbolTable.isEmpty())
+                            continue;
+                        edges.add(String.format("   %s -> %s;", blockSymbolTable.hashCode() + ":from_node", symbolTable.hashCode() + ":from_node"));
+                    }
+
+                }
+                stack.push(child);
+            }
+        }
+        subGraphs.addAll(edges);
+        subGraphs.addAll(nodes);
+
+        return String.join("\n", subGraphs);
+    }
+
+    public static String writeCFG(String name, BasicBlock cfg, Function<BasicBlock, String> labelFunction) {
+        List<String> subGraphs = new ArrayList<>();
+        subGraphs.add(String.format("subgraph cluster_%s { \n label = %s", escape(name), escape(name)));
+        // add this node
+        Stack<BasicBlock> stack = new Stack<>();
+        List<String> nodes = new ArrayList<>();
+        List<String> edges = new ArrayList<>();
+        stack.push(cfg);
+        Set<BasicBlock> seen = new HashSet<>();
+
+        while (!stack.isEmpty()) {
+            BasicBlock cfgBlock = stack.pop();
+            if (cfgBlock instanceof NOP) {
+                nodes.add(String.format("   %s [shape=record, style=filled, fillcolor=gray, label=%s];", cfgBlock.hashCode(), "\"<from_node>" + escape(labelFunction.apply(cfgBlock)) + "\""));
+                BasicBlock autoChild = cfgBlock.getSuccessor();
+                if (autoChild != null) {
+                    edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_node", autoChild.hashCode() + ":from_node"));
+                    if (!seen.contains(autoChild)) {
+                        stack.push(autoChild);
+                        seen.add(autoChild);
+                    }
+                }
+            } else if (cfgBlock.hasNoBranch()) {
+                nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"<from_node>" + escape(labelFunction.apply(cfgBlock)) + "\""));
+                BasicBlock autoChild = cfgBlock.getSuccessor();
+                if (autoChild != null) {
+                    edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_node", autoChild.hashCode() + ":from_node"));
+                    if (!seen.contains(autoChild)) {
+                        stack.push(autoChild);
+                        seen.add(autoChild);
+                    }
+                }
+            } else if (cfgBlock.hasBranch()) {
+                nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"{<from_node>" + escape(labelFunction.apply(cfgBlock)) + "|{<from_true> T|<from_false>F}" + "}\""));
+                BasicBlock falseChild = cfgBlock.getFalseTarget();
+                BasicBlock trueChild = cfgBlock.getTrueTarget();
+                if (falseChild != null) {
+                    if ((!seen.contains(falseChild))) {
+                        stack.push(falseChild);
+                        seen.add(falseChild);
+                    }
+                    edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_false", falseChild.hashCode() + ":from_node"));
+                }
+                if (trueChild != null) {
+                    if ((!seen.contains(trueChild))) {
+                        stack.push(trueChild);
+                        seen.add(trueChild);
+                    }
+                    edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_true", trueChild.hashCode() + ":from_node"));
+                }
+            }
+        }
+        subGraphs.addAll(edges);
+        subGraphs.addAll(nodes);
+        subGraphs.add("}");
+
+        return String.join("\n", subGraphs);
+    }
+
+    public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks, Function<BasicBlock, String> labelFunction) {
+        printGraph(methodCFGBlocks, labelFunction, "cfg");
+    }
+
+    public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks) {
+        printGraph(methodCFGBlocks, (BasicBlock::getLinesOfCodeString), "cfg");
+    }
+
+    public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks, String filename) {
+        printGraph(methodCFGBlocks, (BasicBlock::getLinesOfCodeString), filename);
+    }
+
+    public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks, Function<BasicBlock, String> labelFunction, String graphFilename) {
+        final String[] graph = new String[methodCFGBlocks.size()];
+        final Integer[] index = {0};
+        methodCFGBlocks.forEach((k, v) -> graph[index[0]++] = writeCFG(k, v, labelFunction));
+        GraphVizPrinter.createDotGraph(String.join("\n", graph), graphFilename);
+//        if (!osName.equals("windows")) {
+//            try {
+//                Process process = Runtime.getRuntime().exec("open cfg.pdf");
+//                System.out.println(Utils.getStringFromInputStream(process.getInputStream()));
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+    }
+
+    public static void printSymbolTables(AST root,
+                                         HashMap<String, SymbolTable> methods) {
+        GraphVizPrinter.createDotGraph(writeSymbolTable(root, methods), "symbolTables");
+//        if (!osName.equals("windows")) {
+//            try {
+//                Process process = Runtime.getRuntime().exec("open cfg.pdf");
+//                System.out.println(Utils.getStringFromInputStream(process.getInputStream()));
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+    }
+
+    /**
+     * escape()
+     * <p>
+     * Escape a give String to make it safe to be printed or stored.
+     *
+     * @param s The input String.
+     * @return The output String.
+     **/
+    public static String escape(String s) {
+        return s.replace("\\", "\\\\")
+                .replace("\t", "\\t")
+                .replace("\b", "\\b")
+                .replace("\r", "\\r")
+                .replace("\f", "\\f")
+                .replace("'", "\\'")
+                .replace("\"", "\\\"")
+                .replace("<", "\\<")
+                .replace(">", "\\>")
+                .replace("\n", "\\l")
+                .replace("||", "\\|\\|")
+                .replace("[", "\\[")
+                .replace("]", "\\]")
+                .replace("{", "\\{")
+                .replace("}", "\\}")
+                ;
+
+    }
 
     /**
      * Increase the image size (dpi).
@@ -146,18 +415,6 @@ public class GraphVizPrinter {
     }
 
     /**
-     * The source of the graph written in dot language.
-     */
-    private StringBuilder graph = new StringBuilder();
-
-    /**
-     * Constructor: creates a new GraphViz object that will contain
-     * a graph.
-     */
-    public GraphVizPrinter() {
-    }
-
-    /**
      * Returns the graph's source description in dot language.
      *
      * @return Source of the graph in dot language.
@@ -178,7 +435,7 @@ public class GraphVizPrinter {
      */
     public void addln(String line) {
         this.graph.append(line)
-                  .append("\n");
+                .append("\n");
     }
 
     /**
@@ -378,253 +635,8 @@ public class GraphVizPrinter {
         this.graph = sb;
     }
 
-    public static void createDotGraph(String dotFormat, String fileName) {
-        GraphVizPrinter gv = new GraphVizPrinter();
-        gv.addln(gv.start_graph());
-        gv.add(dotFormat);
-        gv.addln(gv.end_graph());
-        // String type = "gif";
-        String type = "pdf";
-        // gv.increaseDpi();
-        gv.decreaseDpi();
-        gv.decreaseDpi();
-        File out = new File(fileName + "." + type);
-        gv.writeGraphToFile(gv.getGraph(gv.getDotSource(), type), out);
-    }
-
-
-    public static String writeDominatorGraph(Map<BasicBlock, BasicBlock> immediateDominators) {
-        List<String> nodes = new ArrayList<>();
-        List<String> edges = new ArrayList<>();
-        for (Map.Entry<BasicBlock, BasicBlock> entry : immediateDominators.entrySet()) {
-            nodes.add(String.format("   %s [shape=record, label=%s, color=blue];", entry.getKey()
-                                                                                        .hashCode(), "\"<from_node>" + escape(entry.getKey()
-                                                                                                                                   .toString()).replace(" ", "\u2007") + "\""));
-            edges.add(String.format("   %s -> %s;", entry.getValue()
-                                                         .hashCode() + ":from_node", entry.getKey()
-                                                                                          .hashCode() + ":from_node"));
-        }
-
-        nodes.addAll(edges);
-        return String.join("\n", nodes);
-    }
-
     public void printDominatorTree(Map<BasicBlock, BasicBlock> immediateDominators, String fileName) {
         createDotGraph(writeDominatorGraph(immediateDominators), fileName);
-    }
-
-    public static void printDominatorTree(Map<BasicBlock, BasicBlock> immediateDominators) {
-        createDotGraph(writeDominatorGraph(immediateDominators), "dom");
-    }
-
-    public static void printInterferenceGraph(InterferenceGraph interferenceGraph, String fileName) {
-        createDotGraph(writeInterferenceGraph(interferenceGraph), fileName);
-    }
-
-    public static String writeInterferenceGraph(InterferenceGraph interferenceGraph) {
-        List<String> nodes = new ArrayList<>();
-        List<String> edges = new ArrayList<>();
-        for (var entry : interferenceGraph.getUniqueInterferenceGraphEdges()) {
-            nodes.add(String.format("   %s [shape=ellipse, style=filled, fillcolor=gray, label=\"%s\"];", entry.first()
-                                                                                                               .hashCode(), escape(entry.first()
-                                                                                                                                        .toString()).replace(" ", "\u2007")));
-            nodes.add(String.format("   %s [shape=ellipse, style=filled, fillcolor=gray, label=\"%s\"];", entry.second()
-                                                                                                               .hashCode(), escape(entry.second()
-                                                                                                                                        .toString()).replace(" ", "\u2007")));
-            edges.add(String.format("   %s -> %s [arrowhead=none];", entry.first()
-                                                                          .hashCode(), entry.second()
-                                                                                            .hashCode()));
-        }
-
-        for (var entry : interferenceGraph.getUniqueMoveEdges()) {
-            nodes.add(String.format("   %s [shape=ellipse, style=filled, fillcolor=gray, label=\"%s\"];", entry.first()
-                                                                                                               .hashCode(), escape(entry.first()
-                                                                                                                                        .toString()).replace(" ", "\u2007")));
-            nodes.add(String.format("   %s [shape=ellipse, style=filled, fillcolor=gray, label=\"%s\"];", entry.second()
-                                                                                                               .hashCode(), escape(entry.second()
-                                                                                                                                        .toString()).replace(" ", "\u2007")));
-            edges.add(String.format("   %s -> %s [arrowhead=none, style=dotted, label=\"%s\"];", entry.first()
-                                                                                                      .hashCode(), entry.second()
-                                                                                                                        .hashCode(), String.format("%s <=> %s", escape(entry.first.liveInterval()
-                                                                                                                                                                                  .variable()
-                                                                                                                                                                                  .toString()), escape(entry.second.liveInterval()
-                                                                                                                                                                                                                   .variable()
-                                                                                                                                                                                                                   .toString()))));
-        }
-
-        nodes.addAll(edges);
-        return String.join("\n", nodes);
-    }
-
-    public static String writeSymbolTable(AST root,
-                                          HashMap<String, SymbolTable> methods) {
-        List<String> subGraphs = new ArrayList<>();// add this node
-        Stack<AST> stack = new Stack<>();
-        List<String> nodes = new ArrayList<>();
-        List<String> edges = new ArrayList<>();
-        stack.push(root);
-
-        while (!stack.isEmpty()) {
-            AST ast = stack.pop();
-            for (Pair<String, AST> astPair : ast.getChildren()) {
-                AST child = astPair.second;
-                if (child instanceof Block) {
-                    SymbolTable blockSymbolTable = ((Block) child).blockSymbolTable;
-                    if (blockSymbolTable.isEmpty())
-                        continue;
-                    nodes.add(String.format("   %s [shape=record, label=%s, color=blue];", blockSymbolTable.hashCode(), "\"<from_node>" + escape(blockSymbolTable.toString()).replace(" ", "\u2007") + "\""));
-                    for (SymbolTable symbolTable : blockSymbolTable.children) {
-                        if (symbolTable.isEmpty())
-                            continue;
-                        edges.add(String.format("   %s -> %s;", blockSymbolTable.hashCode() + ":from_node", symbolTable.hashCode() + ":from_node"));
-                    }
-                }
-                if (child instanceof MethodDefinition) {
-                    SymbolTable blockSymbolTable = methods.get(((MethodDefinition) child).methodName.getLabel());
-                    if (blockSymbolTable.isEmpty())
-                        continue;
-                    nodes.add(String.format("   %s [shape=record, label=%s, color=blue];", blockSymbolTable.hashCode(), "\"<from_node>" + escape(blockSymbolTable.myToString(((MethodDefinition) child).methodName.getLabel())).replace(" ", "\u2007") + "\""));
-                    for (SymbolTable symbolTable : blockSymbolTable.children) {
-                        if (symbolTable.isEmpty())
-                            continue;
-                        edges.add(String.format("   %s -> %s;", blockSymbolTable.hashCode() + ":from_node", symbolTable.hashCode() + ":from_node"));
-                    }
-
-                }
-                stack.push(child);
-            }
-        }
-        subGraphs.addAll(edges);
-        subGraphs.addAll(nodes);
-
-        return String.join("\n", subGraphs);
-    }
-
-    public static String writeCFG(String name, BasicBlock cfg, Function<BasicBlock, String> labelFunction) {
-        List<String> subGraphs = new ArrayList<>();
-        subGraphs.add(String.format("subgraph cluster_%s { \n label = %s", escape(name), escape(name)));
-        // add this node
-        Stack<BasicBlock> stack = new Stack<>();
-        List<String> nodes = new ArrayList<>();
-        List<String> edges = new ArrayList<>();
-        stack.push(cfg);
-        Set<BasicBlock> seen = new HashSet<>();
-
-        while (!stack.isEmpty()) {
-            BasicBlock cfgBlock = stack.pop();
-            if (cfgBlock instanceof NOP) {
-                nodes.add(String.format("   %s [shape=record, style=filled, fillcolor=gray, label=%s];", cfgBlock.hashCode(), "\"<from_node>" + escape(labelFunction.apply(cfgBlock)) + "\""));
-                BasicBlock autoChild = ((NOP) cfgBlock).getSuccessor();
-                if (autoChild != null) {
-                    edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_node", autoChild.hashCode() + ":from_node"));
-                    if (!seen.contains(autoChild)) {
-                        stack.push(autoChild);
-                        seen.add(autoChild);
-                    }
-                }
-            } else if (cfgBlock.hasNoBranch()) {
-                nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"<from_node>" + escape(labelFunction.apply(cfgBlock)) + "\""));
-                BasicBlock autoChild = cfgBlock.getSuccessor();
-                if (autoChild != null) {
-                    edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_node", autoChild.hashCode() + ":from_node"));
-                    if (!seen.contains(autoChild)) {
-                        stack.push(autoChild);
-                        seen.add(autoChild);
-                    }
-                }
-            } else if (cfgBlock.hasBranch()) {
-                nodes.add(String.format("   %s [shape=record, label=%s];", cfgBlock.hashCode(), "\"{<from_node>" + escape(labelFunction.apply(cfgBlock)) + "|{<from_true> T|<from_false>F}" + "}\""));
-                BasicBlock falseChild = cfgBlock.getFalseTarget();
-                BasicBlock trueChild = cfgBlock.getTrueTarget();
-                if (falseChild != null) {
-                    if ((!seen.contains(falseChild))) {
-                        stack.push(falseChild);
-                        seen.add(falseChild);
-                    }
-                    edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_false", falseChild.hashCode() + ":from_node"));
-                }
-                if (trueChild != null) {
-                    if ((!seen.contains(trueChild))) {
-                        stack.push(trueChild);
-                        seen.add(trueChild);
-                    }
-                    edges.add(String.format("   %s -> %s;", cfgBlock.hashCode() + ":from_true", trueChild.hashCode() + ":from_node"));
-                }
-            }
-        }
-        subGraphs.addAll(edges);
-        subGraphs.addAll(nodes);
-        subGraphs.add("}");
-
-        return String.join("\n", subGraphs);
-    }
-
-    public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks, Function<BasicBlock, String> labelFunction) {
-        printGraph(methodCFGBlocks, labelFunction, "cfg");
-    }
-
-    public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks) {
-        printGraph(methodCFGBlocks, (BasicBlock::getLinesOfCodeString), "cfg");
-    }
-    public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks, String filename) {
-        printGraph(methodCFGBlocks, (BasicBlock::getLinesOfCodeString), filename);
-    }
-
-    public static void printGraph(HashMap<String, BasicBlock> methodCFGBlocks, Function<BasicBlock, String> labelFunction, String graphFilename) {
-        final String[] graph = new String[methodCFGBlocks.size()];
-        final Integer[] index = {0};
-        methodCFGBlocks.forEach((k, v) -> graph[index[0]++] = writeCFG(k, v, labelFunction));
-        GraphVizPrinter.createDotGraph(String.join("\n", graph), graphFilename);
-//        if (!osName.equals("windows")) {
-//            try {
-//                Process process = Runtime.getRuntime().exec("open cfg.pdf");
-//                System.out.println(Utils.getStringFromInputStream(process.getInputStream()));
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
-    }
-
-    public static void printSymbolTables(AST root,
-                                         HashMap<String, SymbolTable> methods) {
-        GraphVizPrinter.createDotGraph(writeSymbolTable(root, methods), "symbolTables");
-//        if (!osName.equals("windows")) {
-//            try {
-//                Process process = Runtime.getRuntime().exec("open cfg.pdf");
-//                System.out.println(Utils.getStringFromInputStream(process.getInputStream()));
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
-    }
-
-
-    /**
-     * escape()
-     * <p>
-     * Escape a give String to make it safe to be printed or stored.
-     *
-     * @param s The input String.
-     * @return The output String.
-     **/
-    public static String escape(String s) {
-        return s.replace("\\", "\\\\")
-                .replace("\t", "\\t")
-                .replace("\b", "\\b")
-                .replace("\r", "\\r")
-                .replace("\f", "\\f")
-                .replace("'", "\\'")
-                .replace("\"", "\\\"")
-                .replace("<", "\\<")
-                .replace(">", "\\>")
-                .replace("\n", "\\l")
-                .replace("||", "\\|\\|")
-                .replace("[", "\\[")
-                .replace("]", "\\]")
-                .replace("{", "\\{")
-                .replace("}", "\\}")
-                ;
-
     }
 
 } // end of class GraphViz

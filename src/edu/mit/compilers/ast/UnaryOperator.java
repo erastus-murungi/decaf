@@ -15,9 +15,12 @@ public class UnaryOperator extends Operator {
     @Override
     public String opRep() {
         switch (label) {
-            case DecafScanner.MINUS: return "Neg";
-            case DecafScanner.NOT: return "Not";
-            default: throw new IllegalArgumentException("please register unary operator: " + label);
+            case DecafScanner.MINUS:
+                return "Neg";
+            case DecafScanner.NOT:
+                return "Not";
+            default:
+                throw new IllegalArgumentException("please register unary operator: " + label);
         }
     }
 
@@ -28,10 +31,13 @@ public class UnaryOperator extends Operator {
 
     @Override
     public String getSourceCode() {
-         switch (label) {
-             case DecafScanner.MINUS: return  "-";
-             case DecafScanner.NOT: return  "!";
-             default:throw new IllegalArgumentException("please register unary operator: " + label);
+        switch (label) {
+            case DecafScanner.MINUS:
+                return "-";
+            case DecafScanner.NOT:
+                return "!";
+            default:
+                throw new IllegalArgumentException("please register unary operator: " + label);
         }
     }
 

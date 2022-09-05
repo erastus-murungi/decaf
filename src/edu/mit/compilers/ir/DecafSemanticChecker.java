@@ -1,8 +1,8 @@
 package edu.mit.compilers.ir;
 
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.ast.Program;
+import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.descriptors.GlobalDescriptor;
 import edu.mit.compilers.exceptions.DecafSemanticException;
 import edu.mit.compilers.utils.DecafExceptionProcessor;
@@ -10,13 +10,10 @@ import edu.mit.compilers.utils.DecafExceptionProcessor;
 
 public class DecafSemanticChecker {
 
-    private boolean trace;
-
-    private boolean hasError;
-
     private final AST rootNode;
-
     public GlobalDescriptor globalDescriptor;
+    private boolean trace;
+    private boolean hasError;
 
     public DecafSemanticChecker(Program rootNode) {
         this.rootNode = rootNode;

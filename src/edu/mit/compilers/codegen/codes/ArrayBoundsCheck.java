@@ -52,8 +52,8 @@ public class ArrayBoundsCheck extends HasOperand {
     }
 
     @Override
-    public boolean replace(Value oldName, Value newName) {
-        return getAddress.replace(oldName, newName);
+    public boolean replaceValue(Value oldName, Value newName) {
+        return getAddress.replaceValue(oldName, newName);
     }
 
     @Override

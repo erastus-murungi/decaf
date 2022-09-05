@@ -3,18 +3,15 @@ package edu.mit.compilers.codegen.names;
 import java.util.Objects;
 
 import edu.mit.compilers.ast.BooleanLiteral;
-import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.ast.IntLiteral;
+import edu.mit.compilers.ast.Type;
 
 public class NumericalConstant extends Constant {
     private final Long value;
+
     public NumericalConstant(Long value, Type type) {
         super(type, String.valueOf(value));
         this.value = value;
-    }
-
-    public Long getValue() {
-        return value;
     }
 
     public static NumericalConstant fromIntLiteral(IntLiteral intLiteral) {
@@ -31,6 +28,10 @@ public class NumericalConstant extends Constant {
 
     public static NumericalConstant one() {
         return new NumericalConstant(1L, Type.Int);
+    }
+
+    public Long getValue() {
+        return value;
     }
 
     @Override

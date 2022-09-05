@@ -1,16 +1,16 @@
 package edu.mit.compilers.codegen.codes;
 
+import java.util.List;
+import java.util.Optional;
+
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddress;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnaryOperand;
 import edu.mit.compilers.utils.Operators;
-
-import java.util.List;
-import java.util.Optional;
 
 public class UnaryInstruction extends StoreInstruction {
     public Value operand;
@@ -74,7 +74,7 @@ public class UnaryInstruction extends StoreInstruction {
         return new UnaryOperand(this);
     }
 
-    public boolean replace(Value oldVariable, Value replacer) {
+    public boolean replaceValue(Value oldVariable, Value replacer) {
         var replaced = false;
         if (operand.equals(oldVariable)) {
             operand = replacer;

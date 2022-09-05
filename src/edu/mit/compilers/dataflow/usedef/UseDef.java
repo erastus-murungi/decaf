@@ -1,9 +1,9 @@
 package edu.mit.compilers.dataflow.usedef;
 
+import java.util.Objects;
+
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.names.Value;
-
-import java.util.Objects;
 
 public abstract class UseDef {
     public final Value variable;

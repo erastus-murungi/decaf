@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.Optional;
 
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddress;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 import edu.mit.compilers.utils.Utils;
@@ -49,7 +49,7 @@ public class AllocateInstruction extends StoreInstruction {
     }
 
     @Override
-    public boolean replace(Value oldName, Value newName) {
+    public boolean replaceValue(Value oldName, Value newName) {
         var replaced = false;
         if (oldName.equals(variable)) {
             if (newName instanceof LValue) {

@@ -35,16 +35,16 @@ public class DeadStoreEliminationSsaPass extends SsaOptimizationPass<Void> {
         }
         for (BasicBlock basicBlock : getBasicBlockList()) {
             var deadStores = basicBlock.getStoreInstructions()
-                                       .stream()
-                                       .filter(storeInstruction -> !used.contains(
-                                               storeInstruction.getDestination()) && (
-                                                       storeInstruction instanceof CopyInstruction ||
-                                                       storeInstruction instanceof UnaryInstruction ||
-                                                       storeInstruction instanceof BinaryInstruction ||
-                                                       storeInstruction instanceof AllocateInstruction))
-                                       .toList();
+                    .stream()
+                    .filter(storeInstruction -> !used.contains(
+                            storeInstruction.getDestination()) && (
+                            storeInstruction instanceof CopyInstruction ||
+                                    storeInstruction instanceof UnaryInstruction ||
+                                    storeInstruction instanceof BinaryInstruction ||
+                                    storeInstruction instanceof AllocateInstruction))
+                    .toList();
             basicBlock.getInstructionList()
-                      .removeAll(deadStores);
+                    .removeAll(deadStores);
         }
         return changesHappened;
     }

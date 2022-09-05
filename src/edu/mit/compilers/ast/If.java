@@ -1,5 +1,10 @@
 package edu.mit.compilers.ast;
 
+import static edu.mit.compilers.grammar.DecafScanner.RESERVED_ELSE;
+import static edu.mit.compilers.grammar.DecafScanner.RESERVED_IF;
+
+import java.util.List;
+
 import edu.mit.compilers.codegen.CodegenAstVisitor;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.grammar.TokenPosition;
@@ -8,15 +13,10 @@ import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.Utils;
 
-import java.util.List;
-
-import static edu.mit.compilers.grammar.DecafScanner.RESERVED_ELSE;
-import static edu.mit.compilers.grammar.DecafScanner.RESERVED_IF;
-
 public class If extends Statement implements HasExpression {
-    public Expression test;
     public final Block ifBlock;
     public final Block elseBlock; // maybe null
+    public Expression test;
 
     public If(TokenPosition tokenPosition, Expression test, Block ifBlock, Block elseBlock) {
         super(tokenPosition);

@@ -1,13 +1,13 @@
 package edu.mit.compilers.ast;
 
+import java.util.List;
+
 import edu.mit.compilers.codegen.CodegenAstVisitor;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symboltable.SymbolTable;
-import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.utils.Pair;
-
-import java.util.List;
 
 public class CompoundAssignOpExpr extends AssignExpr implements HasExpression {
     public final CompoundAssignOperator compoundAssignOp;

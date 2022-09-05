@@ -14,14 +14,26 @@ import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.NumericalConstant;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.analyses.ReachingDefinitions;
 
 public class ConstantPropagationPass extends OptimizationPass {
     public ConstantPropagationPass(Set<LValue> globalVariables, Method method) {
         super(globalVariables, method);
+    }
+
+    private static Map<Value, NumericalConstant> getStoreToConstantMapping(Collection<StoreInstruction> storeInstructionInstructions) {
+        var storeNameToStoreInstructionMap = new HashMap<Value, NumericalConstant>();
+        for (StoreInstruction storeInstruction : storeInstructionInstructions) {
+            if (storeInstruction instanceof CopyInstruction assignment) {
+                if (assignment.getValue() instanceof NumericalConstant) {
+                    storeNameToStoreInstructionMap.put(storeInstruction.getDestination(), (NumericalConstant) assignment.getValue());
+                }
+            }
+        }
+        return storeNameToStoreInstructionMap;
     }
 
     private List<HasOperand> reachingDefinitions(int indexOfDefinition, InstructionList instructionList) {
@@ -31,7 +43,7 @@ public class ConstantPropagationPass extends OptimizationPass {
             var instruction = instructionList.get(indexOfInstruction);
             if (instruction instanceof StoreInstruction) {
                 if (((StoreInstruction) instruction).getDestination()
-                                                    .equals(store))
+                        .equals(store))
                     break;
             } else {
                 if (instruction instanceof HasOperand)
@@ -41,33 +53,18 @@ public class ConstantPropagationPass extends OptimizationPass {
         return rds;
     }
 
-
     public void runLocalConstantPropagation(BasicBlock basicBlock) {
         int indexOfInstruction = -1;
         for (Instruction instruction : basicBlock.getInstructionList()) {
             indexOfInstruction++;
             if (instruction instanceof CopyInstruction) {
-                if (((CopyInstruction) instruction).getValue() instanceof NumericalConstant) {
-                    NumericalConstant constant = (NumericalConstant) ((CopyInstruction) instruction).getValue();
+                if (((CopyInstruction) instruction).getValue() instanceof NumericalConstant constant) {
                     for (HasOperand hasOperand : reachingDefinitions(indexOfInstruction, basicBlock.getInstructionList())) {
-                        hasOperand.replace(((CopyInstruction) instruction).getDestination(), constant);
+                        hasOperand.replaceValue(((CopyInstruction) instruction).getDestination(), constant);
                     }
                 }
             }
         }
-    }
-
-    private static Map<Value, NumericalConstant> getStoreToConstantMapping(Collection<StoreInstruction> storeInstructionInstructions) {
-        var storeNameToStoreInstructionMap = new HashMap<Value, NumericalConstant>();
-        for (StoreInstruction storeInstruction : storeInstructionInstructions) {
-            if (storeInstruction instanceof CopyInstruction) {
-                var assignment = (CopyInstruction) storeInstruction;
-                if (assignment.getValue() instanceof NumericalConstant) {
-                    storeNameToStoreInstructionMap.put(storeInstruction.getDestination(), (NumericalConstant) assignment.getValue());
-                }
-            }
-        }
-        return storeNameToStoreInstructionMap;
     }
 
     public void runGlobalConstantPropagation() {
@@ -78,11 +75,10 @@ public class ConstantPropagationPass extends OptimizationPass {
             if (storeToConstantMapping.isEmpty())
                 continue;
             for (Instruction instruction : basicBlock.getInstructionList()) {
-                if (instruction instanceof HasOperand) {
-                    HasOperand hasOperand = (HasOperand) instruction;
+                if (instruction instanceof HasOperand hasOperand) {
                     for (Value name : hasOperand.getOperandValues()) {
                         if (storeToConstantMapping.containsKey(name)) {
-                            hasOperand.replace(name, storeToConstantMapping.get(name));
+                            hasOperand.replaceValue(name, storeToConstantMapping.get(name));
                         }
                     }
                 }

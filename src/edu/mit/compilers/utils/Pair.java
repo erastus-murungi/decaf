@@ -2,19 +2,20 @@ package edu.mit.compilers.utils;
 
 import java.util.Objects;
 
-public class Pair<T1, T2>{
+public class Pair<T1, T2> {
     T1 first;
     T2 second;
+
     public Pair(T1 first, T2 second) {
-       this.first = first;
-       this.second = second;
+        this.first = first;
+        this.second = second;
     }
 
-    public T1 first(){
+    public T1 first() {
         return this.first;
     }
 
-    public T2 second(){
+    public T2 second() {
         return this.second;
     }
 

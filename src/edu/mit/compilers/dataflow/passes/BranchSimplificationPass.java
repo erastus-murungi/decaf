@@ -9,8 +9,8 @@ import java.util.Set;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.codes.ConditionalBranch;
-import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.Instruction;
+import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.LValue;
 
 public class BranchSimplificationPass extends OptimizationPass {
@@ -18,6 +18,14 @@ public class BranchSimplificationPass extends OptimizationPass {
 
     public BranchSimplificationPass(Set<LValue> globalVariables, Method method) {
         super(globalVariables, method);
+    }
+
+    private static boolean isNotExitLabel(Instruction instruction) {
+//        if (instruction instanceof Label) {
+//            var label = (Label) instruction;
+//            return !label.label.startsWith("exit");
+//        }
+        return true;
     }
 
     private boolean isTrue(ConditionalBranch conditionalBranch) {
@@ -112,14 +120,6 @@ public class BranchSimplificationPass extends OptimizationPass {
 //            nextTacList = nextTacList.nextInstructionList;
 //        }
 //        noChanges = false;
-    }
-
-    private static boolean isNotExitLabel(Instruction instruction) {
-//        if (instruction instanceof Label) {
-//            var label = (Label) instruction;
-//            return !label.label.startsWith("exit");
-//        }
-        return true;
     }
 
     private void removeUselessBranches() {

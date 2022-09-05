@@ -1,16 +1,15 @@
 package edu.mit.compilers.dataflow.operand;
 
-import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.grammar.DecafScanner;
-
 import java.util.Set;
 
-public abstract class Operand {
-    private final int index;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
+import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.grammar.DecafScanner;
 
+public abstract class Operand {
     private static int indexCounter;
+    private final int index;
 
     public Operand() {
         this.index = indexCounter++;

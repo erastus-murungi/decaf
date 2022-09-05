@@ -40,26 +40,7 @@ public class Interpreter {
     List<Instruction> currentMethodInstructions = new ArrayList<>();
 
     Method currentMethod = null;
-
-    private Constant resolveValue(Value value) {
-        if (value instanceof LValue lValue) {
-            return globalEnv.get(lValue)
-                            .orElseThrow();
-        } else {
-            return (Constant) value;
-        }
-    }
-
-
-    private Constant evalBinaryInstruction(BinaryInstruction binaryInstruction) {
-        Long left = ((NumericalConstant) resolveValue(binaryInstruction.fstOperand)).getValue();
-        Long right = ((NumericalConstant) resolveValue(binaryInstruction.sndOperand)).getValue();
-        var maybeEvaluatedLong = Utils.symbolicallyEvaluate(String.format("%d %s %d", left, binaryInstruction.operator, right));
-        return new NumericalConstant(maybeEvaluatedLong.orElseThrow(), Type.Int);
-    }
-
     Map<LValue, Optional<Constant>> globalEnv = new HashMap<>();
-
     Map<Method, Map<LValue, Optional<Constant>>> localEnvs = new HashMap<>();
     Map<Method, List<Instruction>> methods = new HashMap<>();
 
@@ -70,17 +51,58 @@ public class Interpreter {
         System.out.println(instructionList);
     }
 
+    public static void test() {
+        var a = new Variable("a", Type.Int);
+        var b = new Variable("b", Type.Int);
+        var c = new Variable("c", Type.Int);
+
+        var name = new Name("printf", null, null);
+        List<MethodCallParameter> arguments = List.of(new StringLiteral(null, "%d\n"), new ExpressionParameter(new LocationVariable(new Name("a", null, null))));
+        var argsStack = new Stack<Value>();
+        argsStack.addAll(
+                List.of(new StringConstant(new StringLiteralAllocation("%d\n")), c.copy())
+        );
+        List<Instruction> instructions = List.of(
+                new AllocateInstruction(a),
+                new AllocateInstruction(b),
+                new AllocateInstruction(c),
+                CopyInstruction.noAstConstructor(a.copy(), new NumericalConstant(10L, Type.Int)),
+                CopyInstruction.noAstConstructor(b.copy(), a.copy()),
+                new BinaryInstruction(c, b, Operators.PLUS, a),
+                new FunctionCallNoResult(new MethodCall(name, arguments), argsStack, "")
+        );
+
+        Interpreter interpreter = new Interpreter(instructions);
+        interpreter.interpret();
+
+    }
+
+    private Constant resolveValue(Value value) {
+        if (value instanceof LValue lValue) {
+            return globalEnv.get(lValue)
+                    .orElseThrow();
+        } else {
+            return (Constant) value;
+        }
+    }
+
+    private Constant evalBinaryInstruction(BinaryInstruction binaryInstruction) {
+        Long left = ((NumericalConstant) resolveValue(binaryInstruction.fstOperand)).getValue();
+        Long right = ((NumericalConstant) resolveValue(binaryInstruction.sndOperand)).getValue();
+        var maybeEvaluatedLong = Utils.symbolicallyEvaluate(String.format("%d %s %d", left, binaryInstruction.operator, right));
+        return new NumericalConstant(maybeEvaluatedLong.orElseThrow(), Type.Int);
+    }
 
     private void evalFunctionCallNoResult(FunctionCallNoResult functionCallNoResult) {
         if (functionCallNoResult.getMethodName()
-                                .equals("printf")) {
+                .equals("printf")) {
             var arguments = new ArrayList<>(functionCallNoResult.getArguments());
             String formatString = ((StringConstant) arguments.get(0)).getValue();
             var rest = arguments.subList(1, arguments.size())
-                                .stream()
-                                .map(this::resolveValue)
-                                .map(Constant::getValue)
-                                .toArray();
+                    .stream()
+                    .map(this::resolveValue)
+                    .map(Constant::getValue)
+                    .toArray();
             System.out.format(formatString, rest);
         }
     }
@@ -135,31 +157,5 @@ public class Interpreter {
         } else {
             return storeInstruction.getDestination();
         }
-    }
-
-    public static void test() {
-        var a = new Variable("a", Type.Int);
-        var b = new Variable("b", Type.Int);
-        var c = new Variable("c", Type.Int);
-
-        var name = new Name("printf", null, null);
-        List<MethodCallParameter> arguments = List.of(new StringLiteral(null, "%d\n"), new ExpressionParameter(new LocationVariable(new Name("a", null, null))));
-        var argsStack = new Stack<Value>();
-        argsStack.addAll(
-                List.of(new StringConstant(new StringLiteralAllocation("%d\n")), c.copy())
-        );
-        List<Instruction> instructions = List.of(
-                new AllocateInstruction(a),
-                new AllocateInstruction(b),
-                new AllocateInstruction(c),
-                CopyInstruction.noAstConstructor(a.copy(), new NumericalConstant(10L, Type.Int)),
-                CopyInstruction.noAstConstructor(b.copy(), a.copy()),
-                new BinaryInstruction(c, b, Operators.PLUS, a),
-                new FunctionCallNoResult(new MethodCall(name, arguments), argsStack, "")
-        );
-
-        Interpreter interpreter = new Interpreter(instructions);
-        interpreter.interpret();
-
     }
 }

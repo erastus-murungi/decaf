@@ -2,11 +2,19 @@ package edu.mit.compilers.dataflow.passes;
 
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
 
-import edu.mit.compilers.ast.*;
+import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.ast.BinaryOpExpression;
+import edu.mit.compilers.ast.BooleanLiteral;
+import edu.mit.compilers.ast.DecimalLiteral;
+import edu.mit.compilers.ast.Expression;
+import edu.mit.compilers.ast.HasExpression;
+import edu.mit.compilers.ast.IntLiteral;
+import edu.mit.compilers.ast.Literal;
+import edu.mit.compilers.ast.LocationArray;
+import edu.mit.compilers.ast.UnaryOpExpression;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.utils.Utils;
@@ -174,8 +182,7 @@ public class InstructionSimplifyIrPass {
 
 
     private static Expression trySimplifyAddInstruction(Expression expression) {
-        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.PLUS)) {
-            var addInstruction = (BinaryOpExpression) expression;
+        if (expression instanceof BinaryOpExpression addInstruction && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.PLUS)) {
             // 0 + X -> X
             var X = addInstruction.lhs;
             if (matchBinOpOperandsCommutative(addInstruction, mZero, X)) {
@@ -186,8 +193,7 @@ public class InstructionSimplifyIrPass {
     }
 
     private static Expression trySimplifyMulInstruction(Expression expression) {
-        if (expression instanceof BinaryOpExpression && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.MULTIPLY)) {
-            var multiplyInstruction = (BinaryOpExpression) expression;
+        if (expression instanceof BinaryOpExpression multiplyInstruction && ((BinaryOpExpression) expression).op.label.equals(DecafScanner.MULTIPLY)) {
             // 0 * X -> 0
             // X * 0 -> 0
             var X = multiplyInstruction.lhs;
@@ -267,7 +273,7 @@ public class InstructionSimplifyIrPass {
             var ast = toExplore.pop();
             for (var astPair : ast.getChildren()) {
                 if (astPair.second() instanceof HasExpression) {
-                    toReturn.add( ((HasExpression) astPair.second()));
+                    toReturn.add(((HasExpression) astPair.second()));
                 }
                 toExplore.add(astPair.second());
             }

@@ -1,16 +1,20 @@
 package edu.mit.compilers.ast;
 
+import java.util.Collections;
+import java.util.List;
+
 import edu.mit.compilers.codegen.CodegenAstVisitor;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 
-import java.util.Collections;
-import java.util.List;
-
 public class ExpressionParameter extends MethodCallParameter implements HasExpression {
     public Expression expression;
+
+    public ExpressionParameter(Expression expression) {
+        this.expression = expression;
+    }
 
     @Override
     public Type getType() {
@@ -25,10 +29,6 @@ public class ExpressionParameter extends MethodCallParameter implements HasExpre
     @Override
     public boolean isTerminal() {
         return false;
-    }
-
-    public ExpressionParameter(Expression expression) {
-        this.expression = expression;
     }
 
     @Override

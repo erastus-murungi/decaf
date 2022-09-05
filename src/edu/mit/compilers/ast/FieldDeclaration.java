@@ -1,20 +1,20 @@
 package edu.mit.compilers.ast;
 
-import edu.mit.compilers.codegen.CodegenAstVisitor;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.ir.Visitor;
-import edu.mit.compilers.symboltable.SymbolTable;
-import edu.mit.compilers.grammar.TokenPosition;
-import edu.mit.compilers.utils.Pair;
-
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.mit.compilers.codegen.CodegenAstVisitor;
+import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.grammar.TokenPosition;
+import edu.mit.compilers.ir.Visitor;
+import edu.mit.compilers.symboltable.SymbolTable;
+import edu.mit.compilers.utils.Pair;
+
 public class FieldDeclaration extends Declaration {
     final public TokenPosition tokenPosition;
-    final private Type type;
     final public List<Name> names;
     final public List<Array> arrays;
+    final private Type type;
 
     public FieldDeclaration(TokenPosition tokenPosition, Type type, List<Name> names, List<Array> arrays) {
         this.tokenPosition = tokenPosition;
@@ -47,9 +47,9 @@ public class FieldDeclaration extends Declaration {
     @Override
     public String getSourceCode() {
         List<String> stringList = new ArrayList<>();
-        for (Name name: names)
+        for (Name name : names)
             stringList.add(name.getSourceCode());
-        for (Array array: arrays)
+        for (Array array : arrays)
             stringList.add(array.getSourceCode());
         String args = String.join(", ", stringList);
         return String.format("%s %s", type.getSourceCode(), args);
@@ -57,7 +57,7 @@ public class FieldDeclaration extends Declaration {
 
     @Override
     public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
-      return visitor.visit(this, curSymbolTable);
+        return visitor.visit(this, curSymbolTable);
     }
 
     public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, LValue resultLocation) {

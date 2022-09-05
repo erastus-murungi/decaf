@@ -4,7 +4,6 @@ import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Queue;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.Block;
@@ -28,6 +27,45 @@ public class SymbolTableFlattener {
         this.fields = globalDescriptor.globalVariablesSymbolTable;
         this.methods = globalDescriptor.methodsSymbolTable;
         this.imports = globalDescriptor.imports;
+    }
+
+    private static void renameVariableWithinCurrentScope(Block block, String oldLabel, String newLabel) {
+        Queue<AST> toExplore = new ArrayDeque<>(block.getChildren()
+                .stream()
+                .map(Pair::second)
+                .toList());
+        while (!toExplore.isEmpty()) {
+            AST ast = toExplore.remove();
+            for (Pair<String, AST> astPair : ast.getChildren()) {
+                AST child = astPair.second();
+                if (child instanceof Name name) {
+                    if (name.getLabel()
+                            .equals(oldLabel)) {
+                        name.setLabel(newLabel);
+                    }
+                }
+                if (!(child instanceof Block))
+                    toExplore.add(child);
+            }
+        }
+    }
+
+    private static void rename(Block block, String oldLabel, String newLabel) {
+        Queue<AST> toExplore = new ArrayDeque<>();
+        toExplore.add(block);
+        while (!toExplore.isEmpty()) {
+            AST ast = toExplore.remove();
+            for (Pair<String, AST> astPair : ast.getChildren()) {
+                AST child = astPair.second();
+                if (child instanceof Name name) {
+                    if (name.getLabel()
+                            .equals(oldLabel)) {
+                        name.setLabel(newLabel);
+                    }
+                }
+                toExplore.add(child);
+            }
+        }
     }
 
     public HashMap<String, SymbolTable> createCFGSymbolTables() {
@@ -77,46 +115,5 @@ public class SymbolTableFlattener {
 
         for (SymbolTable child : currTable.children)
             addChildrenVars(methodTable, child);
-    }
-
-    private static void renameVariableWithinCurrentScope(Block block, String oldLabel, String newLabel) {
-        Queue<AST> toExplore = new ArrayDeque<>(block.getChildren()
-                                                     .stream()
-                                                     .map(Pair::second)
-                                                     .collect(Collectors.toUnmodifiableList()));
-        while (!toExplore.isEmpty()) {
-            AST ast = toExplore.remove();
-            for (Pair<String, AST> astPair : ast.getChildren()) {
-                AST child = astPair.second();
-                if (child instanceof Name) {
-                    Name name = (Name) child;
-                    if (name.getLabel()
-                            .equals(oldLabel)) {
-                        name.setLabel(newLabel);
-                    }
-                }
-                if (!(child instanceof Block))
-                    toExplore.add(child);
-            }
-        }
-    }
-
-    private static void rename(Block block, String oldLabel, String newLabel) {
-        Queue<AST> toExplore = new ArrayDeque<>();
-        toExplore.add(block);
-        while (!toExplore.isEmpty()) {
-            AST ast = toExplore.remove();
-            for (Pair<String, AST> astPair : ast.getChildren()) {
-                AST child = astPair.second();
-                if (child instanceof Name) {
-                    Name name = (Name) child;
-                    if (name.getLabel()
-                            .equals(oldLabel)) {
-                        name.setLabel(newLabel);
-                    }
-                }
-                toExplore.add(child);
-            }
-        }
     }
 }

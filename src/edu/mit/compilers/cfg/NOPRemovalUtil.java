@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Set;
 
 public class NOPRemovalUtil {
-    NOP exit;
     final Set<BasicBlock> seen;
+    NOP exit;
 
     public NOPRemovalUtil() {
         seen = new HashSet<>();

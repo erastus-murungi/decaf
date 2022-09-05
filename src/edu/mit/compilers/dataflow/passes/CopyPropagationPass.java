@@ -9,9 +9,9 @@ import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddress;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.analyses.AvailableCopies;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
@@ -34,12 +34,12 @@ public class CopyPropagationPass extends OptimizationPass {
             notConverged = false;
             for (var toBeReplaced : hasOperand.getOperandScalarVariables()) {
                 if (hasOperand instanceof StoreInstruction && ((StoreInstruction) hasOperand).getDestination()
-                                                                                             .equals(toBeReplaced))
+                        .equals(toBeReplaced))
                     continue;
                 if (copies.containsKey(toBeReplaced)) {
                     var replacer = copies.get(toBeReplaced);
                     if (!isTrivialAssignment(hasOperand)) {
-                        hasOperand.replace(toBeReplaced, replacer);
+                        hasOperand.replaceValue(toBeReplaced, replacer);
                     } else {
                         continue;
                     }
@@ -68,8 +68,7 @@ public class CopyPropagationPass extends OptimizationPass {
                 propagateCopy((HasOperand) instruction, copies);
             }
 
-            if (instruction instanceof StoreInstruction) {
-                var hasResult = (StoreInstruction) instruction;
+            if (instruction instanceof StoreInstruction hasResult) {
                 var resultLocation = hasResult.getDestination();
                 if (!(resultLocation instanceof MemoryAddress)) {
                     for (var assignableName : new ArrayList<>(copies.keySet())) {
@@ -86,7 +85,7 @@ public class CopyPropagationPass extends OptimizationPass {
                     if (operand.isPresent()) {
                         Operand op = operand.get();
                         if (op instanceof UnmodifiedOperand) {
-                            Value name = ((UnmodifiedOperand)operand.get()).value;
+                            Value name = ((UnmodifiedOperand) operand.get()).value;
                             copies.put(resultLocation, name);
                         }
                     }

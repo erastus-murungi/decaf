@@ -1,16 +1,17 @@
 package edu.mit.compilers.ast;
 
+import java.util.HashMap;
+import java.util.List;
+
 import edu.mit.compilers.codegen.CodegenAstVisitor;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 
-import java.util.HashMap;
-import java.util.List;
-
 public class BinaryOpExpression extends Expression implements HasExpression {
     public static HashMap<String, Integer> operatorPrecedence = new HashMap<>();
+
     static {
         operatorPrecedence.put("*", 13);
         operatorPrecedence.put("/", 13);
@@ -26,6 +27,7 @@ public class BinaryOpExpression extends Expression implements HasExpression {
         operatorPrecedence.put("&&", 5);
         operatorPrecedence.put("||", 4);
     }
+
     public Expression lhs;
     public BinOperator op;
     public Expression rhs;
@@ -46,8 +48,7 @@ public class BinaryOpExpression extends Expression implements HasExpression {
     }
 
     private static BinaryOpExpression maybeRotate(BinaryOpExpression parent) {
-        if ((parent.rhs instanceof BinaryOpExpression)) {
-            BinaryOpExpression child = (BinaryOpExpression) parent.rhs;
+        if ((parent.rhs instanceof BinaryOpExpression child)) {
             if (operatorPrecedence.get(parent.op.label).equals(operatorPrecedence.get(child.op.label))) {
                 return new BinaryOpExpression(new BinaryOpExpression(parent.lhs, parent.op, child.lhs), child.op, child.rhs);
             }

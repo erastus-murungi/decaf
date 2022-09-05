@@ -1,9 +1,9 @@
 package edu.mit.compilers.codegen.names;
 
+import java.util.Objects;
+
 import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.codegen.codes.StringLiteralAllocation;
-
-import java.util.Objects;
 
 public class StringConstant extends Constant {
     StringLiteralAllocation stringConstant;

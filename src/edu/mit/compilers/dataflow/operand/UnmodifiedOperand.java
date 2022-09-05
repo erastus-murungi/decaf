@@ -1,10 +1,10 @@
 package edu.mit.compilers.dataflow.operand;
 
+import java.util.Objects;
+
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.grammar.DecafScanner;
-
-import java.util.Objects;
 
 public class UnmodifiedOperand extends Operand {
     public Value value;

@@ -1,6 +1,5 @@
 package edu.mit.compilers.dataflow.ssapasses;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -8,16 +7,13 @@ import java.util.Set;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.passes.OptimizationPass;
 import edu.mit.compilers.utils.TarjanSCC;
 
 public abstract class SsaOptimizationPass<T> extends OptimizationPass {
+    private final List<BasicBlock> basicBlockList;
     protected Set<LValue> globalVariables;
     protected Method method;
-    private final List<BasicBlock> basicBlockList;
-    protected final List<OptimizationResult<T>> optimizationResults = new ArrayList<>();
-
 
 //    Set<Edge> cfgEdges() {
 //        var seen = new HashSet<Edge>();
@@ -43,9 +39,4 @@ public abstract class SsaOptimizationPass<T> extends OptimizationPass {
     protected Collection<BasicBlock> getBasicBlockList() {
         return basicBlockList;
     }
-
-    public List<OptimizationResult<T>> getOptimizationResults() {
-        return optimizationResults;
-    }
-
 }

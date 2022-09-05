@@ -1,17 +1,22 @@
 package edu.mit.compilers.ast;
 
+import java.util.Collections;
+import java.util.List;
+
 import edu.mit.compilers.codegen.CodegenAstVisitor;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 
-import java.util.Collections;
-import java.util.List;
-
 public class Array extends AST {
     private final IntLiteral size;
     private final Name id;
+
+    public Array(IntLiteral size, Name id) {
+        this.size = size;
+        this.id = id;
+    }
 
     public IntLiteral getSize() {
         return size;
@@ -34,11 +39,6 @@ public class Array extends AST {
     @Override
     public boolean isTerminal() {
         return true;
-    }
-
-    public Array(IntLiteral size, Name id) {
-        this.size = size;
-        this.id = id;
     }
 
     @Override

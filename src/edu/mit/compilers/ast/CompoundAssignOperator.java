@@ -1,4 +1,3 @@
-
 package edu.mit.compilers.ast;
 
 import edu.mit.compilers.codegen.CodegenAstVisitor;
@@ -16,10 +15,14 @@ public class CompoundAssignOperator extends Operator {
     @Override
     public String opRep() {
         switch (label) {
-            case DecafScanner.ADD_ASSIGN: return "AugmentedAdd";
-            case DecafScanner.MINUS_ASSIGN: return  "AugmentedSub";
-            case DecafScanner.MULTIPLY_ASSIGN: return "AugmentedMul";
-            default: throw new IllegalArgumentException("please register compound assign operator: " + label);
+            case DecafScanner.ADD_ASSIGN:
+                return "AugmentedAdd";
+            case DecafScanner.MINUS_ASSIGN:
+                return "AugmentedSub";
+            case DecafScanner.MULTIPLY_ASSIGN:
+                return "AugmentedMul";
+            default:
+                throw new IllegalArgumentException("please register compound assign operator: " + label);
         }
     }
 
@@ -32,10 +35,14 @@ public class CompoundAssignOperator extends Operator {
     @Override
     public String getSourceCode() {
         switch (label) {
-            case DecafScanner.ADD_ASSIGN: return  "+=";
-            case DecafScanner.MINUS_ASSIGN: return  "-=";
-            case DecafScanner.MULTIPLY_ASSIGN: return  "*=";
-            default: throw new IllegalArgumentException("please register compound assign operator: " + label);
+            case DecafScanner.ADD_ASSIGN:
+                return "+=";
+            case DecafScanner.MINUS_ASSIGN:
+                return "-=";
+            case DecafScanner.MULTIPLY_ASSIGN:
+                return "*=";
+            default:
+                throw new IllegalArgumentException("please register compound assign operator: " + label);
         }
     }
 

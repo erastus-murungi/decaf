@@ -1,5 +1,7 @@
 package edu.mit.compilers.dataflow.analyses;
 
+import com.google.common.collect.Sets;
+
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.HashMap;
@@ -10,7 +12,6 @@ import java.util.stream.Collectors;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.dataflow.Direction;
-import edu.mit.compilers.utils.SetUtils;
 
 /**
  * A definition d_x : x = e reaches a program point p if it appears without a redefinition on some path
@@ -31,9 +32,9 @@ public class ReachingDefinitions extends DataFlowAnalysis<StoreInstruction> {
             seenStoreVariables.add(storeInstruction.getDestination());
         }
         return basicBlock.getStoreInstructions()
-                         .stream()
-                         .filter(store -> !seenAgain.contains(store.getDestination()))
-                         .collect(Collectors.toUnmodifiableSet());
+                .stream()
+                .filter(store -> !seenAgain.contains(store.getDestination()))
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     @Override
@@ -47,7 +48,7 @@ public class ReachingDefinitions extends DataFlowAnalysis<StoreInstruction> {
     @Override
     public Set<StoreInstruction> meet(BasicBlock basicBlock) {
         if (basicBlock.getPredecessors()
-                      .isEmpty())
+                .isEmpty())
             return Collections.emptySet();
 
         var inSet = new HashSet<>(allValues);
@@ -95,7 +96,7 @@ public class ReachingDefinitions extends DataFlowAnalysis<StoreInstruction> {
             in.put(B, meet(B));
 
             // OUT[B] = gen[B] ∪ IN[B] - KILL[B]
-            out.put(B, SetUtils.union(gen(B), SetUtils.difference(in(B), kill(B))));
+            out.put(B, Sets.union(gen(B), Sets.difference(in(B), kill(B))));
 
             if (!out(B).equals(oldOut)) {
                 workList.addAll(B.getSuccessors());
@@ -107,11 +108,11 @@ public class ReachingDefinitions extends DataFlowAnalysis<StoreInstruction> {
         // we kill any definition
         var genSet = gen(basicBlock);
         var defined = basicBlock.getStoreInstructions()
-                                .stream()
-                                .map(StoreInstruction::getDestination)
-                                .collect(Collectors.toUnmodifiableSet());
+                .stream()
+                .map(StoreInstruction::getDestination)
+                .collect(Collectors.toUnmodifiableSet());
         return allValues.stream()
-                        .filter(store -> !genSet.contains(store) && defined.contains(store.getDestination()))
-                        .collect(Collectors.toUnmodifiableSet());
+                .filter(store -> !genSet.contains(store) && defined.contains(store.getDestination()))
+                .collect(Collectors.toUnmodifiableSet());
     }
 }

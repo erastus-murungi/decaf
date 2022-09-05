@@ -11,55 +11,12 @@ public class PeepHoleOptimizationAsmPass {
     X64Program x64Program;
     private int numInstructionsRemoved = 0;
 
-    public int getNumInstructionsRemoved() {
-        return numInstructionsRemoved;
-    }
-
     public PeepHoleOptimizationAsmPass(X64Program x64Program) {
         this.x64Program = x64Program;
     }
 
-    static class Move {
-        public final String src;
-        public final String dst;
-
-        public Move(String src, String dst) {
-            this.src = src;
-            this.dst = dst;
-        }
-
-        private static String[] tokenize(X64Code x64Code) {
-            String[] split = x64Code.toString()
-                    .split("\\s+");
-            for (int i = 0; i < split.length; i++) {
-                if (split[i].endsWith(",")) {
-                    split[i] = split[i].substring(0, split[i].length() - 1);
-                }
-            }
-            return split;
-        }
-
-        public static Optional<Move> fromX64Code(X64Code x64Code) {
-            if (isMov(x64Code)) {
-                var tokens = tokenize(x64Code);
-                if (!tokens[1].contains("mov")) {
-                    throw new IllegalArgumentException();
-                }
-                final String src = tokens[2];
-                final String dst = tokens[3];
-                return Optional.of(new Move(src, dst));
-            }
-            return Optional.empty();
-        }
-
-        @Override
-        public String toString() {
-            return String.format("%s    %s, %s", "movq", src, dst);
-        }
-
-        private static boolean isMov(X64Code x64Code) {
-            return x64Code.toString().contains("mov");
-        }
+    public int getNumInstructionsRemoved() {
+        return numInstructionsRemoved;
     }
 
     public boolean run() {
@@ -129,20 +86,63 @@ public class PeepHoleOptimizationAsmPass {
                 var prevMov = Move.fromX64Code(x64Program.get(indexOfX64Code - 1));
                 if (prevMov.isPresent()) {
                     var prevMovInst = prevMov.get();
-                        if (prevMovInst.dst.equals(movInst.dst)) {
+                    if (prevMovInst.dst.equals(movInst.dst)) {
                             /* Consider the case of:
                             movq	$0, -8(%rbp)	 # x = 0
 	                        movq	%rdi, -8(%rbp)
 	                        // we remove the first one
                             */
-                            x64Program.remove(indexOfX64Code - 1);
-                            programSize = x64Program.size();
-                            numInstructionsRemoved++;
-                            continue;
-                        }
+                        x64Program.remove(indexOfX64Code - 1);
+                        programSize = x64Program.size();
+                        numInstructionsRemoved++;
+                        continue;
+                    }
                 }
             }
             indexOfX64Code++;
+        }
+    }
+
+    static class Move {
+        public final String src;
+        public final String dst;
+
+        public Move(String src, String dst) {
+            this.src = src;
+            this.dst = dst;
+        }
+
+        private static String[] tokenize(X64Code x64Code) {
+            String[] split = x64Code.toString()
+                    .split("\\s+");
+            for (int i = 0; i < split.length; i++) {
+                if (split[i].endsWith(",")) {
+                    split[i] = split[i].substring(0, split[i].length() - 1);
+                }
+            }
+            return split;
+        }
+
+        public static Optional<Move> fromX64Code(X64Code x64Code) {
+            if (isMov(x64Code)) {
+                var tokens = tokenize(x64Code);
+                if (!tokens[1].contains("mov")) {
+                    throw new IllegalArgumentException();
+                }
+                final String src = tokens[2];
+                final String dst = tokens[3];
+                return Optional.of(new Move(src, dst));
+            }
+            return Optional.empty();
+        }
+
+        private static boolean isMov(X64Code x64Code) {
+            return x64Code.toString().contains("mov");
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s    %s, %s", "movq", src, dst);
         }
     }
 }

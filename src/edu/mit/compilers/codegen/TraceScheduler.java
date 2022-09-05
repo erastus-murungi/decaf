@@ -10,65 +10,54 @@ import java.util.Set;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.codes.UnconditionalJump;
-import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
+import edu.mit.compilers.codegen.codes.UnconditionalBranch;
 import edu.mit.compilers.utils.TarjanSCC;
 
 /**
  * Finds a greedy trace of the basic blocks in a CFG
  */
 public class TraceScheduler {
+    private final Method method;
     private List<BasicBlock> basicBlocks;
     private List<InstructionList> trace;
-    private final boolean addJumps;
-    private final Method method;
 
-    public List<InstructionList> getInstructionTrace() {
-        return trace;
+    public TraceScheduler(Method method) {
+        this.method = method;
+        findBasicBlocks(method);
+        computeTrace();
     }
 
-    public static InstructionList flattenIr(Method method, boolean addJumps) {
-        return new InstructionList(new TraceScheduler(method, addJumps).getInstructionTrace()
-                                                                       .stream()
-                                                                       .flatMap(Collection::stream)
-                                                                       .toList());
+    public static List<InstructionList> getInstructionTrace(Method method) {
+        return new TraceScheduler(method).trace;
     }
 
     public static InstructionList flattenIr(Method method) {
-        return flattenIr(method, true);
+        return new InstructionList(new TraceScheduler(method).trace
+                .stream()
+                .flatMap(Collection::stream)
+                .toList());
     }
 
     private void findBasicBlocks(Method method) {
         basicBlocks = TarjanSCC.getReversePostOrder(method.entryBlock);
     }
 
-    public TraceScheduler(Method method, boolean addJumps) {
-        this.addJumps = addJumps;
-        this.method = method;
-        findBasicBlocks(method);
-        computeTrace();
-    }
-
-    public TraceScheduler(Method method) {
-        this(method, true /*addJumps*/);
-    }
-
     private Optional<BasicBlock> getNotTracedBlock(Set<BasicBlock> seenBlocks) {
         return basicBlocks.stream()
-                          .filter(basicBlock -> !seenBlocks.contains(basicBlock))
-                          .findFirst();
+                .filter(basicBlock -> !seenBlocks.contains(basicBlock))
+                .findFirst();
     }
 
     private void traceBasicBlock(BasicBlock basicBlock, Set<BasicBlock> tracedBasicBlocksSet) {
         if (tracedBasicBlocksSet.contains(basicBlock)) {
-            if (addJumps) trace.add(InstructionList.of(new UnconditionalJump(basicBlock)));
+            trace.add(InstructionList.of(new UnconditionalBranch(basicBlock)));
             return;
         }
         trace.add(basicBlock.getInstructionList());
         tracedBasicBlocksSet.add(basicBlock);
         // note: basicBlock.getSuccessors().get(0) is either an autoChild or the trueChild
         if (!(basicBlock instanceof NOP)) traceBasicBlock(basicBlock.getSuccessors()
-                                                                    .get(0), tracedBasicBlocksSet);
+                .get(0), tracedBasicBlocksSet);
     }
 
     public void computeTrace() {

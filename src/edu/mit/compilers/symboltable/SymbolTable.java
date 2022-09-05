@@ -13,17 +13,22 @@ import edu.mit.compilers.descriptors.Descriptor;
 
 
 public class SymbolTable {
-    public SymbolTable parent;
     public final SymbolTableType symbolTableType;
     public final HashMap<String, Descriptor> entries = new HashMap<>();
-    public ArrayList<SymbolTable> children = new ArrayList<>();
     public final Block owner;
+    public SymbolTable parent;
+    public ArrayList<SymbolTable> children = new ArrayList<>();
 
     public SymbolTable(SymbolTable parent, SymbolTableType symbolTableType, Block owner) {
         super();
         this.parent = parent;
         this.symbolTableType = symbolTableType;
         this.owner = owner;
+    }
+
+    private static String padRight(String s, Optional<Integer> n) {
+        return n.map(integer -> s + " ".repeat(integer + 4 - s.length()))
+                .orElse(s);
     }
 
     /**
@@ -88,12 +93,6 @@ public class SymbolTable {
         return myToString("", "");
     }
 
-    private static String padRight(String s, Optional<Integer> n) {
-        return n.map(integer -> s + " ".repeat(integer + 4 - s.length()))
-                .orElse(s);
-    }
-
-
     public String myToString(String suffix) {
         return myToString("", suffix);
     }
@@ -110,30 +109,30 @@ public class SymbolTable {
         final String ARRAY_LENGTH = "Array Length";
 
         Optional<Integer> maxLengthIds = Stream.concat(Stream.of(IDENTIFIER, "-".repeat(IDENTIFIER.length())), this.entries.keySet()
-                                                                                                                           .stream()
-                                                                                                                           .map(Object::toString))
-                                               .map(String::length)
-                                               .reduce(Math::max);
+                        .stream()
+                        .map(Object::toString))
+                .map(String::length)
+                .reduce(Math::max);
 
         Stream<String> maxLengthIdsStream = Stream.concat(Stream.of(IDENTIFIER, "-".repeat(IDENTIFIER.length())), this.entries.keySet()
-                                                                                                                              .stream()
-                                                                                                                              .map(Object::toString));
+                .stream()
+                .map(Object::toString));
 
         List<String> ids = maxLengthIdsStream.map(((String s) -> padRight(s, maxLengthIds)))
-                                             .toList();
+                .toList();
 
         Optional<Integer> maxMethodD = Stream.concat(Stream.of(DESCRIPTOR_CLASSES, "-".repeat(DESCRIPTOR_CLASSES.length())), this.entries.keySet()
-                                                                                                                                         .stream()
-                                                                                                                                         .map(Object::getClass)
-                                                                                                                                         .map(Class::getSimpleName))
-                                             .map(String::length)
-                                             .reduce(Math::max);
+                        .stream()
+                        .map(Object::getClass)
+                        .map(Class::getSimpleName))
+                .map(String::length)
+                .reduce(Math::max);
         List<String> descriptorTypes = Stream.concat(Stream.of(DESCRIPTOR_CLASSES, "-".repeat(DESCRIPTOR_CLASSES.length())), this.entries.values()
-                                                                                                                                         .stream()
-                                                                                                                                         .map(Object::getClass)
-                                                                                                                                         .map(Class::getSimpleName))
-                                             .map(s -> padRight(s, maxMethodD))
-                                             .toList();
+                        .stream()
+                        .map(Object::getClass)
+                        .map(Class::getSimpleName))
+                .map(s -> padRight(s, maxMethodD))
+                .toList();
 
         List<Descriptor> list1 = new ArrayList<>(this.entries.values());
         List<String> builtins = new ArrayList<>();
@@ -143,12 +142,12 @@ public class SymbolTable {
             builtins.add(toString);
         }
         Optional<Integer> maxLengthTypes = Stream.concat(Stream.of(BUILTIN_TYPES, "-".repeat(BUILTIN_TYPES.length())), builtins.stream())
-                                                 .map(String::length)
-                                                 .reduce(Math::max);
+                .map(String::length)
+                .reduce(Math::max);
         List<String> builtinTypes = Stream.concat(Stream.of(BUILTIN_TYPES, "-".repeat(BUILTIN_TYPES.length())), builtins.stream())
-                                          .map(Object::toString)
-                                          .map((String s) -> padRight(s, maxLengthTypes))
-                                          .toList();
+                .map(Object::toString)
+                .map((String s) -> padRight(s, maxLengthTypes))
+                .toList();
 
         List<String> list = new ArrayList<>();
         for (Descriptor descriptor : list1) {
@@ -156,11 +155,11 @@ public class SymbolTable {
             list.add(o);
         }
         Optional<Integer> maxLengthArraySize = Stream.concat(Stream.of(ARRAY_LENGTH, "-".repeat(ARRAY_LENGTH.length())), list.stream())
-                                                     .map(String::length)
-                                                     .reduce(Math::max);
+                .map(String::length)
+                .reduce(Math::max);
         List<String> arraySizes = Stream.concat(Stream.of(ARRAY_LENGTH, "-".repeat(ARRAY_LENGTH.length())), list.stream())
-                                        .map(s -> padRight(s, maxLengthArraySize))
-                                        .toList();
+                .map(s -> padRight(s, maxLengthArraySize))
+                .toList();
 
 
         List<String> rows = new ArrayList<>();

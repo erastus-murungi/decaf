@@ -4,7 +4,49 @@ import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
 
-import edu.mit.compilers.ast.*;
+import edu.mit.compilers.ast.ArithmeticOperator;
+import edu.mit.compilers.ast.Array;
+import edu.mit.compilers.ast.AssignOpExpr;
+import edu.mit.compilers.ast.Assignment;
+import edu.mit.compilers.ast.BinaryOpExpression;
+import edu.mit.compilers.ast.Block;
+import edu.mit.compilers.ast.BooleanLiteral;
+import edu.mit.compilers.ast.Break;
+import edu.mit.compilers.ast.CharLiteral;
+import edu.mit.compilers.ast.CompoundAssignOpExpr;
+import edu.mit.compilers.ast.ConditionalOperator;
+import edu.mit.compilers.ast.Continue;
+import edu.mit.compilers.ast.DecimalLiteral;
+import edu.mit.compilers.ast.Decrement;
+import edu.mit.compilers.ast.EqualityOperator;
+import edu.mit.compilers.ast.ExpressionParameter;
+import edu.mit.compilers.ast.FieldDeclaration;
+import edu.mit.compilers.ast.For;
+import edu.mit.compilers.ast.HexLiteral;
+import edu.mit.compilers.ast.If;
+import edu.mit.compilers.ast.ImportDeclaration;
+import edu.mit.compilers.ast.Increment;
+import edu.mit.compilers.ast.Initialization;
+import edu.mit.compilers.ast.IntLiteral;
+import edu.mit.compilers.ast.Len;
+import edu.mit.compilers.ast.LocationArray;
+import edu.mit.compilers.ast.LocationAssignExpr;
+import edu.mit.compilers.ast.LocationVariable;
+import edu.mit.compilers.ast.MethodCall;
+import edu.mit.compilers.ast.MethodCallParameter;
+import edu.mit.compilers.ast.MethodCallStatement;
+import edu.mit.compilers.ast.MethodDefinition;
+import edu.mit.compilers.ast.MethodDefinitionParameter;
+import edu.mit.compilers.ast.Name;
+import edu.mit.compilers.ast.ParenthesizedExpression;
+import edu.mit.compilers.ast.Program;
+import edu.mit.compilers.ast.RelationalOperator;
+import edu.mit.compilers.ast.Return;
+import edu.mit.compilers.ast.Statement;
+import edu.mit.compilers.ast.StringLiteral;
+import edu.mit.compilers.ast.Type;
+import edu.mit.compilers.ast.UnaryOpExpression;
+import edu.mit.compilers.ast.While;
 import edu.mit.compilers.descriptors.ArrayDescriptor;
 import edu.mit.compilers.descriptors.Descriptor;
 import edu.mit.compilers.descriptors.MethodDescriptor;
@@ -237,10 +279,12 @@ public class TypeCheckVisitor implements Visitor<Type> {
         if (descriptor.isPresent()) {
             if ((descriptor.get() instanceof ArrayDescriptor)) {
                 switch (descriptor.get().type) {
-                    case Bool: case BoolArray:
-                         type = Type.Bool;
-                         break;
-                    case Int: case IntArray:
+                    case Bool:
+                    case BoolArray:
+                        type = Type.Bool;
+                        break;
+                    case Int:
+                    case IntArray:
                         type = Type.Int;
                         break;
                     default:
@@ -318,7 +362,7 @@ public class TypeCheckVisitor implements Visitor<Type> {
 
         final Optional<Descriptor> optionalMethodDescriptor = methods.getDescriptorFromCurrentScope(methodCall.nameId.getLabel());
         final Descriptor descriptor;
-        if (symbolTable.containsEntry(methodCall.nameId.getLabel())){
+        if (symbolTable.containsEntry(methodCall.nameId.getLabel())) {
             exceptions.add(new DecafSemanticException(methodCall.tokenPosition, methodCall.nameId.getLabel() + " refers to locally defined variable"));
             return Type.Undefined;
         }
@@ -357,8 +401,7 @@ public class TypeCheckVisitor implements Visitor<Type> {
         if (optionalDescriptor.isEmpty() || (locationAssignExpr.location instanceof LocationVariable && optionalDescriptor.get() instanceof ArrayDescriptor))
             exceptions.add(new DecafSemanticException(locationAssignExpr.tokenPosition, "id `" + locationAssignExpr.location.name.getLabel() + "` being assigned to must be a declared local/global variable or formal parameter."));
         else {
-            if (locationAssignExpr.location instanceof LocationArray) {
-                final LocationArray locationArray = (LocationArray) locationAssignExpr.location;
+            if (locationAssignExpr.location instanceof final LocationArray locationArray) {
                 locationArray.expression.setType(locationArray.expression.accept(this, symbolTable));
                 if (locationArray.expression.getType() != Type.Int) {
                     exceptions.add(new DecafSemanticException(locationAssignExpr.tokenPosition, "array index must evaluate to an int"));
@@ -367,8 +410,7 @@ public class TypeCheckVisitor implements Visitor<Type> {
             final Type expressionType = locationAssignExpr.assignExpr.accept(this, symbolTable);
             final Descriptor locationDescriptor = optionalDescriptor.get();
 
-            if (locationAssignExpr.assignExpr instanceof AssignOpExpr) {
-                final AssignOpExpr assignOpExpr = (AssignOpExpr) locationAssignExpr.assignExpr;
+            if (locationAssignExpr.assignExpr instanceof final AssignOpExpr assignOpExpr) {
                 if (assignOpExpr.assignOp.label.equals(DecafScanner.ASSIGN)) {
                     if ((locationDescriptor.type == Type.Int || locationDescriptor.type == Type.IntArray) && expressionType != Type.Int) {
                         exceptions.add(new DecafSemanticException(locationAssignExpr.tokenPosition, "lhs is type " + locationDescriptor.type + " rhs must be type Int, not " + expressionType));
@@ -378,11 +420,11 @@ public class TypeCheckVisitor implements Visitor<Type> {
                     }
                 }
             }
-             if (assignOperatorEquals(locationAssignExpr, DecafScanner.ADD_ASSIGN)
-                               || assignOperatorEquals(locationAssignExpr, DecafScanner.MINUS_ASSIGN)
-                               || assignOperatorEquals(locationAssignExpr, DecafScanner.MULTIPLY_ASSIGN)
-                               || locationAssignExpr.assignExpr instanceof Decrement
-                               || locationAssignExpr.assignExpr instanceof Increment
+            if (assignOperatorEquals(locationAssignExpr, DecafScanner.ADD_ASSIGN)
+                    || assignOperatorEquals(locationAssignExpr, DecafScanner.MINUS_ASSIGN)
+                    || assignOperatorEquals(locationAssignExpr, DecafScanner.MULTIPLY_ASSIGN)
+                    || locationAssignExpr.assignExpr instanceof Decrement
+                    || locationAssignExpr.assignExpr instanceof Increment
             ) {
                 // both must be of type int
                 if (!((locationDescriptor.type == Type.Int || locationDescriptor.type == Type.IntArray) && expressionType == Type.Int)) {
@@ -395,9 +437,9 @@ public class TypeCheckVisitor implements Visitor<Type> {
 
     private boolean assignOperatorEquals(LocationAssignExpr locationAssignExpr, String opStr) {
         return (locationAssignExpr.assignExpr instanceof AssignOpExpr
-                        && ((AssignOpExpr) locationAssignExpr.assignExpr).assignOp.label.equals(opStr))
-                       || (locationAssignExpr.assignExpr instanceof CompoundAssignOpExpr
-                                   && ((CompoundAssignOpExpr) locationAssignExpr.assignExpr).compoundAssignOp.label.equals(opStr));
+                && ((AssignOpExpr) locationAssignExpr.assignExpr).assignOp.label.equals(opStr))
+                || (locationAssignExpr.assignExpr instanceof CompoundAssignOpExpr
+                && ((CompoundAssignOpExpr) locationAssignExpr.assignExpr).compoundAssignOp.label.equals(opStr));
     }
 
     @Override
@@ -481,16 +523,14 @@ public class TypeCheckVisitor implements Visitor<Type> {
                         Long.parseLong("-" + intLiteral.literal.substring(2), 16);
                     else
                         Long.parseLong("-" + intLiteral.literal);
-                }
-                else {
+                } else {
                     if (intLiteral instanceof HexLiteral)
                         Long.parseLong(intLiteral.literal.substring(2), 16);
                     else
                         Long.parseLong(intLiteral.literal);
                 }
 
-            }
-            catch(Exception e) {
+            } catch (Exception e) {
                 exceptions.add(new DecafSemanticException(intLiteral.tokenPosition, "Encountered int literal that's out of bounds"));
             }
         }

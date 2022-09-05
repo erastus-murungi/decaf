@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.cfg.BasicBlock;
@@ -13,7 +12,7 @@ import edu.mit.compilers.utils.TarjanSCC;
 
 public class BranchFoldingPass {
     public static void run(Collection<BasicBlock> basicBlocks) {
-        for (BasicBlock entryBlock: basicBlocks) {
+        for (BasicBlock entryBlock : basicBlocks) {
             TarjanSCC.correctPredecessors(entryBlock);
             mergeTails(TarjanSCC.getReversePostOrder(entryBlock));
         }
@@ -35,7 +34,7 @@ public class BranchFoldingPass {
     }
 
     private static void mergeTails(List<BasicBlock> basicBlocks) {
-        for (BasicBlock basicBlock: basicBlocks) {
+        for (BasicBlock basicBlock : basicBlocks) {
             if (basicBlock.getPredecessors().size() > 1 && haveSameSuccessor(basicBlock.getPredecessors())) {
                 var commonInstructions = getCommonInstructions(basicBlock.getPredecessors());
                 if (commonInstructions.isPresent()) {
@@ -70,8 +69,8 @@ public class BranchFoldingPass {
                 .mapToInt(Integer::intValue)
                 .min();
         var collected = basicBlocks.stream()
-                                   .map(basicBlock -> new ArrayList<>(basicBlock.getAstNodes()))
-                                   .toList();
+                .map(basicBlock -> new ArrayList<>(basicBlock.getAstNodes()))
+                .toList();
         collected.forEach(Collections::reverse);
 
         if (minSize.isPresent()) {

@@ -1,13 +1,13 @@
 package edu.mit.compilers.codegen.codes;
 
+import java.util.Collections;
+import java.util.List;
+
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
-
-import java.util.Collections;
-import java.util.List;
+import edu.mit.compilers.codegen.names.Value;
 
 public class GlobalAllocation extends Instruction {
     public static final int DEFAULT_ALIGNMENT = 8;
@@ -21,7 +21,7 @@ public class GlobalAllocation extends Instruction {
         super(source, comment);
         this.variableName = variableName;
         this.size = size;
-        this.type  = type;
+        this.type = type;
         this.alignment = DEFAULT_ALIGNMENT;
     }
 

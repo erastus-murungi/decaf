@@ -7,17 +7,17 @@ public abstract class Value {
 
     protected String label;
 
+    public Value(Type type, String label) {
+        this.type = type;
+        this.label = label;
+    }
+
     public Type getType() {
         return type;
     }
 
     public String getLabel() {
         return label;
-    }
-
-    public Value(Type type, String label) {
-        this.type = type;
-        this.label = label;
     }
 
     @Override

@@ -1,18 +1,24 @@
 package edu.mit.compilers.ast;
 
+import java.util.List;
+
 import edu.mit.compilers.codegen.CodegenAstVisitor;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symboltable.SymbolTable;
-import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.utils.Pair;
-
-import java.util.List;
 
 public class MethodDefinitionParameter extends Declaration {
     final public TokenPosition tokenPosition;
     final private String name;
     final private Type type;
+
+    public MethodDefinitionParameter(TokenPosition tokenPosition, String name, Type type) {
+        this.tokenPosition = tokenPosition;
+        this.name = name;
+        this.type = type;
+    }
 
     public String getName() {
         return name;
@@ -41,12 +47,6 @@ public class MethodDefinitionParameter extends Declaration {
     @Override
     public boolean isTerminal() {
         return false;
-    }
-
-    public MethodDefinitionParameter(TokenPosition tokenPosition, String name, Type type) {
-        this.tokenPosition = tokenPosition;
-        this.name = name;
-        this.type = type;
     }
 
     @Override

@@ -29,7 +29,7 @@ public class TarjanSCC {
             basicBlock.getPredecessors().clear();
 
         for (BasicBlock basicBlock : basicBlocks) {
-            for (BasicBlock successor: basicBlock.getSuccessors()) {
+            for (BasicBlock successor : basicBlock.getSuccessors()) {
                 successor.addPredecessor(basicBlock);
             }
         }

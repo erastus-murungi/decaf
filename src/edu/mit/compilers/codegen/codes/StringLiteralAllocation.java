@@ -1,12 +1,11 @@
 package edu.mit.compilers.codegen.codes;
 
-import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
-import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.utils.Utils;
-
 import java.util.Collections;
 import java.util.List;
+
+import edu.mit.compilers.codegen.InstructionVisitor;
+import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
+import edu.mit.compilers.codegen.names.Value;
 
 public class StringLiteralAllocation extends Instruction {
     public String label;

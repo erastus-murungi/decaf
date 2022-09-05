@@ -1,19 +1,23 @@
 package edu.mit.compilers.dataflow.analyses;
 
+import com.google.common.collect.Sets;
+
+import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.HasOperand;
-import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.MemoryAddress;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.dataflow.usedef.Def;
 import edu.mit.compilers.dataflow.usedef.Use;
 import edu.mit.compilers.dataflow.usedef.UseDef;
-import edu.mit.compilers.utils.SetUtils;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
     public LiveVariableAnalysis(BasicBlock basicBlock) {
@@ -76,7 +80,7 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
             out.put(B, meet(B));
 
             // IN[B] = USE[B] ∪ (IN[B] - DEF[B])
-            in.put(B, SetUtils.union(use(B), SetUtils.difference(out(B), def(B))));
+            in.put(B, Sets.union(use(B), Sets.difference(out(B), def(B))));
 
             if (!in(B).equals(oldIn)) {
                 workList.addAll(B.getPredecessors());

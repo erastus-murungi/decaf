@@ -1,5 +1,13 @@
 package edu.mit.compilers.dataflow.analyses;
 
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.codegen.InstructionList;
@@ -7,20 +15,33 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.utils.TarjanSCC;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 public abstract class DataFlowAnalysis<Value> {
+    public Map<BasicBlock, Set<Value>> out;
+    public Map<BasicBlock, Set<Value>> in;
     Set<Value> allValues;
     // the list of all basic blocks
     List<BasicBlock> basicBlocks;
-
-    public Map<BasicBlock, Set<Value>> out;
-    public Map<BasicBlock, Set<Value>> in;
-
     NOP entryBlock;
     NOP exitBlock;
+
+    public DataFlowAnalysis(BasicBlock basicBlock) {
+        attachEntryNode(basicBlock);
+        findAllBasicBlocksInReversePostOrder();
+        findExitBlock();
+        computeUniversalSetsOfValues();
+        initializeWorkSets();
+        runWorkList();
+    }
+
+    public static Map<Instruction, Integer> getInstructionToIndexMapping(InstructionList instructionList) {
+        var instructionToIndexMapping = new LinkedHashMap<Instruction, Integer>();
+        var index = 0;
+        for (Instruction instruction : instructionList) {
+            instructionToIndexMapping.put(instruction, index);
+            ++index;
+        }
+        return instructionToIndexMapping;
+    }
 
     Set<Value> in(BasicBlock basicBlock) {
         return in.get(basicBlock);
@@ -40,15 +61,6 @@ public abstract class DataFlowAnalysis<Value> {
 
     private void findAllBasicBlocksInReversePostOrder() {
         basicBlocks = TarjanSCC.getReversePostOrder(entryBlock);
-    }
-
-    public DataFlowAnalysis(BasicBlock basicBlock) {
-        attachEntryNode(basicBlock);
-        findAllBasicBlocksInReversePostOrder();
-        findExitBlock();
-        computeUniversalSetsOfValues();
-        initializeWorkSets();
-        runWorkList();
     }
 
     private void findExitBlock() {
@@ -72,16 +84,6 @@ public abstract class DataFlowAnalysis<Value> {
     public abstract void initializeWorkSets();
 
     public abstract void runWorkList();
-
-    public static Map<Instruction, Integer> getInstructionToIndexMapping(InstructionList instructionList) {
-        var instructionToIndexMapping = new LinkedHashMap<Instruction, Integer>();
-        var index = 0;
-        for (Instruction instruction : instructionList) {
-            instructionToIndexMapping.put(instruction, index);
-            ++index;
-        }
-        return instructionToIndexMapping;
-    }
 
     public String getResultForPrint() {
         return Stream

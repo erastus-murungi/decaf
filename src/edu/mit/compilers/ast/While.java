@@ -1,5 +1,9 @@
 package edu.mit.compilers.ast;
 
+import static edu.mit.compilers.grammar.DecafScanner.RESERVED_WHILE;
+
+import java.util.List;
+
 import edu.mit.compilers.codegen.CodegenAstVisitor;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.grammar.TokenPosition;
@@ -8,13 +12,9 @@ import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.Utils;
 
-import java.util.List;
-
-import static edu.mit.compilers.grammar.DecafScanner.RESERVED_WHILE;
-
-public class While extends Statement implements HasExpression  {
-    public Expression test;
+public class While extends Statement implements HasExpression {
     public final Block body;
+    public Expression test;
 
     public While(TokenPosition tokenPosition, Expression test, Block body) {
         super(tokenPosition);

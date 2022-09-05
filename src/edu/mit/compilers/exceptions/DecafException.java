@@ -21,6 +21,6 @@ public class DecafException extends Exception {
 
     @Override
     public String toString() {
-        return this.getClass().getSimpleName() + " (" + "line=" + line  + ", " +"column=" + column + ')' + ": " + getMessage();
+        return this.getClass().getSimpleName() + " (" + "line=" + line + ", " + "column=" + column + ')' + ": " + getMessage();
     }
 }

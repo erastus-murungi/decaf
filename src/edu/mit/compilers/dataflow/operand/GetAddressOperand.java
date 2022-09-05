@@ -20,8 +20,7 @@ public class GetAddressOperand extends Operand {
 
     @Override
     public boolean isContainedIn(StoreInstruction storeInstruction) {
-        if (storeInstruction instanceof GetAddress) {
-            GetAddress otherGetAddress = (GetAddress) storeInstruction;
+        if (storeInstruction instanceof GetAddress otherGetAddress) {
             return getAddress.equals(otherGetAddress);
         }
         return false;

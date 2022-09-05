@@ -31,8 +31,8 @@ import edu.mit.compilers.ast.StringLiteral;
 import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.ast.UnaryOpExpression;
 import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
-import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
+import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.FunctionCallNoResult;
 import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
 import edu.mit.compilers.codegen.codes.GetAddress;
@@ -40,11 +40,11 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.ReturnInstruction;
 import edu.mit.compilers.codegen.codes.StringLiteralAllocation;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
-import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.NumericalConstant;
 import edu.mit.compilers.codegen.names.MemoryAddress;
+import edu.mit.compilers.codegen.names.NumericalConstant;
 import edu.mit.compilers.codegen.names.StringConstant;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.Variable;
 import edu.mit.compilers.descriptors.ArrayDescriptor;
 import edu.mit.compilers.symboltable.SymbolTable;
@@ -141,14 +141,14 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
     @Override
     public InstructionList visit(Name name, LValue resultLocation) {
         Type type = symbolTable.getDescriptorFromValidScopes(name.getLabel())
-                               .orElseThrow().type;
+                .orElseThrow().type;
         return new InstructionList(new Variable(name.getLabel(), type));
     }
 
     @Override
     public InstructionList visit(LocationVariable locationVariable, LValue resultLocation) {
         Type type = symbolTable.getDescriptorFromValidScopes(locationVariable.name.getLabel())
-                               .orElseThrow().type;
+                .orElseThrow().type;
         return new InstructionList(new Variable(locationVariable.name.getLabel(), type));
     }
 
@@ -213,7 +213,7 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
         assignmentInstructionList.addAll(storeLocationInstructionList);
 
         if (!(assignment.getOperator()
-                        .equals(Operators.ASSIGN) && storeLocationInstructionList.place.equals(operandInstructionList.place)))
+                .equals(Operators.ASSIGN) && storeLocationInstructionList.place.equals(operandInstructionList.place)))
             assignmentInstructionList.add(flattenCompoundAssign((LValue) storeLocationInstructionList.place, operandInstructionList.place, assignment.getOperator(), assignment));
         assignmentInstructionList.place = storeLocationInstructionList.place.copy();
         return assignmentInstructionList;
@@ -234,11 +234,11 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
         InstructionList instructionList = new InstructionList();
         for (Array array : fieldDeclaration.arrays) {
             var arrayName = new Variable(array.getId()
-                                              .getLabel(), fieldDeclaration.getType());
+                    .getLabel(), fieldDeclaration.getType());
             var arrayLength = new NumericalConstant(array.getSize()
-                                                         .convertToLong(), Type.Int);
+                    .convertToLong(), Type.Int);
             for (long i = 0; i < array.getSize()
-                                      .convertToLong(); i++) {
+                    .convertToLong(); i++) {
                 var getAddressInstruction = new GetAddress(array, arrayName, new NumericalConstant(i, Type.Int), generateAddressName(fieldDeclaration.getType()), arrayLength);
                 instructionList.add(getAddressInstruction);
                 instructionList.add(new CopyInstruction(getAddressInstruction.getDestination().copy(), NumericalConstant.zero(), array, String.format("%s[%s] = 0", arrayName, i)));
@@ -254,7 +254,7 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
         unaryOpExpressionInstructionList.addAll(operandInstructionList);
         var place = resolveStoreLocation(unaryOpExpression.getType());
         unaryOpExpressionInstructionList.add(new UnaryInstruction(place, unaryOpExpression.getUnaryOperator()
-                                                                                          .getSourceCode(), operandInstructionList.place.copy(), unaryOpExpression));
+                .getSourceCode(), operandInstructionList.place.copy(), unaryOpExpression));
         unaryOpExpressionInstructionList.place = place;
         return unaryOpExpressionInstructionList;
     }

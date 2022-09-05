@@ -15,11 +15,12 @@
  */
 package edu.mit.compilers.utils;
 
+import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
+import static java.lang.annotation.RetentionPolicy.CLASS;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
-import static java.lang.annotation.RetentionPolicy.CLASS;
 /**
  * Denotes that the annotated String element, represents a logical type and that its value should be
  * one of the explicitly named constants.
@@ -46,6 +47,8 @@ import static java.lang.annotation.RetentionPolicy.CLASS;
 @Retention(CLASS)
 @Target(ANNOTATION_TYPE)
 public @interface StringDef {
-    /** Defines the allowed constants for this element */
+    /**
+     * Defines the allowed constants for this element
+     */
     String[] value() default {};
 }

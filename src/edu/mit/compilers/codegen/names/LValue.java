@@ -1,12 +1,12 @@
 package edu.mit.compilers.codegen.names;
 
-import java.util.List;
 import java.util.Objects;
 
 import edu.mit.compilers.ast.Type;
 
 public abstract class LValue extends Value {
     protected Integer versionNumber = null;
+
     public LValue(String label, Type type) {
         super(type, label);
     }
@@ -37,7 +37,7 @@ public abstract class LValue extends Value {
 
     public LValue copyWithIncrementedVersionNumber() {
         var copy = (LValue) copy();
-        copy.versionNumber+=1;
+        copy.versionNumber += 1;
         return copy;
     }
 

@@ -25,24 +25,44 @@ import edu.mit.compilers.codegen.names.LValue;
 
 public interface CodegenAstVisitor<T> {
     T visit(BooleanLiteral booleanLiteral, LValue resultLocation);
+
     T visit(IntLiteral intLiteral, LValue resultLocation);
+
     T visit(StringLiteral stringLiteral, LValue resultLocation);
+
     T visit(FieldDeclaration fieldDeclaration, LValue resultLocation);
+
     T visit(UnaryOpExpression unaryOpExpression, LValue resultLocation);
+
     T visit(BinaryOpExpression binaryOpExpression, LValue resultLocation);
+
     T visit(Block block, LValue resultLocation);
+
     T visit(ParenthesizedExpression parenthesizedExpression, LValue resultLocation);
+
     T visit(LocationArray locationArray, LValue resultLocation);
+
     T visit(ExpressionParameter expressionParameter, LValue resultLocation);
+
     T visit(Return returnStatement, LValue resultLocation);
+
     T visit(MethodCall methodCall, LValue resultLocation);
+
     T visit(MethodCallStatement methodCallStatement, LValue resultLocation);
+
     T visit(LocationAssignExpr locationAssignExpr, LValue resultLocation);
+
     T visit(Name name, LValue resultLocation);
+
     T visit(LocationVariable locationVariable, LValue resultLocation);
+
     T visit(Len len);
+
     T visit(CompoundAssignOpExpr compoundAssignOpExpr, LValue resultLocation);
+
     T visit(Initialization initialization, LValue resultLocation);
+
     T visit(Assignment assignment, LValue resultLocation);
+
     T visit(MethodDefinitionParameter methodDefinitionParameter, LValue resultLocation);
 }

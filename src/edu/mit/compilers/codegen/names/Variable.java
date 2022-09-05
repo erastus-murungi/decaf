@@ -19,6 +19,7 @@ public class Variable extends LValue {
     public Variable(String label, Type type) {
         this(label, type, null, false);
     }
+
     protected Variable(long index, Type type) {
         this(String.format("%%%d", index), type, null, true);
     }

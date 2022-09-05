@@ -1,34 +1,35 @@
 package edu.mit.compilers.codegen.codes;
 
+import java.util.List;
+import java.util.Optional;
+
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.InstructionVisitor;
-import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddress;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 import edu.mit.compilers.utils.Utils;
 
-import java.util.List;
-import java.util.Optional;
-
 public class CopyInstruction extends StoreInstruction implements Cloneable {
     private Value value;
-
-    public Value getValue() {
-        return value;
-    }
 
     public CopyInstruction(LValue dst, Value operand, AST source, String comment) {
         super(dst, source, comment);
         this.value = operand;
     }
+
     public static CopyInstruction noAstConstructor(LValue dst, Value operand) {
         return new CopyInstruction(dst, operand, null, String.format("%s = %s", dst, operand));
     }
 
     public static CopyInstruction noMetaData(LValue dst, Value operand) {
         return new CopyInstruction(dst, operand, null, "");
+    }
+
+    public Value getValue() {
+        return value;
     }
 
     @Override
@@ -78,7 +79,7 @@ public class CopyInstruction extends StoreInstruction implements Cloneable {
         return List.of(value);
     }
 
-    public boolean replace(Value oldVariable, Value replacer) {
+    public boolean replaceValue(Value oldVariable, Value replacer) {
         var replaced = false;
         if (value.equals(oldVariable)) {
             value = replacer;

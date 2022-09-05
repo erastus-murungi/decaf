@@ -1,15 +1,15 @@
 package edu.mit.compilers.codegen.codes;
 
+import java.util.Collections;
+import java.util.List;
+
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.exceptions.DecafException;
 
-import java.util.Collections;
-import java.util.List;
-
 public class RuntimeException extends Instruction {
-    final String errorMessage;
     public final int errorCode;
+    final String errorMessage;
     final DecafException decafException;
 
     public RuntimeException(String errorMessage, int errorCode, DecafException decafException) {

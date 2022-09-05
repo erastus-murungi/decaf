@@ -1,36 +1,29 @@
 package edu.mit.compilers.utils;
 
-import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.ast.Block;
-import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.InstructionList;
-import edu.mit.compilers.codegen.TraceScheduler;
-import edu.mit.compilers.codegen.codes.AllocateInstruction;
-import edu.mit.compilers.codegen.codes.Instruction;
-import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
-import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
-import edu.mit.compilers.registerallocation.LiveInterval;
-
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.ast.Block;
+import edu.mit.compilers.cfg.BasicBlock;
+import edu.mit.compilers.codegen.InstructionList;
+import edu.mit.compilers.codegen.codes.AllocateInstruction;
+import edu.mit.compilers.codegen.codes.Instruction;
+import edu.mit.compilers.codegen.codes.Method;
+import edu.mit.compilers.codegen.names.LValue;
 
 public class Utils {
     // adopted from Java 15
@@ -103,6 +96,70 @@ public class Utils {
         return String.join("\n", list);
     }
 
+    public static void insertAllocateInstructions(ProgramIr programIr) {
+        programIr.methodList.forEach(
+                method -> method.entryBlock.getInstructionList()
+                        .addAll(1, ProgramIr.getLocals(method, programIr.globals)
+                                .stream()
+                                .map(AllocateInstruction::new)
+                                .toList()
+                        )
+        );
+
+    }
+
+    public static boolean containsAlphabeticCharacters(String string) {
+        return string.matches(".*[a-zA-Z]+.*");
+    }
+
+    public static Optional<Long> symbolicallyEvaluate(String string) {
+        // this check is necessary because the evaluator evaluates variables like 'e' and 'pi'
+        if (containsAlphabeticCharacters(string)) {
+            return Optional.empty();
+        }
+        var expression = new com.udojava.evalex.Expression(string);
+        try {
+            var res = expression.setPrecision(100)
+                    .eval();
+            return Optional.of(res.longValue());
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    public static void printSsaCfg(Collection<Method> methodCollection, String filename) {
+        var copy = new HashMap<String, BasicBlock>();
+        methodCollection.forEach(methodBegin -> copy.put(methodBegin.methodName(), methodBegin.entryBlock));
+        GraphVizPrinter.printGraph(copy,
+                (basicBlock -> basicBlock.getInstructionList()
+                        .stream()
+                        .map(Instruction::toString)
+                        .collect(Collectors.joining("\n"))),
+                filename
+        );
+    }
+
+    public static Set<LValue> getAllLValuesInInstructionList(InstructionList instructionList) {
+        return instructionList.stream()
+                .flatMap(instruction -> instruction.getAllLValues()
+                        .stream())
+                .collect(Collectors.toSet());
+
+    }
+
+    public static Set<LValue> getAllLValuesInBasicBlocks(List<BasicBlock> basicBlocks) {
+        return (
+                basicBlocks.stream()
+                        .flatMap(basicBlock -> basicBlock.getInstructionList()
+                                .stream())
+                        .flatMap(instruction -> instruction.getAllValues()
+                                .stream())
+                        .filter(abstractName -> abstractName instanceof LValue)
+                        .map(abstractName -> (LValue) abstractName)
+                        .collect(Collectors.toUnmodifiableSet())
+        );
+    }
+
     public interface ANSIColorConstants {
 
         String ANSI_RESET = "\u001B[0m";
@@ -160,71 +217,5 @@ public class Utils {
                 ANSI_BRIGHT_BG_BLACK, ANSI_BRIGHT_BG_RED, ANSI_BRIGHT_BG_GREEN, ANSI_BRIGHT_BG_YELLOW,
                 ANSI_BRIGHT_BG_BLUE, ANSI_BRIGHT_BG_PURPLE, ANSI_BRIGHT_BG_CYAN, ANSI_BRIGHT_BG_WHITE
         };
-    }
-
-    public static void insertAllocateInstructions(ProgramIr programIr) {
-        programIr.methodList.forEach(
-                method -> method.entryBlock.getInstructionList()
-                                           .addAll(1, ProgramIr.getLocals(method, programIr.globals)
-                                                               .stream()
-                                                               .map(AllocateInstruction::new)
-                                                               .toList()
-                                           )
-        );
-
-    }
-
-    public static boolean containsAlphabeticCharacters(String string) {
-        return string.matches(".*[a-zA-Z]+.*");
-    }
-
-    public static Optional<Long> symbolicallyEvaluate(String string) {
-        // this check is necessary because the evaluator evaluates variables like 'e' and 'pi'
-        if (containsAlphabeticCharacters(string)) {
-            return Optional.empty();
-        }
-        var expression = new com.udojava.evalex.Expression(string);
-        try {
-            var res = expression.setPrecision(100)
-                                .eval();
-            return Optional.of(res.longValue());
-        } catch (Exception e) {
-            return Optional.empty();
-        }
-    }
-
-
-    public static void printSsaCfg(Collection<Method> methodCollection, String filename) {
-        var copy = new HashMap<String, BasicBlock>();
-        methodCollection.forEach(methodBegin -> copy.put(methodBegin.methodName(), methodBegin.entryBlock));
-        GraphVizPrinter.printGraph(copy,
-                (basicBlock -> basicBlock.getInstructionList()
-                                         .stream()
-                                         .map(Instruction::toString)
-                                         .collect(Collectors.joining("\n"))),
-                filename
-        );
-    }
-
-
-    public static Set<LValue> getAllLValuesInInstructionList(InstructionList instructionList) {
-        return instructionList.stream()
-                       .flatMap(instruction -> instruction.getAllLValues()
-                                                          .stream())
-                       .collect(Collectors.toSet());
-
-    }
-
-    public static Set<LValue> getAllLValuesInBasicBlocks(List<BasicBlock> basicBlocks) {
-        return (
-                basicBlocks.stream()
-                           .flatMap(basicBlock -> basicBlock.getInstructionList()
-                                                            .stream())
-                           .flatMap(instruction -> instruction.getAllValues()
-                                                              .stream())
-                           .filter(abstractName -> abstractName instanceof LValue)
-                           .map(abstractName -> (LValue) abstractName)
-                           .collect(Collectors.toUnmodifiableSet())
-        );
     }
 }

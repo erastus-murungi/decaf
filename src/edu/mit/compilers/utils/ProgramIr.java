@@ -10,53 +10,23 @@ import java.util.stream.Collectors;
 import edu.mit.compilers.ast.MethodDefinition;
 import edu.mit.compilers.ast.MethodDefinitionParameter;
 import edu.mit.compilers.codegen.InstructionList;
+import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
 import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.GlobalAllocation;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddress;
+import edu.mit.compilers.codegen.names.Value;
 
 public class ProgramIr {
-    public InstructionList headerInstructions;
+    public InstructionList prologue;
     public List<Method> methodList;
     Set<LValue> globals = new HashSet<>();
 
-    public ProgramIr(InstructionList headerInstructions, List<Method> methodList) {
-        this.headerInstructions = headerInstructions;
+    public ProgramIr(InstructionList prologue, List<Method> methodList) {
+        this.prologue = prologue;
         this.methodList = methodList;
-    }
-
-    public int getSizeOfHeaderInstructions() {
-        return headerInstructions.size();
-    }
-
-    public InstructionList mergeProgram() {
-        var programHeader = headerInstructions.copy();
-        var tacList = programHeader.copy();
-        for (Method method : methodList) {
-            for (InstructionList instructionList : new TraceScheduler(method).getInstructionTrace())
-                tacList.addAll(instructionList);
-        }
-        return tacList;
-    }
-
-    public void findGlobals() {
-        globals = headerInstructions
-                .stream()
-                .filter(instruction -> instruction instanceof GlobalAllocation)
-                .map(instruction -> (GlobalAllocation) instruction)
-                .map(globalAllocation -> globalAllocation.variableName)
-                .collect(Collectors.toUnmodifiableSet());
-    }
-
-    public Set<LValue> getGlobals() {
-        return globals;
-    }
-
-    public List<LValue> getLocals(Method method) {
-        return getLocals(method, globals);
     }
 
     public static List<LValue> getLocals(Method method, Set<LValue> globals) {
@@ -89,7 +59,6 @@ public class ProgramIr {
         return locals;
     }
 
-
     private static void reorderLocals(List<LValue> locals, MethodDefinition methodDefinition) {
         List<LValue> methodParametersNames = new ArrayList<>();
 
@@ -114,5 +83,62 @@ public class ProgramIr {
                 .stream()
                 .sorted(Comparator.comparing(Value::toString))
                 .toList());
+    }
+
+    public List<Instruction> toSingleInstructionList() {
+        var programHeader = prologue.copy();
+        var instructions = programHeader.copy();
+        for (Method method : methodList) {
+            for (InstructionList instructionList : TraceScheduler.getInstructionTrace(method))
+                instructions.addAll(instructionList);
+        }
+        return instructions;
+    }
+
+    public String mergeProgram() {
+        List<String> output = new ArrayList<>();
+        for (var instruction : prologue) {
+            output.add(instruction.syntaxHighlightedToString());
+        }
+        for (Method method : methodList) {
+            for (InstructionList instructionList : TraceScheduler.getInstructionTrace(method)) {
+                if (!instructionList.getLabel()
+                        .equals("UNSET"))
+                    output.add("    " + instructionList.getLabel() + ":");
+                instructionList.forEach(instruction -> output.add(instruction.syntaxHighlightedToString()));
+            }
+        }
+        return String.join("\n", output);
+    }
+
+    public void findGlobals() {
+        globals = prologue
+                .stream()
+                .filter(instruction -> instruction instanceof GlobalAllocation)
+                .map(instruction -> (GlobalAllocation) instruction)
+                .map(globalAllocation -> globalAllocation.variableName)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    public void renumberLabels() {
+        TemporaryNameIndexGenerator.resetLabels();
+        methodList.forEach(
+                method ->
+                        TraceScheduler.getInstructionTrace(method)
+                                .forEach(
+                                        instructionList -> {
+                                            if (!instructionList.isEntry())
+                                                instructionList.setLabel(TemporaryNameIndexGenerator.getNextLabel());
+                                        }
+                                )
+        );
+    }
+
+    public Set<LValue> getGlobals() {
+        return globals;
+    }
+
+    public List<LValue> getLocals(Method method) {
+        return getLocals(method, globals);
     }
 }

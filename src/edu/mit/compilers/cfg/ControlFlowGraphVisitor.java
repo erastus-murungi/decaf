@@ -1,17 +1,58 @@
 package edu.mit.compilers.cfg;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Stack;
 
-import edu.mit.compilers.ast.*;
+import edu.mit.compilers.ast.Array;
+import edu.mit.compilers.ast.AssignOpExpr;
+import edu.mit.compilers.ast.Assignment;
+import edu.mit.compilers.ast.BinaryOpExpression;
+import edu.mit.compilers.ast.Block;
+import edu.mit.compilers.ast.BooleanLiteral;
+import edu.mit.compilers.ast.Break;
+import edu.mit.compilers.ast.CharLiteral;
+import edu.mit.compilers.ast.CompoundAssignOpExpr;
+import edu.mit.compilers.ast.Continue;
+import edu.mit.compilers.ast.DecimalLiteral;
+import edu.mit.compilers.ast.Decrement;
+import edu.mit.compilers.ast.Expression;
+import edu.mit.compilers.ast.ExpressionParameter;
+import edu.mit.compilers.ast.FieldDeclaration;
+import edu.mit.compilers.ast.For;
+import edu.mit.compilers.ast.HexLiteral;
+import edu.mit.compilers.ast.If;
+import edu.mit.compilers.ast.ImportDeclaration;
+import edu.mit.compilers.ast.Increment;
+import edu.mit.compilers.ast.Initialization;
+import edu.mit.compilers.ast.IntLiteral;
+import edu.mit.compilers.ast.Len;
+import edu.mit.compilers.ast.LocationArray;
+import edu.mit.compilers.ast.LocationAssignExpr;
+import edu.mit.compilers.ast.LocationVariable;
+import edu.mit.compilers.ast.MethodCall;
+import edu.mit.compilers.ast.MethodCallParameter;
+import edu.mit.compilers.ast.MethodCallStatement;
+import edu.mit.compilers.ast.MethodDefinition;
+import edu.mit.compilers.ast.MethodDefinitionParameter;
+import edu.mit.compilers.ast.Name;
+import edu.mit.compilers.ast.ParenthesizedExpression;
+import edu.mit.compilers.ast.Program;
+import edu.mit.compilers.ast.Return;
+import edu.mit.compilers.ast.Statement;
+import edu.mit.compilers.ast.StringLiteral;
+import edu.mit.compilers.ast.UnaryOpExpression;
+import edu.mit.compilers.ast.While;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symboltable.SymbolTable;
 
 
 public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
-    public BasicBlock initialGlobalBlock = BasicBlock.noBranch();
-    public HashMap<String, BasicBlock> methodCFGBlocks = new HashMap<>();
-    public HashMap<String, NOP> methodToExitNOP = new HashMap<>();
+    public BasicBlock global = BasicBlock.noBranch();
+    public HashMap<String, BasicBlock> methodNameToEntryBlock = new HashMap<>();
+    public HashMap<String, NOP> methodNameToExitNop = new HashMap<>();
 
     public Stack<List<BasicBlock>> loopToBreak = new Stack<>(); // a bunch of break blocks to point to the right place
     public Stack<BasicBlock> continueBlocks = new Stack<>(); // a bunch of continue blocks to point to the right place
@@ -19,9 +60,39 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
     /**
      * We need a global NOP which represents the end of all computation in a method
      */
-    private NOP exitNOP;
+    private NOP exitNop;
 
     public ControlFlowGraphVisitor() {
+    }
+
+    public static Expression rotateBinaryOpExpression(Expression expr) {
+        if (expr instanceof BinaryOpExpression) {
+            if (((BinaryOpExpression) expr).rhs instanceof BinaryOpExpression rhsTemp) {
+                if (BinaryOpExpression.operatorPrecedence.get(((BinaryOpExpression) expr).op.getSourceCode()).equals(BinaryOpExpression.operatorPrecedence.get(rhsTemp.op.getSourceCode()))) {
+                    ((BinaryOpExpression) expr).rhs = rhsTemp.lhs;
+                    rhsTemp.lhs = expr;
+                    ((BinaryOpExpression) expr).lhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);
+                    ((BinaryOpExpression) expr).rhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).rhs);
+                    return rotateBinaryOpExpression(rhsTemp);
+                }
+            }
+            ((BinaryOpExpression) expr).lhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);
+            ((BinaryOpExpression) expr).rhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).rhs);
+        } else if (expr instanceof ParenthesizedExpression) {
+            rotateBinaryOpExpression(((ParenthesizedExpression) expr).expression);
+        } else if (expr instanceof MethodCall) {
+            for (int i = 0; i < ((MethodCall) expr).methodCallParameterList.size(); i++) {
+                MethodCallParameter param = ((MethodCall) expr).methodCallParameterList.get(i);
+                if (param instanceof ExpressionParameter) {
+                    ((MethodCall) expr).methodCallParameterList.set(i, new ExpressionParameter(rotateBinaryOpExpression(((ExpressionParameter) param).expression)));
+                }
+            }
+        } else if (expr instanceof LocationArray) {
+            rotateBinaryOpExpression(((LocationArray) expr).expression);
+        } else if (expr instanceof UnaryOpExpression) {
+            rotateBinaryOpExpression(((UnaryOpExpression) expr).operand);
+        }
+        return expr;
     }
 
     @Override
@@ -92,7 +163,7 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
 
         // Evaluate the condition
         final Expression condition = rotateBinaryOpExpression(forStatement.terminatingCondition);
-        var evaluateBlock = ShortCircuitProcessor.shortCircuit(BasicBlock.branch(condition, null, null));
+        var evaluateBlock = ShortCircuitProcessor.shortCircuit(BasicBlock.branch(condition, exitNop, exitNop));
         incrementBlock.setSuccessor(evaluateBlock);
         evaluateBlock.addPredecessor(incrementBlock);
 
@@ -104,12 +175,12 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
 
         evaluateBlock.setFalseTarget(falseBlock);
         evaluateBlock.getFalseTarget()
-                     .addPredecessor(evaluateBlock);
+                .addPredecessor(evaluateBlock);
 
         evaluateBlock.setTrueTarget(truePair.startBlock);
         truePair.startBlock.addPredecessor(evaluateBlock);
 
-        if (truePair.endBlock != exitNOP) {
+        if (truePair.endBlock != exitNop) {
             truePair.endBlock.setSuccessor(incrementBlock);
             incrementBlock.addPredecessor(truePair.endBlock);
         }
@@ -134,13 +205,13 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
         List<BasicBlock> toRemove = new ArrayList<>();
         List<BasicBlock> breakBlocks = loopToBreak.pop();
         if (!breakBlocks.isEmpty()) {
-            for (BasicBlock breakBlock: breakBlocks) {
+            for (BasicBlock breakBlock : breakBlocks) {
                 breakBlock.setSuccessor(cfgBlock);
                 toRemove.add(breakBlock);
                 cfgBlock.addPredecessor(breakBlock);
             }
         }
-        for (BasicBlock breakBlock: toRemove)
+        for (BasicBlock breakBlock : toRemove)
             breakBlocks.remove(breakBlock);
     }
 
@@ -164,7 +235,7 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
 
         // Evaluate the condition
         Expression test = rotateBinaryOpExpression(whileStatement.test);
-        BasicBlock conditionExpr = BasicBlock.branch(test, null, null);
+        BasicBlock conditionExpr = BasicBlock.branch(test, exitNop, exitNop);
         conditionExpr.setFalseTarget(falseBlock);
         falseBlock.addPredecessor(conditionExpr);
 
@@ -188,8 +259,8 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
 
     @Override
     public BasicBlocksPair visit(Program program, SymbolTable symbolTable) {
-        var curPair = new BasicBlocksPair(initialGlobalBlock, new NOP("global NOP"));
-        initialGlobalBlock.setSuccessor(curPair.endBlock);
+        var curPair = new BasicBlocksPair(global, new NOP("global NOP"));
+        global.setSuccessor(curPair.endBlock);
         for (var import_ : program.importDeclarationList) {
             BasicBlocksPair placeholder = import_.accept(this, symbolTable);
             curPair.endBlock.setSuccessor(placeholder.startBlock);
@@ -203,9 +274,9 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
             curPair = placeholder;
         }
         for (var method : program.methodDefinitionList) {
-            exitNOP = new NOP("exit_" +  method.methodName.getLabel());
-            methodCFGBlocks.put(method.methodName.getLabel(), method.accept(this, symbolTable).startBlock);
-            methodToExitNOP.put(method.methodName.getLabel(), exitNOP);
+            exitNop = new NOP("exit_" + method.methodName.getLabel());
+            methodNameToEntryBlock.put(method.methodName.getLabel(), method.accept(this, symbolTable).startBlock);
+            methodNameToExitNop.put(method.methodName.getLabel(), exitNop);
         }
         // don't need to return pair bc only need start block
         return null;
@@ -215,14 +286,13 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
     public BasicBlocksPair visit(UnaryOpExpression unaryOpExpression, SymbolTable symbolTable) {
         // unreachable
         throw new IllegalStateException("we cannot visit " + unaryOpExpression.getClass().getSimpleName());
-}
+    }
 
     @Override
     public BasicBlocksPair visit(BinaryOpExpression binaryOpExpression, SymbolTable symbolTable) {
         // unreachable
         throw new IllegalStateException("we cannot visit " + binaryOpExpression.getClass().getSimpleName());
     }
-
 
     @Override
     public BasicBlocksPair visit(Block block, SymbolTable symbolTable) {
@@ -279,7 +349,8 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
     @Override
     public BasicBlocksPair visit(ParenthesizedExpression parenthesizedExpression, SymbolTable symbolTable) {
         // unreachable (expr)
-        throw new IllegalStateException("we cannot visit " + parenthesizedExpression.getClass().getSimpleName());}
+        throw new IllegalStateException("we cannot visit " + parenthesizedExpression.getClass().getSimpleName());
+    }
 
     @Override
     public BasicBlocksPair visit(LocationArray locationArray, SymbolTable symbolTable) {
@@ -333,8 +404,8 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
         BasicBlock returnBlock = BasicBlock.noBranch();
         returnStatement.retExpression = rotateBinaryOpExpression(returnStatement.retExpression);
         returnBlock.addAstNode(returnStatement);
-        returnBlock.setSuccessor(exitNOP);
-        return new BasicBlocksPair(returnBlock, exitNOP);
+        returnBlock.setSuccessor(exitNop);
+        return new BasicBlocksPair(returnBlock, exitNop);
     }
 
     @Override
@@ -455,39 +526,5 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
     @Override
     public BasicBlocksPair visit(Assignment assignment, SymbolTable symbolTable) {
         return null;
-    }
-
-    public static Expression rotateBinaryOpExpression(Expression expr) {
-        if (expr instanceof BinaryOpExpression) {
-            if (((BinaryOpExpression) expr).rhs instanceof BinaryOpExpression rhsTemp) {
-                if (BinaryOpExpression.operatorPrecedence.get(((BinaryOpExpression) expr).op.getSourceCode()).equals(BinaryOpExpression.operatorPrecedence.get(rhsTemp.op.getSourceCode()))) {
-                    ((BinaryOpExpression) expr).rhs = rhsTemp.lhs;
-                    rhsTemp.lhs = expr;
-                    ((BinaryOpExpression) expr).lhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);
-                    ((BinaryOpExpression) expr).rhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).rhs);
-                    return rotateBinaryOpExpression(rhsTemp);
-                }
-            }
-            ((BinaryOpExpression) expr).lhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);
-            ((BinaryOpExpression) expr).rhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).rhs);
-        }
-        else if (expr instanceof ParenthesizedExpression) {
-            rotateBinaryOpExpression(((ParenthesizedExpression) expr).expression);
-        }
-        else if (expr instanceof MethodCall) {
-            for (int i = 0; i < ((MethodCall) expr).methodCallParameterList.size(); i++) {
-                MethodCallParameter param = ((MethodCall) expr).methodCallParameterList.get(i);
-                if (param instanceof ExpressionParameter) {
-                    ((MethodCall) expr).methodCallParameterList.set(i, new ExpressionParameter(rotateBinaryOpExpression(((ExpressionParameter) param).expression)));
-                }
-            }
-        }
-        else if (expr instanceof LocationArray) {
-            rotateBinaryOpExpression(((LocationArray) expr).expression);
-        }
-        else if (expr instanceof UnaryOpExpression) {
-            rotateBinaryOpExpression(((UnaryOpExpression) expr).operand);
-        }
-        return expr;
     }
 }

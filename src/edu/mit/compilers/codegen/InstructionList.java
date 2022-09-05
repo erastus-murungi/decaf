@@ -1,16 +1,27 @@
 package edu.mit.compilers.codegen;
 
-import edu.mit.compilers.codegen.codes.Instruction;
-import edu.mit.compilers.codegen.names.*;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
+
+import edu.mit.compilers.codegen.codes.Instruction;
+import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.Value;
 
 public class InstructionList extends ArrayList<Instruction> {
     public Value place;
 
+    private Integer labelIndex;
+
+    private String label;
+
+    private boolean isEntry = false;
+
     public InstructionList(Value place, List<Instruction> codes) {
         this.place = place;
+        this.label = "UNSET";
         addAll(codes);
     }
 
@@ -26,25 +37,6 @@ public class InstructionList extends ArrayList<Instruction> {
         this(null, Collections.emptyList());
     }
 
-    public Optional<Instruction> lastInstruction() {
-        if (isEmpty())
-            return Optional.empty();
-        return Optional.of(get(size() - 1));
-    }
-
-    public void reset(Collection<Instruction> newCodes) {
-        clear();
-        addAll(newCodes);
-    }
-
-    public void replaceIfContainsInstructionAtIndex(int indexOfOldCode, Instruction oldCode, Instruction newCode) {
-        if (get(indexOfOldCode) != oldCode) {
-            throw new IllegalArgumentException(oldCode + "not found in Instruction List");
-        }
-        set(indexOfOldCode, newCode);
-    }
-
-
     public static InstructionList of(Instruction code) {
         var instructionList = new InstructionList();
         instructionList.add(code);
@@ -57,10 +49,45 @@ public class InstructionList extends ArrayList<Instruction> {
         return instructionList;
     }
 
-    public Optional<Instruction> firstInstruction() {
-        if (isEmpty())
-            return Optional.empty();
-        return Optional.of(get(0));
+    public void setEntry() {
+        isEntry = true;
+    }
+
+    public boolean isEntry() {
+        return isEntry;
+    }
+
+    public String getLabel() {
+        if (this.label == null)
+            return "L" + labelIndex;
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    public void setLabel(int labelIndex) {
+        this.labelIndex = labelIndex;
+        this.label = null;
+    }
+
+    public String getLabelForAsm() {
+        if (this.label == null)
+            return "L" + labelIndex;
+        return label;
+    }
+
+    public void reset(Collection<Instruction> newCodes) {
+        clear();
+        addAll(newCodes);
+    }
+
+    public void replaceIfContainsInstructionAtIndex(int indexOfOldCode, Instruction oldCode, Instruction newCode) {
+        if (get(indexOfOldCode) != oldCode) {
+            throw new IllegalArgumentException(oldCode + "not found in Instruction List");
+        }
+        set(indexOfOldCode, newCode);
     }
 
     @Override

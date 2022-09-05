@@ -2,12 +2,19 @@ package edu.mit.compilers.dataflow.dominator;
 
 import static edu.mit.compilers.utils.TarjanSCC.correctPredecessors;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.utils.CLI;
 import edu.mit.compilers.utils.GraphVizPrinter;
-
-import java.util.*;
 
 public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
     public static final String ENTRY_BLOCK_LABEL = "Entry";
@@ -21,10 +28,6 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
     private final Map<BasicBlock, Set<BasicBlock>> basicBlockToChildrenMap;
     private final Map<BasicBlock, Set<BasicBlock>> basicBlockToDominanceFrontierMap;
 
-    public Set<BasicBlock> getChildren(BasicBlock basicBlock) {
-        return basicBlockToChildrenMap.getOrDefault(basicBlock, Collections.emptySet());
-    }
-
     public ImmediateDominator(BasicBlock basicBlock) {
         entry = preprocess(basicBlock);
         immediateDominatorsImpl(entry);
@@ -35,6 +38,34 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
         basicBlockToDominanceFrontierMap = computeDominanceFrontier();
     }
 
+    private static List<BasicBlock> reversePostOrder(BasicBlock entryBlock) {
+        var order = new ArrayList<BasicBlock>();
+        postOrder(entryBlock, new HashSet<>(), order);
+        Collections.reverse(order);
+        return order;
+    }
+
+    private static void postOrder(BasicBlock start, Set<BasicBlock> visited, List<BasicBlock> out) {
+        if (visited.contains(start))
+            return;
+
+        visited.add(start);
+
+        for (BasicBlock successor : start.getSuccessors())
+            postOrder(successor, visited, out);
+
+        out.add(start);
+    }
+
+    private static List<BasicBlock> postOrder(BasicBlock entryBlock) {
+        var order = new ArrayList<BasicBlock>();
+        postOrder(entryBlock, new HashSet<>(), order);
+        return order;
+    }
+
+    public Set<BasicBlock> getChildren(BasicBlock basicBlock) {
+        return basicBlockToChildrenMap.getOrDefault(basicBlock, Collections.emptySet());
+    }
 
     private NOP preprocess(BasicBlock entryBlock) {
         NOP entry = new NOP(ENTRY_BLOCK_LABEL);
@@ -74,8 +105,8 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
                 // choose an already-processed predecessor (there must be one)
                 var ps = b.getPredecessors();
                 var processed = ps.stream()
-                                  .filter(this::containsKey)
-                                  .findFirst();
+                        .filter(this::containsKey)
+                        .findFirst();
                 // the idom tree is built in reverse post-order to ensure already-processed predecessor(s) exist
                 var fresh = processed.orElseThrow();
 
@@ -87,7 +118,7 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
 
                         // traverse partial idom tree in post-order to find (least) common ancestor
                         while (!order.get(v1)
-                                     .equals(order.get(v2))) {
+                                .equals(order.get(v2))) {
                             // greater than because order is in reverse
                             while (order.get(v1) > order.get(v2)) v1 = get(v1);
                             while (order.get(v2) > order.get(v1)) v2 = get(v2);
@@ -105,7 +136,6 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
             }
         }
     }
-
 
     public Map<BasicBlock, List<BasicBlock>> computeBlockToDoms() {
         var dominatorTree = new HashMap<BasicBlock, List<BasicBlock>>();
@@ -142,7 +172,7 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
         if (!containsKey(n))
             throw new IllegalArgumentException(n + " not found in tree");
         return dominators.get(m)
-                         .contains(n);
+                .contains(n);
     }
 
     /**
@@ -167,7 +197,7 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
             var immediateDom = get(B);
             basicBlockToChildrenMap.putIfAbsent(immediateDom, new HashSet<>());
             basicBlockToChildrenMap.get(immediateDom)
-                                   .add(B);
+                    .add(B);
         }
         return basicBlockToChildrenMap;
     }
@@ -205,31 +235,6 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
         basicBlockToDominanceFrontierMap.put(basicBlock, dominanceFrontier);
     }
 
-    private static List<BasicBlock> reversePostOrder(BasicBlock entryBlock) {
-        var order = new ArrayList<BasicBlock>();
-        postOrder(entryBlock, new HashSet<>(), order);
-        Collections.reverse(order);
-        return order;
-    }
-
-    private static void postOrder(BasicBlock start, Set<BasicBlock> visited, List<BasicBlock> out) {
-        if (visited.contains(start))
-            return;
-
-        visited.add(start);
-
-        for (BasicBlock successor : start.getSuccessors())
-            postOrder(successor, visited, out);
-
-        out.add(start);
-    }
-
-    private static List<BasicBlock> postOrder(BasicBlock entryBlock) {
-        var order = new ArrayList<BasicBlock>();
-        postOrder(entryBlock, new HashSet<>(), order);
-        return order;
-    }
-
     public List<BasicBlock> preorder() {
         var Q = new ArrayDeque<BasicBlock>();
         var visited = new HashSet<BasicBlock>();
@@ -240,13 +245,13 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
             var v = Q.remove();
             preorderList.add(v);
             v.getSuccessors()
-             .forEach(successor -> {
-                         if (!visited.contains(successor)) {
-                             Q.add(successor);
-                             visited.add(successor);
-                         }
-                     }
-             );
+                    .forEach(successor -> {
+                                if (!visited.contains(successor)) {
+                                    Q.add(successor);
+                                    visited.add(successor);
+                                }
+                            }
+                    );
         }
         return preorderList;
     }

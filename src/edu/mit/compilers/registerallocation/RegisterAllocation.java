@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import edu.mit.compilers.asm.X64Register;
-import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.Value;
@@ -20,7 +19,13 @@ public class RegisterAllocation {
 
     public final Map<Method, Map<Instruction, Set<X64Register>>> methodToLiveRegistersInfo = new HashMap<>();
 
-    private final InstructionList unModified;
+    public RegisterAllocation(ProgramIr programIr) {
+        var liveIntervalsUtil = new LiveIntervalsUtil(programIr);
+        var linearScan = new LinearScan(List.of(X64Register.regsToAllocate), liveIntervalsUtil.methodToLiveIntervalsMap);
+        linearScan.allocate();
+        variableToRegisterMap.putAll(linearScan.getVariableToRegisterMapping());
+        computeMethodToLiveRegistersInfo(programIr, liveIntervalsUtil.methodToLiveIntervalsMap);
+    }
 
     private Map<Instruction, Set<X64Register>> computeInstructionToLiveRegistersMap(ProgramIr programIr, List<LiveInterval> liveIntervals, Map<Value, X64Register> registerMap) {
         var instructionToLiveRegistersMap = new HashMap<Instruction, Set<X64Register>>();
@@ -35,11 +40,11 @@ public class RegisterAllocation {
 
     private Set<X64Register> getLiveRegistersAtPoint(ProgramIr programIr, Collection<LiveInterval> liveIntervals, int index, Map<Value, X64Register> registerMap) {
         return liveIntervals.stream()
-                            .filter(liveInterval -> liveInterval.startPoint() <= index && liveInterval.endPoint() >= index)
-                            .map(LiveInterval::variable)
-                            .filter(name -> !programIr.getGlobals().contains(name))
-                            .map(registerMap::get)
-                            .collect(Collectors.toUnmodifiableSet());
+                .filter(liveInterval -> liveInterval.startPoint() <= index && liveInterval.endPoint() >= index)
+                .map(LiveInterval::variable)
+                .filter(name -> !programIr.getGlobals().contains(name))
+                .map(registerMap::get)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private void computeMethodToLiveRegistersInfo(ProgramIr programIr, Map<Method, List<LiveInterval>> methodToLiveIntervalsMap) {
@@ -49,19 +54,6 @@ public class RegisterAllocation {
                         computeInstructionToLiveRegistersMap(programIr, liveIntervals,
                                 variableToRegisterMap.get(methodBegin))
                 )));
-    }
-
-    public InstructionList getUnModified() {
-        return unModified;
-    }
-
-    public RegisterAllocation(ProgramIr programIr) {
-        this.unModified = programIr.mergeProgram();
-        var liveIntervalsUtil = new LiveIntervalsUtil(programIr);
-        var linearScan = new LinearScan(List.of(X64Register.regsToAllocate), liveIntervalsUtil.methodToLiveIntervalsMap);
-        linearScan.allocate();
-        variableToRegisterMap.putAll(linearScan.getVariableToRegisterMapping());
-        computeMethodToLiveRegistersInfo(programIr, liveIntervalsUtil.methodToLiveIntervalsMap);
     }
 
     public Map<Method, Map<Value, X64Register>> getVariableToRegisterMap() {

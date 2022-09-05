@@ -1,10 +1,10 @@
 package edu.mit.compilers.ast;
 
-import edu.mit.compilers.utils.Utils;
-
-import static edu.mit.compilers.grammar.DecafScanner.RESERVED_INT;
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_BOOL;
+import static edu.mit.compilers.grammar.DecafScanner.RESERVED_INT;
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_VOID;
+
+import edu.mit.compilers.utils.Utils;
 
 public enum Type {
     Int,
@@ -47,9 +47,15 @@ public enum Type {
 
     public long getFieldSize() {
         switch (this) {
-            case Int: case IntArray: case Bool: case BoolArray: return Utils.WORD_SIZE;
-            case Void: return 0;
-            default: throw new IllegalStateException("Unexpected value: " + this);
+            case Int:
+            case IntArray:
+            case Bool:
+            case BoolArray:
+                return Utils.WORD_SIZE;
+            case Void:
+                return 0;
+            default:
+                throw new IllegalStateException("Unexpected value: " + this);
         }
     }
 }

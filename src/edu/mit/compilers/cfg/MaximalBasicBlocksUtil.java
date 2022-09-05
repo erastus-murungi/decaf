@@ -4,8 +4,8 @@ import java.util.HashMap;
 
 
 public class MaximalBasicBlocksUtil {
-    HashMap<BasicBlock, Integer> visited = new HashMap<>();
     public NOP exitNOP;
+    HashMap<BasicBlock, Integer> visited = new HashMap<>();
 
     public BasicBlock visit(BasicBlock basicBlock) {
         return switch (basicBlock.getBasicBlockType()) {

@@ -1,15 +1,15 @@
 package edu.mit.compilers.ast;
 
+import static edu.mit.compilers.grammar.DecafScanner.RESERVED_LEN;
+
+import java.util.List;
+
 import edu.mit.compilers.codegen.CodegenAstVisitor;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.Visitor;
 import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
-
-import java.util.List;
-
-import static edu.mit.compilers.grammar.DecafScanner.RESERVED_LEN;
 
 public class Len extends Expression {
     final public Name nameId;

@@ -1,11 +1,11 @@
 package edu.mit.compilers.dataflow.copy;
 
 
-import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.codegen.names.LValue;
-
 import java.util.Objects;
+
+import edu.mit.compilers.cfg.BasicBlock;
+import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.Value;
 
 // a pair (u, v, pos, block), such that u <- v is a copy assignment
 // and pos is the position in block is the block where the assignment occurs

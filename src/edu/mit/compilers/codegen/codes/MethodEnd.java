@@ -1,11 +1,11 @@
 package edu.mit.compilers.codegen.codes;
 
+import java.util.Collections;
+import java.util.List;
+
 import edu.mit.compilers.ast.MethodDefinition;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.Value;
-
-import java.util.Collections;
-import java.util.List;
 
 public class MethodEnd extends Instruction {
     public MethodEnd(MethodDefinition methodDefinition) {
@@ -21,7 +21,7 @@ public class MethodEnd extends Instruction {
     }
 
     @Override
-    public <T, E> T accept(InstructionVisitor<T, E> visitor , E extra) {
+    public <T, E> T accept(InstructionVisitor<T, E> visitor, E extra) {
         return visitor.visit(this, extra);
     }
 

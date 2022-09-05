@@ -1,6 +1,8 @@
 package edu.mit.compilers.dataflow.ssapasses;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 
 import edu.mit.compilers.cfg.BasicBlock;
@@ -9,11 +11,15 @@ import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.dominator.ImmediateDominator;
+import edu.mit.compilers.ssa.Phi;
+import edu.mit.compilers.ssa.SSA;
 
 public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
+    List<SSACopyOptResult> resultList = new ArrayList<>();
+
     public CopyPropagationSsaPass(Set<LValue> globalVariables, Method method) {
         super(globalVariables, method);
     }
@@ -25,7 +31,9 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
         var copiesMap = new HashMap<LValue, Value>();
 
         for (BasicBlock basicBlock : getBasicBlockList()) {
-            for (StoreInstruction storeInstruction: basicBlock.getStoreInstructions()) {
+            for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
+                if (storeInstruction instanceof Phi)
+                    continue;
                 if (storeInstruction instanceof CopyInstruction copyInstruction) {
                     var replacer = copyInstruction.getValue();
                     var toBeReplaced = copyInstruction.getDestination();
@@ -36,10 +44,11 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
         }
 
         for (BasicBlock basicBlock : dom.preorder()) {
-            for (Instruction instruction: basicBlock.getInstructionList()) {
+            for (Instruction instruction : basicBlock.getNonPhiInstructions()) {
                 if (instruction instanceof HasOperand hasOperand) {
-                    for (LValue toBeReplaced: hasOperand.getOperandLValues()) {
+                    for (LValue toBeReplaced : hasOperand.getOperandLValues()) {
                         if (copiesMap.containsKey(toBeReplaced)) {
+                            var before = hasOperand.copy();
                             var replacer = copiesMap.get(toBeReplaced);
                             // we have to do this in a while loop because of how copy replacements propagate
                             // for instance, lets imagine we have a = k
@@ -48,18 +57,23 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
                             while (replacer instanceof LValue && copiesMap.containsKey((LValue) replacer)) {
                                 replacer = copiesMap.get(replacer);
                             }
-                            hasOperand.replace(toBeReplaced, replacer);
+                            hasOperand.replaceValue(toBeReplaced, replacer);
+                            resultList.add(new SSACopyOptResult(before, instruction, toBeReplaced, replacer));
                             changesHappened = true;
                         }
                     }
                 }
             }
         }
+        resultList.forEach(System.out::println);
         return changesHappened;
     }
 
     @Override
     public boolean runFunctionPass() {
-        return performGlobalCopyPropagation();
+        resultList.clear();
+        var changesHappened = performGlobalCopyPropagation();
+        SSA.verify(method);
+        return changesHappened;
     }
 }

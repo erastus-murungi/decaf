@@ -11,6 +11,6 @@ public class Use extends UseDef {
 
     @Override
     public String toString() {
-        return "use "+ variable.repr();
+        return "use " + variable.repr();
     }
 }

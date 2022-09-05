@@ -16,11 +16,10 @@ import edu.mit.compilers.codegen.codes.FunctionCall;
 import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
-import edu.mit.compilers.codegen.codes.Label;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.MethodEnd;
 import edu.mit.compilers.codegen.codes.ReturnInstruction;
-import edu.mit.compilers.codegen.codes.UnconditionalJump;
+import edu.mit.compilers.codegen.codes.UnconditionalBranch;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.utils.TarjanSCC;
 
@@ -92,11 +91,11 @@ public class FunctionInlinePass {
         List<Instruction> newTacList = new ArrayList<>();
         Map<Value, Value> paramToArg = mapParametersToArguments(functionBody, arguments);
         for (var tac : functionBody) {
-            if (tac instanceof MethodEnd || tac instanceof Label || tac instanceof UnconditionalJump || tac instanceof Method)
+            if (tac instanceof MethodEnd || tac instanceof UnconditionalBranch || tac instanceof Method)
                 continue;
             if (tac instanceof HasOperand) {
                 tac = tac.copy();
-                paramToArg.forEach(((HasOperand) tac)::replace);
+                paramToArg.forEach(((HasOperand) tac)::replaceValue);
             }
             newTacList.add(tac);
         }
@@ -131,13 +130,12 @@ public class FunctionInlinePass {
             var replacement = replacementBodies.get(indexOfReplacementBody);
             Collections.reverse(replacement);
 
-            if (targetTacList.get(indexOfCallSite) instanceof FunctionCallWithResult) {
+            if (targetTacList.get(indexOfCallSite) instanceof FunctionCallWithResult methodCallSetResult) {
 
                 assert replacement.get(0) instanceof ReturnInstruction;
                 var methodReturn = (ReturnInstruction) replacement.get(0);
-                var methodCallSetResult = (FunctionCallWithResult) targetTacList.get(indexOfCallSite);
                 newTacList.add(CopyInstruction.noMetaData(methodCallSetResult.getDestination(), methodReturn.getReturnAddress()
-                                                                                                            .orElseThrow()));
+                        .orElseThrow()));
 
                 replacement.remove(0);
             }
@@ -192,7 +190,7 @@ public class FunctionInlinePass {
             }
         }
         return false;
-        }
+    }
 
 
     private boolean hasBranching(Method method) {

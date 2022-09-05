@@ -60,14 +60,14 @@ public class UnionFind<T> {
     @SafeVarargs
     public final void union(T... items) {
         var roots = Arrays.stream(items)
-                          .map(this::find)
-                          .sorted(
-                                  Comparator.comparingInt(
-                                                    t -> weights.get(t)
-                                            )
-                                            .reversed()
-                          )
-                          .iterator();
+                .map(this::find)
+                .sorted(
+                        Comparator.comparingInt(
+                                        t -> weights.get(t)
+                                )
+                                .reversed()
+                )
+                .iterator();
 
         try {
             var heaviest = roots.next();
@@ -87,7 +87,7 @@ public class UnionFind<T> {
         Map<T, Set<T>> results = new HashMap<>();
         for (var entry : parents.entrySet()) {
             results.computeIfAbsent(entry.getValue(), v -> new HashSet<>())
-                   .add(entry.getKey());
+                    .add(entry.getKey());
         }
         return results.values();
     }

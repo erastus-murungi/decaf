@@ -1,16 +1,16 @@
 package edu.mit.compilers.codegen.codes;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Stack;
+import java.util.stream.Collectors;
+
 import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.operand.MethodCallOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.utils.Utils;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
-import java.util.stream.Collectors;
 
 public class FunctionCallNoResult extends HasOperand implements FunctionCall {
     private final Stack<Value> arguments;
@@ -49,7 +49,7 @@ public class FunctionCallNoResult extends HasOperand implements FunctionCall {
         return new ArrayList<>(arguments);
     }
 
-    public boolean replace(Value oldName, Value newName) {
+    public boolean replaceValue(Value oldName, Value newName) {
         var replaced = false;
         int i = 0;
         for (Value value : arguments) {
@@ -70,7 +70,7 @@ public class FunctionCallNoResult extends HasOperand implements FunctionCall {
 
     @Override
     public String syntaxHighlightedToString() {
-        var callString =  Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
+        var callString = Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
         var args = arguments.stream().map(Value::repr).collect(Collectors.joining(", "));
         return String.format("%s%s %s @%s(%s) %s%s", DOUBLE_INDENT, callString, getMethodReturnType(), getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " #  " + getComment().get() : "");
     }

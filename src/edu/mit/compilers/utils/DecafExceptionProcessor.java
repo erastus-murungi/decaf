@@ -11,9 +11,8 @@ public class DecafExceptionProcessor {
     public static final String TERNARY_COLON = ":";
     public static final String TILDE = "~";
     public final int MAX_NUM_CHARS = 30;
-
-    String sourceCode;
     public String syntaxHighlightedSourceCode;
+    String sourceCode;
 
     public DecafExceptionProcessor(String sourceCode) {
         this.sourceCode = sourceCode;
@@ -26,8 +25,8 @@ public class DecafExceptionProcessor {
 
         final String inputSub = lineToPrint.substring(tokenPosition.column() - before, tokenPosition.column() + after);
         final String spaces = Utils.SPACE.repeat(String.valueOf(tokenPosition.line())
-                                                       .length() + String.valueOf(tokenPosition.column())
-                                                                         .length() + 3);
+                .length() + String.valueOf(tokenPosition.column())
+                .length() + 3);
 
         return NEW_LINE + errMessage + NEW_LINE + spaces + inputSub + NEW_LINE + tokenPosition.line() + TERNARY_COLON + tokenPosition.column() + TERNARY_COLON + Utils.SPACE + Utils.coloredPrint(TILDE.repeat(before), Utils.ANSIColorConstants.ANSI_GREEN) + Utils.coloredPrint("^", Utils.ANSIColorConstants.ANSI_CYAN) + Utils.coloredPrint(TILDE.repeat(after), Utils.ANSIColorConstants.ANSI_GREEN);
     }

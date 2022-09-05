@@ -1,6 +1,6 @@
 package edu.mit.compilers.grammar;
 
-public class TokenPosition{
+public class TokenPosition {
     final int line;
     final int column;
     final int offset;

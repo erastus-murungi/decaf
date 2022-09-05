@@ -86,11 +86,9 @@ public class DecafScanner {
     public static final String RESERVED_BOOL = "bool";
     public static final String RESERVED_TRUE = "true";
     public static final String RESERVED_FALSE = "false";
-
-
+    final DecafExceptionProcessor decafExceptionProcessor;
     private final String inputString;
     private final Logger logger = Logger.getLogger(DecafScanner.class.getName());
-    final DecafExceptionProcessor decafExceptionProcessor;
     private final List<String> syntaxLines = new ArrayList<>();
     private int column;
     private int line;
@@ -188,19 +186,34 @@ public class DecafScanner {
         final char c = inputString.charAt(stringIndex);
         final TokenPosition tokenPosition = new TokenPosition(line, column, stringIndex);
         switch (String.valueOf(c)) {
-            case LEFT_CURLY : return handleSingleOperator(tokenPosition, TokenType.LEFT_CURLY, LEFT_CURLY);
-            case RIGHT_CURLY : return handleSingleOperator(tokenPosition, TokenType.RIGHT_CURLY, RIGHT_CURLY);
-            case LEFT_PARENTHESIS : return handleSingleOperator(tokenPosition, TokenType.LEFT_PARENTHESIS, LEFT_PARENTHESIS);
-            case RIGHT_PARENTHESIS : return handleSingleOperator(tokenPosition, TokenType.RIGHT_PARENTHESIS, RIGHT_PARENTHESIS);
-            case LEFT_SQUARE_BRACKET : return handleSingleOperator(tokenPosition, TokenType.LEFT_SQUARE_BRACKET, LEFT_SQUARE_BRACKET);
-            case RIGHT_SQUARE_BRACKET : return handleSingleOperator(tokenPosition, TokenType.RIGHT_SQUARE_BRACKET, RIGHT_SQUARE_BRACKET);
-            case SEMICOLON : return handleSingleOperator(tokenPosition, TokenType.SEMICOLON, SEMICOLON);
-            case COMMA : return handleSingleOperator(tokenPosition, TokenType.COMMA, COMMA);
-            case MOD : return handleSingleOperator(tokenPosition, TokenType.MOD, MOD);
-            case DOUBLE_QUOTES : return handleStringLiteral(tokenPosition);
-            case SINGLE_QUOTES : return handleCharLiteral(tokenPosition);
-            case " ": case "\t": case "\n": case "\r" : return handleWhiteSpace(tokenPosition);
-            default : {
+            case LEFT_CURLY:
+                return handleSingleOperator(tokenPosition, TokenType.LEFT_CURLY, LEFT_CURLY);
+            case RIGHT_CURLY:
+                return handleSingleOperator(tokenPosition, TokenType.RIGHT_CURLY, RIGHT_CURLY);
+            case LEFT_PARENTHESIS:
+                return handleSingleOperator(tokenPosition, TokenType.LEFT_PARENTHESIS, LEFT_PARENTHESIS);
+            case RIGHT_PARENTHESIS:
+                return handleSingleOperator(tokenPosition, TokenType.RIGHT_PARENTHESIS, RIGHT_PARENTHESIS);
+            case LEFT_SQUARE_BRACKET:
+                return handleSingleOperator(tokenPosition, TokenType.LEFT_SQUARE_BRACKET, LEFT_SQUARE_BRACKET);
+            case RIGHT_SQUARE_BRACKET:
+                return handleSingleOperator(tokenPosition, TokenType.RIGHT_SQUARE_BRACKET, RIGHT_SQUARE_BRACKET);
+            case SEMICOLON:
+                return handleSingleOperator(tokenPosition, TokenType.SEMICOLON, SEMICOLON);
+            case COMMA:
+                return handleSingleOperator(tokenPosition, TokenType.COMMA, COMMA);
+            case MOD:
+                return handleSingleOperator(tokenPosition, TokenType.MOD, MOD);
+            case DOUBLE_QUOTES:
+                return handleStringLiteral(tokenPosition);
+            case SINGLE_QUOTES:
+                return handleCharLiteral(tokenPosition);
+            case " ":
+            case "\t":
+            case "\n":
+            case "\r":
+                return handleWhiteSpace(tokenPosition);
+            default: {
                 if (currentSubstringMatches(LINE_COMMENT_START))
                     return handleSingleLineComment(tokenPosition);
                 else if (currentSubstringMatches(BLOCK_COMMENT_START))
@@ -466,14 +479,15 @@ public class DecafScanner {
 
     private void updateHighlighter(Token token) {
         switch (token.tokenType()) {
-            case EOF -> {}
+            case EOF -> {
+            }
             case ID -> syntaxLines.add(Utils.coloredPrint(token.lexeme(), Utils.ANSIColorConstants.ANSI_BLUE));
             case CHAR_LITERAL, STRING_LITERAL, RESERVED_FALSE, RESERVED_TRUE, HEX_LITERAL, DECIMAL_LITERAL ->
                     syntaxLines.add(Utils.coloredPrint(token.lexeme(), Utils.ANSIColorConstants.ANSI_GREEN));
             default -> {
                 if (token.tokenType()
-                         .toString()
-                         .startsWith("RESERVED")) {
+                        .toString()
+                        .startsWith("RESERVED")) {
                     syntaxLines.add(Utils.coloredPrint(token.lexeme(), Utils.ANSIColorConstants.ANSI_PURPLE));
                 } else {
                     syntaxLines.add(token.lexeme());

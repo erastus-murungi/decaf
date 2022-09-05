@@ -27,7 +27,7 @@ public class InstructionSimplifyIrPassTest {
         expressions = expressions.stream().filter(expression -> !(expression instanceof LocationVariable &&
                 ((LocationVariable) expression).name.context.equals(ExprContext.STORE))).collect(Collectors.toList());
         assert expressions.size() == 1;
-        assertEquals("(10)", expressions.remove(0)
+        assertEquals("10", expressions.remove(0)
                 .getSourceCode());
     }
 

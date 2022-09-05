@@ -9,11 +9,11 @@ import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 
 public class Assignment extends AST {
+    private final String operator;
     public Location location;
     public AssignExpr assignExpr;
-    private final String operator;
 
-    public Assignment (Location location, AssignExpr assignmentExpr, String operator){
+    public Assignment(Location location, AssignExpr assignmentExpr, String operator) {
         this.location = location;
         this.assignExpr = assignmentExpr;
         this.operator = operator;

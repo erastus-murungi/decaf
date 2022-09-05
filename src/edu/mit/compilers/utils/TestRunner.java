@@ -62,11 +62,11 @@ public class TestRunner {
             reductionRatios[indexOfTestFile] = compilation.getNLinesOfCodeReductionFactor();
             nLinesRemoved[indexOfTestFile] = compilation.getNLinesRemovedByAssemblyOptimizer();
         }
-            System.out.format("%10s\t%20s\t%15s\t%15s\n", "INDEX", "FILE NAME", "REDUCTION RATIO", "#ASM LINES REMOVED");
+        System.out.format("%10s\t%20s\t%15s\t%15s\n", "INDEX", "FILE NAME", "REDUCTION RATIO", "#ASM LINES REMOVED");
         for (int i = 0; i < nTestFiles; i++) {
             System.out.format("%10d\t%20s\t%10.4f%%\t%10d\n", i, fileNames[i], reductionRatios[i] * 100, nLinesRemoved[i]);
         }
-        var doubleSummaryStatistics =  DoubleStream.of(reductionRatios).summaryStatistics();
+        var doubleSummaryStatistics = DoubleStream.of(reductionRatios).summaryStatistics();
         System.out.format("\t%s\t%10.4f%%\n", "AVERAGE REDUCTION", doubleSummaryStatistics.getAverage() * 100);
         System.out.format("\t%s\t%10d\n", "TOTAL #ASM LINES REMOVED REDUCTION", IntStream.of(nLinesRemoved).summaryStatistics().getSum());
 

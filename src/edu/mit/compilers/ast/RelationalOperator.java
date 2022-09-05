@@ -15,11 +15,16 @@ public class RelationalOperator extends BinOperator {
     @Override
     public String opRep() {
         switch (label) {
-            case DecafScanner.LT: return "Lt";
-            case DecafScanner.GT: return "Gt";
-            case DecafScanner.GEQ: return "GtE";
-            case DecafScanner.LEQ : return  "LtE";
-            default: throw new IllegalArgumentException("please register relational operator: " + label);
+            case DecafScanner.LT:
+                return "Lt";
+            case DecafScanner.GT:
+                return "Gt";
+            case DecafScanner.GEQ:
+                return "GtE";
+            case DecafScanner.LEQ:
+                return "LtE";
+            default:
+                throw new IllegalArgumentException("please register relational operator: " + label);
         }
     }
 
@@ -31,11 +36,16 @@ public class RelationalOperator extends BinOperator {
     @Override
     public String getSourceCode() {
         switch (label) {
-            case DecafScanner.LT: return "<";
-            case DecafScanner.GT: return ">";
-            case DecafScanner.GEQ: return ">=";
-            case DecafScanner.LEQ: return "<=";
-            default: throw new IllegalArgumentException("please register relational operator: " + label);
+            case DecafScanner.LT:
+                return "<";
+            case DecafScanner.GT:
+                return ">";
+            case DecafScanner.GEQ:
+                return ">=";
+            case DecafScanner.LEQ:
+                return "<=";
+            default:
+                throw new IllegalArgumentException("please register relational operator: " + label);
         }
     }
 

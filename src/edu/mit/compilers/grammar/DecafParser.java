@@ -1,11 +1,49 @@
 package edu.mit.compilers.grammar;
 
-import edu.mit.compilers.ast.*;
-import edu.mit.compilers.exceptions.DecafException;
-import edu.mit.compilers.exceptions.DecafParserException;
-import edu.mit.compilers.utils.DecafExceptionProcessor;
-import edu.mit.compilers.utils.Pair;
-import edu.mit.compilers.utils.Utils;
+import static edu.mit.compilers.grammar.TokenType.ASSIGN;
+import static edu.mit.compilers.grammar.TokenType.CHAR_LITERAL;
+import static edu.mit.compilers.grammar.TokenType.COMMA;
+import static edu.mit.compilers.grammar.TokenType.CONDITIONAL_AND;
+import static edu.mit.compilers.grammar.TokenType.CONDITIONAL_OR;
+import static edu.mit.compilers.grammar.TokenType.DECIMAL_LITERAL;
+import static edu.mit.compilers.grammar.TokenType.DECREMENT;
+import static edu.mit.compilers.grammar.TokenType.DIVIDE;
+import static edu.mit.compilers.grammar.TokenType.EOF;
+import static edu.mit.compilers.grammar.TokenType.EQ;
+import static edu.mit.compilers.grammar.TokenType.GEQ;
+import static edu.mit.compilers.grammar.TokenType.GT;
+import static edu.mit.compilers.grammar.TokenType.HEX_LITERAL;
+import static edu.mit.compilers.grammar.TokenType.ID;
+import static edu.mit.compilers.grammar.TokenType.INCREMENT;
+import static edu.mit.compilers.grammar.TokenType.LEFT_CURLY;
+import static edu.mit.compilers.grammar.TokenType.LEFT_PARENTHESIS;
+import static edu.mit.compilers.grammar.TokenType.LEFT_SQUARE_BRACKET;
+import static edu.mit.compilers.grammar.TokenType.LEQ;
+import static edu.mit.compilers.grammar.TokenType.LT;
+import static edu.mit.compilers.grammar.TokenType.MINUS;
+import static edu.mit.compilers.grammar.TokenType.MOD;
+import static edu.mit.compilers.grammar.TokenType.MULTIPLY;
+import static edu.mit.compilers.grammar.TokenType.NEQ;
+import static edu.mit.compilers.grammar.TokenType.PLUS;
+import static edu.mit.compilers.grammar.TokenType.RESERVED_BOOL;
+import static edu.mit.compilers.grammar.TokenType.RESERVED_BREAK;
+import static edu.mit.compilers.grammar.TokenType.RESERVED_CONTINUE;
+import static edu.mit.compilers.grammar.TokenType.RESERVED_ELSE;
+import static edu.mit.compilers.grammar.TokenType.RESERVED_FALSE;
+import static edu.mit.compilers.grammar.TokenType.RESERVED_FOR;
+import static edu.mit.compilers.grammar.TokenType.RESERVED_IF;
+import static edu.mit.compilers.grammar.TokenType.RESERVED_IMPORT;
+import static edu.mit.compilers.grammar.TokenType.RESERVED_INT;
+import static edu.mit.compilers.grammar.TokenType.RESERVED_LEN;
+import static edu.mit.compilers.grammar.TokenType.RESERVED_RETURN;
+import static edu.mit.compilers.grammar.TokenType.RESERVED_TRUE;
+import static edu.mit.compilers.grammar.TokenType.RESERVED_VOID;
+import static edu.mit.compilers.grammar.TokenType.RESERVED_WHILE;
+import static edu.mit.compilers.grammar.TokenType.RIGHT_CURLY;
+import static edu.mit.compilers.grammar.TokenType.RIGHT_PARENTHESIS;
+import static edu.mit.compilers.grammar.TokenType.RIGHT_SQUARE_BRACKET;
+import static edu.mit.compilers.grammar.TokenType.SEMICOLON;
+import static edu.mit.compilers.grammar.TokenType.STRING_LITERAL;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -15,20 +53,72 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-import static edu.mit.compilers.grammar.TokenType.*;
+import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.ast.ArithmeticOperator;
+import edu.mit.compilers.ast.Array;
+import edu.mit.compilers.ast.AssignExpr;
+import edu.mit.compilers.ast.AssignOpExpr;
+import edu.mit.compilers.ast.AssignOperator;
+import edu.mit.compilers.ast.Assignment;
+import edu.mit.compilers.ast.BinaryOpExpression;
+import edu.mit.compilers.ast.Block;
+import edu.mit.compilers.ast.BooleanLiteral;
+import edu.mit.compilers.ast.Break;
+import edu.mit.compilers.ast.CharLiteral;
+import edu.mit.compilers.ast.CompoundAssignOpExpr;
+import edu.mit.compilers.ast.CompoundAssignOperator;
+import edu.mit.compilers.ast.ConditionalOperator;
+import edu.mit.compilers.ast.Continue;
+import edu.mit.compilers.ast.DecimalLiteral;
+import edu.mit.compilers.ast.Decrement;
+import edu.mit.compilers.ast.EqualityOperator;
+import edu.mit.compilers.ast.ExprContext;
+import edu.mit.compilers.ast.Expression;
+import edu.mit.compilers.ast.ExpressionParameter;
+import edu.mit.compilers.ast.FieldDeclaration;
+import edu.mit.compilers.ast.For;
+import edu.mit.compilers.ast.HexLiteral;
+import edu.mit.compilers.ast.If;
+import edu.mit.compilers.ast.ImportDeclaration;
+import edu.mit.compilers.ast.Increment;
+import edu.mit.compilers.ast.Initialization;
+import edu.mit.compilers.ast.IntLiteral;
+import edu.mit.compilers.ast.Len;
+import edu.mit.compilers.ast.Literal;
+import edu.mit.compilers.ast.Location;
+import edu.mit.compilers.ast.LocationArray;
+import edu.mit.compilers.ast.LocationAssignExpr;
+import edu.mit.compilers.ast.LocationVariable;
+import edu.mit.compilers.ast.MethodCall;
+import edu.mit.compilers.ast.MethodCallParameter;
+import edu.mit.compilers.ast.MethodCallStatement;
+import edu.mit.compilers.ast.MethodDefinition;
+import edu.mit.compilers.ast.MethodDefinitionParameter;
+import edu.mit.compilers.ast.Name;
+import edu.mit.compilers.ast.ParenthesizedExpression;
+import edu.mit.compilers.ast.Program;
+import edu.mit.compilers.ast.RelationalOperator;
+import edu.mit.compilers.ast.Return;
+import edu.mit.compilers.ast.Statement;
+import edu.mit.compilers.ast.StringLiteral;
+import edu.mit.compilers.ast.Type;
+import edu.mit.compilers.ast.UnaryOpExpression;
+import edu.mit.compilers.ast.UnaryOperator;
+import edu.mit.compilers.ast.While;
+import edu.mit.compilers.exceptions.DecafException;
+import edu.mit.compilers.exceptions.DecafParserException;
+import edu.mit.compilers.utils.DecafExceptionProcessor;
+import edu.mit.compilers.utils.Pair;
+import edu.mit.compilers.utils.Utils;
 
 public class DecafParser {
     public final DecafScanner scanner;
+    public final List<DecafParserException> errors = new ArrayList<>();
+    private final DecafExceptionProcessor decafExceptionProcessor;
     private boolean showTrace = false;
     private ArrayList<Token> tokens;
     private int currentTokenIndex;
     private Program root;
-    private final DecafExceptionProcessor decafExceptionProcessor;
-    public final List<DecafParserException> errors = new ArrayList<>();
-
-    public Program getRoot() {
-        return root;
-    }
 
     public DecafParser(DecafScanner scanner) {
         this.scanner = scanner;
@@ -40,6 +130,37 @@ public class DecafParser {
             this.tokens = new ArrayList<>();
         }
         this.currentTokenIndex = 0;
+    }
+
+    private static void addTerminal(Pair<String, AST> labelAndNode, String prefix, String connector, List<String> tree) {
+        if (!labelAndNode.second()
+                .isTerminal())
+            throw new IllegalArgumentException();
+        tree.add(prefix + connector + " " + Utils.coloredPrint(labelAndNode.first(), Utils.ANSIColorConstants.ANSI_BLUE) + " = " + labelAndNode.second());
+    }
+
+    private static void addNonTerminal(Pair<String, AST> labelAndNode, int index, int numChildren, String prefix, String connector, List<String> tree) {
+        tree.add(prefix + connector + " " + Utils.coloredPrint(labelAndNode.first() + " = " + labelAndNode.second(), Utils.ANSIColorConstants.ANSI_PURPLE));
+        prefix += (index != numChildren - 1) ? PrintConstants.PIPE_PREFIX : PrintConstants.SPACE_PREFIX;
+        treeBody(labelAndNode, tree, prefix);
+    }
+
+    private static void treeBody(Pair<String, AST> parentNode, List<String> tree, String prefix) {
+        List<Pair<String, AST>> nodeList = parentNode.second()
+                .getChildren();
+        for (int i = 0; i < nodeList.size(); i++) {
+            final String connector = (i == nodeList.size() - 1) ? PrintConstants.ELBOW : PrintConstants.TEE;
+            final Pair<String, AST> labelAndNode = nodeList.get(i);
+            if (labelAndNode.second()
+                    .isTerminal())
+                addTerminal(labelAndNode, prefix, connector, tree);
+            else
+                addNonTerminal(labelAndNode, i, nodeList.size(), prefix, connector, tree);
+        }
+    }
+
+    public Program getRoot() {
+        return root;
     }
 
     public final void program() {
@@ -257,7 +378,6 @@ public class DecafParser {
             }
         }
     }
-
 
     private void parseFieldDeclarationGroup(List<Name> variables, List<Array> arrays, Name nameId) throws DecafParserException {
         if (getCurrentToken().tokenType() == LEFT_SQUARE_BRACKET) {
@@ -539,7 +659,6 @@ public class DecafParser {
         return new LocationVariable(new Name(token.lexeme(), token.tokenPosition(), ExprContext.STORE));
     }
 
-
     private Expression parseExpr() throws DecafParserException {
         switch (getCurrentTokenType()) {
             case NOT:
@@ -758,34 +877,6 @@ public class DecafParser {
                     throw getContextualException("expected " + "\"" + DecafScanner.RESERVED_INT + "\"" + " or " + "\"" + DecafScanner.RESERVED_BOOL + "\"");
         };
     }
-
-    private static void addTerminal(Pair<String, AST> labelAndNode, String prefix, String connector, List<String> tree) {
-        if (!labelAndNode.second()
-                .isTerminal())
-            throw new IllegalArgumentException();
-        tree.add(prefix + connector + " " + Utils.coloredPrint(labelAndNode.first(), Utils.ANSIColorConstants.ANSI_BLUE) + " = " + labelAndNode.second());
-    }
-
-    private static void addNonTerminal(Pair<String, AST> labelAndNode, int index, int numChildren, String prefix, String connector, List<String> tree) {
-        tree.add(prefix + connector + " " + Utils.coloredPrint(labelAndNode.first() + " = " + labelAndNode.second(), Utils.ANSIColorConstants.ANSI_PURPLE));
-        prefix += (index != numChildren - 1) ? PrintConstants.PIPE_PREFIX : PrintConstants.SPACE_PREFIX;
-        treeBody(labelAndNode, tree, prefix);
-    }
-
-    private static void treeBody(Pair<String, AST> parentNode, List<String> tree, String prefix) {
-        List<Pair<String, AST>> nodeList = parentNode.second()
-                .getChildren();
-        for (int i = 0; i < nodeList.size(); i++) {
-            final String connector = (i == nodeList.size() - 1) ? PrintConstants.ELBOW : PrintConstants.TEE;
-            final Pair<String, AST> labelAndNode = nodeList.get(i);
-            if (labelAndNode.second()
-                    .isTerminal())
-                addTerminal(labelAndNode, prefix, connector, tree);
-            else
-                addNonTerminal(labelAndNode, i, nodeList.size(), prefix, connector, tree);
-        }
-    }
-
 
     public void printParseTree() {
         List<String> tree = new ArrayList<>();

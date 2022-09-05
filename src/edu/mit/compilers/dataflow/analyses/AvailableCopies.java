@@ -1,31 +1,36 @@
 package edu.mit.compilers.dataflow.analyses;
 
+import com.google.common.collect.Sets;
+
+import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddress;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.dataflow.copy.CopyQuadruple;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
-import edu.mit.compilers.utils.SetUtils;
-
-import java.util.*;
 
 public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
     // each basicBlock maps to another map of (u -> v) pairs
     public HashMap<BasicBlock, HashMap<Value, Value>> availableCopies;
+
+    public AvailableCopies(BasicBlock basicBlock) {
+        super(basicBlock);
+        populateAvailableCopies();
+    }
 
     @Override
     public void computeUniversalSetsOfValues() {
         allValues = new HashSet<>();
         for (BasicBlock basicBlock : basicBlocks)
             allValues.addAll(copy(basicBlock));
-    }
-
-    public AvailableCopies(BasicBlock basicBlock) {
-        super(basicBlock);
-        populateAvailableCopies();
     }
 
     private void populateAvailableCopies() {
@@ -77,7 +82,7 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
             in.put(B, meet(B));
 
             // OUT[B] = gen[B] ∪ IN[B] - KILL[B]
-            out.put(B, SetUtils.union(copy(B), SetUtils.difference(in(B), kill(B))));
+            out.put(B, Sets.union(copy(B), Sets.difference(in(B), kill(B))));
 
             if (!out(B).equals(oldOut)) {
                 workList.addAll(B.getSuccessors());

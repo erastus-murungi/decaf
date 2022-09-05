@@ -8,6 +8,8 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.ssa.Phi;
+import edu.mit.compilers.ssa.SSA;
+import edu.mit.compilers.utils.SSAEdgesUtil;
 
 
 /**
@@ -21,14 +23,15 @@ public class RedundantPhiEliminationPass extends SsaOptimizationPass<Void> {
         super(globalVariables, method);
     }
 
-    private boolean performRedundantPhiElimination () {
+    private boolean performRedundantPhiElimination() {
+        SSAEdgesUtil ssaEdgesUtil = new SSAEdgesUtil(method);
         var changesHappened = false;
         for (var basicBlock : getBasicBlockList()) {
             if (basicBlock.phiPresent()) {
                 var instructionList = new ArrayList<Instruction>();
                 for (var instruction : basicBlock.getInstructionList()) {
                     if (instruction instanceof Phi phi) {
-                         // x=phi(x,x,x) (remove only)
+                        // x=phi(x,x,x) (remove only)
                         if (phi.getOperandLValues().stream().allMatch(lValue -> lValue.equals(phi.getDestination()))) {
                             changesHappened = true;
                             continue;
@@ -37,6 +40,7 @@ public class RedundantPhiEliminationPass extends SsaOptimizationPass<Void> {
                         if (phi.getOperandLValues().stream().distinct().count() == 1) {
                             var y = phi.getOperandLValues().stream().findFirst().orElseThrow();
                             instructionList.add(CopyInstruction.noMetaData(phi.getDestination(), y));
+                            ssaEdgesUtil.copyPropagate(phi.getDestination(), y);
                             changesHappened = true;
                             continue;
                         }
@@ -44,6 +48,7 @@ public class RedundantPhiEliminationPass extends SsaOptimizationPass<Void> {
                         if (phi.getOperandLValues().stream().filter(value -> value.equals(phi.getDestination())).count() == 1) {
                             var y = phi.getOperandLValues().stream().filter(value -> !value.equals(phi.getDestination())).findFirst().orElseThrow();
                             instructionList.add(CopyInstruction.noMetaData(phi.getDestination(), y));
+                            ssaEdgesUtil.copyPropagate(phi.getDestination(), y);
                             changesHappened = true;
                             continue;
                         }
@@ -58,6 +63,8 @@ public class RedundantPhiEliminationPass extends SsaOptimizationPass<Void> {
 
     @Override
     public boolean runFunctionPass() {
-        return performRedundantPhiElimination();
+        var changesHappened = performRedundantPhiElimination();
+        SSA.verify(method);
+        return changesHappened;
     }
 }

@@ -1,11 +1,11 @@
 package edu.mit.compilers.codegen.codes;
 
+import java.util.Optional;
+import java.util.Set;
+
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.dataflow.operand.Operand;
-
-import java.util.Optional;
-import java.util.Set;
 
 public abstract class StoreInstruction extends HasOperand implements Cloneable {
     protected LValue destination;
@@ -44,6 +44,7 @@ public abstract class StoreInstruction extends HasOperand implements Cloneable {
         }
         return operand;
     }
+
     @Override
     public StoreInstruction clone() {
         try {

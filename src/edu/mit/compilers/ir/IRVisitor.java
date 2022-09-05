@@ -1,23 +1,65 @@
 package edu.mit.compilers.ir;
 
-import edu.mit.compilers.ast.*;
-import edu.mit.compilers.exceptions.DecafSemanticException;
-import edu.mit.compilers.grammar.TokenPosition;
-import edu.mit.compilers.symboltable.SymbolTable;
-import edu.mit.compilers.descriptors.*;
-import edu.mit.compilers.symboltable.SymbolTableType;
-import edu.mit.compilers.utils.Pair;
-import edu.mit.compilers.utils.Utils;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
 
+import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.ast.Array;
+import edu.mit.compilers.ast.AssignOpExpr;
+import edu.mit.compilers.ast.Assignment;
+import edu.mit.compilers.ast.BinaryOpExpression;
+import edu.mit.compilers.ast.Block;
+import edu.mit.compilers.ast.BooleanLiteral;
+import edu.mit.compilers.ast.Break;
+import edu.mit.compilers.ast.CharLiteral;
+import edu.mit.compilers.ast.CompoundAssignOpExpr;
+import edu.mit.compilers.ast.Continue;
+import edu.mit.compilers.ast.DecimalLiteral;
+import edu.mit.compilers.ast.Decrement;
+import edu.mit.compilers.ast.ExpressionParameter;
+import edu.mit.compilers.ast.FieldDeclaration;
+import edu.mit.compilers.ast.For;
+import edu.mit.compilers.ast.HexLiteral;
+import edu.mit.compilers.ast.If;
+import edu.mit.compilers.ast.ImportDeclaration;
+import edu.mit.compilers.ast.Increment;
+import edu.mit.compilers.ast.Initialization;
+import edu.mit.compilers.ast.IntLiteral;
+import edu.mit.compilers.ast.Len;
+import edu.mit.compilers.ast.LocationArray;
+import edu.mit.compilers.ast.LocationAssignExpr;
+import edu.mit.compilers.ast.LocationVariable;
+import edu.mit.compilers.ast.MethodCall;
+import edu.mit.compilers.ast.MethodCallParameter;
+import edu.mit.compilers.ast.MethodCallStatement;
+import edu.mit.compilers.ast.MethodDefinition;
+import edu.mit.compilers.ast.MethodDefinitionParameter;
+import edu.mit.compilers.ast.Name;
+import edu.mit.compilers.ast.ParenthesizedExpression;
+import edu.mit.compilers.ast.Program;
+import edu.mit.compilers.ast.Return;
+import edu.mit.compilers.ast.Statement;
+import edu.mit.compilers.ast.StringLiteral;
+import edu.mit.compilers.ast.Type;
+import edu.mit.compilers.ast.UnaryOpExpression;
+import edu.mit.compilers.ast.While;
+import edu.mit.compilers.descriptors.ArrayDescriptor;
+import edu.mit.compilers.descriptors.Descriptor;
+import edu.mit.compilers.descriptors.MethodDescriptor;
+import edu.mit.compilers.descriptors.ParameterDescriptor;
+import edu.mit.compilers.descriptors.VariableDescriptor;
+import edu.mit.compilers.exceptions.DecafSemanticException;
+import edu.mit.compilers.grammar.TokenPosition;
+import edu.mit.compilers.symboltable.SymbolTable;
+import edu.mit.compilers.symboltable.SymbolTableType;
+import edu.mit.compilers.utils.Pair;
+import edu.mit.compilers.utils.Utils;
+
 public class IRVisitor implements Visitor<Void> {
+    public TreeSet<String> imports = new TreeSet<>();
     SymbolTable fields = new SymbolTable(null, SymbolTableType.Field, null);
     SymbolTable methods = new SymbolTable(null, SymbolTableType.Method, null);
-    public TreeSet<String> imports = new TreeSet<>();
-
     int depth = 0; // the number of nested while/for loops we are in
 
     public Void visit(IntLiteral intLiteral, SymbolTable symbolTable) {
@@ -41,7 +83,7 @@ public class IRVisitor implements Visitor<Void> {
         for (Name name : fieldDeclaration.names) {
             if (symbolTable.isShadowingParameter(name.getLabel())) {
                 exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "Field " + name.getLabel() + " shadows a parameter"));
-            } else if (symbolTable.parent == null && (methods.containsEntry(name.getLabel()) || imports.contains(name.getLabel()) || fields.containsEntry(name.getLabel()))){
+            } else if (symbolTable.parent == null && (methods.containsEntry(name.getLabel()) || imports.contains(name.getLabel()) || fields.containsEntry(name.getLabel()))) {
                 // global field already declared in global scope
                 exceptions.add(new DecafSemanticException(fieldDeclaration.tokenPosition, "(global) Field " + name.getLabel() + " already declared"));
             } else if (symbolTable.containsEntry(name.getLabel())) {
