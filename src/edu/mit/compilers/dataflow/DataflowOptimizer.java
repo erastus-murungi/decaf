@@ -20,9 +20,11 @@ import edu.mit.compilers.dataflow.passes.PeepHoleOptimizationPass;
 import edu.mit.compilers.dataflow.ssapasses.CommonSubExpressionEliminationSsaPass;
 import edu.mit.compilers.dataflow.ssapasses.CopyPropagationSsaPass;
 import edu.mit.compilers.dataflow.ssapasses.DeadStoreEliminationSsaPass;
+import edu.mit.compilers.dataflow.ssapasses.LoopAnalysisPass;
 import edu.mit.compilers.dataflow.ssapasses.RedundantPhiEliminationPass;
 import edu.mit.compilers.dataflow.ssapasses.SccpSsaPass;
 import edu.mit.compilers.utils.CLI;
+import edu.mit.compilers.utils.GraphVizPrinter;
 import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.Utils;
 
@@ -53,7 +55,7 @@ public class DataflowOptimizer {
 
     public void initialize() {
 //        runInterProceduralPasses();
-        addPass(OptimizationPassType.CopyPropagation);
+//        addPass(OptimizationPassType.CopyPropagation);
 //        addPass(OptimizationPassType.CommonSubExpression);
 //        addPass(OptimizationPassType.DeadCodeElimination);
 //        addPass(OptimizationPassType.PeepHoleOptimization);
@@ -61,11 +63,12 @@ public class DataflowOptimizer {
 //        addPass(OptimizationPassType.ConstantPropagation);
 //        addPass(OptimizationPassType.InstructionSimplification);
         // addPass(OptimizationPassType.BranchSimplification);
-//        addPass(OptimizationPassType.CommonSubExpressionSsa);
+        addPass(OptimizationPassType.CommonSubExpressionSsa);
         addPass(OptimizationPassType.SccpSsa);
         addPass(OptimizationPassType.CopyPropagationSsa);
         addPass(OptimizationPassType.RedundantPhiEliminationPass);
-//        addPass(OptimizationPassType.DeadStoreEliminationSsa);
+        addPass(OptimizationPassType.DeadStoreEliminationSsa);
+        addPass(OptimizationPassType.LoopAnalysisPass);
     }
 
     public List<Method> getOptimizedMethods() {
@@ -83,8 +86,6 @@ public class DataflowOptimizer {
 
     public void optimize() {
         for (int run = 0; run < numberOfRuns; run++) {
-            if (run == 3)
-                System.out.println();
             boolean changesHappened = false;
             for (var optimizationPass : optimizationPassList) {
                 if (!toOptimizeMethods.contains(optimizationPass.getMethod()))
@@ -135,6 +136,8 @@ public class DataflowOptimizer {
                         toOptimizeMethods.forEach(method -> optimizationPassesList.add(new SccpSsaPass(globalNames, method)));
                 case RedundantPhiEliminationPass ->
                         toOptimizeMethods.forEach(method -> optimizationPassesList.add(new RedundantPhiEliminationPass(globalNames, method)));
+                case LoopAnalysisPass ->
+                        toOptimizeMethods.forEach(method -> optimizationPassesList.add(new LoopAnalysisPass(globalNames, method)));
                 default -> throw new IllegalArgumentException();
             }
             return optimizationPassesList;

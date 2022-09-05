@@ -262,14 +262,21 @@ public class BasicBlock {
 
     public void convertToBranchLess(@NotNull BasicBlock successor) {
         checkNotNull(successor);
-        checkState(!basicBlockType.equals(BasicBlockType.BRANCH), "basic block is already branching");
+        checkState(basicBlockType.equals(BasicBlockType.BRANCH), "basic block not branching");
         setBasicBlockType(BasicBlockType.NO_BRANCH);
         branchCondition = null;
         alternateSuccessor = null;
         setSuccessor(successor);
+        checkState(getInstructionList().stream().filter(instruction -> instruction instanceof ConditionalBranch).count() == 1);
+        getInstructionList().removeIf(instruction -> instruction instanceof ConditionalBranch);
         getSuccessors().stream()
                 .filter(b -> !b.equals(successor))
                 .forEach(node -> node.removePredecessor(this));
+    }
+
+    @Override
+    public String toString() {
+        return getLinesOfCodeString();
     }
 
     public enum BasicBlockType {

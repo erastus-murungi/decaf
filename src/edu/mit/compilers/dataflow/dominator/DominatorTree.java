@@ -13,10 +13,8 @@ import java.util.Set;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.NOP;
-import edu.mit.compilers.utils.CLI;
-import edu.mit.compilers.utils.GraphVizPrinter;
 
-public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
+public class DominatorTree extends HashMap<BasicBlock, BasicBlock> {
     public static final String ENTRY_BLOCK_LABEL = "Entry";
 
     /**
@@ -28,13 +26,11 @@ public class ImmediateDominator extends HashMap<BasicBlock, BasicBlock> {
     private final Map<BasicBlock, Set<BasicBlock>> basicBlockToChildrenMap;
     private final Map<BasicBlock, Set<BasicBlock>> basicBlockToDominanceFrontierMap;
 
-    public ImmediateDominator(BasicBlock basicBlock) {
+    public DominatorTree(BasicBlock basicBlock) {
         entry = preprocess(basicBlock);
         immediateDominatorsImpl(entry);
         basicBlockToChildrenMap = computeChildren();
         dominators = computeBlockToDoms();
-        if (CLI.debug)
-            GraphVizPrinter.printDominatorTree(this);
         basicBlockToDominanceFrontierMap = computeDominanceFrontier();
     }
 

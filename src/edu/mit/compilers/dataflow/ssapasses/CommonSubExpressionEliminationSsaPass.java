@@ -12,7 +12,7 @@ import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.dataflow.dominator.ImmediateDominator;
+import edu.mit.compilers.dataflow.dominator.DominatorTree;
 import edu.mit.compilers.dataflow.operand.Operand;
 
 public class CommonSubExpressionEliminationSsaPass extends SsaOptimizationPass<StoreInstruction> {
@@ -37,7 +37,7 @@ public class CommonSubExpressionEliminationSsaPass extends SsaOptimizationPass<S
 
 
     public boolean performGlobalCSE() {
-        var dom = new ImmediateDominator(getEntryBasicBlock());
+        var dom = new DominatorTree(getEntryBasicBlock());
         var expressionToBasicBlock = new HashMap<Operand, BasicBlock>();
         var expressionToIndexInBasicBlock = new HashMap<Operand, Integer>();
         var changesHappened = false;

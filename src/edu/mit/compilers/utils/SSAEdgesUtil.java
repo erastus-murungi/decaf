@@ -13,7 +13,7 @@ import edu.mit.compilers.codegen.codes.ReturnInstruction;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.dataflow.dominator.ImmediateDominator;
+import edu.mit.compilers.dataflow.dominator.DominatorTree;
 import edu.mit.compilers.dataflow.ssapasses.worklistitems.SsaEdge;
 
 public class SSAEdgesUtil {
@@ -24,18 +24,18 @@ public class SSAEdgesUtil {
     }
 
     private static Set<SsaEdge> computeSsaEdges(BasicBlock entryBlock) {
-        var immediateDominator = new ImmediateDominator(entryBlock);
+        var dominatorTree = new DominatorTree(entryBlock);
         var ssaEdges = new HashSet<SsaEdge>();
         var lValueToDefMapping = new HashMap<LValue, StoreInstruction>();
 
-        for (BasicBlock basicBlock : immediateDominator.preorder()) {
+        for (BasicBlock basicBlock : dominatorTree.preorder()) {
             basicBlock.getStoreInstructions()
                     .forEach(
                             storeInstruction -> lValueToDefMapping.put(storeInstruction.getDestination(), storeInstruction)
                     );
         }
 
-        for (BasicBlock basicBlock : immediateDominator.preorder()) {
+        for (BasicBlock basicBlock : dominatorTree.preorder()) {
             for (Instruction instruction : basicBlock.getInstructionList()) {
                 if (instruction instanceof HasOperand hasOperand) {
                     for (LValue lValue : hasOperand.getOperandLValues()) {

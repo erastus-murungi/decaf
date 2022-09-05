@@ -16,7 +16,6 @@ import edu.mit.compilers.ast.Name;
 import edu.mit.compilers.ast.StringLiteral;
 import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.codegen.InstructionList;
-import edu.mit.compilers.codegen.codes.AllocateInstruction;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
 import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.FunctionCallNoResult;
@@ -63,9 +62,6 @@ public class Interpreter {
                 List.of(new StringConstant(new StringLiteralAllocation("%d\n")), c.copy())
         );
         List<Instruction> instructions = List.of(
-                new AllocateInstruction(a),
-                new AllocateInstruction(b),
-                new AllocateInstruction(c),
                 CopyInstruction.noAstConstructor(a.copy(), new NumericalConstant(10L, Type.Int)),
                 CopyInstruction.noAstConstructor(b.copy(), a.copy()),
                 new BinaryInstruction(c, b, Operators.PLUS, a),
@@ -136,9 +132,7 @@ public class Interpreter {
                 continue;
             }
 
-            if (instruction instanceof AllocateInstruction allocateInstruction) {
-                env.put(allocateInstruction.getDestination(), null);
-            } else if (instruction instanceof CopyInstruction copyInstruction) {
+            if (instruction instanceof CopyInstruction copyInstruction) {
                 env.put(getStoreOnlyIffExistsInEnv(copyInstruction, env), Optional.of(resolveValue(copyInstruction.getValue())));
             } else if (instruction instanceof BinaryInstruction binaryInstruction) {
                 env.put(getStoreOnlyIffExistsInEnv(binaryInstruction, env), Optional.of(evalBinaryInstruction(binaryInstruction)));

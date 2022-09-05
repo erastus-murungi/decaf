@@ -18,7 +18,6 @@ import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.InstructionVisitor;
 import edu.mit.compilers.codegen.TraceScheduler;
-import edu.mit.compilers.codegen.codes.AllocateInstruction;
 import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
 import edu.mit.compilers.codegen.codes.ConditionalBranch;
@@ -201,11 +200,6 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     private X64Builder initializeDataSection() {
         X64Builder x64Builder = new X64Builder();
         x64Builder.addLine(new X64Code(".data"));
-        return x64Builder;
-    }
-
-    @Override
-    public X64Builder visit(AllocateInstruction allocateInstruction, X64Builder x64Builder) {
         return x64Builder;
     }
 
@@ -399,6 +393,8 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     }
 
     private void callerSave(X64Builder x64Builder, X64Register returnAddressRegister) {
+        if (currentInstructionList.isEmpty())
+            return;
         var instruction = currentInstructionList.get(currentInstructionIndex);
         var x64Registers = methodToLiveRegistersInfo.getOrDefault(currentMethod, Collections.emptyMap())
                 .getOrDefault(instruction, Collections.emptySet());
@@ -414,6 +410,8 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
     }
 
     private void callerRestore(X64Builder x64Builder, X64Register returnAddressRegister) {
+        if (currentInstructionList.isEmpty())
+            return;
         var instruction = currentInstructionList.get(currentInstructionIndex);
         Set<X64Register> x64Registers = methodToLiveRegistersInfo.getOrDefault(currentMethod, Collections.emptyMap())
                 .getOrDefault(instruction, Collections.emptySet());

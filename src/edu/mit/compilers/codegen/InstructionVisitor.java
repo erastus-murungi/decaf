@@ -1,6 +1,5 @@
 package edu.mit.compilers.codegen;
 
-import edu.mit.compilers.codegen.codes.AllocateInstruction;
 import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
 import edu.mit.compilers.codegen.codes.ConditionalBranch;
@@ -18,8 +17,6 @@ import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.codes.UnconditionalBranch;
 
 public interface InstructionVisitor<ReturnType, ExtraInfoType> {
-
-    ReturnType visit(AllocateInstruction allocateInstruction, ExtraInfoType extraInfo);
 
     ReturnType visit(ConditionalBranch jumpIfFalse, ExtraInfoType extraInfo);
 

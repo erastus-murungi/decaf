@@ -635,7 +635,7 @@ public class GraphVizPrinter {
         this.graph = sb;
     }
 
-    public void printDominatorTree(Map<BasicBlock, BasicBlock> immediateDominators, String fileName) {
+    public static void printDominatorTree(Map<BasicBlock, BasicBlock> immediateDominators, String fileName) {
         createDotGraph(writeDominatorGraph(immediateDominators), fileName);
     }
 

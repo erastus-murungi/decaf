@@ -15,16 +15,6 @@ public abstract class SsaOptimizationPass<T> extends OptimizationPass {
     protected Set<LValue> globalVariables;
     protected Method method;
 
-//    Set<Edge> cfgEdges() {
-//        var seen = new HashSet<Edge>();
-//        for (BasicBlock basicBlock: basicBlockList) {
-//            for (BasicBlock successor: basicBlock.getSuccessors()) {
-//                seen.add(new Edge(basicBlock, successor));
-//            }
-//        }
-//        return seen;
-//    }
-
     public SsaOptimizationPass(Set<LValue> globalVariables, Method method) {
         super(globalVariables, method);
         this.globalVariables = globalVariables;

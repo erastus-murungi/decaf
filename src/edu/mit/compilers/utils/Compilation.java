@@ -287,7 +287,6 @@ public class Compilation {
         assert compilationState == CompilationState.DATAFLOW_OPTIMIZED;
 
         programIr.methodList.forEach(method -> SSA.deconstruct(method, programIr));
-        Utils.insertAllocateInstructions(programIr);
 //        Interpreter interpreter = new Interpreter(programIr.mergeProgram());
 //        interpreter.interpret();
 

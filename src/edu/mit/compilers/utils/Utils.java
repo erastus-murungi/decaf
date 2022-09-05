@@ -20,7 +20,6 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.Block;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
-import edu.mit.compilers.codegen.codes.AllocateInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.LValue;
@@ -94,18 +93,6 @@ public class Utils {
             list.add(s1);
         }
         return String.join("\n", list);
-    }
-
-    public static void insertAllocateInstructions(ProgramIr programIr) {
-        programIr.methodList.forEach(
-                method -> method.entryBlock.getInstructionList()
-                        .addAll(1, ProgramIr.getLocals(method, programIr.globals)
-                                .stream()
-                                .map(AllocateInstruction::new)
-                                .toList()
-                        )
-        );
-
     }
 
     public static boolean containsAlphabeticCharacters(String string) {

@@ -18,7 +18,7 @@ import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.analyses.AvailableExpressions;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
-import edu.mit.compilers.dataflow.dominator.ImmediateDominator;
+import edu.mit.compilers.dataflow.dominator.DominatorTree;
 import edu.mit.compilers.dataflow.operand.Operand;
 
 public class CommonSubExpressionEliminationPass extends OptimizationPass {
@@ -75,7 +75,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
 
     private static Value findExpressionAmongDominators(BasicBlock B,
                                                        Operand operand,
-                                                       ImmediateDominator dominatorTree) {
+                                                       DominatorTree dominatorTree) {
         for (BasicBlock dominator : dominatorTree.getDominators(B)) {
             for (Instruction instruction : dominator.getInstructionList()) {
                 if (instruction instanceof BinaryInstruction || instruction instanceof UnaryInstruction) {
@@ -153,7 +153,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
 
     public void performGlobalCSE() {
         var availableExpressions = new AvailableExpressions(entryBlock);
-        var dom = new ImmediateDominator(this.entryBlock);
+        var dom = new DominatorTree(this.entryBlock);
 
         // we first perform local CSE for each basic block
         for (var basicBlock : basicBlocks)

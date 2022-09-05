@@ -15,7 +15,7 @@ import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.dataflow.dominator.ImmediateDominator;
+import edu.mit.compilers.dataflow.dominator.DominatorTree;
 import edu.mit.compilers.ssa.SSA;
 
 public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
@@ -27,7 +27,7 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
 
     private boolean performGlobalCopyPropagation() {
         var changesHappened = false;
-        var dom = new ImmediateDominator(getEntryBasicBlock());
+        var dom = new DominatorTree(getEntryBasicBlock());
         // maps (toBeReplaced -> replacer)
         var copiesMap = new HashMap<LValue, Value>();
 

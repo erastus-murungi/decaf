@@ -4,7 +4,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.codes.AllocateInstruction;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
 import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.HasOperand;
@@ -15,7 +14,6 @@ import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.Value;
 
 public class DeadStoreEliminationSsaPass extends SsaOptimizationPass<Void> {
-
     public DeadStoreEliminationSsaPass(Set<LValue> globalVariables, Method method) {
         super(globalVariables, method);
     }
@@ -40,8 +38,7 @@ public class DeadStoreEliminationSsaPass extends SsaOptimizationPass<Void> {
                             storeInstruction.getDestination()) && (
                             storeInstruction instanceof CopyInstruction ||
                                     storeInstruction instanceof UnaryInstruction ||
-                                    storeInstruction instanceof BinaryInstruction ||
-                                    storeInstruction instanceof AllocateInstruction))
+                                    storeInstruction instanceof BinaryInstruction))
                     .toList();
             basicBlock.getInstructionList()
                     .removeAll(deadStores);
