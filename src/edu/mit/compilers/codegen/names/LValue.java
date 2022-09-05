@@ -35,18 +35,8 @@ public abstract class LValue extends Value {
         versionNumber = null;
     }
 
-    public LValue copyWithIncrementedVersionNumber() {
-        var copy = (LValue) copy();
-        copy.versionNumber += 1;
-        return copy;
-    }
-
     public Integer getVersionNumber() {
         return versionNumber;
-    }
-
-    public Variable newVar(String suffix) {
-        return new Variable(label + suffix, this.type);
     }
 
     public String getLabel() {

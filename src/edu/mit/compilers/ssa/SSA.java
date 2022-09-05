@@ -350,10 +350,10 @@ public class SSA {
             if (!copySet.isEmpty()) {
                 var srcDest = copySet.pop();
                 var dst = srcDest.second();
-                var t = dst.copyWithIncrementedVersionNumber();
-                var copyInstruction = CopyInstruction.noAstConstructor(dst.copy(), t);
+                var temp = Variable.genTemp(dst.getType());
+                var copyInstruction = CopyInstruction.noAstConstructor(dst.copy(), temp);
                 basicBlock.addInstructionToTail(copyInstruction);
-                map.put(dst, t);
+                map.put(dst, temp);
                 workList.add(srcDest);
             }
         }
