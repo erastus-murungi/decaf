@@ -14,10 +14,9 @@ out/
 build/
 dot/
 
-ssa*
-dom*
-cfg.pdf
-cfg_ir.pdf
+*ssa*.pdf
+*dom*.pdf
+*cfg*.pdf
 tests/
 test.asm
 main
