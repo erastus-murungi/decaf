@@ -1,5 +1,11 @@
 package edu.mit.compilers.ssa;
 
+import static com.google.common.base.Preconditions.checkState;
+
+import com.google.common.base.Preconditions;
+
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,33 +25,40 @@ import edu.mit.compilers.dataflow.operand.PhiOperand;
 
 public class Phi extends StoreInstruction {
     private final Map<BasicBlock, Value> basicBlockValueMap;
-    private final Map<Value, BasicBlock> valueBasicBlockMap;
+
+    public Map<BasicBlock, Value> getBasicBlockValueMap() {
+        return basicBlockValueMap;
+    }
 
     public Phi(LValue v, Map<BasicBlock, Value> xs) {
         super(v, null);
         assert xs.size() > 2;
         basicBlockValueMap = xs;
-        valueBasicBlockMap = new HashMap<>();
-        for (var entry : basicBlockValueMap.entrySet()) {
-            valueBasicBlockMap.put(entry.getValue(), entry.getKey());
-        }
     }
 
     public void removePhiOperand(Value value) {
-        assert valueBasicBlockMap.containsKey(value);
-        var basicBlock = valueBasicBlockMap.get(value);
-        assert value != null && basicBlock != null;
-        basicBlockValueMap.remove(basicBlock);
-        valueBasicBlockMap.remove(value);
+        assert basicBlockValueMap.containsValue(value);
+        for (var entrySet: basicBlockValueMap.entrySet()) {
+            if (entrySet.getValue().equals(value)) {
+                basicBlockValueMap.remove(entrySet.getKey());
+                return;
+            }
+        }
+        checkState(false);
     }
 
     public Value getVariableForB(BasicBlock B) {
         return basicBlockValueMap.get(B);
     }
 
-    public BasicBlock getBasicBlockForV(Value value) {
-        assert valueBasicBlockMap.containsKey(value);
-        return valueBasicBlockMap.get(value);
+    @NotNull public BasicBlock getBasicBlockForV(@NotNull Value value) {
+        checkState(basicBlockValueMap.containsValue(value));
+        for (var entrySet: basicBlockValueMap.entrySet()) {
+            if (entrySet.getValue().equals(value))
+                return entrySet.getKey();
+        }
+        checkState(false);
+        return null;
     }
 
     @Override

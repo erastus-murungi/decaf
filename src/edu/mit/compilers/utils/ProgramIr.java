@@ -111,6 +111,17 @@ public class ProgramIr {
         return String.join("\n", output);
     }
 
+    public static String mergeMethod(Method method) {
+        List<String> output = new ArrayList<>();
+        for (InstructionList instructionList : TraceScheduler.getInstructionTrace(method)) {
+            if (!instructionList.getLabel()
+                    .equals("UNSET"))
+                output.add("    " + instructionList.getLabel() + ":");
+            instructionList.forEach(instruction -> output.add(instruction.syntaxHighlightedToString()));
+        }
+        return String.join("\n", output);
+    }
+
     public void findGlobals() {
         globals = prologue
                 .stream()

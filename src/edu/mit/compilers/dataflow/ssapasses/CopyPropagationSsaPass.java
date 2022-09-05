@@ -1,5 +1,7 @@
 package edu.mit.compilers.dataflow.ssapasses;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,7 +16,6 @@ import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.dominator.ImmediateDominator;
-import edu.mit.compilers.ssa.Phi;
 import edu.mit.compilers.ssa.SSA;
 
 public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
@@ -32,11 +33,10 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
 
         for (BasicBlock basicBlock : getBasicBlockList()) {
             for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
-                if (storeInstruction instanceof Phi)
-                    continue;
                 if (storeInstruction instanceof CopyInstruction copyInstruction) {
                     var replacer = copyInstruction.getValue();
                     var toBeReplaced = copyInstruction.getDestination();
+                    checkState(!copiesMap.containsKey(toBeReplaced), "CopyPropagation : Invalid SSA form: " + toBeReplaced + " found twice in program");
                     copiesMap.put(toBeReplaced, replacer);
                     // as a quick optimization, we could delete this storeInstruction here
                 }

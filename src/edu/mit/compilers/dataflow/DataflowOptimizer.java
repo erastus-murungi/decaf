@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.dataflow.passes.BranchSimplificationPass;
@@ -22,6 +23,7 @@ import edu.mit.compilers.dataflow.ssapasses.DeadStoreEliminationSsaPass;
 import edu.mit.compilers.dataflow.ssapasses.RedundantPhiEliminationPass;
 import edu.mit.compilers.dataflow.ssapasses.SccpSsaPass;
 import edu.mit.compilers.utils.CLI;
+import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.Utils;
 
 public class DataflowOptimizer {
@@ -81,6 +83,8 @@ public class DataflowOptimizer {
 
     public void optimize() {
         for (int run = 0; run < numberOfRuns; run++) {
+            if (run == 3)
+                System.out.println();
             boolean changesHappened = false;
             for (var optimizationPass : optimizationPassList) {
                 if (!toOptimizeMethods.contains(optimizationPass.getMethod()))
@@ -91,8 +95,8 @@ public class DataflowOptimizer {
                     System.out.format("%s<%s> run = %s :: ", optimizationPass.getClass()
                             .getSimpleName(), optimizationPass.getMethod()
                             .methodName(), run);
-//                    System.out.println(TraceScheduler.flattenIr(optimizationPass.getMethod()));
                     System.out.println(Utils.coloredPrint(String.valueOf(changesHappenedForOpt), Utils.ANSIColorConstants.ANSI_GREEN_BOLD));
+                    System.out.println(ProgramIr.mergeMethod(optimizationPass.getMethod()));
                 }
 //                if (run % toOptimizeMethods.size() == 0)
 //                    runInterProceduralPasses();

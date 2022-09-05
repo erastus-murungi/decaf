@@ -1,5 +1,7 @@
 package edu.mit.compilers.dataflow.ssapasses;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -83,7 +85,6 @@ public class SccpSsaPass extends SsaOptimizationPass<Void> {
             for (var phi : basicBlock.getPhiFunctions()) {
                 for (var lValue : phi.getOperandValues()) {
                     var owner = phi.getBasicBlockForV(lValue);
-                    assert owner != null;
                     if (!(sccp.isReachable(owner))) {
                         phi.removePhiOperand(lValue);
                         changesHappened = true;
