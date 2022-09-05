@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,18 +32,13 @@ public class TestRunner {
     }
 
     private static List<File> getAllTestFiles(String filepath) {
-        List<File> files = new ArrayList<>();
-        try {
-            files = Files.list(Paths.get(filepath))
-                    .map(Path::toFile)
-                    .filter(File::isFile)
-                    .collect(Collectors.toList());
-
-            files.forEach(System.out::println);
+        try (var files = Files.list(Paths.get(filepath))) {
+            return files.map(Path::toFile)
+                    .filter(File::isFile).sorted(Comparator.comparing(File::getName)).toList();
         } catch (IOException e) {
             e.printStackTrace();
+            return Collections.emptyList();
         }
-        return files.stream().sorted(Comparator.comparing(File::getName)).collect(Collectors.toList());
     }
 
     private static void compileTests(String filepath) throws IOException {

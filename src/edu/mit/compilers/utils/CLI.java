@@ -1,5 +1,6 @@
 package edu.mit.compilers.utils;
 
+import java.util.Arrays;
 import java.util.Vector;
 
 /**
@@ -46,8 +47,7 @@ public class CLI {
      */
     public static boolean debug;
 
-    /**
-     * Sets up default values for all of the
+    /* Sets up default values for all the
      * result fields.  Specifically, sets the input and output files
      * to null, the target to DEFAULT, and the extra array to a new
      * empty Vector.
@@ -56,48 +56,50 @@ public class CLI {
         outfile = null;
         infile = null;
         target = Action.DEFAULT;
-        extras = new Vector<String>();
+        extras = new Vector<>();
     }
 
     public static void printUsage(String message) {
         System.err.println(message);
-        System.err.println("Usage: run.sh [options] <filename>\n" +
-                "Summary of options:\n" +
-                "  -t <stage>              --target=<stage>           compile to the given stage\n" +
-                "  -o <outfile>            --output=<outfile>         write output to <outfile>\n" +
-                "  -O <(opt|-opt|all)...>  --opt=<(opt|-opt|all)...>  perform the listed optimizations\n" +
-                "  -d                      --debug                    print debugging information\n" +
-                "\n" +
-                "Long description of options:\n" +
-                "  -t <stage>          <stage> is one of \"scan\", \"parse\", \"inter\", or \"assembly\".\n" +
-                "  --target=<stage>    Compilation will proceed to the given stage and halt there.\n" +
-                "\n" +
-                "  -d                  Print debugging information.  If this option is not given,\n" +
-                "  --debug             then there will be no output to the screen on successful\n" +
-                "                      compilation.\n" +
-                "\n" +
-                "  -O <optspec>        Perform the listed optimizations.  <optspec> is a comma-\n" +
-                "  --opt=<optspec>     separated list of optimization names, or the special symbol\n" +
-                "                      \"all\", meaning all possible optimizations.  You may\n" +
-                "                      explicitly disable an optimization by prefixing its name\n" +
-                "                      with '-'.\n" +
-                "\n" +
-                "  -o <outfile>        Write output to <outfile>.  If this option is not given,\n" +
-                "  --output=<outfile>  output will be written to a file with the same base name as\n" +
-                "                      the input file and the extension changed according to the\n" +
-                "                      final stage executed.\n");
+        System.err.println("""
+                Usage: run.sh [options] <filename>
+                Summary of options:
+                  -t <stage>              --target=<stage>           compile to the given stage
+                  -o <outfile>            --output=<outfile>         write output to <outfile>
+                  -O <(opt|-opt|all)...>  --opt=<(opt|-opt|all)...>  perform the listed optimizations
+                  -d                      --debug                    print debugging information
+
+                Long description of options:
+                  -t <stage>          <stage> is one of "scan", "parse", "inter", or "assembly".
+                  --target=<stage>    Compilation will proceed to the given stage and halt there.
+
+                  -d                  Print debugging information.  If this option is not given,
+                  --debug             then there will be no output to the screen on successful
+                                      compilation.
+
+                  -O <optspec>        Perform the listed optimizations.  <optspec> is a comma-
+                  --opt=<optspec>     separated list of optimization names, or the special symbol
+                                      "all", meaning all possible optimizations.  You may
+                                      explicitly disable an optimization by prefixing its name
+                                      with '-'.
+
+                  -o <outfile>        Write output to <outfile>.  If this option is not given,
+                  --output=<outfile>  output will be written to a file with the same base name as
+                                      the input file and the extension changed according to the
+                                      final stage executed.
+                """);
     }
 
     /**
-     * Parse the command-line arguments.  Sets all of the result fields
+     * Parse the command-line arguments.  Sets all the result fields
      * accordingly. <BR>
      *
      * <TT>-t / --target= <I>target</I></TT> sets the CLI.target field based
      * on the <I>target</I> specified. <BR>
-     * <TT>scan</TT> or <TT>scanner</TT> specifies Action.SCAN
-     * <TT>parse</TT> specifies Action.PARSE
-     * <TT>inter</TT> specifies Action.INTER
-     * <TT>assembly</TT> or <TT>codegen</TT> specifies Action.ASSEMBLY
+     * <TT>scan</TT> or <TT>scanner</TT> specifies {@code Action.SCAN}
+     * <TT>parse</TT> specifies {@code Action.PARSE}
+     * <TT>inter</TT> specifies {@code Action.INTER}
+     * <TT>assembly</TT> or <TT>codegen</TT> specifies {@code Action.ASSEMBLY}
      * <p>
      * The boolean array opts[] indicates which, if any, of the
      * optimizations in optnames[] should be performed; these arrays
@@ -108,7 +110,6 @@ public class CLI {
      * @param optnames Ordered array of recognized optimization names.
      */
     public static void parse(String[] args, String[] optnames) {
-        String ext = ".out";
         String targetStr = "";
 
         opts = new boolean[optnames.length];
@@ -149,17 +150,15 @@ public class CLI {
                 } else {
                     optsList = args[i].substring(6).split(",");
                 }
-                for (int j = 0; j < optsList.length; j++) {
-                    if (optsList[j].equals("all")) {
-                        for (int k = 0; k < opts.length; k++) {
-                            opts[k] = true;
-                        }
+                for (String s : optsList) {
+                    if (s.equals("all")) {
+                        Arrays.fill(opts, true);
                     } else {
                         for (int k = 0; k < optnames.length; k++) {
-                            if (optsList[j].equals(optnames[k])) {
+                            if (s.equals(optnames[k])) {
                                 opts[k] = true;
-                            } else if (optsList[j].charAt(0) == '-' &&
-                                    optsList[j].substring(1).equals(optnames[k])) {
+                            } else if (s.charAt(0) == '-' &&
+                                    s.substring(1).equals(optnames[k])) {
                                 opts[k] = false;
                             }
                         }
@@ -172,16 +171,19 @@ public class CLI {
 
         if (!targetStr.equals("")) {
             targetStr = targetStr.toLowerCase();
-            if (targetStr.equals("scan")) target = Action.SCAN;
-            else if (targetStr.equals("parse")) target = Action.PARSE;
-            else if (targetStr.equals("inter")) target = Action.INTER;
-            else if (targetStr.equals("assembly")) target = Action.ASSEMBLY;
-            else if (targetStr.equals("about")) {
-                printUsage("Test run successful. Command line parameters: ");
-                System.exit(0);
-            } else {
-                printUsage("Invalid target: " + targetStr);
-                throw new IllegalArgumentException(targetStr);
+            switch (targetStr) {
+                case "scan" -> target = Action.SCAN;
+                case "parse" -> target = Action.PARSE;
+                case "inter" -> target = Action.INTER;
+                case "assembly" -> target = Action.ASSEMBLY;
+                case "about" -> {
+                    printUsage("Test run successful. Command line parameters: ");
+                    System.exit(0);
+                }
+                default -> {
+                    printUsage("Invalid target: " + targetStr);
+                    throw new IllegalArgumentException(targetStr);
+                }
             }
         }
 

@@ -140,7 +140,8 @@ public class DecafParser {
     }
 
     private static void addNonTerminal(Pair<String, AST> labelAndNode, int index, int numChildren, String prefix, String connector, List<String> tree) {
-        tree.add(prefix + connector + " " + Utils.coloredPrint(labelAndNode.first() + " = " + labelAndNode.second(), Utils.ANSIColorConstants.ANSI_PURPLE));
+        tree.add(
+                String.format("%s%s %s = [%s]", prefix, connector, labelAndNode.first(), Utils.coloredPrint(labelAndNode.second().getSourceCode(), Utils.ANSIColorConstants.ANSI_PURPLE)));
         prefix += (index != numChildren - 1) ? PrintConstants.PIPE_PREFIX : PrintConstants.SPACE_PREFIX;
         treeBody(labelAndNode, tree, prefix);
     }
@@ -881,16 +882,10 @@ public class DecafParser {
     public void printParseTree() {
         List<String> tree = new ArrayList<>();
         treeBody(new Pair<>(".", root), tree, "");
-        while (tree.size() > 0 && tree.get(tree.size() - 1)
-                .equals(""))
+        while (tree.get(tree.size() - 1).equals(""))
             tree.remove(tree.size() - 1);
-        for (String s : tree) {
-            try {
-                OutputStream.nullOutputStream().write(s.getBytes(StandardCharsets.UTF_8));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            //            System.err.println(s);
+        for (String s: tree) {
+            System.out.println(s);
         }
     }
 

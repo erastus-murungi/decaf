@@ -1,5 +1,11 @@
 package edu.mit.compilers.dataflow;
 
+import static org.junit.Assert.assertThrows;
+
+import junit.framework.TestCase;
+
+import org.junit.Before;
+
 import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
@@ -7,15 +13,7 @@ import edu.mit.compilers.codegen.names.Variable;
 import edu.mit.compilers.dataflow.analyses.AvailableExpressions;
 import edu.mit.compilers.grammar.DecafScanner;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
-import static org.junit.Assert.*;
-
-public class AvailableExpressionsTest {
+public class AvailableExpressionsTest extends TestCase {
     private final Variable a = new Variable("a", Type.Int);
     private final Variable b = new Variable("b", Type.Int);
     private final Variable c = new Variable("c", Type.Int);
@@ -51,11 +49,8 @@ public class AvailableExpressionsTest {
             DecafScanner.MULTIPLY,
     };
 
-    @Rule
-    public ExpectedException exceptionRule = ExpectedException.none();
-
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         aEqualsBPlusC = new BinaryInstruction(a, b, DecafScanner.PLUS, c, null, null);
         dEqualsCPlusB = new BinaryInstruction(d, c, DecafScanner.PLUS, b, null, null);
         aEqualsBMinusC = new BinaryInstruction(a, b, DecafScanner.MINUS, c, null, null);
@@ -70,11 +65,6 @@ public class AvailableExpressionsTest {
         cEqualsMinusB = new UnaryInstruction(c, DecafScanner.MINUS, b, null);
     }
 
-    @After
-    public void tearDown() throws Exception {
-    }
-
-    @Test
     public void test_BinaryExpressionsAreIsomorphic_When_CommutativeExpressionsAreEqual() {
         // b + c == c + b
         assertTrue(AvailableExpressions.expressionsAreIsomorphic(aEqualsBPlusC, dEqualsCPlusB));
@@ -82,7 +72,6 @@ public class AvailableExpressionsTest {
         assertTrue(AvailableExpressions.expressionsAreIsomorphic(aEqualsBTimesC, dEqualsCTimesB));
     }
 
-    @Test
     public void test_BinaryExpressionsAreIsomorphic_When_NonCommutativeExpressionsAreEqual() {
         // b - c == b - c
         assertTrue(AvailableExpressions.expressionsAreIsomorphic(aEqualsBMinusC, aEqualsBMinusC));
@@ -90,7 +79,6 @@ public class AvailableExpressionsTest {
         assertTrue(AvailableExpressions.expressionsAreIsomorphic(aEqualsBDivideC, aEqualsBDivideC));
     }
 
-    @Test
     public void test_BinaryExpressionsAreNotIsomorphic_When_NonCommutativeExpressionsAreNotEqual() {
         // b - c != c - b
         assertFalse(AvailableExpressions.expressionsAreIsomorphic(aEqualsBMinusC, dEqualsCMinusB));
@@ -98,27 +86,21 @@ public class AvailableExpressionsTest {
         assertFalse(AvailableExpressions.expressionsAreIsomorphic(aEqualsBDivideC, dEqualsCDivideB));
     }
 
-    @Test
     public void test_IllegalArgumentExceptionThrown_When_FirstArgIsNull() {
-        exceptionRule.expect(IllegalArgumentException.class);
-        exceptionRule.expectMessage("first assignment is a null pointer");
-        assertTrue(AvailableExpressions.expressionsAreIsomorphic(null, cEqualsMinusB));
+        IllegalArgumentException illegalArgumentException = assertThrows(IllegalArgumentException.class, () -> AvailableExpressions.expressionsAreIsomorphic(null, cEqualsMinusB));
+        assertTrue(illegalArgumentException.getMessage().contains("first assignment is a null pointer"));
     }
 
-    @Test
     public void test_IllegalArgumentExceptionThrown_When_SecondArgIsNull() {
-        exceptionRule.expect(IllegalArgumentException.class);
-        exceptionRule.expectMessage("second assignment is a null pointer");
-        assertTrue(AvailableExpressions.expressionsAreIsomorphic(cEqualsMinusB, null));
+        IllegalArgumentException illegalArgumentException = assertThrows(IllegalArgumentException.class, () -> AvailableExpressions.expressionsAreIsomorphic(cEqualsMinusB, null));
+        assertTrue(illegalArgumentException.getMessage().contains("second assignment is a null pointer"));
     }
 
-    @Test
     public void test_UnaryExpressions_AreIsomorphic_When_Equal() {
         // -b == -b
         assertTrue(AvailableExpressions.expressionsAreIsomorphic(aEqualsMinusB, cEqualsMinusB));
     }
 
-    @Test
     public void test_Only_MultiplyAndAdd_AreCommutative() {
         int numCommutative = 0;
         for (String operator: allDecafOperators)
