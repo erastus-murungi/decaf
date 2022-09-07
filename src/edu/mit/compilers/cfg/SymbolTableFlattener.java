@@ -16,12 +16,12 @@ import edu.mit.compilers.symboltable.SymbolTableType;
 import edu.mit.compilers.utils.Pair;
 
 public class SymbolTableFlattener {
-    SymbolTable fields;
-    SymbolTable methods;
-    TreeSet<String> imports;
+    private final SymbolTable fields;
+    private final SymbolTable methods;
+    private final TreeSet<String> imports;
 
-    HashMap<String, SymbolTable> cfgMethods = new HashMap<>();
-    int uniqueIndex;
+    private final HashMap<String, SymbolTable> cfgMethods = new HashMap<>();
+    private int uniqueIndex;
 
     public SymbolTableFlattener(GlobalDescriptor globalDescriptor) {
         this.fields = globalDescriptor.globalVariablesSymbolTable;

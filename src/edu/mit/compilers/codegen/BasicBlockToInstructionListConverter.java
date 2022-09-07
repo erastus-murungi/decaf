@@ -14,7 +14,7 @@ import edu.mit.compilers.ast.Program;
 import edu.mit.compilers.ast.StringLiteral;
 import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.cfg.ControlFlowGraphVisitor;
+import edu.mit.compilers.cfg.ControlFlowGraphASTVisitor;
 import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.cfg.SymbolTableFlattener;
 import edu.mit.compilers.codegen.codes.ConditionalBranch;
@@ -43,7 +43,7 @@ public class BasicBlockToInstructionListConverter {
 
     public BasicBlockToInstructionListConverter(GlobalDescriptor globalDescriptor,
                                                 List<DecafException> cfgGenerationErrors,
-                                                ControlFlowGraphVisitor cfgVisitor,
+                                                ControlFlowGraphASTVisitor cfgVisitor,
                                                 Program program) {
         var symbolTableFlattener = new SymbolTableFlattener(globalDescriptor);
         this.perMethodSymbolTables = symbolTableFlattener.createCFGSymbolTables();
@@ -59,7 +59,7 @@ public class BasicBlockToInstructionListConverter {
                                                 .equals(methodName))
                                         .findFirst()
                                         .orElseThrow(() -> new IllegalStateException("expected to find method " + methodName))
-                                , entryBlock, perMethodSymbolTables.get(methodName))));
+                                , entryBlock.getSuccessor(), perMethodSymbolTables.get(methodName))));
         this.programIr = new ProgramIr(prologue, methods);
         this.programIr.renumberLabels();
     }
@@ -183,7 +183,7 @@ public class BasicBlockToInstructionListConverter {
         if (visitedBasicBlocks.contains(basicBlockWithBranch))
             return basicBlockWithBranch.getInstructionList();
 
-        visitedBasicBlocks.add(basicBlockWithBranch);
+            visitedBasicBlocks.add(basicBlockWithBranch);
 
         var condition = basicBlockWithBranch.getBranchCondition().orElseThrow();
         var conditionInstructionList = condition.accept(currentAstToInstructionListConverter, Variable.genTemp(Type.Bool));

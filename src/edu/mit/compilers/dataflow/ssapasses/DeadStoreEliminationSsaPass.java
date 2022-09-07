@@ -12,26 +12,27 @@ import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.dataflow.OptimizationContext;
 
 public class DeadStoreEliminationSsaPass extends SsaOptimizationPass<Void> {
-    public DeadStoreEliminationSsaPass(Set<LValue> globalVariables, Method method) {
-        super(globalVariables, method);
+    public DeadStoreEliminationSsaPass(OptimizationContext optimizationContext, Method method) {
+        super(optimizationContext, method);
     }
 
     @Override
     public boolean runFunctionPass() {
         // look at the whole program and find all the uses
         var changesHappened = false;
-        Set<Value> used = new HashSet<>();
+        var used = new HashSet<Value>();
 
-        for (BasicBlock basicBlock : getBasicBlockList()) {
+        for (BasicBlock basicBlock : getBasicBlocksList()) {
             for (Instruction instruction : basicBlock.getInstructionList()) {
                 if (instruction instanceof HasOperand hasOperand) {
                     used.addAll(hasOperand.getOperandLValues());
                 }
             }
         }
-        for (BasicBlock basicBlock : getBasicBlockList()) {
+        for (BasicBlock basicBlock : getBasicBlocksList()) {
             var deadStores = basicBlock.getStoreInstructions()
                     .stream()
                     .filter(storeInstruction -> !used.contains(

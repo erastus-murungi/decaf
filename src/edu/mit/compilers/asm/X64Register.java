@@ -37,7 +37,7 @@ public enum X64Register {
     public static final EnumSet<X64Register> callerSaved = EnumSet.of(R10, R11, RDI, RSI, RDX, RCX, R8, R9, RAX);
     // this is the order to allocate registers
     // note the argument registers are accessed in reverse order
-    public static final X64Register[] regsToAllocate = {RBX, R13, R14, R15, RDX, RCX, R9, R8, RSI, RDI}; // use in this order
+    public static final X64Register[] regsToAllocate = {R13, R14, R15, RDX, RCX, R9, R8, RSI, RDI}; // use in this order
     public static final X64Register[] availableRegs = {RBX, R12, R12, R14, R15, RDI, RSI, R8, R9, RDX, RCX, RAX, R10, R11}; // Use in this order
 
     static {

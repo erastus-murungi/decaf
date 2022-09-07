@@ -42,7 +42,7 @@ import edu.mit.compilers.ast.While;
 import edu.mit.compilers.exceptions.DecafSemanticException;
 import edu.mit.compilers.symboltable.SymbolTable;
 
-public interface Visitor<T> {
+public interface ASTVisitor<T> {
     List<DecafSemanticException> exceptions = new ArrayList<>();
 
     T visit(IntLiteral intLiteral, SymbolTable symbolTable);

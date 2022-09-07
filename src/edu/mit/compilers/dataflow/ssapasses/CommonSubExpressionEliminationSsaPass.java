@@ -12,12 +12,14 @@ import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.dataflow.dominator.DominatorTree;
 import edu.mit.compilers.dataflow.operand.Operand;
 
 public class CommonSubExpressionEliminationSsaPass extends SsaOptimizationPass<StoreInstruction> {
-    public CommonSubExpressionEliminationSsaPass(Set<LValue> globalVariables, Method method) {
-        super(globalVariables, method);
+
+    public CommonSubExpressionEliminationSsaPass(OptimizationContext optimizationContext, Method method) {
+        super(optimizationContext, method);
     }
 
     @Override
@@ -37,7 +39,7 @@ public class CommonSubExpressionEliminationSsaPass extends SsaOptimizationPass<S
 
 
     public boolean performGlobalCSE() {
-        var dom = new DominatorTree(getEntryBasicBlock());
+        var dom = new DominatorTree(getMethod().entryBlock);
         var expressionToBasicBlock = new HashMap<Operand, BasicBlock>();
         var expressionToIndexInBasicBlock = new HashMap<Operand, Integer>();
         var changesHappened = false;

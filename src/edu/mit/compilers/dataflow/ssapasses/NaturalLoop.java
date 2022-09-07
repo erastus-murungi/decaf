@@ -1,61 +1,96 @@
 package edu.mit.compilers.dataflow.ssapasses;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
+
+import org.jetbrains.annotations.NotNull;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Stack;
+
 import edu.mit.compilers.cfg.BasicBlock;
+import edu.mit.compilers.dataflow.dominator.DominatorTree;
 
 public class NaturalLoop {
-    private BasicBlock preHeader;
+    /**
+     * Single entry point to the loop that dominates all the other blocks in the loop
+     */
+    @NotNull
+    private final BasicBlock header;
+    /**
+     * A latch is a loop node that has an edge to the header.
+     */
+    @NotNull
+    private final BasicBlock latch;
+    /**
+     * This a set of all the blocks in the loop's body.
+     * They must all be dominated by the header
+     */
+    @NotNull
+    private final Set<BasicBlock> body = new HashSet<>();
+    /**
+     * Blocks whose immediate predecessors are in the loop body, but they themselves aren't
+     */
+    @NotNull
+    private final Set<BasicBlock> exitBlocks = new HashSet<>();
+    /**
+     * A single block whose immediate successor is outside the loop
+     */
+    @NotNull
+    private final BasicBlock preHeader = BasicBlock.noBranch();
 
-    private BasicBlock head;
-
-    private BasicBlock body;
-
-    private BasicBlock tail;
-
-    private BasicBlock exit;
-
-    public NaturalLoop(BasicBlock head, BasicBlock body, BasicBlock tail) {
-        this.head = head;
-        this.body = body;
-        this.tail = tail;
+    public NaturalLoop(@NotNull BasicBlock header, @NotNull BasicBlock latch, @NotNull DominatorTree dominatorTree) {
+        checkArgument(latch.getSuccessors().contains(header));
+        checkArgument(dominatorTree.dom(header, latch));
+        this.header = header;
+        this.latch = latch;
+        buildBody(dominatorTree);
+        checkState(getBody().stream().allMatch(basicBlock -> dominatorTree.dom(getHeader(), basicBlock)));
+        findExitBlocks();
     }
 
-    public void setBody(BasicBlock body) {
-        this.body = body;
+    private void findExitBlocks() {
+        for (BasicBlock basicBlock : getBody()) {
+            for (BasicBlock successor : basicBlock.getSuccessors()) {
+                if (!body.contains(successor)) {
+                    exitBlocks.add(successor);
+                }
+            }
+        }
     }
 
-    public void setHead(BasicBlock head) {
-        this.head = head;
+    public void buildBody(DominatorTree dominatorTree) {
+        var body = new HashSet<BasicBlock>();
+        var stack = new Stack<BasicBlock>();
+
+        body.add(getHeader());
+        stack.add(getLatch());
+
+        while (!stack.isEmpty()) {
+            var D = stack.pop();
+            if (!body.contains(D) && dominatorTree.dom(getHeader(), D)) {
+                body.add(D);
+                stack.addAll(D.getPredecessors());
+            }
+        }
+        this.body.addAll(body);
     }
 
-    public void setTail(BasicBlock tail) {
-        this.tail = tail;
-    }
-
-    public void setExit(BasicBlock exit) {
-        this.exit = exit;
-    }
-
-    public void setPreHeader(BasicBlock preHeader) {
-        this.preHeader = preHeader;
-    }
-
-    public BasicBlock getBody() {
+    public @NotNull Set<BasicBlock> getBody() {
         return body;
     }
 
-    public BasicBlock getHead() {
-        return head;
+    public @NotNull BasicBlock getHeader() {
+        return header;
     }
 
-    public BasicBlock getPreHeader() {
-        return preHeader;
+    public @NotNull BasicBlock getLatch() {
+        return latch;
     }
 
-    public BasicBlock getTail() {
-        return tail;
-    }
-
-    public BasicBlock getExit() {
-        return exit;
+    @Override
+    public String toString() {
+        return "NaturalLoop{" + "preHeader=" + preHeader + ", header=" + header + ", body=" + body + ", latch=" + latch + ", exitBlocks=" + exitBlocks + '}';
     }
 }

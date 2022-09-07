@@ -13,7 +13,7 @@ import edu.mit.compilers.asm.X64CodeConverter;
 import edu.mit.compilers.asm.X64Program;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.cfg.ControlFlowGraph;
-import edu.mit.compilers.cfg.ControlFlowGraphVisitor;
+import edu.mit.compilers.cfg.ControlFlowGraphASTVisitor;
 import edu.mit.compilers.codegen.BasicBlockToInstructionListConverter;
 import edu.mit.compilers.dataflow.DataflowOptimizer;
 import edu.mit.compilers.dataflow.passes.InstructionSimplifyIrPass;
@@ -32,7 +32,7 @@ public class Compilation {
     private DecafSemanticChecker semanticChecker;
     private ControlFlowGraph cfgGenerator;
     private BasicBlockToInstructionListConverter basicBlockToInstructionListConverter;
-    private ControlFlowGraphVisitor cfgVisitor;
+    private ControlFlowGraphASTVisitor cfgVisitor;
 
     private ProgramIr programIr;
 
@@ -273,7 +273,8 @@ public class Compilation {
                 System.out.println("Before optimization");
                 System.out.println(programIr.mergeProgram());
             }
-            var dataflowOptimizer = new DataflowOptimizer(programIr.methodList, basicBlockToInstructionListConverter.getGlobalNames(), CLI.opts);
+            programIr.setGlobals(basicBlockToInstructionListConverter.getGlobalNames());
+            var dataflowOptimizer = new DataflowOptimizer(programIr, CLI.opts);
             dataflowOptimizer.initialize();
             dataflowOptimizer.optimize();
             programIr.methodList = dataflowOptimizer.getOptimizedMethods();

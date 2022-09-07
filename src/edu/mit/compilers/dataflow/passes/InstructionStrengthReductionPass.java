@@ -4,10 +4,11 @@ import java.util.Set;
 
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.dataflow.OptimizationContext;
 
 public class InstructionStrengthReductionPass extends OptimizationPass {
-    public InstructionStrengthReductionPass(Set<LValue> globalVariables, Method method) {
-        super(globalVariables, method);
+    public InstructionStrengthReductionPass(OptimizationContext optimizationContext, Method method) {
+        super(optimizationContext, method);
     }
 
     @Override

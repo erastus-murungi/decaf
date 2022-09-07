@@ -59,7 +59,7 @@ public class BasicBlock {
         var basicBlock = new BasicBlock(BasicBlockType.BRANCH);
         basicBlock.branchCondition = branchCondition;
         basicBlock.setTrueTarget(trueTarget);
-        basicBlock.setFalseTarget(falseTarget);
+        basicBlock.alternateSuccessor = falseTarget;
         basicBlock.addAstNode(branchCondition);
         return basicBlock;
     }
@@ -250,6 +250,15 @@ public class BasicBlock {
 
     public void setFalseTarget(@NotNull BasicBlock falseTarget) {
         this.alternateSuccessor = falseTarget;
+        getConditionalBranchInstruction().falseTarget = falseTarget;
+    }
+
+    public void setFalseTargetUnchecked(@NotNull BasicBlock falseTarget) {
+        this.alternateSuccessor = falseTarget;
+    }
+
+    private ConditionalBranch getConditionalBranchInstruction() {
+        return (ConditionalBranch) getInstructionList().stream().filter(instruction -> instruction instanceof ConditionalBranch).findFirst().orElseThrow(() -> new RuntimeException(toString()));
     }
 
     public @Nullable BasicBlock getSuccessor() {
@@ -277,6 +286,10 @@ public class BasicBlock {
     @Override
     public String toString() {
         return getLinesOfCodeString();
+    }
+
+    public BasicBlock getAlternateSuccessor() {
+        return alternateSuccessor;
     }
 
     public enum BasicBlockType {

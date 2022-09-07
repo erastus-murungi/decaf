@@ -4,7 +4,7 @@ import java.util.List;
 
 import edu.mit.compilers.codegen.CodegenAstVisitor;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.ir.Visitor;
+import edu.mit.compilers.ir.ASTVisitor;
 import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 
@@ -15,7 +15,7 @@ public abstract class AST {
 
     public abstract boolean isTerminal();
 
-    public abstract <T> T accept(Visitor<T> visitor, SymbolTable currentSymbolTable);
+    public abstract <T> T accept(ASTVisitor<T> ASTVisitor, SymbolTable currentSymbolTable);
 
     public abstract <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, LValue resultLocation);
 

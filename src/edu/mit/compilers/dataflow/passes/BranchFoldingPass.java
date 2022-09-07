@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.cfg.BasicBlock;
+import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.utils.TarjanSCC;
 
 public class BranchFoldingPass {
@@ -35,7 +36,7 @@ public class BranchFoldingPass {
 
     private static void mergeTails(List<BasicBlock> basicBlocks) {
         for (BasicBlock basicBlock : basicBlocks) {
-            if (basicBlock.getPredecessors().size() > 1 && haveSameSuccessor(basicBlock.getPredecessors())) {
+            if (!(basicBlock instanceof NOP) && basicBlock.getPredecessors().size() > 1 && haveSameSuccessor(basicBlock.getPredecessors())) {
                 var commonInstructions = getCommonInstructions(basicBlock.getPredecessors());
                 if (commonInstructions.isPresent()) {
                     var common = BasicBlock.noBranch();

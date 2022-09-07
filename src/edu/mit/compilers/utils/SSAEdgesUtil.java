@@ -9,7 +9,6 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.codes.ReturnInstruction;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.Value;
@@ -20,30 +19,33 @@ public class SSAEdgesUtil {
     private final Set<SsaEdge> ssaEdges;
 
     public SSAEdgesUtil(Method method) {
-        this.ssaEdges = computeSsaEdges(method.entryBlock);
+        this.ssaEdges = computeSsaEdges(method);
     }
 
-    private static Set<SsaEdge> computeSsaEdges(BasicBlock entryBlock) {
-        var dominatorTree = new DominatorTree(entryBlock);
+    private static Set<SsaEdge> computeSsaEdges(Method method) {
+        var dominatorTree = new DominatorTree(method.entryBlock);
         var ssaEdges = new HashSet<SsaEdge>();
         var lValueToDefMapping = new HashMap<LValue, StoreInstruction>();
+        var basicBlocks = dominatorTree.preorder();
 
-        for (BasicBlock basicBlock : dominatorTree.preorder()) {
+        for (BasicBlock basicBlock : basicBlocks) {
             basicBlock.getStoreInstructions()
                     .forEach(
                             storeInstruction -> lValueToDefMapping.put(storeInstruction.getDestination(), storeInstruction)
                     );
         }
 
-        for (BasicBlock basicBlock : dominatorTree.preorder()) {
+        for (BasicBlock basicBlock : basicBlocks) {
             for (Instruction instruction : basicBlock.getInstructionList()) {
                 if (instruction instanceof HasOperand hasOperand) {
                     for (LValue lValue : hasOperand.getOperandLValues()) {
-                        if (instruction instanceof ReturnInstruction && !lValueToDefMapping.containsKey(lValue))
-                            continue;
-                        ssaEdges.add(new SsaEdge(lValueToDefMapping.computeIfAbsent(lValue, key -> {
+                        if (lValueToDefMapping.containsKey(lValue)) {
+                            ssaEdges.add(new SsaEdge(lValueToDefMapping.get(lValue), hasOperand, basicBlock));
+                        } else if (method.getParameterNames().contains(lValue)) {
+
+                        } else {
                             throw new IllegalStateException(lValue + " not found" + basicBlock.getInstructionList());
-                        }), hasOperand, basicBlock));
+                        }
                     }
                 }
             }
@@ -63,12 +65,11 @@ public class SSAEdgesUtil {
                 .collect(Collectors.toUnmodifiableSet());
     }
 
-    public boolean copyPropagate(LValue toBeReplaced, Value replacer) {
+    public void copyPropagate(LValue toBeReplaced, Value replacer) {
         var uses = getUses(toBeReplaced);
         var changesHappened = false;
         for (var use : uses) {
             changesHappened = changesHappened | use.replaceValue(toBeReplaced, replacer.copy());
         }
-        return changesHappened;
     }
 }

@@ -54,7 +54,7 @@ import edu.mit.compilers.exceptions.DecafSemanticException;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.symboltable.SymbolTable;
 
-public class TypeCheckVisitor implements Visitor<Type> {
+public class TypeCheckASTVisitor implements ASTVisitor<Type> {
     SymbolTable methods;
     SymbolTable globalFields;
     TreeSet<String> imports;
@@ -63,7 +63,7 @@ public class TypeCheckVisitor implements Visitor<Type> {
     IntLiteral intLiteral = null;
     boolean negInt = false;
 
-    public TypeCheckVisitor(Program root, SymbolTable methods, SymbolTable globalFields, TreeSet<String> imports) {
+    public TypeCheckASTVisitor(Program root, SymbolTable methods, SymbolTable globalFields, TreeSet<String> imports) {
         this.methods = methods;
         this.globalFields = globalFields;
         this.imports = imports;

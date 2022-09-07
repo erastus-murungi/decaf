@@ -20,19 +20,19 @@ public class DecafSemanticChecker {
     }
 
     public void runChecks(DecafExceptionProcessor decafExceptionProcessor) {
-        IRVisitor irVisitor = new IRVisitor();
-        rootNode.accept(irVisitor, null);
-        TypeCheckVisitor typeCheckVisitor = new TypeCheckVisitor((Program) rootNode, irVisitor.methods, irVisitor.fields, irVisitor.imports);
-        rootNode.accept(typeCheckVisitor, irVisitor.fields);
-        globalDescriptor = new GlobalDescriptor(Type.Undefined, irVisitor.fields, irVisitor.methods, irVisitor.imports);
-        hasError = Visitor.exceptions.size() > 0;
+        SemanticCheckerASTVisitor semanticCheckerVisitor = new SemanticCheckerASTVisitor();
+        rootNode.accept(semanticCheckerVisitor, null);
+        TypeCheckASTVisitor typeCheckVisitor = new TypeCheckASTVisitor((Program) rootNode, semanticCheckerVisitor.methods, semanticCheckerVisitor.fields, semanticCheckerVisitor.imports);
+        rootNode.accept(typeCheckVisitor, semanticCheckerVisitor.fields);
+        globalDescriptor = new GlobalDescriptor(Type.Undefined, semanticCheckerVisitor.fields, semanticCheckerVisitor.methods, semanticCheckerVisitor.imports);
+        hasError = ASTVisitor.exceptions.size() > 0;
         if (trace) {
             printAllExceptions(decafExceptionProcessor);
         }
     }
 
     public void printAllExceptions(DecafExceptionProcessor decafExceptionProcessor) {
-        for (DecafSemanticException decafSemanticException : Visitor.exceptions) {
+        for (DecafSemanticException decafSemanticException : ASTVisitor.exceptions) {
             decafExceptionProcessor.processDecafSemanticException(decafSemanticException).printStackTrace();
         }
     }

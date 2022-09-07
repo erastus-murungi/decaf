@@ -16,19 +16,21 @@ import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.NumericalConstant;
+import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.ssa.SSA;
+import edu.mit.compilers.utils.TarjanSCC;
 
 public class SccpSsaPass extends SsaOptimizationPass<Void> {
     boolean changesHappened = false;
     List<SCCPOptResult> resultList = new ArrayList<>();
 
-    public SccpSsaPass(Set<LValue> globalVariables, Method method) {
-        super(globalVariables, method);
+    public SccpSsaPass(OptimizationContext optimizationContext, Method method) {
+        super(optimizationContext, method);
     }
 
     private void substituteVariablesWithConstants(SCCP sccp) {
         var latticeValues = sccp.getLatticeValues();
-        for (BasicBlock basicBlock : getBasicBlockList()) {
+        for (BasicBlock basicBlock : getBasicBlocksList()) {
             var instructionList = new ArrayList<Instruction>();
             for (Instruction instruction : basicBlock.getInstructionList()) {
                 if (instruction instanceof BinaryInstruction || instruction instanceof UnaryInstruction || (instruction instanceof CopyInstruction copyInstruction && copyInstruction.getValue() instanceof LValue)) {
@@ -64,7 +66,7 @@ public class SccpSsaPass extends SsaOptimizationPass<Void> {
     }
 
     private void removeUnreachableBasicBlocks(SCCP sccp) {
-        for (var basicBlock : getBasicBlockList()) {
+        for (var basicBlock : getBasicBlocksList()) {
             if (basicBlock.hasBranch()) {
                 if (!sccp.isReachable(basicBlock.getTrueTarget()) && !sccp.isReachable(basicBlock.getFalseTarget())) {
                     basicBlock.convertToBranchLess(method.exitBlock);
@@ -76,12 +78,29 @@ public class SccpSsaPass extends SsaOptimizationPass<Void> {
                     basicBlock.convertToBranchLess(basicBlock.getFalseTarget());
                     changesHappened = true;
                 }
+            } else if (basicBlock.hasNoBranchNotNOP()) {
+                if (!sccp.isReachable(basicBlock)) {
+                    for (BasicBlock pred : basicBlock.getPredecessors()) {
+                        if (basicBlock == pred.getSuccessor()) {
+                            pred.setSuccessor(basicBlock.getSuccessor());
+                        } else {
+                            if (pred.hasBranch()) {
+                                checkState(basicBlock == pred.getAlternateSuccessor());
+                                checkState(pred.hasBranch());
+                                pred.setFalseTarget(basicBlock);
+                            }
+                        }
+                    }
+                    for (BasicBlock successor : basicBlock.getSuccessors()) {
+                        successor.removePredecessor(basicBlock);
+                    }
+                }
             }
         }
     }
 
     private void removePhisFromUnreachableBlocks(SCCP sccp) {
-        for (var basicBlock : getBasicBlockList()) {
+        for (var basicBlock : getBasicBlocksList()) {
             for (var phi : basicBlock.getPhiFunctions()) {
                 for (var lValue : phi.getOperandValues()) {
                     var owner = phi.getBasicBlockForV(lValue);
@@ -92,6 +111,7 @@ public class SccpSsaPass extends SsaOptimizationPass<Void> {
                 }
             }
         }
+        optimizationContext.setBasicBlocks(method, TarjanSCC.getReversePostOrder(method.entryBlock));
     }
 
 

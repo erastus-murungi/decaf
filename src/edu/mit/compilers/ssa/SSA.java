@@ -39,10 +39,16 @@ public class SSA {
         var basicBlocks = TarjanSCC.getReversePostOrder(entryBlock);
         var dominatorTree = new DominatorTree(entryBlock);
         placePhiFunctions(entryBlock, basicBlocks, dominatorTree);
-        renameVariables(entryBlock, dominatorTree, basicBlocks);
+        renameVariables(method, dominatorTree, basicBlocks);
         verify(basicBlocks);
         if (CLI.debug)
             Utils.printSsaCfg(List.of(method), "ssa_before_" + method.methodName());
+    }
+
+    private static void renameMethodArgs(Method method) {
+        for (var V: method.getParameterNames()) {
+            V.renameForSsa(0);
+        }
     }
 
     public static void deconstruct(Method method, ProgramIr programIr) {
@@ -208,11 +214,12 @@ public class SSA {
         }
     }
 
-    private static void renameVariables(BasicBlock entryBlock, DominatorTree dominatorTree, List<BasicBlock> basicBlocks) {
+    private static void renameVariables(Method method, DominatorTree dominatorTree, List<BasicBlock> basicBlocks) {
         var stacks = new HashMap<LValue, Stack<Integer>>();
         var counters = new HashMap<LValue, Integer>();
         initialize(Utils.getAllLValuesInBasicBlocks(basicBlocks), stacks, counters);
-        rename(entryBlock, dominatorTree, counters, stacks);
+        rename(method.entryBlock, dominatorTree, counters, stacks);
+        renameMethodArgs(method);
     }
 
     private static void verify(List<BasicBlock> basicBlocks) {

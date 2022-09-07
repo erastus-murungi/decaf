@@ -64,7 +64,7 @@ public class DominatorTree extends HashMap<BasicBlock, BasicBlock> {
     }
 
     private NOP preprocess(BasicBlock entryBlock) {
-        NOP entry = new NOP(ENTRY_BLOCK_LABEL);
+        NOP entry = new NOP("dom", NOP.NOPType.METHOD_ENTRY);
         entry.setSuccessor(entryBlock);
         correctPredecessors(entry);
         return entry;
@@ -140,6 +140,7 @@ public class DominatorTree extends HashMap<BasicBlock, BasicBlock> {
             var dominatorBlock = edge.getValue();
 
             var dominators = new ArrayList<BasicBlock>();
+            dominators.add(block);
 
             BasicBlock currentBlock;
             do {
@@ -167,8 +168,8 @@ public class DominatorTree extends HashMap<BasicBlock, BasicBlock> {
             throw new IllegalArgumentException(m + " not found in tree");
         if (!containsKey(n))
             throw new IllegalArgumentException(n + " not found in tree");
-        return dominators.get(m)
-                .contains(n);
+        return dominators.get(n)
+                .contains(m);
     }
 
     /**

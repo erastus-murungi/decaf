@@ -5,15 +5,28 @@ import java.util.List;
 import java.util.Optional;
 
 public class NOP extends BasicBlock {
-    String nopLabel;
+    private String nopLabel;
+    private final NOPType nopType;
+
+    public enum NOPType {
+        METHOD_ENTRY,
+        METHOD_EXIT,
+        NORMAL
+    }
 
     public NOP() {
         super(BasicBlockType.NOP);
+        this.nopType = NOPType.NORMAL;
     }
 
-    public NOP(String label) {
+    public NOP(String label, NOPType nopType) {
         super(BasicBlockType.NOP);
         this.nopLabel = label;
+        this.nopType = nopType;
+    }
+
+    public boolean isExitNop() {
+        return nopType.equals(NOPType.METHOD_EXIT);
     }
 
     public Optional<String> getNopLabel() {
@@ -29,7 +42,12 @@ public class NOP extends BasicBlock {
 
     @Override
     public String getLinesOfCodeString() {
-        return String.format("NOP{%s}", getNopLabel().orElse(""));
+        var label = switch (nopType) {
+            case METHOD_EXIT -> "exit_" + nopLabel;
+            case METHOD_ENTRY -> "enter_" + nopLabel;
+            default -> "";
+        };
+        return String.format("NOP{%s}", label);
     }
 
 }

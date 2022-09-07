@@ -28,9 +28,9 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
 
     @Override
     public void computeUniversalSetsOfValues() {
-        allValues = new HashSet<>();
+        allTS = new HashSet<>();
         for (BasicBlock basicBlock : basicBlocks)
-            allValues.addAll(copy(basicBlock));
+            allTS.addAll(copy(basicBlock));
     }
 
     private void populateAvailableCopies() {
@@ -62,7 +62,7 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
 
         for (BasicBlock basicBlock : basicBlocks) {
             out.put(basicBlock, new HashSet<>()); // all copies are available at initialization time
-            in.put(basicBlock, new HashSet<>(allValues));
+            in.put(basicBlock, new HashSet<>(allTS));
         }
         // IN[entry] = ∅
         in.put(entryBlock, new HashSet<>());
@@ -127,7 +127,7 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
 
 
     private Set<CopyQuadruple> kill(BasicBlock basicBlock) {
-        var superSet = new HashSet<>(allValues);
+        var superSet = new HashSet<>(allTS);
         var killedCopyQuadruples = new HashSet<CopyQuadruple>();
         for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
             if (!(storeInstruction.getDestination() instanceof MemoryAddress)) {

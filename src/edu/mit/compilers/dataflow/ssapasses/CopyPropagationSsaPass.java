@@ -15,23 +15,24 @@ import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.dataflow.dominator.DominatorTree;
 import edu.mit.compilers.ssa.SSA;
 
 public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
     List<SSACopyOptResult> resultList = new ArrayList<>();
 
-    public CopyPropagationSsaPass(Set<LValue> globalVariables, Method method) {
-        super(globalVariables, method);
+    public CopyPropagationSsaPass(OptimizationContext optimizationContext, Method method) {
+        super(optimizationContext, method);
     }
 
     private boolean performGlobalCopyPropagation() {
         var changesHappened = false;
-        var dom = new DominatorTree(getEntryBasicBlock());
+        var dom = new DominatorTree(getMethod().entryBlock);
         // maps (toBeReplaced -> replacer)
         var copiesMap = new HashMap<LValue, Value>();
 
-        for (BasicBlock basicBlock : getBasicBlockList()) {
+        for (BasicBlock basicBlock : getBasicBlocksList()) {
             for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
                 if (storeInstruction instanceof CopyInstruction copyInstruction) {
                     var replacer = copyInstruction.getValue();

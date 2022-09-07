@@ -4,7 +4,7 @@ import edu.mit.compilers.codegen.CodegenAstVisitor;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
-import edu.mit.compilers.ir.Visitor;
+import edu.mit.compilers.ir.ASTVisitor;
 import edu.mit.compilers.symboltable.SymbolTable;
 
 public class RelationalOperator extends BinOperator {
@@ -29,7 +29,7 @@ public class RelationalOperator extends BinOperator {
     }
 
     @Override
-    public <T> T accept(Visitor<T> visitor, SymbolTable curSymbolTable) {
+    public <T> T accept(ASTVisitor<T> ASTVisitor, SymbolTable curSymbolTable) {
         return null;
     }
 

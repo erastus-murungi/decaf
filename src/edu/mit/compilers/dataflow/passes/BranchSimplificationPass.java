@@ -12,12 +12,13 @@ import edu.mit.compilers.codegen.codes.ConditionalBranch;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.dataflow.OptimizationContext;
 
 public class BranchSimplificationPass extends OptimizationPass {
     boolean noChanges = true;
 
-    public BranchSimplificationPass(Set<LValue> globalVariables, Method method) {
-        super(globalVariables, method);
+    public BranchSimplificationPass(OptimizationContext optimizationContext, Method method) {
+        super(optimizationContext, method);
     }
 
     private static boolean isNotExitLabel(Instruction instruction) {
@@ -125,7 +126,7 @@ public class BranchSimplificationPass extends OptimizationPass {
     private void removeUselessBranches() {
         List<BasicBlock> evaluateToTrue = new ArrayList<>();
         List<BasicBlock> evaluateToFalse = new ArrayList<>();
-        for (var basicBlock : basicBlocks) {
+        for (var basicBlock : getBasicBlocksList()) {
             if (basicBlock.hasBranch()) {
                 Boolean evaluatesTrueBranch = getStateOfBlockCondition(basicBlock);
                 if (evaluatesTrueBranch == null)

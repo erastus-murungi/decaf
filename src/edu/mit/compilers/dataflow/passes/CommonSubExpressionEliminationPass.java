@@ -16,6 +16,7 @@ import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.dataflow.analyses.AvailableExpressions;
 import edu.mit.compilers.dataflow.analyses.DataFlowAnalysis;
 import edu.mit.compilers.dataflow.dominator.DominatorTree;
@@ -24,8 +25,8 @@ import edu.mit.compilers.dataflow.operand.Operand;
 public class CommonSubExpressionEliminationPass extends OptimizationPass {
     boolean changeHappened = false;
 
-    public CommonSubExpressionEliminationPass(Set<LValue> globalVariables, Method method) {
-        super(globalVariables, method);
+    public CommonSubExpressionEliminationPass(OptimizationContext optimizationContext, Method method) {
+        super(optimizationContext, method);
     }
 
     private static void discardKilledExpressions(StoreInstruction storeInstruction,
@@ -118,7 +119,7 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
             changeHappened = true;
         }
         // the operand already doesn't contain any array name
-        if (!operand.containsAny(globalVariables)) {
+        if (!operand.containsAny(globals())) {
             expressionToVariable.put(operand, storeInstruction.getDestination());
         }
     }
@@ -156,13 +157,13 @@ public class CommonSubExpressionEliminationPass extends OptimizationPass {
         var dom = new DominatorTree(this.entryBlock);
 
         // we first perform local CSE for each basic block
-        for (var basicBlock : basicBlocks)
+        for (var basicBlock : getBasicBlocksList())
             performLocalCSE(basicBlock);
 
         // we then get the available expressions for each basic block in the CFG
         var availableExpressionsIn = availableExpressions.in;
 
-        for (BasicBlock basicBlock : basicBlocks) {
+        for (BasicBlock basicBlock : getBasicBlocksList()) {
             final var availableExpressionsForBlock = availableExpressionsIn.get(basicBlock);
             final var instructionToIndexMapping = DataFlowAnalysis.getInstructionToIndexMapping(basicBlock.getInstructionList());
 

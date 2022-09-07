@@ -29,6 +29,9 @@ import edu.mit.compilers.ssa.Phi;
 import edu.mit.compilers.utils.SSAEdgesUtil;
 import edu.mit.compilers.utils.Utils;
 
+/**
+ * Sparse Conditional Constant Propagation
+ */
 public class SCCP {
     private final Stack<BasicBlock> flowGraphWorkList = new Stack<>();
     private final Stack<SsaEdge> ssaWorkList = new Stack<>();

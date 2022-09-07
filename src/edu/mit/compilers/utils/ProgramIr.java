@@ -22,7 +22,7 @@ import edu.mit.compilers.codegen.names.Value;
 public class ProgramIr {
     public InstructionList prologue;
     public List<Method> methodList;
-    Set<LValue> globals = new HashSet<>();
+    private Set<LValue> globals = new HashSet<>();
 
     public ProgramIr(InstructionList prologue, List<Method> methodList) {
         this.prologue = prologue;
@@ -146,10 +146,14 @@ public class ProgramIr {
     }
 
     public Set<LValue> getGlobals() {
-        return globals;
+        return Set.copyOf(globals);
     }
 
     public List<LValue> getLocals(Method method) {
         return getLocals(method, globals);
+    }
+
+    public void setGlobals(Set<LValue> globals) {
+        this.globals = Set.copyOf(globals);
     }
 }

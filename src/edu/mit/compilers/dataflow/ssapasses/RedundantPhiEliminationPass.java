@@ -7,6 +7,7 @@ import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.ssa.Phi;
 import edu.mit.compilers.ssa.SSA;
 import edu.mit.compilers.utils.SSAEdgesUtil;
@@ -19,14 +20,14 @@ import edu.mit.compilers.utils.SSAEdgesUtil;
  * 3) x=phi(y,y,x) (regard as `x=y` and do copy propagation)
  */
 public class RedundantPhiEliminationPass extends SsaOptimizationPass<Void> {
-    public RedundantPhiEliminationPass(Set<LValue> globalVariables, Method method) {
-        super(globalVariables, method);
+    public RedundantPhiEliminationPass(OptimizationContext optimizationContext, Method method) {
+        super(optimizationContext, method);
     }
 
     private boolean performRedundantPhiElimination() {
         SSAEdgesUtil ssaEdgesUtil = new SSAEdgesUtil(method);
         var changesHappened = false;
-        for (var basicBlock : getBasicBlockList()) {
+        for (var basicBlock : getBasicBlocksList()) {
             if (basicBlock.phiPresent()) {
                 var instructionList = new ArrayList<Instruction>();
                 for (var instruction : basicBlock.getInstructionList()) {

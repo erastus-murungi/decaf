@@ -5,7 +5,6 @@ import static edu.mit.compilers.grammar.DecafScanner.MULTIPLY;
 import static edu.mit.compilers.grammar.DecafScanner.PLUS;
 
 import java.util.ArrayList;
-import java.util.Set;
 
 import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.cfg.BasicBlock;
@@ -14,25 +13,21 @@ import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
-import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.NumericalConstant;
 import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.utils.Utils;
 
 public class InstructionSimplifyPass extends OptimizationPass {
     static final NumericalConstant mZero = new NumericalConstant(0L, Type.Int);
     static final NumericalConstant mOne = new NumericalConstant(1L, Type.Int);
 
-    public InstructionSimplifyPass(Set<LValue> globalVariables, Method method) {
-        super(globalVariables, method);
+    public InstructionSimplifyPass(OptimizationContext optimizationContext, Method method) {
+        super(optimizationContext, method);
     }
 
     private static NumericalConstant getZero() {
         return new NumericalConstant(0L, Type.Bool);
-    }
-
-    private static NumericalConstant getOne() {
-        return new NumericalConstant(1L, Type.Int);
     }
 
     public static boolean matchBinOpOperandsCommutative(BinaryInstruction instruction,
@@ -118,18 +113,9 @@ public class InstructionSimplifyPass extends OptimizationPass {
         }
         Instruction newTac = null;
         switch (binaryInstruction.operator) {
-            case PLUS: {
-                newTac = trySimplifyAddInstruction(binaryInstruction);
-                break;
-            }
-            case MULTIPLY: {
-                newTac = trySimplifyMulInstruction(binaryInstruction);
-                break;
-            }
-            case EQ: {
-                newTac = trySimplifyEqInstruction(binaryInstruction);
-                break;
-            }
+            case PLUS -> newTac = trySimplifyAddInstruction(binaryInstruction);
+            case MULTIPLY -> newTac = trySimplifyMulInstruction(binaryInstruction);
+            case EQ -> newTac = trySimplifyEqInstruction(binaryInstruction);
         }
 
         if (newTac != null)
@@ -143,7 +129,7 @@ public class InstructionSimplifyPass extends OptimizationPass {
 
 
     private void simplifyInstructions() {
-        for (BasicBlock basicBlock : basicBlocks) {
+        for (BasicBlock basicBlock : getBasicBlocksList()) {
             var newTacList = new ArrayList<Instruction>();
             for (var tac : basicBlock.getInstructionList()) {
                 Instruction newTac;

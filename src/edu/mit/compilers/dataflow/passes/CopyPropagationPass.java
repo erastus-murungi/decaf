@@ -2,25 +2,23 @@ package edu.mit.compilers.dataflow.passes;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Set;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.dataflow.analyses.AvailableCopies;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 
 public class CopyPropagationPass extends OptimizationPass {
-    public CopyPropagationPass(Set<LValue> globalVariables, Method method) {
-        super(globalVariables, method);
+    public CopyPropagationPass(OptimizationContext optimizationContext, Method method) {
+        super(optimizationContext, method);
     }
-
 
     private static void propagateCopy(HasOperand hasOperand, HashMap<Value, Value> copies) {
         if (copies.isEmpty())
@@ -81,7 +79,7 @@ public class CopyPropagationPass extends OptimizationPass {
                         }
                     }
                     // insert this new pair into copies
-                    var operand = hasResult.getOperandNoArrayNoGlobals(globalVariables);
+                    var operand = hasResult.getOperandNoArrayNoGlobals(globals());
                     if (operand.isPresent()) {
                         Operand op = operand.get();
                         if (op instanceof UnmodifiedOperand) {
@@ -103,7 +101,7 @@ public class CopyPropagationPass extends OptimizationPass {
         availableCopiesIn.forEach(((basicBlock, assigns) -> new ArrayList<>(assigns
                 .keySet())
                 .forEach(resultLocation -> {
-                    if (globalVariables.contains(resultLocation)) {
+                    if (globals().contains(resultLocation)) {
                         assigns.remove(resultLocation);
                     }
                 })));
@@ -112,7 +110,7 @@ public class CopyPropagationPass extends OptimizationPass {
         var notConverged = true;
         while (notConverged) {
             notConverged = false;
-            for (BasicBlock basicBlock : basicBlocks) {
+            for (BasicBlock basicBlock : getBasicBlocksList()) {
                 if (!performLocalCopyPropagation(basicBlock, availableCopiesIn.get(basicBlock))) {
                     notConverged = true;
                 }

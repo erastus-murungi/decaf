@@ -1,10 +1,13 @@
 package edu.mit.compilers.cfg;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.HashMap;
 
 
 public class MaximalBasicBlocksUtil {
     public NOP exitNOP;
+
     HashMap<BasicBlock, Integer> visited = new HashMap<>();
 
     public BasicBlock visit(BasicBlock basicBlock) {
@@ -70,7 +73,7 @@ public class MaximalBasicBlocksUtil {
         if (!visited.containsKey(basicBlockWithBranch)) {
             visited.put(basicBlockWithBranch, 1);
             basicBlockWithBranch.setTrueTarget(visit(basicBlockWithBranch.getTrueTarget()));
-            basicBlockWithBranch.setFalseTarget(visit(basicBlockWithBranch.getFalseTarget()));
+            basicBlockWithBranch.setFalseTargetUnchecked(visit(basicBlockWithBranch.getFalseTarget()));
         }
         visited.put(basicBlockWithBranch, visited.get(basicBlockWithBranch) + 1);
         return basicBlockWithBranch;
@@ -89,6 +92,7 @@ public class MaximalBasicBlocksUtil {
                 return blockNOP;
             block = blockNOP.getSuccessor();
         }
+        checkNotNull(block);
         if (block.hasNoBranch())
             return visit(block);
         return block;

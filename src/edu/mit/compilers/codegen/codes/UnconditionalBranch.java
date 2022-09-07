@@ -1,5 +1,7 @@
 package edu.mit.compilers.codegen.codes;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -10,15 +12,19 @@ import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.utils.Utils;
 
 public class UnconditionalBranch extends Instruction {
-    public final BasicBlock target;
+    @NotNull public BasicBlock target;
 
-    public UnconditionalBranch(BasicBlock target) {
+    public UnconditionalBranch(@NotNull BasicBlock target) {
         super(null);
         this.target = target;
     }
 
-    public BasicBlock getTarget() {
+    public @NotNull BasicBlock getTarget() {
         return target;
+    }
+
+    public void setTarget(@NotNull BasicBlock target) {
+        this.target = target;
     }
 
     @Override

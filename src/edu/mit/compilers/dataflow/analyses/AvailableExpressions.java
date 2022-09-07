@@ -60,9 +60,9 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
 
     @Override
     public void computeUniversalSetsOfValues() {
-        allValues = new HashSet<>();
+        allTS = new HashSet<>();
         for (BasicBlock basicBlock : basicBlocks)
-            allValues.addAll(gen(basicBlock));
+            allTS.addAll(gen(basicBlock));
     }
 
     @Override
@@ -71,7 +71,7 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
         in = new HashMap<>();
 
         for (BasicBlock basicBlock : basicBlocks) {
-            out.put(basicBlock, allValues); // all expressions are available at initialization time
+            out.put(basicBlock, allTS); // all expressions are available at initialization time
             in.put(basicBlock, new HashSet<>());
         }
 
@@ -118,7 +118,7 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
                 .isEmpty())
             return Collections.emptySet();
 
-        var inSet = new HashSet<>(allValues);
+        var inSet = new HashSet<>(allTS);
 
         for (BasicBlock block : basicBlock.getPredecessors())
             inSet.retainAll(out.get(block));
@@ -126,7 +126,7 @@ public class AvailableExpressions extends DataFlowAnalysis<Operand> {
     }
 
     private HashSet<Operand> kill(BasicBlock basicBlock) {
-        var superSet = new HashSet<>(allValues);
+        var superSet = new HashSet<>(allTS);
         var killedExpressions = new HashSet<Operand>();
 
         for (StoreInstruction assignment : basicBlock.getStoreInstructions()) {

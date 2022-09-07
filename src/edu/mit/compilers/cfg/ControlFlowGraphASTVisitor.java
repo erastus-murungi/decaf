@@ -45,11 +45,11 @@ import edu.mit.compilers.ast.StringLiteral;
 import edu.mit.compilers.ast.UnaryOpExpression;
 import edu.mit.compilers.ast.While;
 import edu.mit.compilers.grammar.DecafScanner;
-import edu.mit.compilers.ir.Visitor;
+import edu.mit.compilers.ir.ASTVisitor;
 import edu.mit.compilers.symboltable.SymbolTable;
 
 
-public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
+public class ControlFlowGraphASTVisitor implements ASTVisitor<BasicBlocksPair> {
     public BasicBlock global = BasicBlock.noBranch();
     public HashMap<String, BasicBlock> methodNameToEntryBlock = new HashMap<>();
     public HashMap<String, NOP> methodNameToExitNop = new HashMap<>();
@@ -62,7 +62,7 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
      */
     private NOP exitNop;
 
-    public ControlFlowGraphVisitor() {
+    public ControlFlowGraphASTVisitor() {
     }
 
     public static Expression rotateBinaryOpExpression(Expression expr) {
@@ -125,35 +125,35 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
 
     @Override
     public BasicBlocksPair visit(MethodDefinition methodDefinition, SymbolTable symbolTable) {
-        BasicBlock initial = BasicBlock.noBranch();
-        BasicBlocksPair curPair = new BasicBlocksPair(initial, new NOP());
-        initial.setSuccessor(curPair.endBlock);
-        curPair.startBlock.setSuccessor(curPair.endBlock);
-        for (MethodDefinitionParameter param : methodDefinition.parameterList) {
-            BasicBlocksPair placeholder = param.accept(this, symbolTable);
-            curPair.endBlock.setSuccessor(placeholder.startBlock);
-            placeholder.startBlock.addPredecessor(curPair.endBlock);
-            curPair = placeholder;
+        var methodEntryNop = new NOP(methodDefinition.methodName.getLabel(), NOP.NOPType.METHOD_ENTRY);
+        var currentPair = new BasicBlocksPair(methodEntryNop, new NOP());
+        methodEntryNop.setSuccessor(currentPair.endBlock);
+        currentPair.startBlock.setSuccessor(currentPair.endBlock);
+        for (var param : methodDefinition.parameterList) {
+            var placeholder = param.accept(this, symbolTable);
+            currentPair.endBlock.setSuccessor(placeholder.startBlock);
+            placeholder.startBlock.addPredecessor(currentPair.endBlock);
+            currentPair = placeholder;
         }
-        BasicBlocksPair methodBody = methodDefinition.block.accept(this, symbolTable);
-        curPair.endBlock.setSuccessor(methodBody.startBlock);
-        methodBody.startBlock.addPredecessor(curPair.endBlock);
-        return new BasicBlocksPair(initial, methodBody.endBlock);
+        var methodBody = methodDefinition.block.accept(this, symbolTable);
+        currentPair.endBlock.setSuccessor(methodBody.startBlock);
+        methodBody.startBlock.addPredecessor(currentPair.endBlock);
+        return new BasicBlocksPair(methodEntryNop, methodBody.endBlock);
     }
 
     @Override
     public BasicBlocksPair visit(ImportDeclaration importDeclaration, SymbolTable symbolTable) {
-        BasicBlock import_ = BasicBlock.noBranch();
-        import_.addAstNode(importDeclaration);
-        return new BasicBlocksPair(import_, import_);
+        var importDeclarationBlock = BasicBlock.noBranch();
+        importDeclarationBlock.addAstNode(importDeclaration);
+        return new BasicBlocksPair(importDeclarationBlock, importDeclarationBlock);
     }
 
     @Override
     public BasicBlocksPair visit(For forStatement, SymbolTable symbolTable) {
         loopToBreak.push(new ArrayList<>());
         // If false, end with NOP, also end of for_statement
-        NOP falseBlock = new NOP("For Loop (false) " + forStatement.terminatingCondition.getSourceCode());
-        NOP exit = new NOP("exit_for");
+        NOP falseBlock = new NOP("For Loop (false) " + forStatement.terminatingCondition.getSourceCode(), NOP.NOPType.NORMAL);
+        NOP exit = new NOP("exit_for", NOP.NOPType.NORMAL);
         falseBlock.setSuccessor(exit);
         exit.addPredecessor(falseBlock);
 
@@ -259,7 +259,7 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
 
     @Override
     public BasicBlocksPair visit(Program program, SymbolTable symbolTable) {
-        var curPair = new BasicBlocksPair(global, new NOP("global NOP"));
+        var curPair = new BasicBlocksPair(global, new NOP("global NOP", NOP.NOPType.NORMAL));
         global.setSuccessor(curPair.endBlock);
         for (var import_ : program.importDeclarationList) {
             BasicBlocksPair placeholder = import_.accept(this, symbolTable);
@@ -274,7 +274,7 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
             curPair = placeholder;
         }
         for (var method : program.methodDefinitionList) {
-            exitNop = new NOP("exit_" + method.methodName.getLabel());
+            exitNop = new NOP(method.methodName.getLabel(), NOP.NOPType.METHOD_EXIT);
             methodNameToEntryBlock.put(method.methodName.getLabel(), method.accept(this, symbolTable).startBlock);
             methodNameToExitNop.put(method.methodName.getLabel(), exitNop);
         }
@@ -321,7 +321,7 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
             }
             if (statement instanceof Break) {
                 // a break is not a real block either
-                BasicBlock breakCfg = new NOP("Break");
+                BasicBlock breakCfg = new NOP("Break", NOP.NOPType.NORMAL);
                 loopToBreak.peek().add(breakCfg);
                 breakCfg.addPredecessor(curPair.endBlock);
                 curPair.endBlock.setSuccessor(breakCfg);
@@ -344,24 +344,6 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
         curPair.endBlock.setSuccessor(exit);
         exit.addPredecessor(curPair.endBlock);
         return new BasicBlocksPair(initial, exit, false);
-    }
-
-    @Override
-    public BasicBlocksPair visit(ParenthesizedExpression parenthesizedExpression, SymbolTable symbolTable) {
-        // unreachable (expr)
-        throw new IllegalStateException("we cannot visit " + parenthesizedExpression.getClass().getSimpleName());
-    }
-
-    @Override
-    public BasicBlocksPair visit(LocationArray locationArray, SymbolTable symbolTable) {
-        // unreachable
-        throw new IllegalStateException("we cannot visit " + locationArray.getClass().getSimpleName());
-    }
-
-    @Override
-    public BasicBlocksPair visit(ExpressionParameter expressionParameter, SymbolTable symbolTable) {
-        // unreachable
-        throw new IllegalStateException("we cannot visit " + expressionParameter.getClass().getSimpleName());
     }
 
     @Override
@@ -525,6 +507,24 @@ public class ControlFlowGraphVisitor implements Visitor<BasicBlocksPair> {
 
     @Override
     public BasicBlocksPair visit(Assignment assignment, SymbolTable symbolTable) {
-        return null;
+        throw new IllegalStateException("we cannot visit " + assignment.getClass().getSimpleName());
+    }
+
+    @Override
+    public BasicBlocksPair visit(ParenthesizedExpression parenthesizedExpression, SymbolTable symbolTable) {
+        // unreachable (expr)
+        throw new IllegalStateException("we cannot visit " + parenthesizedExpression.getClass().getSimpleName());
+    }
+
+    @Override
+    public BasicBlocksPair visit(LocationArray locationArray, SymbolTable symbolTable) {
+        // unreachable
+        throw new IllegalStateException("we cannot visit " + locationArray.getClass().getSimpleName());
+    }
+
+    @Override
+    public BasicBlocksPair visit(ExpressionParameter expressionParameter, SymbolTable symbolTable) {
+        // unreachable
+        throw new IllegalStateException("we cannot visit " + expressionParameter.getClass().getSimpleName());
     }
 }

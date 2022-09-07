@@ -14,11 +14,11 @@ import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.codegen.names.NumericalConstant;
 import edu.mit.compilers.codegen.names.StringConstant;
 import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
 
 /**
@@ -27,8 +27,8 @@ import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
  */
 
 public class DeadStoreEliminationPass extends OptimizationPass {
-    public DeadStoreEliminationPass(Set<LValue> globalVariables, Method method) {
-        super(globalVariables, method);
+    public DeadStoreEliminationPass(OptimizationContext optimizationContext, Method method) {
+        super(optimizationContext, method);
     }
 
     /**
@@ -98,7 +98,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                     // do not eliminate global variables and store instructions where the
                     // right-hand side is composed of all constants, for example a = 1 + 2 or a = 3
                     // if (we are in the main method then we can afford to ignore global variables)
-                    if ((globalVariables.contains(store) &&
+                    if ((globals().contains(store) &&
                             (!method.isMain()) || anySubsequentFunctionCalls(copyOfInstructionList.subList(0, copyOfInstructionList.indexOf(possibleStoreInstruction))))
                             || allOperandNamesConstant(possibleStoreInstruction)) {
                         namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandValues());
@@ -149,7 +149,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                 var store = storeInstruction.getDestination();
 
                 if (!(store instanceof MemoryAddress)) {
-                    if (globalVariables.contains(store) && (!method.isMain()) || anySubsequentFunctionCalls(copyOfInstructionList.subList(0, copyOfInstructionList.indexOf(possibleStoreInstruction)))) {
+                    if (globals().contains(store) && (!method.isMain()) || anySubsequentFunctionCalls(copyOfInstructionList.subList(0, copyOfInstructionList.indexOf(possibleStoreInstruction)))) {
                         instructionListToUpdate.add(possibleStoreInstruction);
                         continue;
                     }
@@ -166,7 +166,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
     private void performDeadStoreElimination() {
         final var liveVariableAnalysis = new LiveVariableAnalysis(entryBlock);
 
-        for (var basicBlock : basicBlocks) {
+        for (var basicBlock : getBasicBlocksList()) {
             final var basicBlockLiveOut = Collections.unmodifiableSet(liveVariableAnalysis.liveOut(basicBlock));
 
             backwardRun(basicBlock, basicBlockLiveOut);
@@ -231,7 +231,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
      * Checks if an assignment to a variable is the last one to assign to that variable in that basic block
      *
      * @param storeInstruction               the Store Instruction whose "last-ness" is to be tested
-     * @param blockInstructionList           the {@link InstructionList} which contains an
+     * @param blockInstructionList           the {@link edu.mit.compilers.codegen.InstructionList} which contains an
      *                                       assignment to {@code store}
      * @param indexOfStoreInstructionInBlock the index of assignment to {@code store} in the tac-list
      * @return true is there is no other assigment which overwrites {@code store}

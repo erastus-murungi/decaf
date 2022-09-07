@@ -56,7 +56,7 @@ import edu.mit.compilers.symboltable.SymbolTableType;
 import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.Utils;
 
-public class IRVisitor implements Visitor<Void> {
+public class SemanticCheckerASTVisitor implements ASTVisitor<Void> {
     public TreeSet<String> imports = new TreeSet<>();
     SymbolTable fields = new SymbolTable(null, SymbolTableType.Field, null);
     SymbolTable methods = new SymbolTable(null, SymbolTableType.Method, null);

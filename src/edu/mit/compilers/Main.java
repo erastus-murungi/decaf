@@ -13,7 +13,7 @@ class Main {
         CLI.outfile = "test.s";
 //        String sourceCode = "import printf; \n void main() {int x; x = (1 + 6 * 3); printf(\"%d\", x);}";
 //        new Compilation(sourceCode).run();
-        new Compilation(new FileInputStream("tests/ssa/ssa1.dcf"), true).run();
+        new Compilation(new FileInputStream("tests/codegen/input/x-10-many-args.dcf"), true).run();
 //        new Compilation().run();
 //        TestRunner.run();
     }

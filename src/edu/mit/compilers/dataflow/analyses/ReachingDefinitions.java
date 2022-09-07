@@ -39,9 +39,9 @@ public class ReachingDefinitions extends DataFlowAnalysis<StoreInstruction> {
 
     @Override
     public void computeUniversalSetsOfValues() {
-        allValues = new HashSet<>();
+        allTS = new HashSet<>();
         for (BasicBlock basicBlock : basicBlocks) {
-            allValues.addAll(gen(basicBlock));
+            allTS.addAll(gen(basicBlock));
         }
     }
 
@@ -51,7 +51,7 @@ public class ReachingDefinitions extends DataFlowAnalysis<StoreInstruction> {
                 .isEmpty())
             return Collections.emptySet();
 
-        var inSet = new HashSet<>(allValues);
+        var inSet = new HashSet<>(allTS);
 
         for (BasicBlock block : basicBlock.getPredecessors())
             inSet.retainAll(out(block));
@@ -111,7 +111,7 @@ public class ReachingDefinitions extends DataFlowAnalysis<StoreInstruction> {
                 .stream()
                 .map(StoreInstruction::getDestination)
                 .collect(Collectors.toUnmodifiableSet());
-        return allValues.stream()
+        return allTS.stream()
                 .filter(store -> !genSet.contains(store) && defined.contains(store.getDestination()))
                 .collect(Collectors.toUnmodifiableSet());
     }

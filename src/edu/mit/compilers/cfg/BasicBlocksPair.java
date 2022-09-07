@@ -18,5 +18,4 @@ public class BasicBlocksPair {
                 endBlock.addPredecessor(startBlock);
         this.endBlock = endBlock;
     }
-
 }

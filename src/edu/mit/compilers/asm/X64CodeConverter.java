@@ -178,11 +178,11 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
         }
 
         for (Method method : programIr.methodList) {
-            currentInstructionIndex = -1;
             for (InstructionList instructionList : TraceScheduler.getInstructionTrace(method)) {
                 currentInstructionList = instructionList;
                 if (!instructionList.isEntry() && !instructionList.getLabel().equals("UNSET"))
                     x64Builder.addLine(x64Label(instructionList.getLabel()));
+                currentInstructionIndex = -1;
                 for (Instruction instruction : instructionList) {
                     currentInstructionIndex += 1;
                     if (instruction instanceof Phi)
@@ -347,49 +347,36 @@ public class X64CodeConverter implements InstructionVisitor<X64Builder, X64Build
 
         int stackOffsetIndex = 0;
         List<X64Code> codes = new ArrayList<>();
-
-        var locals = programIr.getLocals(method);
-
-//        for (var variableName : locals) {
-//            if (!globals.contains(variableName)) {
-//                if (variableName.size > 8) {
-//                    // we have an array
-//                    stackOffsetIndex += variableName.size + 8;
-//                    method.nameToStackOffset.put(variableName.toString(), stackOffsetIndex);
-//                    long offset = method.nameToStackOffset.get(variableName.toString());
-//                    long localSize = 0;
-//                    for (int i = 0; i < variableName.size; i += 8) {
-//                        localSize += 8;
-//                        final String arrayLocation = String.format("-%s(%s)", offset - localSize, X64Register.RBP);
-//                        codes.add(
-//                                x64InstructionLineWithComment(
-//                                        String.format("%s[%s] = 0",
-//                                                variableName,
-//                                                i >> 3),
-//                                        X64Instruction.movq, ZERO, arrayLocation));
-//                    }
-//                    final String arrayLocation = String.format("-%s(%s)", offset, X64Register.RBP);
-//                    codes.add(
-//                            x64InstructionLineWithComment(
-//                                    String.format("%s[] = 0",
-//                                            variableName),
-//                                    X64Instruction.movq, ZERO, arrayLocation));
-//                } else {
-//                    if (currentMapping.get(variableName) == null || currentMapping.get(variableName)
-//                            .equals(X64Register.STACK)) {
-//                        stackOffsetIndex += variableName.size;
-//                        method.nameToStackOffset.put(variableName.toString(), stackOffsetIndex);
-//                    }
-//                }
-//            }
-//        }
-
         stackSpace = stackOffsetIndex;
         subqLocs.push(x64builder.currentIndex());
 
         x64builder.addLines(codes);
+        localizeMethodArgs(method, x64builder);
 
         return x64builder;
+    }
+
+    private String getStackArg(int paramIndex) {
+        return String.format("%d(%s)", (paramIndex - 3) * 8, X64Register.RBP);
+    }
+
+    private void localizeMethodArgs(Method method, X64Builder x64Builder) {
+        // if we have more than 6 args, first move them from stack to local space
+        var params = method.getParameterNames();
+        for (int i = params.size() - 1; i >= 6; i--) {
+            var resolved = resolveName(params.get(i));
+            if (resolved.contains("null"))
+                continue;
+            x64Builder.addLine(x64InstructionLine(X64Instruction.movq, getStackArg(i), resolved));
+        }
+        for (int i = 0; i < Math.min(params.size(), 6); i++) {
+            var resolved = resolveName(params.get(i));
+            if (resolved.contains("null"))
+                continue;
+            var reg = X64Register.parameterRegisters[i];
+            x64Builder.addLine(x64InstructionLine(X64Instruction.movq, reg, resolved));
+        }
+
     }
 
     private void callerSave(X64Builder x64Builder, X64Register returnAddressRegister) {

@@ -4,7 +4,7 @@ import java.util.List;
 
 import edu.mit.compilers.codegen.CodegenAstVisitor;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.ir.Visitor;
+import edu.mit.compilers.ir.ASTVisitor;
 import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 
@@ -39,8 +39,8 @@ public class Assignment extends AST {
     }
 
     @Override
-    public <T> T accept(Visitor<T> visitor, SymbolTable currentSymbolTable) {
-        return visitor.visit(this, currentSymbolTable);
+    public <T> T accept(ASTVisitor<T> ASTVisitor, SymbolTable currentSymbolTable) {
+        return ASTVisitor.visit(this, currentSymbolTable);
     }
 
     public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, LValue resultLocation) {

@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
@@ -14,14 +13,14 @@ import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.NumericalConstant;
 import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.dataflow.analyses.ReachingDefinitions;
 
 public class ConstantPropagationPass extends OptimizationPass {
-    public ConstantPropagationPass(Set<LValue> globalVariables, Method method) {
-        super(globalVariables, method);
+    public ConstantPropagationPass(OptimizationContext optimizationContext, Method method) {
+        super(optimizationContext, method);
     }
 
     private static Map<Value, NumericalConstant> getStoreToConstantMapping(Collection<StoreInstruction> storeInstructionInstructions) {
@@ -69,7 +68,7 @@ public class ConstantPropagationPass extends OptimizationPass {
 
     public void runGlobalConstantPropagation() {
         final ReachingDefinitions reachingDefinitions = new ReachingDefinitions(entryBlock);
-        for (BasicBlock basicBlock : basicBlocks) {
+        for (BasicBlock basicBlock : getBasicBlocksList()) {
             runLocalConstantPropagation(basicBlock);
             var storeToConstantMapping = getStoreToConstantMapping(reachingDefinitions.in.get(basicBlock));
             if (storeToConstantMapping.isEmpty())

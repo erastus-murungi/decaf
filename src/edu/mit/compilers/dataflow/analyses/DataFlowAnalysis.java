@@ -1,5 +1,7 @@
 package edu.mit.compilers.dataflow.analyses;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,10 +17,10 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.utils.TarjanSCC;
 
-public abstract class DataFlowAnalysis<Value> {
-    public Map<BasicBlock, Set<Value>> out;
-    public Map<BasicBlock, Set<Value>> in;
-    Set<Value> allValues;
+public abstract class DataFlowAnalysis<T> {
+    public Map<BasicBlock, Set<T>> out;
+    public Map<BasicBlock, Set<T>> in;
+    Set<T> allTS;
     // the list of all basic blocks
     List<BasicBlock> basicBlocks;
     NOP entryBlock;
@@ -43,16 +45,16 @@ public abstract class DataFlowAnalysis<Value> {
         return instructionToIndexMapping;
     }
 
-    Set<Value> in(BasicBlock basicBlock) {
+    Set<T> in(BasicBlock basicBlock) {
         return in.get(basicBlock);
     }
 
-    Set<Value> out(BasicBlock basicBlock) {
+    Set<T> out(BasicBlock basicBlock) {
         return out.get(basicBlock);
     }
 
     private void attachEntryNode(BasicBlock basicBlock) {
-        entryBlock = new NOP("Entry");
+        entryBlock = new NOP("Entry", NOP.NOPType.METHOD_ENTRY);
         entryBlock.setSuccessor(basicBlock);
         basicBlock.addPredecessor(entryBlock);
     }
@@ -68,16 +70,15 @@ public abstract class DataFlowAnalysis<Value> {
                 .stream()
                 .filter(basicBlock -> basicBlock instanceof NOP)
                 .map(basicBlock -> (NOP) basicBlock)
-                .filter(nop -> nop != entryBlock)
+                .filter(NOP::isExitNop)
                 .toList();
-        if (exitBlockList.size() != 1)
-            throw new IllegalStateException("expected 1 exit node, found " + exitBlockList.size());
+        checkState(exitBlockList.size() == 1, "expected 1 exit node, found " + exitBlockList.size());
         exitBlock = exitBlockList.get(0);
     }
 
-    public abstract Set<Value> meet(BasicBlock basicBlock);
+    public abstract Set<T> meet(BasicBlock basicBlock);
 
-    public abstract Set<Value> transferFunction(Value domainElement);
+    public abstract Set<T> transferFunction(T domainElement);
 
     public abstract Direction direction();
 
@@ -91,7 +92,7 @@ public abstract class DataFlowAnalysis<Value> {
                 .flatMap(Collection::stream)
                 .map(basicBlock -> in.get(basicBlock))
                 .flatMap(Collection::stream)
-                .map(Value::toString)
+                .map(T::toString)
                 .collect(Collectors.joining("\n"));
     }
 }

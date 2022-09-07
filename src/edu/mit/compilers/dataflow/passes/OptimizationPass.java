@@ -8,19 +8,17 @@ import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.utils.TarjanSCC;
+import edu.mit.compilers.dataflow.OptimizationContext;
 
 public abstract class OptimizationPass {
-    Set<LValue> globalVariables;
-    BasicBlock entryBlock;
-    Method method;
-    List<BasicBlock> basicBlocks;
+    protected BasicBlock entryBlock;
+    protected Method method;
+    protected final OptimizationContext optimizationContext;
 
-    public OptimizationPass(Set<LValue> globalVariables, Method method) {
-        this.globalVariables = globalVariables;
+    public OptimizationPass(OptimizationContext optimizationContext, Method method) {
+        this.optimizationContext = optimizationContext;
         this.method = method;
         this.entryBlock = method.entryBlock;
-        this.basicBlocks = TarjanSCC.getReversePostOrder(entryBlock);
     }
 
     // return whether an instruction of the form x = x
@@ -33,6 +31,14 @@ public abstract class OptimizationPass {
 
     public Method getMethod() {
         return method;
+    }
+
+    public Set<LValue> globals() {
+        return optimizationContext.globals();
+    }
+
+    public List<BasicBlock> getBasicBlocksList() {
+        return optimizationContext.getBasicBlocks(method);
     }
 
     // return true if changes happened
