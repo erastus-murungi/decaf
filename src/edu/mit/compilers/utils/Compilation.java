@@ -13,7 +13,6 @@ import edu.mit.compilers.asm.X64CodeConverter;
 import edu.mit.compilers.asm.X64Program;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.cfg.ControlFlowGraph;
-import edu.mit.compilers.cfg.ControlFlowGraphASTVisitor;
 import edu.mit.compilers.codegen.BasicBlockToInstructionListConverter;
 import edu.mit.compilers.dataflow.DataflowOptimizer;
 import edu.mit.compilers.dataflow.passes.InstructionSimplifyIrPass;
@@ -30,9 +29,8 @@ public class Compilation {
     private DecafScanner scanner;
     private DecafParser parser;
     private DecafSemanticChecker semanticChecker;
-    private ControlFlowGraph cfgGenerator;
+    private ControlFlowGraph cfg;
     private BasicBlockToInstructionListConverter basicBlockToInstructionListConverter;
-    private ControlFlowGraphASTVisitor cfgVisitor;
 
     private ProgramIr programIr;
 
@@ -204,8 +202,8 @@ public class Compilation {
     }
 
     private void generateCFGVisualizationPdfs() {
-        var copy = new HashMap<>(cfgVisitor.methodNameToEntryBlock);
-        copy.put("globals", cfgVisitor.global);
+        var copy = new HashMap<>(cfg.getMethodNameToEntryBlock());
+        copy.put("globals", cfg.getPrologueBasicBlock());
 //        GraphVizPrinter.printGraph(copy, (basicBlock -> basicBlock.threeAddressCodeList.getCodes().stream().map(ThreeAddressCode::repr).collect(Collectors.joining("\n"))));
         GraphVizPrinter.printGraph(copy);
     }
@@ -234,14 +232,14 @@ public class Compilation {
             }
         }
 
-        cfgGenerator = new ControlFlowGraph(parser.getRoot(), semanticChecker.globalDescriptor);
-        cfgVisitor = cfgGenerator.build();
+        cfg = new ControlFlowGraph(parser.getRoot(), semanticChecker.globalDescriptor);
+        cfg.build();
         compilationState = CompilationState.CFG_GENERATED;
     }
 
     private void generateIr() {
         assert compilationState == CompilationState.CFG_GENERATED;
-        basicBlockToInstructionListConverter = new BasicBlockToInstructionListConverter(cfgGenerator.globalDescriptor, cfgGenerator.errors, cfgVisitor, parser.getRoot());
+        basicBlockToInstructionListConverter = new BasicBlockToInstructionListConverter(cfg);
         programIr = basicBlockToInstructionListConverter.getProgramIr();
         if (CLI.debug) {
             generateSymbolTablePdfs();

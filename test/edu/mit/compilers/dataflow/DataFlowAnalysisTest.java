@@ -3,7 +3,6 @@ package edu.mit.compilers.dataflow;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.ControlFlowGraph;
 import edu.mit.compilers.cfg.NOP;
-import edu.mit.compilers.cfg.ControlFlowGraphASTVisitor;
 import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.ir.DecafSemanticChecker;

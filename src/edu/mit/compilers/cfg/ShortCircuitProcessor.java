@@ -1,9 +1,9 @@
 package edu.mit.compilers.cfg;
 
-import static edu.mit.compilers.cfg.ControlFlowGraphASTVisitor.rotateBinaryOpExpression;
 import static edu.mit.compilers.grammar.DecafScanner.CONDITIONAL_AND;
 import static edu.mit.compilers.grammar.DecafScanner.CONDITIONAL_OR;
 import static edu.mit.compilers.grammar.DecafScanner.NOT;
+import static edu.mit.compilers.utils.Utils.rotateBinaryOpExpression;
 
 import edu.mit.compilers.ast.BinaryOpExpression;
 import edu.mit.compilers.ast.ConditionalOperator;

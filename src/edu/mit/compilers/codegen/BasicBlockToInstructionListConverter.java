@@ -14,7 +14,7 @@ import edu.mit.compilers.ast.Program;
 import edu.mit.compilers.ast.StringLiteral;
 import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.cfg.ControlFlowGraphASTVisitor;
+import edu.mit.compilers.cfg.ControlFlowGraph;
 import edu.mit.compilers.cfg.NOP;
 import edu.mit.compilers.cfg.SymbolTableFlattener;
 import edu.mit.compilers.codegen.codes.ConditionalBranch;
@@ -31,7 +31,6 @@ import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.ProgramIr;
 
 public class BasicBlockToInstructionListConverter {
-    private final List<DecafException> cfgGenerationErrors;
     private final Set<LValue> globalNames = new HashSet<>();
     private final Set<BasicBlock> visitedBasicBlocks = new HashSet<>();
     private final HashMap<String, SymbolTable> perMethodSymbolTables;
@@ -41,19 +40,16 @@ public class BasicBlockToInstructionListConverter {
     private AstToInstructionListConverter currentAstToInstructionListConverter;
     private NOP currentMethodExitNop;
 
-    public BasicBlockToInstructionListConverter(GlobalDescriptor globalDescriptor,
-                                                List<DecafException> cfgGenerationErrors,
-                                                ControlFlowGraphASTVisitor cfgVisitor,
-                                                Program program) {
-        var symbolTableFlattener = new SymbolTableFlattener(globalDescriptor);
+    public BasicBlockToInstructionListConverter(
+            ControlFlowGraph controlFlowGraph) {
+        var symbolTableFlattener = new SymbolTableFlattener(controlFlowGraph.getGlobalDescriptor());
         this.perMethodSymbolTables = symbolTableFlattener.createCFGSymbolTables();
-        this.cfgGenerationErrors = cfgGenerationErrors;
-        var prologue = getPrologue(program);
+        var prologue = getPrologue(controlFlowGraph.getProgram());
         var methods = new ArrayList<Method>();
-        cfgVisitor.methodNameToEntryBlock.forEach(
+        controlFlowGraph.getMethodNameToEntryBlock().forEach(
                 (methodName, entryBlock) -> methods
                         .add(generateMethodInstructionList(
-                                program.methodDefinitionList
+                                controlFlowGraph.getProgram().methodDefinitionList
                                         .stream()
                                         .filter(methodDefinition -> methodDefinition.methodName.getLabel()
                                                 .equals(methodName))
@@ -183,7 +179,7 @@ public class BasicBlockToInstructionListConverter {
         if (visitedBasicBlocks.contains(basicBlockWithBranch))
             return basicBlockWithBranch.getInstructionList();
 
-            visitedBasicBlocks.add(basicBlockWithBranch);
+        visitedBasicBlocks.add(basicBlockWithBranch);
 
         var condition = basicBlockWithBranch.getBranchCondition().orElseThrow();
         var conditionInstructionList = condition.accept(currentAstToInstructionListConverter, Variable.genTemp(Type.Bool));

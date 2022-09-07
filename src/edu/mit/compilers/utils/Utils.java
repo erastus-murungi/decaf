@@ -17,7 +17,15 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.ast.BinaryOpExpression;
 import edu.mit.compilers.ast.Block;
+import edu.mit.compilers.ast.Expression;
+import edu.mit.compilers.ast.ExpressionParameter;
+import edu.mit.compilers.ast.LocationArray;
+import edu.mit.compilers.ast.MethodCall;
+import edu.mit.compilers.ast.MethodCallParameter;
+import edu.mit.compilers.ast.ParenthesizedExpression;
+import edu.mit.compilers.ast.UnaryOpExpression;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.codes.Instruction;
@@ -204,5 +212,35 @@ public class Utils {
                 ANSI_BRIGHT_BG_BLACK, ANSI_BRIGHT_BG_RED, ANSI_BRIGHT_BG_GREEN, ANSI_BRIGHT_BG_YELLOW,
                 ANSI_BRIGHT_BG_BLUE, ANSI_BRIGHT_BG_PURPLE, ANSI_BRIGHT_BG_CYAN, ANSI_BRIGHT_BG_WHITE
         };
+    }
+
+    public static Expression rotateBinaryOpExpression(Expression expr) {
+        if (expr instanceof BinaryOpExpression) {
+            if (((BinaryOpExpression) expr).rhs instanceof BinaryOpExpression rhsTemp) {
+                if (BinaryOpExpression.operatorPrecedence.get(((BinaryOpExpression) expr).op.getSourceCode()).equals(BinaryOpExpression.operatorPrecedence.get(rhsTemp.op.getSourceCode()))) {
+                    ((BinaryOpExpression) expr).rhs = rhsTemp.lhs;
+                    rhsTemp.lhs = expr;
+                    ((BinaryOpExpression) expr).lhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);
+                    ((BinaryOpExpression) expr).rhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).rhs);
+                    return rotateBinaryOpExpression(rhsTemp);
+                }
+            }
+            ((BinaryOpExpression) expr).lhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);
+            ((BinaryOpExpression) expr).rhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).rhs);
+        } else if (expr instanceof ParenthesizedExpression) {
+            rotateBinaryOpExpression(((ParenthesizedExpression) expr).expression);
+        } else if (expr instanceof MethodCall) {
+            for (int i = 0; i < ((MethodCall) expr).methodCallParameterList.size(); i++) {
+                MethodCallParameter param = ((MethodCall) expr).methodCallParameterList.get(i);
+                if (param instanceof ExpressionParameter) {
+                    ((MethodCall) expr).methodCallParameterList.set(i, new ExpressionParameter(rotateBinaryOpExpression(((ExpressionParameter) param).expression)));
+                }
+            }
+        } else if (expr instanceof LocationArray) {
+            rotateBinaryOpExpression(((LocationArray) expr).expression);
+        } else if (expr instanceof UnaryOpExpression) {
+            rotateBinaryOpExpression(((UnaryOpExpression) expr).operand);
+        }
+        return expr;
     }
 }
