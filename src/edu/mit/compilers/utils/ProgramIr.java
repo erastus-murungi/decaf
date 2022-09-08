@@ -20,12 +20,20 @@ import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.codegen.names.Value;
 
 public class ProgramIr {
-    public InstructionList prologue;
-    public List<Method> methodList;
+    private final InstructionList prologue;
+    private List<Method> methodList;
     private Set<LValue> globals = new HashSet<>();
 
     public ProgramIr(InstructionList prologue, List<Method> methodList) {
         this.prologue = prologue;
+        this.methodList = methodList;
+    }
+
+    public List<Method> getMethods() {
+        return methodList;
+    }
+
+    public void setMethods(List<Method> methodList) {
         this.methodList = methodList;
     }
 
@@ -85,6 +93,21 @@ public class ProgramIr {
                 .toList());
     }
 
+    public static String mergeMethod(Method method) {
+        List<String> output = new ArrayList<>();
+        for (InstructionList instructionList : TraceScheduler.getInstructionTrace(method)) {
+            if (!instructionList.getLabel()
+                    .equals("UNSET"))
+                output.add("    " + instructionList.getLabel() + ":");
+            instructionList.forEach(instruction -> output.add(instruction.syntaxHighlightedToString()));
+        }
+        return String.join("\n", output);
+    }
+
+    public InstructionList getPrologue() {
+        return prologue;
+    }
+
     public List<Instruction> toSingleInstructionList() {
         var programHeader = prologue.copy();
         var instructions = programHeader.copy();
@@ -107,17 +130,6 @@ public class ProgramIr {
                     output.add("    " + instructionList.getLabel() + ":");
                 instructionList.forEach(instruction -> output.add(instruction.syntaxHighlightedToString()));
             }
-        }
-        return String.join("\n", output);
-    }
-
-    public static String mergeMethod(Method method) {
-        List<String> output = new ArrayList<>();
-        for (InstructionList instructionList : TraceScheduler.getInstructionTrace(method)) {
-            if (!instructionList.getLabel()
-                    .equals("UNSET"))
-                output.add("    " + instructionList.getLabel() + ":");
-            instructionList.forEach(instruction -> output.add(instruction.syntaxHighlightedToString()));
         }
         return String.join("\n", output);
     }
@@ -149,11 +161,11 @@ public class ProgramIr {
         return Set.copyOf(globals);
     }
 
-    public List<LValue> getLocals(Method method) {
-        return getLocals(method, globals);
-    }
-
     public void setGlobals(Set<LValue> globals) {
         this.globals = Set.copyOf(globals);
+    }
+
+    public List<LValue> getLocals(Method method) {
+        return getLocals(method, globals);
     }
 }

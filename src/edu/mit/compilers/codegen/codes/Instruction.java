@@ -6,7 +6,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.codegen.InstructionVisitor;
+import edu.mit.compilers.asm.AsmWriter;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.codegen.names.Variable;
@@ -38,7 +38,7 @@ public abstract class Instruction {
         this.comment = comment;
     }
 
-    public abstract <T, E> T accept(InstructionVisitor<T, E> visitor, E extra);
+    public abstract <T, E> void accept(AsmWriter asmWriter);
 
     public abstract List<Value> getAllValues();
 

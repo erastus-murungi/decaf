@@ -38,7 +38,6 @@ import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
 import edu.mit.compilers.codegen.codes.GetAddress;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.ReturnInstruction;
-import edu.mit.compilers.codegen.codes.StringLiteralAllocation;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddress;
@@ -52,9 +51,9 @@ import edu.mit.compilers.utils.Operators;
 
 class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList> {
     private final SymbolTable symbolTable;
-    private final HashMap<String, StringLiteralAllocation> stringLiteralMapping;
+    private final HashMap<String, StringConstant> stringLiteralMapping;
 
-    public AstToInstructionListConverter(SymbolTable symbolTable, HashMap<String, StringLiteralAllocation> stringLiteralMapping) {
+    public AstToInstructionListConverter(SymbolTable symbolTable, HashMap<String, StringConstant> stringLiteralMapping) {
         this.symbolTable = symbolTable;
         this.stringLiteralMapping = stringLiteralMapping;
     }
@@ -162,7 +161,7 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
 
     @Override
     public InstructionList visit(StringLiteral stringLiteral, LValue resultLocation) {
-        return new InstructionList(new StringConstant(stringLiteralMapping.get(stringLiteral.literal)));
+        return new InstructionList(stringLiteralMapping.get(stringLiteral.literal));
     }
 
     @Override
@@ -183,20 +182,19 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
 
     private Instruction flattenCompoundAssign(LValue lhs, Value rhs, String op, AST assignment) {
         final var constant = new NumericalConstant(1L, Type.Int);
-        switch (op) {
-            case Operators.ADD_ASSIGN:
-                return new BinaryInstruction(lhs.copy(), lhs, Operators.PLUS, rhs, assignment.getSourceCode(), assignment);
-            case Operators.MULTIPLY_ASSIGN:
-                return new BinaryInstruction(lhs.copy(), lhs, Operators.MULTIPLY, rhs, assignment.getSourceCode(), assignment);
-            case Operators.MINUS_ASSIGN:
-                return new BinaryInstruction(lhs.copy(), lhs, Operators.MINUS, rhs, assignment.getSourceCode(), assignment);
-            case Operators.DECREMENT:
-                return new BinaryInstruction(lhs.copy(), lhs, Operators.MINUS, constant, assignment.getSourceCode(), assignment);
-            case Operators.INCREMENT:
-                return new BinaryInstruction(lhs.copy(), lhs, Operators.PLUS, constant, assignment.getSourceCode(), assignment);
-            default:
-                return new CopyInstruction(lhs.copy(), rhs.copy(), assignment, assignment.getSourceCode());
-        }
+        return switch (op) {
+            case Operators.ADD_ASSIGN ->
+                    new BinaryInstruction(lhs.copy(), lhs, Operators.PLUS, rhs, assignment.getSourceCode(), assignment);
+            case Operators.MULTIPLY_ASSIGN ->
+                    new BinaryInstruction(lhs.copy(), lhs, Operators.MULTIPLY, rhs, assignment.getSourceCode(), assignment);
+            case Operators.MINUS_ASSIGN ->
+                    new BinaryInstruction(lhs.copy(), lhs, Operators.MINUS, rhs, assignment.getSourceCode(), assignment);
+            case Operators.DECREMENT ->
+                    new BinaryInstruction(lhs.copy(), lhs, Operators.MINUS, constant, assignment.getSourceCode(), assignment);
+            case Operators.INCREMENT ->
+                    new BinaryInstruction(lhs.copy(), lhs, Operators.PLUS, constant, assignment.getSourceCode(), assignment);
+            default -> new CopyInstruction(lhs.copy(), rhs.copy(), assignment, assignment.getSourceCode());
+        };
     }
 
     @Override

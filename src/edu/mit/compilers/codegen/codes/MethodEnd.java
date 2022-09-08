@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 import edu.mit.compilers.ast.MethodDefinition;
-import edu.mit.compilers.codegen.InstructionVisitor;
+import edu.mit.compilers.asm.AsmWriter;
 import edu.mit.compilers.codegen.names.Value;
 
 public class MethodEnd extends Instruction {
@@ -21,8 +21,8 @@ public class MethodEnd extends Instruction {
     }
 
     @Override
-    public <T, E> T accept(InstructionVisitor<T, E> visitor, E extra) {
-        return visitor.visit(this, extra);
+    public void accept(AsmWriter asmWriter) {
+        asmWriter.emitInstruction(this);
     }
 
     @Override

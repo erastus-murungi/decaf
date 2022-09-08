@@ -3,7 +3,6 @@ package edu.mit.compilers.codegen;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
@@ -21,11 +20,10 @@ import edu.mit.compilers.codegen.codes.ConditionalBranch;
 import edu.mit.compilers.codegen.codes.GlobalAllocation;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.MethodEnd;
-import edu.mit.compilers.codegen.codes.StringLiteralAllocation;
+import edu.mit.compilers.codegen.codes.StringConstantAllocation;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.StringConstant;
 import edu.mit.compilers.codegen.names.Variable;
-import edu.mit.compilers.descriptors.GlobalDescriptor;
-import edu.mit.compilers.exceptions.DecafException;
 import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.ProgramIr;
@@ -35,7 +33,7 @@ public class BasicBlockToInstructionListConverter {
     private final Set<BasicBlock> visitedBasicBlocks = new HashSet<>();
     private final HashMap<String, SymbolTable> perMethodSymbolTables;
     private final ProgramIr programIr;
-    private final HashMap<String, StringLiteralAllocation> stringToStringLiteralAllocationMapping = new HashMap<>();
+    private final HashMap<String, StringConstant> stringConstantsMap = new HashMap<>();
 
     private AstToInstructionListConverter currentAstToInstructionListConverter;
     private NOP currentMethodExitNop;
@@ -71,7 +69,7 @@ public class BasicBlockToInstructionListConverter {
     private Method generateMethodInstructionList(MethodDefinition methodDefinition,
                                                  BasicBlock methodStart,
                                                  SymbolTable currentSymbolTable) {
-        currentAstToInstructionListConverter = new AstToInstructionListConverter(currentSymbolTable, stringToStringLiteralAllocationMapping);
+        currentAstToInstructionListConverter = new AstToInstructionListConverter(currentSymbolTable, stringConstantsMap);
 
 //
 //        methodInstructionList.addAll(
@@ -123,9 +121,9 @@ public class BasicBlockToInstructionListConverter {
                 .collect(Collectors.toUnmodifiableSet()));
 
         for (String stringLiteral : findAllStringLiterals(program)) {
-            final var stringLiteralAllocation = new StringLiteralAllocation(stringLiteral);
-            prologue.add(stringLiteralAllocation);
-            stringToStringLiteralAllocationMapping.put(stringLiteral, stringLiteralAllocation);
+            final var stringConstant = new StringConstant(stringLiteral);
+            prologue.add(new StringConstantAllocation(stringConstant));
+            stringConstantsMap.put(stringLiteral, stringConstant);
         }
         return prologue;
     }

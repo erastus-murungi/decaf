@@ -86,7 +86,7 @@ public class LiveIntervalsUtil {
     }
 
     private void validateLiveIntervals() {
-        programIr.methodList.forEach(
+        programIr.getMethods().forEach(
                 method ->
                         validateMethodLiveIntervals(getLiveIntervals(method))
         );
@@ -141,7 +141,7 @@ public class LiveIntervalsUtil {
     }
 
     private void computeLivenessInformation() {
-        for (Method method : programIr.methodList) {
+        for (Method method : programIr.getMethods()) {
             computeMethodLivenessInformation(method);
         }
     }
@@ -170,7 +170,7 @@ public class LiveIntervalsUtil {
     }
 
     private void computeLiveIntervals() {
-        for (var method : programIr.methodList) {
+        for (var method : programIr.getMethods()) {
             methodToLiveIntervalsMap.put(method, computeMethodLiveIntervals(method));
         }
     }

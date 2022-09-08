@@ -9,7 +9,7 @@ import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Locale;
 
-import edu.mit.compilers.asm.X64CodeConverter;
+import edu.mit.compilers.asm.X64AsmWriter;
 import edu.mit.compilers.asm.X64Program;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.cfg.ControlFlowGraph;
@@ -20,7 +20,7 @@ import edu.mit.compilers.grammar.DecafParser;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.Token;
 import edu.mit.compilers.ir.DecafSemanticChecker;
-import edu.mit.compilers.registerallocation.RegisterAllocation;
+import edu.mit.compilers.registerallocation.RegisterAllocator;
 import edu.mit.compilers.ssa.SSA;
 
 public class Compilation {
@@ -257,7 +257,7 @@ public class Compilation {
 
     private void generateSsa() {
         assert compilationState == CompilationState.IR_GENERATED;
-        programIr.methodList.forEach(SSA::construct);
+        programIr.getMethods().forEach(SSA::construct);
         compilationState = CompilationState.SSA_GENERATED;
     }
 
@@ -275,7 +275,7 @@ public class Compilation {
             var dataflowOptimizer = new DataflowOptimizer(programIr, CLI.opts);
             dataflowOptimizer.initialize();
             dataflowOptimizer.optimize();
-            programIr.methodList = dataflowOptimizer.getOptimizedMethods();
+            programIr.setMethods(dataflowOptimizer.getOptimizedMethods());
             nLinesOfCodeReductionFactor = (oldNLinesOfCode - countLinesOfCode()) / oldNLinesOfCode;
 
         }
@@ -285,7 +285,7 @@ public class Compilation {
     private void generateAssembly() {
         assert compilationState == CompilationState.DATAFLOW_OPTIMIZED;
 
-        programIr.methodList.forEach(method -> SSA.deconstruct(method, programIr));
+        programIr.getMethods().forEach(method -> SSA.deconstruct(method, programIr));
 //        Interpreter interpreter = new Interpreter(programIr.mergeProgram());
 //        interpreter.interpret();
 
@@ -295,20 +295,11 @@ public class Compilation {
             System.out.format("lines of code reduced by a factor of: %f\n", nLinesOfCodeReductionFactor);
         }
 
-        X64CodeConverter x64CodeConverter;
-        if (shouldOptimize()) {
-            programIr.findGlobals();
-            var registerAllocation = new RegisterAllocation(programIr);
-            x64CodeConverter = new X64CodeConverter(programIr, registerAllocation.getVariableToRegisterMap(), registerAllocation.getMethodToLiveRegistersInfo());
-        } else {
-            x64CodeConverter = new X64CodeConverter(programIr);
-        }
-        X64Program x64program = x64CodeConverter.convert();
-        if (shouldOptimize()) {
-//            var peepHoleOptimizationAsmPass = new PeepHoleOptimizationAsmPass(x64program);
-//            peepHoleOptimizationAsmPass.run();
-//            nLinesRemovedByAssemblyOptimizer = peepHoleOptimizationAsmPass.getNumInstructionsRemoved();
-        }
+
+        var registerAllocator = new RegisterAllocator(programIr);
+        programIr.findGlobals();
+        var x64AsmWriter = new X64AsmWriter(programIr, registerAllocator);
+        X64Program x64program = x64AsmWriter.convert();
         outputStream.println(x64program);
         System.out.println(x64program);
         compilationState = CompilationState.ASSEMBLED;

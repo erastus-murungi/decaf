@@ -8,6 +8,8 @@ import edu.mit.compilers.codegen.names.Value;
 public interface FunctionCall {
     MethodCall getMethod();
 
+    Stack<Value> getArguments();
+
     default boolean isImported() {
         return getMethod().isImported;
     }
@@ -20,6 +22,8 @@ public interface FunctionCall {
         return getMethod().getType().getSourceCode();
     }
 
-    Stack<Value> getArguments();
+    default int getNumArguments() {
+        return getArguments().size();
+    }
 }
 

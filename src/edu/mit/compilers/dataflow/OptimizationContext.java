@@ -23,9 +23,9 @@ public class OptimizationContext {
 
     public OptimizationContext(ProgramIr programIr) {
         this.programIr = programIr;
-        for (Method method : programIr.methodList)
+        for (Method method : programIr.getMethods())
             methodToBlocks.put(method, List.copyOf(TarjanSCC.getReversePostOrder(method.entryBlock)));
-        setMethodsToOptimize(programIr.methodList);
+        setMethodsToOptimize(programIr.getMethods());
     }
 
     public Set<LValue> globals() {

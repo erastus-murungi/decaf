@@ -23,7 +23,6 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.MethodEnd;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.codes.StringLiteralAllocation;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.names.Constant;
 import edu.mit.compilers.codegen.names.LValue;
@@ -58,9 +57,9 @@ public class Interpreter {
         var name = new Name("printf", null, null);
         List<MethodCallParameter> arguments = List.of(new StringLiteral(null, "%d\n"), new ExpressionParameter(new LocationVariable(new Name("a", null, null))));
         var argsStack = new Stack<Value>();
-        argsStack.addAll(
-                List.of(new StringConstant(new StringLiteralAllocation("%d\n")), c.copy())
-        );
+
+        argsStack.add(new StringConstant("%d\n"));
+
         List<Instruction> instructions = List.of(
                 CopyInstruction.noAstConstructor(a.copy(), new NumericalConstant(10L, Type.Int)),
                 CopyInstruction.noAstConstructor(b.copy(), a.copy()),

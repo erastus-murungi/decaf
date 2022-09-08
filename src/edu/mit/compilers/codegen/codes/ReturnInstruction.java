@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.codegen.InstructionVisitor;
+import edu.mit.compilers.asm.AsmWriter;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
@@ -28,8 +28,8 @@ public class ReturnInstruction extends HasOperand {
     }
 
     @Override
-    public <T, E> T accept(InstructionVisitor<T, E> visitor, E extra) {
-        return visitor.visit(this, extra);
+    public void accept(AsmWriter asmWriter) {
+        asmWriter.emitInstruction(this);
     }
 
     @Override

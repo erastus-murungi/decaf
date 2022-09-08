@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.codegen.InstructionVisitor;
+import edu.mit.compilers.asm.AsmWriter;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.codegen.names.Value;
@@ -36,8 +36,8 @@ public class BinaryInstruction extends StoreInstruction {
     }
 
     @Override
-    public <T, E> T accept(InstructionVisitor<T, E> visitor, E extra) {
-        return visitor.visit(this, extra);
+    public void accept(AsmWriter asmWriter) {
+        asmWriter.emitInstruction(this);
     }
 
     @Override

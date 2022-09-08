@@ -49,7 +49,6 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
 
 
     private void removeEmptyBasicBlocks() {
-
         for (BasicBlock basicBlock: getBasicBlocksList()) {
             if (!(basicBlock instanceof NOP) && basicBlock.getInstructionList().isEmpty()) {
                 checkState(basicBlock.hasNoBranch());

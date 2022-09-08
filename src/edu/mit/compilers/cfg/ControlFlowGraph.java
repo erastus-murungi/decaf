@@ -518,7 +518,7 @@ public class ControlFlowGraph {
     }
 
     public BasicBlocksPair visitLocationAssignExpr(LocationAssignExpr locationAssignExpr) {
-        final BasicBlock assignment = BasicBlock.noBranch();
+        final var assignment = BasicBlock.noBranch();
         locationAssignExpr.assignExpr.expression = Utils.rotateBinaryOpExpression(locationAssignExpr.assignExpr.expression);
 
         String op;
@@ -539,7 +539,7 @@ public class ControlFlowGraph {
     }
 
     public BasicBlocksPair visitMethodDefinitionParameter(MethodDefinitionParameter methodDefinitionParameter) {
-        BasicBlock methodParam = BasicBlock.noBranch();
+        var methodParam = BasicBlock.noBranch();
         methodParam.setSuccessor(methodParam);
         methodParam.addAstNode(methodDefinitionParameter);
         return new BasicBlocksPair(methodParam, methodParam);

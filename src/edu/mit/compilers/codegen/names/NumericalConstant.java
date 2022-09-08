@@ -36,7 +36,7 @@ public class NumericalConstant extends Constant {
 
     @Override
     public String toString() {
-        return "$" + getLabel();
+        return getLabel();
     }
 
     @Override

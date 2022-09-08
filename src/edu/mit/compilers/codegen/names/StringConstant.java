@@ -3,19 +3,27 @@ package edu.mit.compilers.codegen.names;
 import java.util.Objects;
 
 import edu.mit.compilers.ast.Type;
-import edu.mit.compilers.codegen.codes.StringLiteralAllocation;
+import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
 
 public class StringConstant extends Constant {
-    StringLiteralAllocation stringConstant;
+    private final String content;
+    private final String contentEscaped;
 
-    public StringConstant(StringLiteralAllocation stringConstant) {
-        super(Type.String, stringConstant.label);
-        this.stringConstant = stringConstant;
+    public StringConstant(String content) {
+        super(Type.String, TemporaryNameIndexGenerator.getNextStringLiteralIndex());
+        this.content = content;
+        this.contentEscaped = content.substring(1, content.length() - 1).translateEscapes();
+    }
+
+    private StringConstant(String label, String content, String contentEscaped) {
+        super(Type.String, label);
+        this.content = content;
+        this.contentEscaped = contentEscaped;
     }
 
     @Override
     public String toString() {
-        return stringConstant.label;
+        return getLabel();
     }
 
     @Override
@@ -24,22 +32,26 @@ public class StringConstant extends Constant {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         StringConstant that = (StringConstant) o;
-        return Objects.equals(stringConstant.stringConstant, that.stringConstant.stringConstant);
+        return Objects.equals(getLabel(), that.getLabel());
     }
 
     @Override
     public StringConstant copy() {
-        return new StringConstant((StringLiteralAllocation) stringConstant.copy());
+        return new StringConstant(label, content, contentEscaped);
+    }
+
+    public int size() {
+        return contentEscaped.length();
     }
 
     @Override
     public String repr() {
-        return String.format("@.%s", stringConstant.label);
+        return String.format("@.%s", getLabel());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(stringConstant.stringConstant);
+        return Objects.hash(getLabel());
     }
 
     @Override
@@ -49,6 +61,7 @@ public class StringConstant extends Constant {
 
     @Override
     public String getValue() {
-        return stringConstant.stringConstant;
+        return content;
     }
+
 }

@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Objects;
 
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.InstructionVisitor;
+import edu.mit.compilers.asm.AsmWriter;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.utils.Utils;
 
@@ -28,8 +28,8 @@ public class UnconditionalBranch extends Instruction {
     }
 
     @Override
-    public <T, E> T accept(InstructionVisitor<T, E> visitor, E extra) {
-        return visitor.visit(this, extra);
+    public void accept(AsmWriter asmWriter) {
+        asmWriter.emitInstruction(this);
     }
 
     @Override

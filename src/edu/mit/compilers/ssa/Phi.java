@@ -2,12 +2,9 @@ package edu.mit.compilers.ssa;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.base.Preconditions;
-
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -15,7 +12,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.InstructionVisitor;
+import edu.mit.compilers.asm.AsmWriter;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.LValue;
@@ -25,10 +22,6 @@ import edu.mit.compilers.dataflow.operand.PhiOperand;
 
 public class Phi extends StoreInstruction {
     private final Map<BasicBlock, Value> basicBlockValueMap;
-
-    public Map<BasicBlock, Value> getBasicBlockValueMap() {
-        return basicBlockValueMap;
-    }
 
     public Phi(LValue v, Map<BasicBlock, Value> xs) {
         super(v, null);
@@ -44,7 +37,7 @@ public class Phi extends StoreInstruction {
                 return;
             }
         }
-        checkState(false);
+        throw new IllegalStateException();
     }
 
     public Value getVariableForB(BasicBlock B) {
@@ -57,8 +50,7 @@ public class Phi extends StoreInstruction {
             if (entrySet.getValue().equals(value))
                 return entrySet.getKey();
         }
-        checkState(false);
-        return null;
+        throw new IllegalStateException();
     }
 
     @Override
@@ -85,8 +77,7 @@ public class Phi extends StoreInstruction {
     }
 
     @Override
-    public <T, E> T accept(InstructionVisitor<T, E> visitor, E extra) {
-        return null;
+    public void accept(AsmWriter asmWriter) {
     }
 
     @Override
