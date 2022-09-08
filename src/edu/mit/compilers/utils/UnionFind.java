@@ -15,11 +15,6 @@ public class UnionFind<T> {
     Map<T, T> parents = new HashMap<>();
     Map<T, Integer> weights = new HashMap<>();
 
-    UnionFind(T item) {
-        parents.put(item, item);
-        weights.put(item, 0);
-    }
-
     /**
      * MAKE-SET()
      * we don't need to store the elements, instead we can hash them, and since each element is unique, the
@@ -61,13 +56,8 @@ public class UnionFind<T> {
     public final void union(T... items) {
         var roots = Arrays.stream(items)
                 .map(this::find)
-                .sorted(
-                        Comparator.comparingInt(
-                                        t -> weights.get(t)
-                                )
-                                .reversed()
-                )
-                .iterator();
+                .sorted(Comparator.comparingInt(weights::get).reversed()
+                ).iterator();
 
         try {
             var heaviest = roots.next();

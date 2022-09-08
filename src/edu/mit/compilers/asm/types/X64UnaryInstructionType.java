@@ -20,7 +20,7 @@ public enum X64UnaryInstructionType {
     jle,
     jl,
     jg,
-    jne, addq;
+    jne;
 
     public static X64UnaryInstructionType getCorrectComparisonSetInstruction(String operator) {
         switch (operator) {

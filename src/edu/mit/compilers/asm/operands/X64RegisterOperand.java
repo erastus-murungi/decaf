@@ -26,4 +26,8 @@ public class X64RegisterOperand extends X64Operand {
     public String toString() {
         return x64RegisterType.toString();
     }
+
+    public @NotNull X64RegisterType getX64RegisterType() {
+        return x64RegisterType;
+    }
 }

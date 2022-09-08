@@ -184,6 +184,7 @@ public class Compilation {
         } else {
             compilationState = CompilationState.PARSED;
         }
+        System.out.println(parser.getRoot().getSourceCode());
     }
 
     private void runSemanticsChecker() {

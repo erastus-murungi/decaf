@@ -11,15 +11,9 @@ import edu.mit.compilers.asm.instructions.X64MetaData;
 
 public class X64Method extends ArrayList<X64Instruction> {
     private final List<X64Instruction> prologue = new ArrayList<>();
-    private final List<X64Instruction> x64InstructionList = new ArrayList<>();
     private final List<X64Instruction> epilogue = new ArrayList<>();
 
     public X64Method() {
-    }
-
-    public X64Method addInstruction(X64Instruction x64Instruction) {
-        x64InstructionList.add(x64Instruction);
-        return this;
     }
 
     public X64Method addPrologue(X64MetaData x64MetaData) {
@@ -37,25 +31,22 @@ public class X64Method extends ArrayList<X64Instruction> {
         return this;
     }
 
-    int currentIndex() {
-        return x64InstructionList.size();
-    }
-
-    public void addAtIndex(int index, X64Instruction line) {
-        x64InstructionList.add(index, line);
+    public X64Method addAtIndex(int index, X64Instruction line) {
+        add(index, line);
+        return this;
     }
 
     public void addAllAtIndex(int index, Collection<X64Instruction> lines) {
-        x64InstructionList.addAll(index, lines);
+        addAll(index, lines);
     }
 
     public X64Method addLines(Collection<X64Instruction> lines) {
-        x64InstructionList.addAll(lines);
+        addAll(lines);
         return this;
     }
 
     private Stream<X64Instruction> buildStream() {
-        return Stream.of(prologue, x64InstructionList, epilogue).flatMap(Collection::stream);
+        return Stream.of(prologue, this, epilogue).flatMap(Collection::stream);
     }
 
     @Override
