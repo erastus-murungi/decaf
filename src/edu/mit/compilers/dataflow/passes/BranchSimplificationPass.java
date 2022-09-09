@@ -21,20 +21,12 @@ public class BranchSimplificationPass extends OptimizationPass {
         super(optimizationContext, method);
     }
 
-    private static boolean isNotExitLabel(Instruction instruction) {
-//        if (instruction instanceof Label) {
-//            var label = (Label) instruction;
-//            return !label.label.startsWith("exit");
-//        }
-        return true;
-    }
-
     private boolean isTrue(ConditionalBranch conditionalBranch) {
-        return conditionalBranch.condition.equals(InstructionSimplifyPass.mOne);
+        return conditionalBranch.getCondition().equals(InstructionSimplifyPass.mOne);
     }
 
     private boolean isFalse(ConditionalBranch conditionalBranch) {
-        return conditionalBranch.condition.equals(InstructionSimplifyPass.mZero);
+        return conditionalBranch.getCondition().equals(InstructionSimplifyPass.mZero);
     }
 
     private Optional<ConditionalBranch> getConditional(InstructionList instructionList) {

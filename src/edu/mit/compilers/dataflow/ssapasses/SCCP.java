@@ -120,7 +120,7 @@ public class SCCP {
                 }
             }
         } else if (instruction instanceof ConditionalBranch conditionalBranch) {
-            var updated = latticeValues.get(conditionalBranch.condition);
+            var updated = latticeValues.get(conditionalBranch.getCondition());
             if (updated.isConstant()) {
                 if (updated.getValue().equals(1L)) {
                     flowGraphWorkList.add(basicBlock.getTrueTarget());

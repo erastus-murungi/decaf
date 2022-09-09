@@ -1,5 +1,8 @@
 package edu.mit.compilers.codegen.codes;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.List;
 
 import edu.mit.compilers.ast.AST;
@@ -10,19 +13,27 @@ import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 import edu.mit.compilers.utils.Utils;
 
-public class ConditionalBranch extends HasOperand {
-    public Value condition;
-    public BasicBlock falseTarget;
+public class ConditionalBranch extends HasOperand implements WithTarget {
+    @NotNull
+    private Value condition;
+    @NotNull
+    private BasicBlock falseTarget;
 
-    public ConditionalBranch(AST source, Value condition, BasicBlock falseTarget, String comment) {
+
+    public ConditionalBranch(@NotNull Value condition, @NotNull BasicBlock falseTarget, @Nullable AST source, @Nullable String comment) {
         super(source, comment);
         this.condition = condition;
         this.falseTarget = falseTarget;
+        falseTarget.addTributary(this);
+    }
+
+    public @NotNull Value getCondition() {
+        return condition;
     }
 
     @Override
     public String toString() {
-        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, "if", condition.repr(), "is false goto", falseTarget.getInstructionList().getLabel(), DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
+        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, "if", condition.repr(), "is false goto", getTarget().getInstructionList().getLabel(), DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
     }
 
     @Override
@@ -38,15 +49,14 @@ public class ConditionalBranch extends HasOperand {
     @Override
     public String syntaxHighlightedToString() {
         var ifString = Utils.coloredPrint("if false", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-//        var ifString =  "if false";
         var goTo = Utils.coloredPrint("goto", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-//        var goTo =  "goto";
-        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, ifString, condition.repr(), goTo, falseTarget.getInstructionList().getLabel(), DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
+        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, ifString, condition.repr(), goTo, getTarget().getInstructionList()
+                                                                                                                .getLabel(), DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
     }
 
     @Override
     public Instruction copy() {
-        return new ConditionalBranch(source, condition, falseTarget, getComment().orElse(null));
+        return new ConditionalBranch(condition, getTarget(), source, getComment().orElse(null));
     }
 
     @Override
@@ -68,4 +78,18 @@ public class ConditionalBranch extends HasOperand {
         return replaced;
     }
 
+    public @NotNull BasicBlock getTarget() {
+        return falseTarget;
+    }
+
+    @Override
+    public void setTargetWithTributary(@NotNull BasicBlock newTarget) {
+        this.falseTarget = newTarget;
+        newTarget.addTributary(this);
+
+    }
+
+    public void setFalseTarget(@NotNull BasicBlock falseTarget) {
+        setTargetWithTributary(falseTarget);
+    }
 }

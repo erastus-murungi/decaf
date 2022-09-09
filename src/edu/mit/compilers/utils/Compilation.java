@@ -126,6 +126,8 @@ public class Compilation {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
+            var target = "tests/codegen/output/" + CLI.infile + ".out";
+            System.out.println(target);
         } else {
             throw new IllegalStateException("only darwin platform is supported not : " + osName);
         }

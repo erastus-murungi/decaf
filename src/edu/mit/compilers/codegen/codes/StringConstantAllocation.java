@@ -34,7 +34,7 @@ public class StringConstantAllocation extends Instruction {
 
     @Override
     public String syntaxHighlightedToString() {
-        return String.format("@.%s = %s%s%s", stringConstant.getLabel(), stringConstant, DOUBLE_INDENT, "# " + stringConstant.size() + " bytes");
+        return String.format("@.%s = %s%s%s", stringConstant.getLabel(), stringConstant.getValue(), DOUBLE_INDENT, "# " + stringConstant.size() + " bytes");
     }
 
     @Override

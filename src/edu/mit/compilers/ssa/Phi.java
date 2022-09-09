@@ -40,8 +40,16 @@ public class Phi extends StoreInstruction {
         throw new IllegalStateException();
     }
 
-    public Value getVariableForB(BasicBlock B) {
-        return basicBlockValueMap.get(B);
+    @NotNull public Value getVariableForB(@NotNull BasicBlock B) {
+        var value =  basicBlockValueMap.get(B);
+        checkState(value != null, this + "\nno variable for block: \n" + B);
+        return value;
+    }
+
+    public void replaceBlock(@NotNull BasicBlock B, @NotNull BasicBlock R) {
+        var ret = basicBlockValueMap.remove(B);
+        checkState(ret != null);
+        basicBlockValueMap.put(R, ret);
     }
 
     @NotNull public BasicBlock getBasicBlockForV(@NotNull Value value) {

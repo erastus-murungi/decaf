@@ -339,7 +339,7 @@ public class SSA {
                     var copyInstruction = CopyInstruction.noAstConstructor(temp, dst.copy());
                     var dstOwner = Objects.requireNonNull(phiDstToOwnerBasicBlockMapping.get(dst), "dest " + dst + " does not have a source basic block");
                     dstOwner.getInstructionList()
-                            .add(1, copyInstruction);
+                            .add(0, copyInstruction);
                     stacks.get(dst)
                             .push(temp);
                     stacks.put(temp, new Stack<>());

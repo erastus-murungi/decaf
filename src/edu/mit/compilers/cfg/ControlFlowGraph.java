@@ -318,7 +318,7 @@ public class ControlFlowGraph {
         // If true, run the block.
         BasicBlocksPair truePair = dispatch(forStatement.block, symbolTable);
 
-        evaluateBlock.setFalseTarget(falseBlock);
+        evaluateBlock.setFalseTargetUnchecked(falseBlock);
         evaluateBlock.getFalseTarget()
                 .addPredecessor(evaluateBlock);
 

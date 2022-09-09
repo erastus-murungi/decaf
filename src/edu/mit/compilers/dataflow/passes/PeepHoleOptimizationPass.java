@@ -15,46 +15,21 @@ import edu.mit.compilers.codegen.names.NumericalConstant;
 import edu.mit.compilers.dataflow.OptimizationContext;
 
 public class PeepHoleOptimizationPass extends OptimizationPass {
+    boolean changesHappened = false;
+
     public PeepHoleOptimizationPass(OptimizationContext optimizationContext, Method method) {
         super(optimizationContext, method);
     }
 
-    private void removeTrivialBoundsChecks() {
-        for (var basicBlock : getBasicBlocksList()) {
-            var indicesToRemove = new ArrayList<Integer>();
-            for (var indexOfInstruction = 0; indexOfInstruction < basicBlock.getInstructionList().size(); indexOfInstruction++) {
-                var instruction = basicBlock.getInstructionList().get(indexOfInstruction);
-                if (instruction instanceof ArrayBoundsCheck arrayBoundsCheck) {
-                    if (arrayBoundsCheck.getAddress.getIndex() instanceof NumericalConstant) {
-                        var index = Long.parseLong(arrayBoundsCheck.getAddress.getIndex().getLabel());
-                        var length = Long.parseLong(arrayBoundsCheck.getAddress.getLength()
-                                .orElseThrow().getLabel());
-                        if (index >= 0 && index < length) {
-                            indicesToRemove.add(indexOfInstruction);
-                        }
-                    }
-                }
-            }
-
-            for (var index : indicesToRemove) {
-                basicBlock.getInstructionList()
-                        .set(index, null);
-            }
-            basicBlock.getInstructionList().reset(basicBlock.getCopyOfInstructionList()
-                    .stream()
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList()));
-        }
-    }
-
 
     private void removeEmptyBasicBlocks() {
-        for (BasicBlock basicBlock: getBasicBlocksList()) {
-            if (!(basicBlock instanceof NOP) && basicBlock.getInstructionList().isEmpty()) {
+        for (BasicBlock basicBlock : getBasicBlocksList()) {
+            if (!(basicBlock instanceof NOP) && basicBlock.getInstructionList()
+                                                          .isEmpty()) {
                 checkState(basicBlock.hasNoBranch());
                 var replacer = basicBlock.getSuccessor();
                 checkNotNull(replacer);
-                for (var pred: basicBlock.getPredecessors()) {
+                for (var pred : basicBlock.getPredecessors()) {
                     if (pred.hasBranch()) {
                         checkState(basicBlock.getSuccessor() != null);
                         if (basicBlock == pred.getTrueTarget()) {
@@ -66,10 +41,18 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
                     } else {
                         pred.setSuccessor(replacer);
                     }
+                    if (replacer.phiPresent()) {
+                        replacer.getPhiFunctions()
+                                .forEach(phi -> phi.replaceBlock(basicBlock, pred));
+                    }
                     replacer.addPredecessor(pred);
+                    basicBlock.getTributaries().forEach(
+                            withTarget -> withTarget.replaceTarget(replacer)
+                    );
+                    changesHappened = true;
                 }
 
-                for (var successor: basicBlock.getSuccessors()) {
+                for (var successor : basicBlock.getSuccessors()) {
                     successor.removePredecessor(basicBlock);
                 }
                 basicBlock.clearPredecessors();
@@ -81,9 +64,8 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
 
     @Override
     public boolean runFunctionPass() {
-        final var oldCodes = entryBlock.getCopyOfInstructionList();
-        removeTrivialBoundsChecks();
+        changesHappened = false;
         removeEmptyBasicBlocks();
-        return !oldCodes.equals(entryBlock.getInstructionList());
+        return changesHappened;
     }
 }

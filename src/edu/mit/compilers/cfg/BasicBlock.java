@@ -9,8 +9,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import edu.mit.compilers.ast.AST;
@@ -20,6 +22,7 @@ import edu.mit.compilers.codegen.codes.ConditionalBranch;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnconditionalBranch;
+import edu.mit.compilers.codegen.codes.WithTarget;
 import edu.mit.compilers.ssa.Phi;
 
 public class BasicBlock {
@@ -28,6 +31,8 @@ public class BasicBlock {
     private final ArrayList<BasicBlock> predecessors = new ArrayList<>();
     @NotNull
     private final ArrayList<AST> astNodes = new ArrayList<>();
+    @NotNull
+    private final Set<WithTarget> tributaries = new HashSet<>();
     @Nullable
     protected Expression branchCondition;
     @NotNull
@@ -38,6 +43,11 @@ public class BasicBlock {
     private BasicBlock successor;
     @Nullable
     private BasicBlock alternateSuccessor;
+
+
+    public List<WithTarget> getWithTargets() {
+        return instructionList.stream().filter(instruction -> instruction instanceof WithTarget).map(instruction -> (WithTarget) instruction).toList();
+    }
 
     protected BasicBlock(@NotNull BasicBlockType basicBlockType, @Nullable Expression branchCondition) {
         this.branchCondition = branchCondition;
@@ -52,9 +62,7 @@ public class BasicBlock {
         return new BasicBlock(BasicBlockType.NO_BRANCH);
     }
 
-    public static BasicBlock branch(@NotNull Expression branchCondition,
-                                    @NotNull BasicBlock trueTarget,
-                                    @NotNull BasicBlock falseTarget) {
+    public static BasicBlock branch(@NotNull Expression branchCondition, @NotNull BasicBlock trueTarget, @NotNull BasicBlock falseTarget) {
 
         var basicBlock = new BasicBlock(BasicBlockType.BRANCH);
         basicBlock.branchCondition = branchCondition;
@@ -62,6 +70,18 @@ public class BasicBlock {
         basicBlock.alternateSuccessor = falseTarget;
         basicBlock.addAstNode(branchCondition);
         return basicBlock;
+    }
+
+    public @NotNull Set<WithTarget> getTributaries() {
+        return Set.copyOf(tributaries);
+    }
+
+    public void addTributary(@NotNull WithTarget withTarget) {
+        tributaries.add(withTarget);
+    }
+
+    public void removeTributary(@NotNull WithTarget withTarget) {
+        tributaries.remove(withTarget);
     }
 
     public boolean hasBranch() {
@@ -117,7 +137,7 @@ public class BasicBlock {
 
     public String getLeader() {
         return astNodes.isEmpty() ? "None" : astNodes.get(0)
-                .getSourceCode();
+                                                     .getSourceCode();
     }
 
     public void addPredecessor(BasicBlock predecessor) {
@@ -170,13 +190,12 @@ public class BasicBlock {
         if (astNodes.isEmpty()) {
             if (!instructionList.isEmpty()) {
                 return instructionList.get(0)
-                        .syntaxHighlightedToString();
+                                      .syntaxHighlightedToString();
             }
         }
-        return astNodes
-                .stream()
-                .map(AST::getSourceCode)
-                .collect(Collectors.joining("\n"));
+        return astNodes.stream()
+                       .map(AST::getSourceCode)
+                       .collect(Collectors.joining("\n"));
     }
 
     /**
@@ -186,22 +205,22 @@ public class BasicBlock {
      */
     public List<StoreInstruction> getStoreInstructions() {
         return instructionList.stream()
-                .filter(tac -> tac instanceof StoreInstruction)
-                .map(tac -> (StoreInstruction) tac)
-                .collect(Collectors.toList());
+                              .filter(tac -> tac instanceof StoreInstruction)
+                              .map(tac -> (StoreInstruction) tac)
+                              .collect(Collectors.toList());
     }
 
     public List<Phi> getPhiFunctions() {
         return instructionList.stream()
-                .filter(tac -> tac instanceof Phi)
-                .map(tac -> (Phi) tac)
-                .collect(Collectors.toList());
+                              .filter(tac -> tac instanceof Phi)
+                              .map(tac -> (Phi) tac)
+                              .collect(Collectors.toList());
     }
 
     public List<Instruction> getNonPhiInstructions() {
         return instructionList.stream()
-                .filter(tac -> !(tac instanceof Phi))
-                .collect(Collectors.toList());
+                              .filter(tac -> !(tac instanceof Phi))
+                              .collect(Collectors.toList());
     }
 
     /**
@@ -215,21 +234,19 @@ public class BasicBlock {
 
     public boolean phiPresent() {
         return instructionList.stream()
-                .anyMatch(instruction -> instruction instanceof Phi);
+                              .anyMatch(instruction -> instruction instanceof Phi);
     }
 
-    public void addInstructionToTail(Instruction instruction) {
+    public void addInstructionToTail(@NotNull Instruction instruction) {
         if (!hasBranch()) {
             getInstructionList().add(instruction);
         } else {
             var instructionList = getInstructionList();
-            int last = instructionList.size() - 1;
-            var inst = instructionList.get(last);
-            while (last >= 0 && (inst instanceof ConditionalBranch || inst instanceof UnconditionalBranch)) {
-                inst = instructionList.get(last);
-                last--;
+            int indexOfLastInstruction = instructionList.size() - 1;
+            while (indexOfLastInstruction >= 0 && (instructionList.get(indexOfLastInstruction) instanceof ConditionalBranch || instructionList.get(indexOfLastInstruction) instanceof UnconditionalBranch)) {
+                indexOfLastInstruction--;
             }
-            instructionList.add(last, instruction);
+            instructionList.add(indexOfLastInstruction + 1, instruction);
         }
 
     }
@@ -250,15 +267,18 @@ public class BasicBlock {
 
     public void setFalseTarget(@NotNull BasicBlock falseTarget) {
         this.alternateSuccessor = falseTarget;
-        getConditionalBranchInstruction().falseTarget = falseTarget;
+        getConditionalBranchInstruction().setFalseTarget(falseTarget);
     }
 
     public void setFalseTargetUnchecked(@NotNull BasicBlock falseTarget) {
         this.alternateSuccessor = falseTarget;
     }
 
-    private ConditionalBranch getConditionalBranchInstruction() {
-        return (ConditionalBranch) getInstructionList().stream().filter(instruction -> instruction instanceof ConditionalBranch).findFirst().orElseThrow(() -> new RuntimeException(toString()));
+    public ConditionalBranch getConditionalBranchInstruction() {
+        return (ConditionalBranch) getInstructionList().stream()
+                                                       .filter(instruction -> instruction instanceof ConditionalBranch)
+                                                       .findFirst()
+                                                       .orElseThrow(() -> new RuntimeException(toString()));
     }
 
     public @Nullable BasicBlock getSuccessor() {
@@ -269,18 +289,36 @@ public class BasicBlock {
         this.successor = successor;
     }
 
-    public void convertToBranchLess(@NotNull BasicBlock successor) {
-        checkNotNull(successor);
+    public void convertToBranchLess(@NotNull BasicBlock newSuccessor) {
+        checkNotNull(newSuccessor);
         checkState(basicBlockType.equals(BasicBlockType.BRANCH), "basic block not branching");
         setBasicBlockType(BasicBlockType.NO_BRANCH);
         branchCondition = null;
         alternateSuccessor = null;
-        setSuccessor(successor);
-        checkState(getInstructionList().stream().filter(instruction -> instruction instanceof ConditionalBranch).count() == 1);
+        setSuccessor(newSuccessor);
+        checkState(getInstructionList().stream()
+                                       .filter(instruction -> instruction instanceof ConditionalBranch)
+                                       .count() == 1);
         getInstructionList().removeIf(instruction -> instruction instanceof ConditionalBranch);
         getSuccessors().stream()
-                .filter(b -> !b.equals(successor))
-                .forEach(node -> node.removePredecessor(this));
+                       .filter(b -> !b.equals(newSuccessor))
+                       .forEach(node -> node.removePredecessor(this));
+    }
+
+    public void convertToBranchLessSkipTrue() {
+        checkState(basicBlockType.equals(BasicBlockType.BRANCH), "basic block not branching");
+        setBasicBlockType(BasicBlockType.NO_BRANCH);
+        branchCondition = null;
+        successor = getConditionalBranchInstruction().getTarget();
+        alternateSuccessor = null;
+
+        checkState(getInstructionList().stream()
+                                       .filter(instruction -> instruction instanceof ConditionalBranch)
+                                       .count() == 1);
+        getInstructionList().removeIf(instruction -> instruction instanceof ConditionalBranch);
+        getSuccessors().stream()
+                       .filter(b -> !b.equals(successor))
+                       .forEach(node -> node.removePredecessor(this));
     }
 
     @Override
@@ -288,13 +326,11 @@ public class BasicBlock {
         return getLinesOfCodeString();
     }
 
-    public BasicBlock getAlternateSuccessor() {
+    public @Nullable BasicBlock getAlternateSuccessor() {
         return alternateSuccessor;
     }
 
     public enum BasicBlockType {
-        NOP,
-        BRANCH,
-        NO_BRANCH,
+        NOP, BRANCH, NO_BRANCH,
     }
 }

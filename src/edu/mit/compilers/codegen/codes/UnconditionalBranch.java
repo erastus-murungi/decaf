@@ -11,20 +11,22 @@ import edu.mit.compilers.asm.AsmWriter;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.utils.Utils;
 
-public class UnconditionalBranch extends Instruction {
+public class UnconditionalBranch extends Instruction implements WithTarget {
     @NotNull public BasicBlock target;
 
     public UnconditionalBranch(@NotNull BasicBlock target) {
         super(null);
         this.target = target;
+        target.addTributary(this);
     }
 
     public @NotNull BasicBlock getTarget() {
         return target;
     }
 
-    public void setTarget(@NotNull BasicBlock target) {
+    public void setTargetWithTributary(@NotNull BasicBlock target) {
         this.target = target;
+        target.addTributary(this);
     }
 
     @Override

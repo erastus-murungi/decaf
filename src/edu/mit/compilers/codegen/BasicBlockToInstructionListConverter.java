@@ -186,9 +186,8 @@ public class BasicBlockToInstructionListConverter {
         visit(basicBlockWithBranch.getFalseTarget());
 
         var branchCondition =
-                new ConditionalBranch(condition,
-                        conditionInstructionList.place,
-                        basicBlockWithBranch.getFalseTarget(), "if !(" + basicBlockWithBranch.getBranchCondition().orElseThrow()
+                new ConditionalBranch(conditionInstructionList.place, basicBlockWithBranch.getFalseTarget(), condition,
+                        "if !(" + basicBlockWithBranch.getBranchCondition().orElseThrow()
                         .getSourceCode() + ")");
         conditionInstructionList.add(branchCondition);
         basicBlockWithBranch.setInstructionList(conditionInstructionList);

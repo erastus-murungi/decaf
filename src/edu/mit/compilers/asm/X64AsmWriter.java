@@ -300,7 +300,6 @@ public class X64AsmWriter implements AsmWriter {
 
     private void calleeRestore() {
         var toRestore = new ArrayList<>(X64RegisterType.calleeSaved);
-        Collections.reverse(toRestore);
         for (var register : toRestore) {
             x64Method.addLine(new X64UnaryInstruction(X64UnaryInstructionType.popq, X64RegisterOperand.unassigned(register)));
         }
@@ -519,19 +518,19 @@ public class X64AsmWriter implements AsmWriter {
 
     @Override
     public void emitInstruction(ConditionalBranch jumpIfFalse) {
-        var resolvedCondition = resolveName(jumpIfFalse.condition);
+        var resolvedCondition = resolveName(jumpIfFalse.getCondition());
         if (lastComparisonOperator == null) {
-            if (jumpIfFalse.condition instanceof NumericalConstant) {
+            if (jumpIfFalse.getCondition() instanceof NumericalConstant) {
                 x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq, resolvedCondition, X64RegisterOperand.unassigned(COPY_TEMP_REGISTER)))
                          .addLine(new X64BinaryInstruction(X64BinaryInstructionType.cmpq, new X64Constant(NumericalConstant.zero()), X64RegisterOperand.unassigned(COPY_TEMP_REGISTER)))
-                         .addLine(new X64UnaryInstruction(X64UnaryInstructionType.je, new X64JumpTargetOperand(jumpIfFalse.falseTarget)));
+                         .addLine(new X64UnaryInstruction(X64UnaryInstructionType.je, new X64JumpTargetOperand(jumpIfFalse.getTarget())));
             } else {
                 x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.cmpq, new X64Constant(NumericalConstant.zero()), resolvedCondition))
-                         .addLine(new X64UnaryInstruction(X64UnaryInstructionType.je, new X64JumpTargetOperand(jumpIfFalse.falseTarget)));
+                         .addLine(new X64UnaryInstruction(X64UnaryInstructionType.je, new X64JumpTargetOperand(jumpIfFalse.getTarget())));
             }
             return;
         } else {
-            x64Method.addLine(new X64UnaryInstruction(X64UnaryInstructionType.getCorrectJumpIfFalseInstruction(lastComparisonOperator), new X64JumpTargetOperand(jumpIfFalse.falseTarget)));
+            x64Method.addLine(new X64UnaryInstruction(X64UnaryInstructionType.getCorrectJumpIfFalseInstruction(lastComparisonOperator), new X64JumpTargetOperand(jumpIfFalse.getTarget())));
         }
         lastComparisonOperator = null;
     }

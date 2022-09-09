@@ -16,6 +16,7 @@ import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.NumericalConstant;
+import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.ssa.SSA;
 import edu.mit.compilers.utils.TarjanSCC;
@@ -60,7 +61,7 @@ public class SccpSsaPass extends SsaOptimizationPass<Void> {
                 instructionList.add(instruction);
             }
             basicBlock.getInstructionList()
-                    .reset(instructionList);
+                      .reset(instructionList);
 
         }
     }
@@ -71,7 +72,13 @@ public class SccpSsaPass extends SsaOptimizationPass<Void> {
                 if (!sccp.isReachable(basicBlock.getTrueTarget()) && !sccp.isReachable(basicBlock.getFalseTarget())) {
                     basicBlock.convertToBranchLess(method.exitBlock);
                     changesHappened = true;
-                } else if (!sccp.isReachable(basicBlock.getFalseTarget())) {
+                } else if ((basicBlock.getConditionalBranchInstruction()
+                                      .getCondition() instanceof NumericalConstant numericalConstant && numericalConstant.getValue() == 0L)) {
+                    basicBlock.convertToBranchLessSkipTrue();
+                    changesHappened = true;
+                } else if (!sccp.isReachable(basicBlock.getFalseTarget()) ||
+                        (basicBlock.getConditionalBranchInstruction()
+                                   .getCondition() instanceof NumericalConstant numericalConstant && numericalConstant.getValue() == 1L)) {
                     basicBlock.convertToBranchLess(basicBlock.getTrueTarget());
                     changesHappened = true;
                 } else if (!sccp.isReachable(basicBlock.getTrueTarget())) {
@@ -83,11 +90,13 @@ public class SccpSsaPass extends SsaOptimizationPass<Void> {
                     for (BasicBlock pred : basicBlock.getPredecessors()) {
                         if (basicBlock == pred.getSuccessor()) {
                             pred.setSuccessor(basicBlock.getSuccessor());
+                            changesHappened = true;
                         } else {
                             if (pred.hasBranch()) {
                                 checkState(basicBlock == pred.getAlternateSuccessor());
                                 checkState(pred.hasBranch());
                                 pred.setFalseTarget(basicBlock);
+                                changesHappened = true;
                             }
                         }
                     }
