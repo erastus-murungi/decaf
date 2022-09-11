@@ -184,15 +184,15 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
         final var constant = new NumericalConstant(1L, Type.Int);
         return switch (op) {
             case Operators.ADD_ASSIGN ->
-                    new BinaryInstruction(lhs.copy(), lhs, Operators.PLUS, rhs, assignment.getSourceCode(), assignment);
+                    new BinaryInstruction(lhs.copy(), lhs.copy(), Operators.PLUS, rhs.copy(), assignment.getSourceCode(), assignment);
             case Operators.MULTIPLY_ASSIGN ->
-                    new BinaryInstruction(lhs.copy(), lhs, Operators.MULTIPLY, rhs, assignment.getSourceCode(), assignment);
+                    new BinaryInstruction(lhs.copy(), lhs.copy(), Operators.MULTIPLY, rhs.copy(), assignment.getSourceCode(), assignment);
             case Operators.MINUS_ASSIGN ->
-                    new BinaryInstruction(lhs.copy(), lhs, Operators.MINUS, rhs, assignment.getSourceCode(), assignment);
+                    new BinaryInstruction(lhs.copy(), lhs.copy(), Operators.MINUS, rhs.copy(), assignment.getSourceCode(), assignment);
             case Operators.DECREMENT ->
-                    new BinaryInstruction(lhs.copy(), lhs, Operators.MINUS, constant, assignment.getSourceCode(), assignment);
+                    new BinaryInstruction(lhs.copy(), lhs.copy(), Operators.MINUS, constant.copy(), assignment.getSourceCode(), assignment);
             case Operators.INCREMENT ->
-                    new BinaryInstruction(lhs.copy(), lhs, Operators.PLUS, constant, assignment.getSourceCode(), assignment);
+                    new BinaryInstruction(lhs.copy(), lhs.copy(), Operators.PLUS, constant.copy(), assignment.getSourceCode(), assignment);
             default -> new CopyInstruction(lhs.copy(), rhs.copy(), assignment, assignment.getSourceCode());
         };
     }

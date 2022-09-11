@@ -40,7 +40,7 @@ public class RegisterAllocator {
 
     private Set<X64RegisterType> getLiveRegistersAtPoint(ProgramIr programIr, Collection<LiveInterval> liveIntervals, int index, Map<Value, X64RegisterType> registerMap) {
         return liveIntervals.stream()
-                .filter(liveInterval -> liveInterval.startPoint() <= index && index + 2 < liveInterval.endPoint())
+                .filter(liveInterval -> liveInterval.startPoint() <= index && index < liveInterval.endPoint())
                 .map(LiveInterval::variable)
                 .filter(name -> !programIr.getGlobals().contains(name))
                 .map(registerMap::get)

@@ -1,5 +1,7 @@
 package edu.mit.compilers.utils;
 
+import com.google.common.base.Stopwatch;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -11,6 +13,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
@@ -38,6 +42,35 @@ public class TestRunner {
         } catch (IOException e) {
             e.printStackTrace();
             return Collections.emptyList();
+        }
+    }
+
+
+    public static void testCodegen() throws IOException {
+        String filepath = "tests/codegen/input";
+        List<File> allTestFiles = getAllTestFiles(filepath);
+
+        for (var file: allTestFiles) {
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            System.out.print("compiling... " + file.getName());
+            try {
+                var compilation = compileTest(file);
+                var expectedOutputFile = "./tests/codegen/output/" + file.getName() + ".out";
+                var expected = readFile(Paths.get(expectedOutputFile).toFile());
+                System.out.println("\rcompiled... " + file.getName() + " in " + stopwatch.elapsed(TimeUnit.MILLISECONDS) + " ms");
+                if (!expected.strip().equals(compilation.output.strip())) {
+                    System.out.println(Utils.coloredPrint("\tFAIL: " + file.getName(), Utils.ANSIColorConstants.ANSI_RED));
+                    System.out.println("EXPECTED:");
+                    System.out.println(expected);
+                    System.out.println("RECEIVED:");
+                    System.out.println(compilation.output);
+                } else {
+                    System.out.println(Utils.coloredPrint("\tPASSED: " + file.getName(), Utils.ANSIColorConstants.ANSI_GREEN_BOLD));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            continue;
         }
     }
 

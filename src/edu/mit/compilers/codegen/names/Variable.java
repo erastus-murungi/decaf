@@ -4,7 +4,7 @@ import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
 
 public class Variable extends LValue {
-    boolean isTemporary = false;
+    boolean isTemporary;
 
     public Variable(String label, Type type, Integer versionNumber, boolean isTemporary) {
         super(label, type);

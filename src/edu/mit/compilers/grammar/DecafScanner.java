@@ -109,7 +109,6 @@ public class DecafScanner {
 
     private String maybeAppendNewLineCharacter(String string) {
         if (string.charAt(string.length() - 1) != NEW_LINE.charAt(0)) {
-            logger.info("No newline character found in line. Will add one.");
             return string + NEW_LINE;
         }
         return string;

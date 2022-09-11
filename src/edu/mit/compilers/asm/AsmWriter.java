@@ -1,5 +1,7 @@
 package edu.mit.compilers.asm;
 
+import org.jetbrains.annotations.NotNull;
+
 import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
 import edu.mit.compilers.codegen.codes.ConditionalBranch;
@@ -16,30 +18,30 @@ import edu.mit.compilers.codegen.codes.UnconditionalBranch;
 
 public interface AsmWriter {
 
-    void emitInstruction(ConditionalBranch jumpIfFalse);
+    void emitInstruction(@NotNull ConditionalBranch conditionalBranch);
 
-    void emitInstruction(Method method);
+    void emitInstruction(@NotNull Method method);
 
-    void emitInstruction(FunctionCallWithResult functionCallWithResult);
+    void emitInstruction(@NotNull FunctionCallWithResult functionCallWithResult);
 
-    void emitInstruction(FunctionCallNoResult functionCallNoResult);
+    void emitInstruction(@NotNull FunctionCallNoResult functionCallNoResult);
 
-    void emitInstruction(MethodEnd methodEnd);
+    void emitInstruction(@NotNull MethodEnd methodEnd);
 
-    void emitInstruction(ReturnInstruction returnInstruction);
+    void emitInstruction(@NotNull ReturnInstruction returnInstruction);
 
-    void emitInstruction(UnaryInstruction unaryInstruction);
+    void emitInstruction(@NotNull UnaryInstruction unaryInstruction);
 
-    void emitInstruction(BinaryInstruction binaryInstruction);
+    void emitInstruction(@NotNull BinaryInstruction binaryInstruction);
 
-    void emitInstruction(UnconditionalBranch unconditionalBranch);
+    void emitInstruction(@NotNull UnconditionalBranch unconditionalBranch);
 
-    void emitInstruction(ArrayBoundsCheck arrayBoundsCheck);
+    void emitInstruction(@NotNull ArrayBoundsCheck arrayBoundsCheck);
 
-    void emitInstruction(RuntimeException runtimeException);
+    void emitInstruction(@NotNull RuntimeException runtimeException);
 
-    void emitInstruction(CopyInstruction assignment);
+    void emitInstruction(@NotNull CopyInstruction copyInstruction);
 
-    void emitInstruction(GetAddress getAddress);
+    void emitInstruction(@NotNull GetAddress getAddress);
 
 }

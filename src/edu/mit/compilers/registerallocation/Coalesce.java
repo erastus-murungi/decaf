@@ -11,6 +11,7 @@ import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.utils.CLI;
 import edu.mit.compilers.utils.GraphVizPrinter;
 import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.TarjanSCC;
@@ -21,7 +22,8 @@ public class Coalesce {
         var changesHappened = false;
         while (!changesHappened) {
             var liveIntervalsUtil = new LiveIntervalsUtil(method, programIr);
-            liveIntervalsUtil.prettyPrintLiveIntervals(method);
+            if (CLI.debug)
+                liveIntervalsUtil.prettyPrintLiveIntervals(method);
             var interferenceGraph = new InterferenceGraph(liveIntervalsUtil, method);
             GraphVizPrinter.writeInterferenceGraph(interferenceGraph);
             var unionFind = new UnionFind<>(interferenceGraph.getMoveNodes());
@@ -42,7 +44,8 @@ public class Coalesce {
                 changesHappened = changesHappened | renameAllUses(uses, method);
             }
         }
-        new LiveIntervalsUtil(method, programIr).prettyPrintLiveIntervals(method);
+        if (CLI.debug)
+            new LiveIntervalsUtil(method, programIr).prettyPrintLiveIntervals(method);
     }
 
     private static boolean renameAllUses(Collection<LValue> uses, Method method) {

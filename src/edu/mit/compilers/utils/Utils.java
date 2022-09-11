@@ -34,7 +34,7 @@ import edu.mit.compilers.codegen.names.LValue;
 
 public class Utils {
     // adopted from Java 15
-    public static final long WORD_SIZE = 8;
+    public static final int WORD_SIZE = 8;
 
     public static final String SPACE = " ";
     public static final String EMPTY = "";

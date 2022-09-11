@@ -139,7 +139,7 @@ public class ProgramIr {
                 .stream()
                 .filter(instruction -> instruction instanceof GlobalAllocation)
                 .map(instruction -> (GlobalAllocation) instruction)
-                .map(globalAllocation -> globalAllocation.variableName)
+                .map(GlobalAllocation::getValue)
                 .collect(Collectors.toUnmodifiableSet());
     }
 

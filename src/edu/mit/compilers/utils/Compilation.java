@@ -40,6 +40,7 @@ public class Compilation {
 
     private double nLinesOfCodeReductionFactor = 0.0D;
     private final int nLinesRemovedByAssemblyOptimizer = 0;
+    String output = null;
 
     public Compilation(String filenameOrSourceCode, boolean debug, boolean isFilename) throws FileNotFoundException {
         if (isFilename) {
@@ -109,8 +110,10 @@ public class Compilation {
             try {
                 var process = Runtime.getRuntime().exec("clang " + "/Users/erastusmurungi/IdeaProjects/compiler/test.s" + " -mllvm --x86-asm-syntax=att -o main");
                 process.waitFor();
-                System.out.println(Utils.getStringFromInputStream(process.getErrorStream()));
-                System.out.println(Utils.getStringFromInputStream(process.getInputStream()));
+                if (CLI.debug) {
+                    System.out.println(Utils.getStringFromInputStream(process.getErrorStream()));
+                    System.out.println(Utils.getStringFromInputStream(process.getInputStream()));
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (InterruptedException e) {
@@ -119,15 +122,14 @@ public class Compilation {
             try {
                 var process = Runtime.getRuntime().exec("/Users/erastusmurungi/IdeaProjects/compiler/main");
                 process.waitFor();
-                System.out.println(Utils.getStringFromInputStream(process.getErrorStream()));
-                System.out.println(Utils.getStringFromInputStream(process.getInputStream()));
+                output = Utils.getStringFromInputStream(process.getErrorStream()) + Utils.getStringFromInputStream(process.getInputStream());
+                if (CLI.debug)
+                    System.out.println(output);
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            var target = "tests/codegen/output/" + CLI.infile + ".out";
-            System.out.println(target);
         } else {
             throw new IllegalStateException("only darwin platform is supported not : " + osName);
         }
@@ -186,7 +188,8 @@ public class Compilation {
         } else {
             compilationState = CompilationState.PARSED;
         }
-        System.out.println(parser.getRoot().getSourceCode());
+        if (CLI.debug)
+            System.out.println(parser.getRoot().getSourceCode());
     }
 
     private void runSemanticsChecker() {
@@ -251,6 +254,9 @@ public class Compilation {
             generateCFGVisualizationPdfs();
         }
         compilationState = CompilationState.IR_GENERATED;
+        if (CLI.debug) {
+            System.out.println(programIr.mergeProgram());
+        }
     }
 
     private int countLinesOfCode() {
@@ -304,7 +310,8 @@ public class Compilation {
         var x64AsmWriter = new X64AsmWriter(programIr, registerAllocator);
         X64Program x64program = x64AsmWriter.convert();
         outputStream.println(x64program);
-        System.out.println(x64program);
+        if (CLI.debug)
+            System.out.println(x64program);
         compilationState = CompilationState.ASSEMBLED;
     }
 

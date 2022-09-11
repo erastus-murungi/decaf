@@ -66,7 +66,6 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
                 }
             }
         }
-        resultList.forEach(System.out::println);
         return changesHappened;
     }
 

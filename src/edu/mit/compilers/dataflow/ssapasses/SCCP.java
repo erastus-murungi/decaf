@@ -114,7 +114,7 @@ public class SCCP {
                 var longVal = Utils.symbolicallyEvaluate(String.format("%s (%d)", unaryInstruction.operator, a.getValue()))
                         .orElseThrow();
                 var updated = LatticeElement.constant(longVal);
-                if (updated.equals(latticeValues.get(unaryInstruction.getDestination()))) {
+                if (!updated.equals(latticeValues.get(unaryInstruction.getDestination()))) {
                     latticeValues.put(unaryInstruction.getDestination(), updated);
                     ssaWorkList.addAll(getSsaEdgesForVariable(unaryInstruction.getDestination()));
                 }

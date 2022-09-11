@@ -5,6 +5,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 import edu.mit.compilers.asm.X64RegisterType;
 import edu.mit.compilers.codegen.names.LValue;
 
@@ -29,5 +31,18 @@ public class X64RegisterOperand extends X64Operand {
 
     public @NotNull X64RegisterType getX64RegisterType() {
         return x64RegisterType;
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof X64RegisterOperand that)) return false;
+        return getX64RegisterType() == that.getX64RegisterType();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getX64RegisterType());
     }
 }

@@ -1,6 +1,7 @@
 package edu.mit.compilers.asm;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static edu.mit.compilers.utils.Utils.WORD_SIZE;
 
 import com.google.common.collect.Sets;
 
@@ -32,7 +33,6 @@ import edu.mit.compilers.asm.types.X64BinaryInstructionType;
 import edu.mit.compilers.asm.types.X64NopInstructionType;
 import edu.mit.compilers.asm.types.X64UnaryInstructionType;
 import edu.mit.compilers.ast.Type;
-import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
@@ -62,7 +62,6 @@ import edu.mit.compilers.utils.Operators;
 import edu.mit.compilers.utils.ProgramIr;
 
 public class X64AsmWriter implements AsmWriter {
-    public static final int WORD_SIZE = 8;
     @NotNull
     private final RegisterAllocator registerAllocator;
     @NotNull
@@ -79,31 +78,22 @@ public class X64AsmWriter implements AsmWriter {
     private final List<X64Instruction> prologue = new ArrayList<>();
     @NotNull
     private final X64RegisterType COPY_TEMP_REGISTER = X64RegisterType.R10;
-    /**
-     * Keeps track of the last comparison operator used
-     * This is useful for evaluating conditionals
-     * {@code lastComparisonOperator} will always have a value if a conditional jump evaluates
-     * a variable;
-     */
-    @Nullable
-    public String lastComparisonOperator = null;
-    @NotNull Map<Value, X64Operand> globalsMap = new HashMap<>();
-    Map<X64RegisterType, X64StackOperand> cache = new HashMap<>();
-    /**
-     * keeps track of whether the {@code .text} label has been added or not
-     */
-    private boolean textAdded = false;
-    private int stackLocation = 0;
-    @Nullable
-    private Method currentMethod;
+    @NotNull
+    private final Map<Value, X64Operand> globalsMap = new HashMap<>();
+    @NotNull
+    private final Map<X64RegisterType, X64StackOperand> cache = new HashMap<>();
+    @NotNull
+    private final AsmWriterContext asmWriterContext = new AsmWriterContext();
+    @NotNull
+    private final Map<Method, Integer> methodToHighestStackLocation = new HashMap<>();
     @NotNull
     private X64Method x64Method = new X64Method();
-
-    private int locationOfSubqInst = 0;
-
-    private int maxStackSpaceForArgs = 0;
-
+    @Nullable
     private Instruction currentInstruction;
+    @Nullable
+    private Method currentMethod;
+    private int stackLocation = 0;
+
 
     public X64AsmWriter(@NotNull ProgramIr programIr, @NotNull RegisterAllocator registerAllocator) {
         this.registerAllocator = registerAllocator;
@@ -130,7 +120,7 @@ public class X64AsmWriter implements AsmWriter {
             if (instruction instanceof StringConstantAllocation stringConstantAllocation) {
                 prologue.add(new X64MetaData(stringConstantAllocation.getASM()));
             } else if (instruction instanceof GlobalAllocation globalAllocation) {
-                prologue.add(new X64MetaData(String.format(".comm %s, %s, %s", globalAllocation.variableName, globalAllocation.size, 64)));
+                prologue.add(new X64MetaData(String.format(".comm %s, %s, %s", globalAllocation.getValue(), globalAllocation.getSize(), 64)));
             } else {
                 throw new IllegalStateException();
             }
@@ -142,20 +132,21 @@ public class X64AsmWriter implements AsmWriter {
     }
 
     private void emitMethods() {
-        for (Method method : programIr.getMethods()) {
+        for (var method : programIr.getMethods()) {
             emittedMethods.add(emitMethod(method));
         }
     }
 
-    private X64Method emitMethod(Method method) {
+    private X64Method emitMethod(@NotNull Method method) {
         currentMethod = method;
         x64Method = new X64Method();
-        for (InstructionList instructionList : TraceScheduler.getInstructionTrace(method)) {
+        for (var instructionList : TraceScheduler.getInstructionTrace(method)) {
             if (!instructionList.isEntry() && !instructionList.getLabel()
                                                               .equals("UNSET")) {
-                x64Method.add(new X64MetaData(String.format(".%s:", instructionList.getLabel())));
+                var label = instructionList.getLabel();
+                x64Method.add(new X64MetaData(String.format(".%s:", label)));
             }
-            for (Instruction instruction : instructionList) {
+            for (var instruction : instructionList) {
                 currentInstruction = instruction;
                 instruction.accept(this);
             }
@@ -166,9 +157,10 @@ public class X64AsmWriter implements AsmWriter {
     private void mapGlobalsToX64Operands() {
         for (Instruction instruction : programIr.getPrologue()) {
             if (instruction instanceof GlobalAllocation globalAllocation) {
-                globalsMap.put(globalAllocation.variableName, new X64GlobalOperand(globalAllocation.variableName));
+                globalsMap.put(globalAllocation.getValue(), new X64GlobalOperand(globalAllocation.getValue()));
             } else if (instruction instanceof StringConstantAllocation stringConstantAllocation) {
-                globalsMap.put(stringConstantAllocation.getStringConstant(), new X64Constant(stringConstantAllocation.getStringConstant()));
+                var stringConstant = stringConstantAllocation.getStringConstant();
+                globalsMap.put(stringConstant, new X64Constant(stringConstant));
             } else {
                 throw new IllegalStateException();
             }
@@ -180,14 +172,19 @@ public class X64AsmWriter implements AsmWriter {
         return stackLocation;
     }
 
-    private void mapParametersToLocations(Method method) {
+    private void mapParametersToLocations(@NotNull Method method) {
         // store all method args in unused registers and stack space if needed
         // the only registers we will ignore are the ones used to store the method args
-        var unusedRegisters = List.copyOf(Sets.difference(Set.copyOf(X64RegisterType.regsToAllocate), Sets.union(Set.copyOf(X64RegisterType.parameterRegisters.subList(0, Math.min(6, method.getParameterNames()
-                                                                                                                                                                                            .size()))), Set.copyOf(registerAllocator.getVariableToRegisterMap()
-                                                                                                                                                                                                                                    .get(method)
-                                                                                                                                                                                                                                    .values()))));
-        Map<LValue, X64Operand> destinations = new HashMap<>();
+
+        var valueMappedRegisters = Set.copyOf(registerAllocator.getVariableToRegisterMap()
+                                                               .get(method)
+                                                               .values());
+        var nUsedArgRegisters = Math.min(6, method.getParameterNames()
+                                                  .size());
+        var usedArgRegisters = Set.copyOf(X64RegisterType.parameterRegisters.subList(0, nUsedArgRegisters));
+        var unusedRegisters = List.copyOf(Sets.difference(Set.copyOf(X64RegisterType.regsToAllocate), Sets.union(usedArgRegisters, valueMappedRegisters)));
+
+        var destinations = new HashMap<LValue, X64Operand>();
 
         // next we save all the arguments to their corresponding locations
         for (int parameterIndex = 0; parameterIndex < method.getParameterNames()
@@ -201,17 +198,18 @@ public class X64AsmWriter implements AsmWriter {
                 destinations.put(parameter, new X64StackOperand(X64RegisterType.RBP, pushStack(), parameter));
             }
         }
+        methodToHighestStackLocation.put(method, stackLocation);
         paramToLocal.put(method, destinations);
     }
 
     private void mapLocalsToX64Operand() {
-        for (Method method : programIr.getMethods()) {
+        for (var method : programIr.getMethods()) {
             mapParametersToLocations(method);
             mapLocalToX64OperandsForMethod(method);
         }
     }
 
-    private void mapLocalToX64OperandsForMethod(Method method) {
+    private void mapLocalToX64OperandsForMethod(@NotNull Method method) {
         var destinations = new HashMap<Value, X64Operand>();
         var methodRegisterMapping = registerAllocator.getVariableToRegisterMap()
                                                      .get(method);
@@ -226,9 +224,7 @@ public class X64AsmWriter implements AsmWriter {
                     } else {
                         var alreadyInDestination = paramToLocal.get(method)
                                                                .get(value);
-                        destinations.put(value,
-                                Objects.requireNonNullElseGet(alreadyInDestination,
-                                        () -> new X64StackOperand(X64RegisterType.RBP, pushStack(), variable)));
+                        destinations.put(value, Objects.requireNonNullElseGet(alreadyInDestination, () -> new X64StackOperand(X64RegisterType.RBP, pushStack(), variable)));
                     }
                 } else {
                     throw new IllegalStateException();
@@ -238,40 +234,36 @@ public class X64AsmWriter implements AsmWriter {
         methodToX64OperandMapping.put(method, destinations);
     }
 
-
     public X64Program convert() {
         return new X64Program(prologue, epilogue, emittedMethods);
     }
 
-    public X64Operand resolveName(Value name) {
-        return resolveName(name, false /* shouldNotLoad*/);
-    }
-
-    public X64Operand resolveName(Value value, boolean shouldNotLoad) {
+    public X64Operand resolveName(@NotNull Value value) {
         checkNotNull(currentMethod);
         if (globalsMap.containsKey(value)) return globalsMap.get(value);
 
         var x64Operand = paramToLocal.get(currentMethod)
                                      .get(value);
-        if (x64Operand != null) {
-            if (shouldNotLoad)
-                return x64Operand;
 
-            paramToLocal.get(currentMethod).remove(value);
+        if (x64Operand != null) {
+            paramToLocal.get(currentMethod)
+                        .remove(value);
             // value hasn't been loaded yet
 
             // load it with an instruction
             // remove it from sources
             // add index to list of free stack locations
 
-            x64Method.add(new X64BinaryInstruction(X64BinaryInstructionType.movq, x64Operand, methodToX64OperandMapping.get(currentMethod)
-                                                                                                                       .get(value)));
+            x64Method.add(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+                    x64Operand,
+                    methodToX64OperandMapping.get(currentMethod)
+                                             .get(value)));
         }
         return checkNotNull(methodToX64OperandMapping.get(currentMethod)
                                                      .get(value));
     }
 
-    public X64Operand resolveNextStackLocation(X64RegisterType registerType) {
+    public X64Operand resolveNextStackLocation(@NotNull X64RegisterType registerType) {
         if (cache.containsKey(registerType)) return cache.get(registerType);
         else {
             var newLocation = new X64StackOperand(X64RegisterType.RBP, pushStack());
@@ -294,7 +286,7 @@ public class X64AsmWriter implements AsmWriter {
     private void calleeSave() {
         var toSave = X64RegisterType.calleeSaved;
         for (var register : toSave) {
-            x64Method.addAtIndex(locationOfSubqInst, new X64UnaryInstruction(X64UnaryInstructionType.pushq, X64RegisterOperand.unassigned(register)));
+            x64Method.addAtIndex(asmWriterContext.getLocationOfSubqInst(), new X64UnaryInstruction(X64UnaryInstructionType.pushq, X64RegisterOperand.unassigned(register)));
         }
     }
 
@@ -305,67 +297,75 @@ public class X64AsmWriter implements AsmWriter {
         }
     }
 
-    private void saveMethodArgsToLocations(Method method) {
+    private void saveMethodArgsToLocations(@NotNull Method method) {
         // next we save all the arguments to their corresponding locations
         for (int parameterIndex = 0; parameterIndex < method.getParameterNames()
                                                             .size(); parameterIndex++) {
             var parameter = method.getParameterNames()
                                   .get(parameterIndex);
 
-            var dest = paramToLocal.get(method)
-                                   .get(parameter);
+            var dst = paramToLocal.get(method)
+                                  .get(parameter);
 
             if (parameterIndex < X64RegisterType.N_ARG_REGISTERS) {
                 var src = new X64RegisterOperand(X64RegisterType.parameterRegisters.get(parameterIndex), parameter);
-                x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq, src, dest));
+                x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq, src, dst));
             } else {
                 var src = new X64StackOperand(X64RegisterType.RBP, (parameterIndex - 5) * WORD_SIZE + 8, parameter);
                 x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq, src, new X64RegisterOperand(COPY_TEMP_REGISTER, parameter)));
-                x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq, X64RegisterOperand.unassigned(COPY_TEMP_REGISTER), dest));
+                x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq, X64RegisterOperand.unassigned(COPY_TEMP_REGISTER), dst));
             }
+        }
+        for (int parameterIndex = 0; parameterIndex < method.getParameterNames()
+                                                            .size(); parameterIndex++) {
+            var parameter = checkNotNull(method.getParameterNames()
+                                               .get(parameterIndex));
+            var x64Operand = checkNotNull(paramToLocal.get(method)
+                                                      .get(parameter));
+            var finalLoc = methodToX64OperandMapping.get(currentMethod)
+                                                    .get(parameter);
+            if (finalLoc == null) continue;
+            x64Method.add(new X64BinaryInstruction(X64BinaryInstructionType.movq, x64Operand, finalLoc));
         }
     }
 
-    private void callerRestore(@Nullable X64RegisterOperand returnAddressRegister) {
-        var toRestore = registerAllocator.getMethodToLiveRegistersInfo()
-                                         .getOrDefault(currentMethod, Collections.emptyMap())
-                                         .getOrDefault(currentInstruction, Collections.emptySet())
-                                         .stream()
-                                         .filter(X64RegisterType.callerSaved::contains)
-                                         .toList();
+    private void callerRestore(@Nullable X64Operand returnAddressRegister) {
+        var registerMapping = registerAllocator.getMethodToLiveRegistersInfo()
+                                               .getOrDefault(currentMethod, Collections.emptyMap())
+                                               .getOrDefault(currentInstruction, Collections.emptySet());
+        var toRestore = registerMapping.stream()
+                                       .filter(X64RegisterType.callerSaved::contains)
+                                       .toList();
         for (var x64Register : toRestore) {
             if (x64Register.equals(X64RegisterType.STACK)) continue;
             var regOperand = X64RegisterOperand.unassigned(x64Register);
-            if (returnAddressRegister != null && !regOperand.equals(returnAddressRegister)) {
+            if (!Objects.equals(returnAddressRegister, regOperand)) {
                 var location = resolveNextStackLocation(x64Register);
                 x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq, location, regOperand));
             }
         }
     }
 
-    private void callerSave(@Nullable X64RegisterOperand returnAddressRegister) {
-        var toSave = registerAllocator.getMethodToLiveRegistersInfo()
-                                      .getOrDefault(currentMethod, Collections.emptyMap())
-                                      .getOrDefault(currentInstruction, Collections.emptySet())
-                                      .stream()
-                                      .filter(X64RegisterType.callerSaved::contains)
-                                      .toList();
+    private void callerSave(@Nullable X64Operand returnAddressRegister) {
+        var registerMapping = registerAllocator.getMethodToLiveRegistersInfo()
+                                               .getOrDefault(currentMethod, Collections.emptyMap())
+                                               .getOrDefault(currentInstruction, Collections.emptySet());
+        var toSave = registerMapping.stream()
+                                    .filter(X64RegisterType.callerSaved::contains)
+                                    .toList();
         int startIndex = x64Method.size();
         for (var x64Register : toSave) {
             if (x64Register.equals(X64RegisterType.STACK)) continue;
             var regOperand = X64RegisterOperand.unassigned(x64Register);
-            if (returnAddressRegister != null && !returnAddressRegister.equals(regOperand)) {
+            if (!Objects.equals(returnAddressRegister, regOperand)) {
                 var location = resolveNextStackLocation(x64Register);
                 x64Method.addAtIndex(startIndex, new X64BinaryInstruction(X64BinaryInstructionType.movq, regOperand, location));
             }
         }
     }
 
-    /**
-     * Splices push arguments into the correct position in the XBuilder
-     * while avoiding overwrites
-     */
-    private void orderFunctionCallArguments(FunctionCall functionCall) {
+
+    private List<X64Instruction> emitStackArgumentsInstructions(@NotNull FunctionCall functionCall) {
         var arguments = functionCall.getArguments();
 
         // instructions we will splice into the builder
@@ -373,12 +373,12 @@ public class X64AsmWriter implements AsmWriter {
 
         // we need to create stack space for the start arguments
         if (arguments.size() > 6) {
-            var stackSpaceForArgs = new X64Constant(new NumericalConstant((long) roundUp16((int) (arguments.size() - 6L) * WORD_SIZE), Type.Int));
+            var stackSpaceForArgs = new X64Constant(new NumericalConstant((long) roundUp16((arguments.size() - X64RegisterType.N_ARG_REGISTERS) * WORD_SIZE), Type.Int));
             x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.subq, stackSpaceForArgs, X64RegisterOperand.unassigned(X64RegisterType.RSP)));
         }
         for (int stackArgumentIndex = 6; stackArgumentIndex < arguments.size(); stackArgumentIndex++) {
-            var stackArgument = resolveName(arguments.get(stackArgumentIndex), true);
-            var dst = new X64StackOperand(X64RegisterType.RSP, (stackArgumentIndex - 6) * WORD_SIZE);
+            var stackArgument = resolveName(arguments.get(stackArgumentIndex));
+            var dst = new X64StackOperand(X64RegisterType.RSP, (stackArgumentIndex - X64RegisterType.N_ARG_REGISTERS) * WORD_SIZE);
             if (stackArgument instanceof X64StackOperand) {
                 instructions.add(new X64BinaryInstruction(X64BinaryInstructionType.movq, stackArgument, X64RegisterOperand.unassigned(COPY_TEMP_REGISTER)));
                 instructions.add(new X64BinaryInstruction(X64BinaryInstructionType.movq, X64RegisterOperand.unassigned(COPY_TEMP_REGISTER), dst));
@@ -386,28 +386,39 @@ public class X64AsmWriter implements AsmWriter {
                 instructions.add(new X64BinaryInstruction(X64BinaryInstructionType.movq, stackArgument, dst));
             }
         }
+        return instructions;
+    }
 
+    /**
+     * Splices push arguments into the correct position in the XBuilder
+     * while avoiding overwrites
+     */
+    private void orderFunctionCallArguments(@NotNull FunctionCall functionCall) {
+        var arguments = functionCall.getArguments();
+
+        // instructions we will splice into the builder
+        var instructions = emitStackArgumentsInstructions(functionCall);
         // first let's copy the parameters we will push to the stack
         // this makes it easier to extract the most recent 6 parameters
 
         var copyOfPushArguments = new ArrayList<>(arguments);
 
         // extract the most recent pushes
-        var argumentsToStoreInParameterRegisters = new ArrayList<>(copyOfPushArguments.subList(0, Math.min(6, arguments.size())));
+        var argumentsToStoreInParameterRegisters = new ArrayList<>(copyOfPushArguments.subList(0, Math.min(X64RegisterType.N_ARG_REGISTERS, arguments.size())));
 
         // this is a map of a register to the argument it stores
         // note that the registers are represented as enums -> we use an EnumMap
         // note that X64Register.STACK is also included, so we need to consider it differently later
-        var registerToResidentArgument = new EnumMap<X64RegisterType, Value>(X64RegisterType.class);
+        var registerToResidentArgument = new EnumMap<X64RegisterType, Integer>(X64RegisterType.class);
 
         // we also have a reverse map to make looking an argument's register easier
-        var residentArgumentToRegister = new HashMap<Value, X64RegisterType>();
+        var residentArgumentToRegister = new HashMap<Integer, X64RegisterType>();
 
         // this is a map of arguments to the correct argument registers
         // we assign the arguments in the exact order, i.e RDI, RSI, RDX, RCX, R8, R9
         // this is why we use an indexOfArgument variable to loop through the argument registers
         // in the correct order
-        var pushParameterX64RegisterMap = new HashMap<Value, X64RegisterOperand>();
+        var pushParameterX64RegisterMap = new HashMap<Integer, X64RegisterOperand>();
 
         // the index of the parameter register
         int indexOfParameterRegister = 0;
@@ -417,13 +428,13 @@ public class X64AsmWriter implements AsmWriter {
 
             // the register which houses this argument
             // if the mapping doesn't contain a register for this argument, we default to X64Register.STACK
-            var residentRegister = resolveName(argument, true);
+            var residentRegister = resolveName(argument);
             if (residentRegister instanceof X64RegisterOperand x64RegisterOperand) {
-                registerToResidentArgument.put(x64RegisterOperand.getX64RegisterType(), argument);
-                residentArgumentToRegister.put(argument, x64RegisterOperand.getX64RegisterType());
+                registerToResidentArgument.put(x64RegisterOperand.getX64RegisterType(), indexOfParameterRegister);
+                residentArgumentToRegister.put(indexOfParameterRegister, x64RegisterOperand.getX64RegisterType());
             }
 
-            pushParameterX64RegisterMap.put(argument, X64RegisterOperand.unassigned(parameterRegister));
+            pushParameterX64RegisterMap.put(indexOfParameterRegister, X64RegisterOperand.unassigned(parameterRegister));
 
             // march forward
             indexOfParameterRegister++;
@@ -438,7 +449,7 @@ public class X64AsmWriter implements AsmWriter {
 
         for (X64RegisterType x64RegisterType : registerToResidentArgument.keySet()) {
             if (setOfParameterRegisters.contains(x64RegisterType)) {
-                potentiallyOverwrittenParameterRegisters.put(registerToResidentArgument.get(x64RegisterType), x64RegisterType);
+                potentiallyOverwrittenParameterRegisters.put(argumentsToStoreInParameterRegisters.get(registerToResidentArgument.get(x64RegisterType)), x64RegisterType);
                 // this is the stack location storing the argument resident register
                 var registerCache = resolveNextStackLocation(x64RegisterType);
                 instructions.add(new X64BinaryInstruction(X64BinaryInstructionType.movq, X64RegisterOperand.unassigned(x64RegisterType), registerCache));
@@ -446,33 +457,35 @@ public class X64AsmWriter implements AsmWriter {
         }
 
         Collections.reverse(argumentsToStoreInParameterRegisters);
+        indexOfParameterRegister = argumentsToStoreInParameterRegisters.size() - 1;
         for (Value argument : argumentsToStoreInParameterRegisters) {
-            var argumentResidentRegister = residentArgumentToRegister.getOrDefault(argument, X64RegisterType.STACK);
+            var argumentResidentRegister = residentArgumentToRegister.getOrDefault(indexOfParameterRegister, X64RegisterType.STACK);
             // if the argument is stored in the stack, just move it from the stack to parameter register
             if (argumentResidentRegister == X64RegisterType.STACK) {
                 if (argument instanceof StringConstant)
-                    instructions.add(new X64BinaryInstruction(X64BinaryInstructionType.leaq, resolveName(argument, true), pushParameterX64RegisterMap.get(argument)));
+                    instructions.add(new X64BinaryInstruction(X64BinaryInstructionType.leaq, resolveName(argument), pushParameterX64RegisterMap.get(indexOfParameterRegister)));
                 else {
-                    instructions.add(new X64BinaryInstruction(X64BinaryInstructionType.movq, resolveName(argument, true), pushParameterX64RegisterMap.get(argument)));
+                    instructions.add(new X64BinaryInstruction(X64BinaryInstructionType.movq, resolveName(argument), pushParameterX64RegisterMap.get(indexOfParameterRegister)));
                 }
             } else {
                 // if conflict might happen, then move from the register cache
                 if (potentiallyOverwrittenParameterRegisters.containsKey(argument)) {
                     var parameterRegisterCache = resolveNextStackLocation(argumentResidentRegister);
-                    instructions.add(new X64BinaryInstruction(X64BinaryInstructionType.movq, parameterRegisterCache, pushParameterX64RegisterMap.get(argument)));
+                    instructions.add(new X64BinaryInstruction(X64BinaryInstructionType.movq, parameterRegisterCache, pushParameterX64RegisterMap.get(indexOfParameterRegister)));
                 } else {
                     // just resolve the location, for arguments like string constants and constants
-                    instructions.add(new X64BinaryInstruction(X64BinaryInstructionType.movq, X64RegisterOperand.unassigned(argumentResidentRegister), pushParameterX64RegisterMap.get(argument)));
+                    instructions.add(new X64BinaryInstruction(X64BinaryInstructionType.movq, X64RegisterOperand.unassigned(argumentResidentRegister), pushParameterX64RegisterMap.get(indexOfParameterRegister)));
                 }
             }
+            indexOfParameterRegister--;
         }
         x64Method.addAllAtIndex(x64Method.size(), instructions);
 
     }
 
     @Override
-    public void emitInstruction(FunctionCallWithResult functionCallWithResult) {
-        callerSave((X64RegisterOperand) getX64Operand(functionCallWithResult.getDestination()));
+    public void emitInstruction(@NotNull FunctionCallWithResult functionCallWithResult) {
+        callerSave(resolveName(functionCallWithResult.getDestination()));
         orderFunctionCallArguments(functionCallWithResult);
         if (functionCallWithResult.isImported()) {
             x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.xorl, X64RegisterOperand.unassigned(X64RegisterType.EAX), X64RegisterOperand.unassigned(X64RegisterType.EAX)));
@@ -483,25 +496,25 @@ public class X64AsmWriter implements AsmWriter {
                      .addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq, X64RegisterOperand.unassigned(X64RegisterType.RAX), resolveName(functionCallWithResult.getDestination())));
         }
         restoreStack(functionCallWithResult);
-        callerRestore((X64RegisterOperand) getX64Operand(functionCallWithResult.getDestination()));
-        maxStackSpaceForArgs = Math.max(maxStackSpaceForArgs, (functionCallWithResult.getNumArguments() - X64RegisterType.N_ARG_REGISTERS) * 8);
+        callerRestore(resolveName(functionCallWithResult.getDestination()));
+        asmWriterContext.setMaxStackSpaceForArgs(functionCallWithResult);
     }
 
-    private void restoreStack(FunctionCall functionCall) {
-        if (functionCall.getNumArguments() > 6) {
-            long numStackArgs = functionCall.getNumArguments() - 6;
+    private void restoreStack(@NotNull FunctionCall functionCall) {
+        if (functionCall.getNumArguments() > X64RegisterType.N_ARG_REGISTERS) {
+            long numStackArgs = functionCall.getNumArguments() - X64RegisterType.N_ARG_REGISTERS;
             x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.addq, new X64Constant(new NumericalConstant((long) roundUp16((int) (numStackArgs * WORD_SIZE)), Type.Int)), X64RegisterOperand.unassigned(X64RegisterType.RSP)));
         }
     }
 
     @Override
-    public void emitInstruction(Method method) {
-        lastComparisonOperator = null;
+    public void emitInstruction(@NotNull Method method) {
+        asmWriterContext.setLastComparisonOperator(null);
         currentMethod = method;
 
-        if (!textAdded) {
+        if (!asmWriterContext.isTextLabelAdded()) {
             x64Method.addLine(new X64MetaData(".text"));
-            textAdded = true;
+            asmWriterContext.setTextLabelAdded();
         }
 
         if (method.isMain()) x64Method.addLine(new X64MetaData(".global _main"))
@@ -512,31 +525,33 @@ public class X64AsmWriter implements AsmWriter {
         } else {
             x64Method.addLine(new X64MetaData(method.methodName() + ":"));
         }
-        locationOfSubqInst = x64Method.size();
+
+        stackLocation = methodToHighestStackLocation.get(currentMethod);
+        asmWriterContext.setLocationOfSubqInst(x64Method.size());
         saveMethodArgsToLocations(method);
     }
 
     @Override
-    public void emitInstruction(ConditionalBranch jumpIfFalse) {
-        var resolvedCondition = resolveName(jumpIfFalse.getCondition());
-        if (lastComparisonOperator == null) {
-            if (jumpIfFalse.getCondition() instanceof NumericalConstant) {
+    public void emitInstruction(@NotNull ConditionalBranch conditionalBranch) {
+        var resolvedCondition = resolveName(conditionalBranch.getCondition());
+        if (asmWriterContext.getLastComparisonOperator() == null) {
+            if (conditionalBranch.getCondition() instanceof NumericalConstant) {
                 x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq, resolvedCondition, X64RegisterOperand.unassigned(COPY_TEMP_REGISTER)))
                          .addLine(new X64BinaryInstruction(X64BinaryInstructionType.cmpq, new X64Constant(NumericalConstant.zero()), X64RegisterOperand.unassigned(COPY_TEMP_REGISTER)))
-                         .addLine(new X64UnaryInstruction(X64UnaryInstructionType.je, new X64JumpTargetOperand(jumpIfFalse.getTarget())));
+                         .addLine(new X64UnaryInstruction(X64UnaryInstructionType.je, new X64JumpTargetOperand(conditionalBranch.getTarget())));
             } else {
                 x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.cmpq, new X64Constant(NumericalConstant.zero()), resolvedCondition))
-                         .addLine(new X64UnaryInstruction(X64UnaryInstructionType.je, new X64JumpTargetOperand(jumpIfFalse.getTarget())));
+                         .addLine(new X64UnaryInstruction(X64UnaryInstructionType.je, new X64JumpTargetOperand(conditionalBranch.getTarget())));
             }
             return;
         } else {
-            x64Method.addLine(new X64UnaryInstruction(X64UnaryInstructionType.getCorrectJumpIfFalseInstruction(lastComparisonOperator), new X64JumpTargetOperand(jumpIfFalse.getTarget())));
+            x64Method.addLine(new X64UnaryInstruction(X64UnaryInstructionType.getCorrectJumpIfFalseInstruction(asmWriterContext.getLastComparisonOperator()), new X64JumpTargetOperand(conditionalBranch.getTarget())));
         }
-        lastComparisonOperator = null;
+        asmWriterContext.setLastComparisonOperator(null);
     }
 
     @Override
-    public void emitInstruction(FunctionCallNoResult functionCallNoResult) {
+    public void emitInstruction(@NotNull FunctionCallNoResult functionCallNoResult) {
         callerSave(null);
         orderFunctionCallArguments(functionCallNoResult);
         if (functionCallNoResult.isImported())
@@ -549,13 +564,13 @@ public class X64AsmWriter implements AsmWriter {
     }
 
     @Override
-    public void emitInstruction(MethodEnd methodEnd) {
+    public void emitInstruction(@NotNull MethodEnd methodEnd) {
         var space = new X64Constant(new NumericalConstant((long) roundUp16(-stackLocation), Type.Int));
 
-        x64Method.addAtIndex(locationOfSubqInst, new X64BinaryInstruction(X64BinaryInstructionType.subq, space, X64RegisterOperand.unassigned(X64RegisterType.RSP)));
+        x64Method.addAtIndex(asmWriterContext.getLocationOfSubqInst(), new X64BinaryInstruction(X64BinaryInstructionType.subq, space, X64RegisterOperand.unassigned(X64RegisterType.RSP)));
         calleeSave();
-        x64Method.addAtIndex(locationOfSubqInst, new X64BinaryInstruction(X64BinaryInstructionType.movq, X64RegisterOperand.unassigned(X64RegisterType.RSP), X64RegisterOperand.unassigned(X64RegisterType.RBP)));
-        x64Method.addAtIndex(locationOfSubqInst, new X64UnaryInstruction(X64UnaryInstructionType.pushq, X64RegisterOperand.unassigned(X64RegisterType.RBP)));
+        x64Method.addAtIndex(asmWriterContext.getLocationOfSubqInst(), new X64BinaryInstruction(X64BinaryInstructionType.movq, X64RegisterOperand.unassigned(X64RegisterType.RSP), X64RegisterOperand.unassigned(X64RegisterType.RBP)));
+        x64Method.addAtIndex(asmWriterContext.getLocationOfSubqInst(), new X64UnaryInstruction(X64UnaryInstructionType.pushq, X64RegisterOperand.unassigned(X64RegisterType.RBP)));
         x64Method = (methodEnd.isMain() ? x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.xorl, X64RegisterOperand.unassigned(X64RegisterType.EAX), X64RegisterOperand.unassigned(X64RegisterType.EAX))) : x64Method);
 
         x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.addq, space, X64RegisterOperand.unassigned(X64RegisterType.RSP)));
@@ -568,7 +583,7 @@ public class X64AsmWriter implements AsmWriter {
     }
 
     @Override
-    public void emitInstruction(ReturnInstruction returnInstruction) {
+    public void emitInstruction(@NotNull ReturnInstruction returnInstruction) {
         if (returnInstruction.getReturnAddress()
                              .isPresent())
             x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq, resolveName(returnInstruction.getReturnAddress()
@@ -576,13 +591,13 @@ public class X64AsmWriter implements AsmWriter {
     }
 
     @Override
-    public void emitInstruction(UnaryInstruction unaryInstruction) {
+    public void emitInstruction(@NotNull UnaryInstruction unaryInstruction) {
         var src = resolveName(unaryInstruction.operand);
         var dst = resolveName(unaryInstruction.getDestination());
 
         switch (unaryInstruction.operator) {
             case Operators.NOT -> {
-                lastComparisonOperator = null;
+                asmWriterContext.setLastComparisonOperator(null);
                 x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq, src, X64RegisterOperand.unassigned(COPY_TEMP_REGISTER)))
                          .addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq, X64RegisterOperand.unassigned(COPY_TEMP_REGISTER), dst))
                          .addLine(new X64BinaryInstruction(X64BinaryInstructionType.xorq, new X64Constant(NumericalConstant.one()), dst));
@@ -596,22 +611,20 @@ public class X64AsmWriter implements AsmWriter {
     }
 
     @Override
-    public void emitInstruction(UnconditionalBranch unconditionalBranch) {
+    public void emitInstruction(@NotNull UnconditionalBranch unconditionalBranch) {
         x64Method.addLine(new X64UnaryInstruction(X64UnaryInstructionType.jmp, new X64JumpTargetOperand(unconditionalBranch.getTarget())));
     }
 
     @Override
-    public void emitInstruction(ArrayBoundsCheck arrayBoundsCheck) {
-
+    public void emitInstruction(@NotNull ArrayBoundsCheck arrayBoundsCheck) {
     }
 
     @Override
-    public void emitInstruction(RuntimeException runtimeException) {
-
+    public void emitInstruction(@NotNull RuntimeException runtimeException) {
     }
 
     @Override
-    public void emitInstruction(CopyInstruction copyInstruction) {
+    public void emitInstruction(@NotNull CopyInstruction copyInstruction) {
         var sourceStackLocation = resolveName(copyInstruction.getValue());
         var destStackLocation = resolveName(copyInstruction.getDestination());
 
@@ -625,12 +638,12 @@ public class X64AsmWriter implements AsmWriter {
     }
 
     @Override
-    public void emitInstruction(GetAddress getAddress) {
+    public void emitInstruction(@NotNull GetAddress getAddress) {
 
     }
 
     @Override
-    public void emitInstruction(BinaryInstruction binaryInstruction) {
+    public void emitInstruction(@NotNull BinaryInstruction binaryInstruction) {
         var firstOperand = resolveName(binaryInstruction.fstOperand);
         var secondOperand = resolveName(binaryInstruction.sndOperand);
         var dst = resolveName(binaryInstruction.getDestination());
@@ -663,7 +676,7 @@ public class X64AsmWriter implements AsmWriter {
             }
             // comparison operators
             case Operators.EQ, Operators.NEQ, Operators.LT, Operators.GT, Operators.LEQ, Operators.GEQ -> {
-                lastComparisonOperator = binaryInstruction.operator;
+                asmWriterContext.setLastComparisonOperator(binaryInstruction.operator);
                 x64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq, firstOperand, X64RegisterOperand.unassigned(COPY_TEMP_REGISTER)))
                          .addLine(new X64BinaryInstruction(X64BinaryInstructionType.cmpq, secondOperand, X64RegisterOperand.unassigned(COPY_TEMP_REGISTER)))
                          .addLine(new X64UnaryInstruction(X64UnaryInstructionType.getCorrectComparisonSetInstruction(binaryInstruction.operator), X64RegisterOperand.unassigned(X64RegisterType.al)))
@@ -674,5 +687,4 @@ public class X64AsmWriter implements AsmWriter {
         }
     }
     // instruction visitors
-
 }

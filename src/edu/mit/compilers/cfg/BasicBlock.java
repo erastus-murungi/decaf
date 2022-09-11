@@ -174,12 +174,12 @@ public class BasicBlock {
     }
 
     public List<BasicBlock> getSuccessors() {
-        if (alternateSuccessor != null) {
-            assert successor != null;
-            return List.of(successor, alternateSuccessor);
-        }
-        assert successor != null;
-        return List.of(successor);
+        List<BasicBlock> successors = new ArrayList<>();
+        if (successor != null)
+            successors.add(successor);
+        if (alternateSuccessor != null && alternateSuccessor != successor)
+            successors.add(alternateSuccessor);
+        return List.copyOf(successors);
     }
 
     public AST lastAstLine() {

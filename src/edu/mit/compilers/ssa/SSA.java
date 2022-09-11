@@ -171,7 +171,7 @@ public class SSA {
                 blockToVariable.put(P, V.copy());
             }
             Y.getInstructionList()
-                    .add(1, new Phi(V.copy(), blockToVariable));
+                    .add(0, new Phi(V.copy(), blockToVariable));
         }
     }
 

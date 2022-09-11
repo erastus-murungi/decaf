@@ -100,17 +100,17 @@ public class BasicBlockToInstructionListConverter {
         var prologue = new InstructionList();
         for (var fieldDeclaration : program.fieldDeclarationList) {
             for (var name : fieldDeclaration.names) {
-                prologue.add(new GlobalAllocation(name, "# " + name.getSourceCode(),
-                        new Variable(name.getLabel(), fieldDeclaration.getType()), fieldDeclaration.getType()
-                        .getFieldSize(), fieldDeclaration.getType()));
+                prologue.add(new GlobalAllocation(new Variable(name.getLabel(), fieldDeclaration.getType()), fieldDeclaration.getType()
+                                                                                                                             .getFieldSize(), fieldDeclaration.getType(), name, "# " + name.getSourceCode()
+                ));
             }
             for (var array : fieldDeclaration.arrays) {
                 var size = (fieldDeclaration.getType()
                         .getFieldSize() * array.getSize()
                         .convertToLong());
-                prologue.add(new GlobalAllocation(array, "# " + array.getSourceCode(),
-                        new Variable(array.getId()
-                                .getLabel(), fieldDeclaration.getType()), size, fieldDeclaration.getType()));
+                prologue.add(new GlobalAllocation(new Variable(array.getId()
+                                                                    .getLabel(), fieldDeclaration.getType()), size, fieldDeclaration.getType(), array, "# " + array.getSourceCode()
+                ));
             }
         }
         globalNames.addAll(prologue.stream()
