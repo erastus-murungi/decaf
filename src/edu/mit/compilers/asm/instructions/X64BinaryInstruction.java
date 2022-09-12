@@ -6,6 +6,7 @@ import java.util.Objects;
 
 import edu.mit.compilers.asm.operands.X64Operand;
 import edu.mit.compilers.asm.types.X64BinaryInstructionType;
+import edu.mit.compilers.codegen.names.Value;
 
 public class X64BinaryInstruction extends X64Instruction {
     @NotNull private X64BinaryInstructionType x64BinaryInstructionType;
@@ -35,6 +36,13 @@ public class X64BinaryInstruction extends X64Instruction {
 
     @Override
     public String toString() {
+        Value v = null;
+        if (first.getValue() != null)
+            v = first.getValue();
+        else if (second.getValue() != null)
+            v = second.getValue();
+        if (v != null)
+            return String.format("\t%s\t%s, %s\t\t#%s",x64BinaryInstructionType, first, second, v);
         return String.format("\t%s\t%s, %s",x64BinaryInstructionType, first, second);
     }
 }

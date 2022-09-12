@@ -1,12 +1,11 @@
 package edu.mit.compilers.dataflow.ssapasses;
 
 import java.util.ArrayList;
-import java.util.Set;
 
 import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.ssa.Phi;
 import edu.mit.compilers.ssa.SSA;
@@ -41,7 +40,7 @@ public class RedundantPhiEliminationPass extends SsaOptimizationPass<Void> {
                         if (phi.getOperandValues().stream().distinct().count() == 1) {
                             var y = phi.getOperandValues().stream().findFirst().orElseThrow();
                             instructionList.add(CopyInstruction.noMetaData(phi.getDestination(), y));
-                            ssaEdgesUtil.copyPropagate(phi.getDestination(), y);
+                            ssaEdgesUtil.copyPropagate((VirtualRegister) phi.getDestination(), y);
                             changesHappened = true;
                             continue;
                         }
@@ -49,7 +48,7 @@ public class RedundantPhiEliminationPass extends SsaOptimizationPass<Void> {
                         if (phi.getOperandValues().stream().filter(value -> value.equals(phi.getDestination())).count() == 1) {
                             var y = phi.getOperandValues().stream().filter(value -> !value.equals(phi.getDestination())).findFirst().orElseThrow();
                             instructionList.add(CopyInstruction.noMetaData(phi.getDestination(), y));
-                            ssaEdgesUtil.copyPropagate(phi.getDestination(), y);
+                            ssaEdgesUtil.copyPropagate((VirtualRegister) phi.getDestination(), y);
                             changesHappened = true;
                             continue;
                         }

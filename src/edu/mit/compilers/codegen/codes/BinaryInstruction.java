@@ -6,6 +6,7 @@ import java.util.Optional;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.asm.AsmWriter;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.operand.BinaryOperand;
@@ -31,7 +32,7 @@ public class BinaryInstruction extends StoreInstruction {
         this.sndOperand = sndOperand;
     }
 
-    public BinaryInstruction(LValue result, Value fstOperand, String operator, Value sndOperand) {
+    public BinaryInstruction(VirtualRegister result, Value fstOperand, String operator, Value sndOperand) {
         this(result, fstOperand, operator, sndOperand, String.format("%s = %s %s %s", result, fstOperand, operator, sndOperand), null);
     }
 

@@ -19,8 +19,8 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.codegen.names.Variable;
 import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
 import edu.mit.compilers.dataflow.dominator.DominatorTree;
 import edu.mit.compilers.registerallocation.Coalesce;
@@ -65,7 +65,7 @@ public class SSA {
             Utils.printSsaCfg(List.of(method), "ssa_after_" + method.methodName());
     }
 
-    private static Set<BasicBlock> getBasicBlocksModifyingVariable(LValue V, List<BasicBlock> basicBlocks) {
+    private static Set<BasicBlock> getBasicBlocksModifyingVariable(VirtualRegister V, List<BasicBlock> basicBlocks) {
         return basicBlocks.stream()
                 .filter(basicBlock -> basicBlock.getStoreInstructions()
                         .stream()
@@ -74,18 +74,20 @@ public class SSA {
                 .collect(Collectors.toUnmodifiableSet());
     }
 
-    private static Set<LValue> getStoreLocations(BasicBlock X) {
+    private static Set<VirtualRegister> getStoreLocations(BasicBlock X) {
         return X.getStoreInstructions()
                 .stream()
                 .map(StoreInstruction::getDestination)
-                .map(LValue::copy)
-                .collect(Collectors.toUnmodifiableSet());
+                .filter(lValue -> lValue instanceof VirtualRegister)
+                .map(lValue -> (VirtualRegister) lValue)
+                .map(VirtualRegister::copy)
+                .collect(Collectors.toSet());
     }
 
-    private static void initialize(Set<LValue> allVariables, Map<LValue, Stack<Integer>> stacks, Map<LValue, Integer> counters) {
+    private static void initialize(Set<VirtualRegister> allVariables, Map<VirtualRegister, Stack<Integer>> stacks, Map<VirtualRegister, Integer> counters) {
         allVariables.stream()
                 .map(Value::copy)
-                .map(name -> (LValue) name)
+                .map(name -> (VirtualRegister) name)
                 .forEach(
                         a -> {
                             counters.put(a, 0);
@@ -95,28 +97,28 @@ public class SSA {
                         });
     }
 
-    private static void genName(LValue V, Map<LValue, Integer> counters, Map<LValue, Stack<Integer>> stacks) {
+    private static void genName(VirtualRegister V, Map<VirtualRegister, Integer> counters, Map<VirtualRegister, Stack<Integer>> stacks) {
         var i = counters.get(V);
-        var copyV = (LValue) V.copy();
+        var copyV = (VirtualRegister) V.copy();
         V.renameForSsa(i);
         stacks.get(copyV)
                 .push(i);
         counters.put(copyV, i + 1);
     }
 
-    private static void rename(BasicBlock X, DominatorTree dominatorTree, Map<LValue, Integer> counters, Map<LValue, Stack<Integer>> stacks) {
+    private static void rename(BasicBlock X, DominatorTree dominatorTree, Map<VirtualRegister, Integer> counters, Map<VirtualRegister, Stack<Integer>> stacks) {
         // rename all phi nodes
         final var stores = getStoreLocations(X);
 
         for (Phi phi : X.getPhiFunctions()) {
-            genName(phi.getDestination(), counters, stacks);
+            genName((VirtualRegister) phi.getDestination(), counters, stacks);
         }
 
         for (Instruction instruction : X.getInstructionList()) {
             if (instruction instanceof Phi)
                 continue;
-            if (instruction instanceof HasOperand) {
-                var Vs = ((HasOperand) instruction).getOperandLValues();
+            if (instruction instanceof HasOperand hasOperand) {
+                var Vs = hasOperand.getOperandVirtualRegisters();
                 for (var V : Vs) {
                     V.renameForSsa(stacks.get(V)
                             .peek());
@@ -124,18 +126,22 @@ public class SSA {
             }
             if (instruction instanceof StoreInstruction) {
                 var V = ((StoreInstruction) instruction).getDestination();
-                genName(V, counters, stacks);
+                if (V instanceof VirtualRegister virtualRegister) {
+                    genName(virtualRegister, counters, stacks);
+                }
             }
         }
 
         for (var Y : X.getSuccessors()) {
             for (Phi phi : Y.getPhiFunctions()) {
                 var V = phi.getVariableForB(X);
-                if (stacks.get(V)
-                        .isEmpty())
-                    continue;
-                V.renameForSsa(stacks.get(V)
-                        .peek());
+                if (V instanceof VirtualRegister virtualRegister) {
+                    if (stacks.get(V)
+                              .isEmpty())
+                        continue;
+                    virtualRegister.renameForSsa(stacks.get(V)
+                                         .peek());
+                }
             }
         }
 
@@ -149,9 +155,9 @@ public class SSA {
         }
     }
 
-    private static void initializeForSsaDestruction(List<BasicBlock> basicBlocks, HashMap<LValue, Stack<LValue>> stacks) {
-        Utils.getAllLValuesInBasicBlocks(basicBlocks).stream()
-                .map(LValue::copy)
+    private static void initializeForSsaDestruction(List<BasicBlock> basicBlocks, HashMap<VirtualRegister, Stack<VirtualRegister>> stacks) {
+        Utils.getAllVirtualRegistersInBasicBlocks(basicBlocks).stream()
+                .map(VirtualRegister::copy)
                 .forEach(a -> {
                             stacks.put(a, new Stack<>());
                             stacks.get(a)
@@ -160,7 +166,7 @@ public class SSA {
                 );
     }
 
-    private static void addPhiNodeForVatY(LValue V, BasicBlock Y, Collection<BasicBlock> basicBlocksModifyingV) {
+    private static void addPhiNodeForVatY(VirtualRegister V, BasicBlock Y, Collection<BasicBlock> basicBlocksModifyingV) {
         int nCopiesOfV = (int) Y.getPredecessors()
                 .stream()
                 .filter(basicBlocksModifyingV::contains)
@@ -183,7 +189,7 @@ public class SSA {
     private static void placePhiFunctions(BasicBlock entryBlock, List<BasicBlock> basicBlocks, DominatorTree dominatorTree) {
         var liveVariableAnalysis = new LiveVariableAnalysis(entryBlock);
 
-        var allVariables = Utils.getAllLValuesInBasicBlocks(basicBlocks);
+        var allVariables = Utils.getAllVirtualRegistersInBasicBlocks(basicBlocks);
         for (var V : allVariables) {
             var hasAlready = new HashSet<BasicBlock>();
             var everOnWorkList = new HashSet<BasicBlock>();
@@ -215,21 +221,23 @@ public class SSA {
     }
 
     private static void renameVariables(Method method, DominatorTree dominatorTree, List<BasicBlock> basicBlocks) {
-        var stacks = new HashMap<LValue, Stack<Integer>>();
-        var counters = new HashMap<LValue, Integer>();
-        initialize(Utils.getAllLValuesInBasicBlocks(basicBlocks), stacks, counters);
+        var stacks = new HashMap<VirtualRegister, Stack<Integer>>();
+        var counters = new HashMap<VirtualRegister, Integer>();
+        initialize(Utils.getAllVirtualRegistersInBasicBlocks(basicBlocks), stacks, counters);
         rename(method.entryBlock, dominatorTree, counters, stacks);
         renameMethodArgs(method);
     }
 
     private static void verify(List<BasicBlock> basicBlocks) {
-        var seen = new HashSet<LValue>();
+        var seen = new HashSet<VirtualRegister>();
         for (var B : basicBlocks) {
             for (var store : B.getStoreInstructions()) {
                 if (seen.contains(store.getDestination())) {
                     throw new IllegalStateException(store.getDestination() + " store redefined");
                 } else {
-                    seen.add(store.getDestination());
+                    if (store.getDestination() instanceof VirtualRegister virtualRegister) {
+                        seen.add(virtualRegister);
+                    }
                 }
                 if (store instanceof Phi) {
                     var s = store.getOperandValues()
@@ -248,7 +256,7 @@ public class SSA {
     }
 
     private static void deconstructSsa(BasicBlock entryBlock, List<BasicBlock> basicBlocks, DominatorTree dominatorTree) {
-        var stacks = new HashMap<LValue, Stack<LValue>>();
+        var stacks = new HashMap<VirtualRegister, Stack<VirtualRegister>>();
         initializeForSsaDestruction(basicBlocks, stacks);
         insertCopies(entryBlock, dominatorTree, new LiveVariableAnalysis(entryBlock), stacks);
         removePhiNodes(basicBlocks);
@@ -266,14 +274,14 @@ public class SSA {
         }
     }
 
-    private static void insertCopies(BasicBlock basicBlock, DominatorTree dominatorTree, LiveVariableAnalysis liveVariableAnalysis, Map<LValue, Stack<LValue>> stacks) {
-        var pushed = new ArrayList<LValue>();
+    private static void insertCopies(BasicBlock basicBlock, DominatorTree dominatorTree, LiveVariableAnalysis liveVariableAnalysis, Map<VirtualRegister, Stack<VirtualRegister>> stacks) {
+        var pushed = new ArrayList<VirtualRegister>();
 
         for (Instruction instruction : basicBlock.getInstructionList()) {
             if (instruction instanceof Phi)
                 continue;
             if (instruction instanceof HasOperand) {
-                var Vs = ((HasOperand) instruction).getOperandLValues();
+                var Vs = ((HasOperand) instruction).getOperandVirtualRegisters();
                 for (var V : Vs) {
                     if (instruction instanceof StoreInstruction storeInstruction) {
                         if (storeInstruction.getDestination().equals(stacks.get(V).peek()))
@@ -298,10 +306,10 @@ public class SSA {
     }
 
 
-    private static void scheduleCopies(BasicBlock basicBlock, Set<Value> liveOut, Map<LValue, Stack<LValue>> stacks, ArrayList<LValue> pushed) {
+    private static void scheduleCopies(BasicBlock basicBlock, Set<Value> liveOut, Map<VirtualRegister, Stack<VirtualRegister>> stacks, ArrayList<VirtualRegister> pushed) {
         /* Pass One: Initialize the data structures */
-        Stack<Pair<Value, LValue>> copySet = new Stack<>();
-        Stack<Pair<Value, LValue>> workList = new Stack<>();
+        Stack<Pair<Value, VirtualRegister>> copySet = new Stack<>();
+        Stack<Pair<Value, VirtualRegister>> workList = new Stack<>();
         Map<Value, Value> map = new HashMap<>();
         Set<Value> usedByAnother = new HashSet<>();
         Map<Value, BasicBlock> phiDstToOwnerBasicBlockMapping = new HashMap<>();
@@ -310,11 +318,13 @@ public class SSA {
             for (var phi : successor.getPhiFunctions()) {
                 var src = phi.getVariableForB(basicBlock);
                 var dst = phi.getDestination();
-                copySet.add(new Pair<>(src, dst));
-                map.put(src, src);
-                map.put(dst, dst);
-                usedByAnother.add(src);
-                phiDstToOwnerBasicBlockMapping.put(dst, successor);
+                if (dst instanceof VirtualRegister dstVirtual) {
+                    copySet.add(new Pair<>(src, dstVirtual));
+                    map.put(src, src);
+                    map.put(dst, dst);
+                    usedByAnother.add(src);
+                    phiDstToOwnerBasicBlockMapping.put(dst, successor);
+                }
             }
         }
 
@@ -335,7 +345,7 @@ public class SSA {
                 var src = srcDest.first();
                 var dst = srcDest.second();
                 if (liveOut.contains(dst) && !src.equals(dst)) {
-                    var temp = Variable.genTemp(dst.getType());
+                    var temp = (VirtualRegister) VirtualRegister.gen(dst.getType());
                     var copyInstruction = CopyInstruction.noAstConstructor(temp, dst.copy());
                     var dstOwner = Objects.requireNonNull(phiDstToOwnerBasicBlockMapping.get(dst), "dest " + dst + " does not have a source basic block");
                     dstOwner.getInstructionList()
@@ -357,7 +367,7 @@ public class SSA {
             if (!copySet.isEmpty()) {
                 var srcDest = copySet.pop();
                 var dst = srcDest.second();
-                var temp = Variable.genTemp(dst.getType());
+                var temp = VirtualRegister.gen(dst.getType());
                 var copyInstruction = CopyInstruction.noAstConstructor(dst.copy(), temp);
                 basicBlock.addInstructionToTail(copyInstruction);
                 map.put(dst, temp);
@@ -366,8 +376,8 @@ public class SSA {
         }
     }
 
-    private static List<Pair<Value, LValue>> getPairsWhoseDestinationEquals(Value src, Collection<Pair<Value, LValue>> pairs) {
-        var results = new ArrayList<Pair<Value, LValue>>();
+    private static List<Pair<Value, VirtualRegister>> getPairsWhoseDestinationEquals(Value src, Collection<Pair<Value, VirtualRegister>> pairs) {
+        var results = new ArrayList<Pair<Value, VirtualRegister>>();
         for (var pair : pairs) {
             var dst = pair.second();
             if (dst.equals(src))

@@ -4,7 +4,9 @@ import java.util.Optional;
 import java.util.Set;
 
 import edu.mit.compilers.ast.AST;
+import edu.mit.compilers.codegen.names.GlobalAddress;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.dataflow.operand.Operand;
 
 public abstract class StoreInstruction extends HasOperand implements Cloneable {
@@ -35,13 +37,12 @@ public abstract class StoreInstruction extends HasOperand implements Cloneable {
 
     public abstract Optional<Operand> getOperandNoArray();
 
-    public Optional<Operand> getOperandNoArrayNoGlobals(Set<LValue> globals) {
+    public Optional<Operand> getOperandNoArrayNoGlobals(Set<GlobalAddress> globals) {
         Optional<Operand> operand = getOperandNoArray();
         if (operand.isPresent()) {
-            if (operand.get().containsAny(globals)) {
+            if (operand.get().getNames().stream().anyMatch(globals::contains))
                 return Optional.empty();
             }
-        }
         return operand;
     }
 

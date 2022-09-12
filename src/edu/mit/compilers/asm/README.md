@@ -50,3 +50,5 @@ erastusmurungi@C02F257ZMD6M compiler % gdb main
 
 # Notes
 If you decide to callee save and restore an odd number of registers, make sure to check the register alignment
+Generating assembly:
+  `clang -S -mllvm --x86-asm-syntax=att scratch.c -o scratch.s -fno-asynchronous-unwind-tables`

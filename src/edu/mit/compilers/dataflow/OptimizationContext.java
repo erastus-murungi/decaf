@@ -3,14 +3,14 @@ package edu.mit.compilers.dataflow;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.GlobalAddress;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.TarjanSCC;
 
@@ -28,7 +28,7 @@ public class OptimizationContext {
         setMethodsToOptimize(programIr.getMethods());
     }
 
-    public Set<LValue> globals() {
+    public Set<GlobalAddress> globals() {
         return programIr.getGlobals();
     }
 

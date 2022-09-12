@@ -26,7 +26,7 @@ public enum X64RegisterType {
 
     al,
 
-    EAX;
+    EAX, RIP;
 
 
     public static final Map<X64RegisterType, Integer> argumentRegistersOrdering = new HashMap<>();
@@ -36,7 +36,7 @@ public enum X64RegisterType {
     public static final List<X64RegisterType> callerSaved = List.of(R10, R11, RDI, RSI, RDX, RCX, R8, R9, RAX);
     // this is the order to allocate registers
     // note the argument registers are accessed in reverse order
-    public static final List<X64RegisterType> regsToAllocate = List.of(R13, R14, R15, RDX, RCX, R9, R8, RSI, RDI); // use in this order
+    public static final List<X64RegisterType> regsToAllocate = List.of(R11, R12, R13, R14, R15, RDX, RCX, R9, R8, RSI, RDI); // use in this order
 
     static {
         argumentRegistersOrdering.put(RDI, 1);

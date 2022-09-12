@@ -2,6 +2,7 @@ package edu.mit.compilers.registerallocation;
 
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 
 /**
  * @param variable        The variable this {@link LiveInterval} belongs to

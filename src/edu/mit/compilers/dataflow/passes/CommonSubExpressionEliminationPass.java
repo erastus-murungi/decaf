@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
@@ -14,7 +13,6 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
-import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.dataflow.analyses.AvailableExpressions;

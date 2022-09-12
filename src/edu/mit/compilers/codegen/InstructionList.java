@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import edu.mit.compilers.codegen.codes.Instruction;
-import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.codegen.names.Value;
 
 public class InstructionList extends ArrayList<Instruction> {
@@ -43,7 +43,7 @@ public class InstructionList extends ArrayList<Instruction> {
         return instructionList;
     }
 
-    public static InstructionList of(Instruction instruction, LValue place) {
+    public static InstructionList of(Instruction instruction, VirtualRegister place) {
         var instructionList = new InstructionList(place);
         instructionList.add(instruction);
         return instructionList;

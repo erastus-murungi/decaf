@@ -22,6 +22,7 @@ import edu.mit.compilers.ast.Return;
 import edu.mit.compilers.ast.StringLiteral;
 import edu.mit.compilers.ast.UnaryOpExpression;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 
 public interface CodegenAstVisitor<T> {
     T visit(BooleanLiteral booleanLiteral, LValue resultLocation);

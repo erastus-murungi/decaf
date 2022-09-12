@@ -1,58 +1,21 @@
 package edu.mit.compilers.codegen.names;
 
-import java.util.Objects;
-
 import edu.mit.compilers.ast.Type;
+import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
 
 public abstract class LValue extends Value {
-    protected Integer versionNumber = null;
-
-    public LValue(String label, Type type) {
+    public LValue(Type type, String label) {
         super(type, label);
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(getLabel());
-    }
-
-    public void renameForSsa(int versionNumber) {
-        this.versionNumber = versionNumber;
-    }
-
-    public void renameForSsa(LValue lValue) {
-        if (getType() != lValue.getType())
-            throw new IllegalArgumentException();
-        this.label = lValue.label;
-        this.versionNumber = lValue.versionNumber;
-    }
-
-    public void clearVersionNumber() {
-        versionNumber = null;
-    }
-
-    public void unRenameForSsa() {
-        versionNumber = null;
-    }
-
-    public Integer getVersionNumber() {
-        return versionNumber;
-    }
-
-    public String getLabel() {
-        if (versionNumber != null)
-            return String.format("%s.%d", label, versionNumber);
-        return label;
-    }
-
-    @Override
     public abstract LValue copy();
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof LValue lValue)) return false;
-        if (!super.equals(o)) return false;
-        return Objects.equals(getLabel(), lValue.getLabel());
+    public static LValue gen(Type type) {
+        if (type.equals(Type.Int) || type.equals(Type.Bool))
+            return new VirtualRegister(TemporaryNameIndexGenerator.getNextTemporaryVariable(), type);
+        else if (type.equals(Type.IntArray) || type.equals(Type.BoolArray))
+            return new MemoryAddress(type, TemporaryNameIndexGenerator.getNextTemporaryVariable());
+        else
+            throw new IllegalArgumentException(type.getSourceCode());
     }
 }

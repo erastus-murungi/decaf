@@ -1,5 +1,7 @@
 package edu.mit.compilers.dataflow.operand;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 import edu.mit.compilers.codegen.codes.FunctionCall;
@@ -16,6 +18,11 @@ public class MethodCallOperand extends Operand {
     @Override
     public boolean contains(Value comp) {
         return false;
+    }
+
+    @Override
+    public List<Value> getNames() {
+        return Collections.emptyList();
     }
 
     @Override

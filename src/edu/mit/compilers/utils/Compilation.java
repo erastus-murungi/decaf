@@ -297,6 +297,7 @@ public class Compilation {
         programIr.getMethods().forEach(method -> SSA.deconstruct(method, programIr));
 //        Interpreter interpreter = new Interpreter(programIr.mergeProgram());
 //        interpreter.interpret();
+        programIr.renumberLabels();
 
         if (CLI.debug) {
             System.out.println("After optimization");
@@ -304,11 +305,10 @@ public class Compilation {
             System.out.format("lines of code reduced by a factor of: %f\n", nLinesOfCodeReductionFactor);
         }
 
-
         var registerAllocator = new RegisterAllocator(programIr);
         programIr.findGlobals();
         var x64AsmWriter = new X64AsmWriter(programIr, registerAllocator);
-        X64Program x64program = x64AsmWriter.convert();
+        var x64program = x64AsmWriter.convert();
         outputStream.println(x64program);
         if (CLI.debug)
             System.out.println(x64program);

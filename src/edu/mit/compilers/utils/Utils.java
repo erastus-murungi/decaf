@@ -31,6 +31,7 @@ import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 
 public class Utils {
     // adopted from Java 15
@@ -147,11 +148,20 @@ public class Utils {
                 basicBlocks.stream()
                         .flatMap(basicBlock -> basicBlock.getInstructionList()
                                 .stream())
-                        .flatMap(instruction -> instruction.getAllValues()
+                        .flatMap(instruction -> instruction.getAllLValues()
                                 .stream())
-                        .filter(abstractName -> abstractName instanceof LValue)
-                        .map(abstractName -> (LValue) abstractName)
                         .collect(Collectors.toUnmodifiableSet())
+        );
+    }
+
+    public static Set<VirtualRegister> getAllVirtualRegistersInBasicBlocks(List<BasicBlock> basicBlocks) {
+        return (
+                basicBlocks.stream()
+                           .flatMap(basicBlock -> basicBlock.getInstructionList()
+                                                            .stream())
+                           .flatMap(instruction -> instruction.getAllVirtualRegisters()
+                                                              .stream())
+                           .collect(Collectors.toUnmodifiableSet())
         );
     }
 

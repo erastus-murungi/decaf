@@ -15,7 +15,7 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.asm.AsmWriter;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.PhiOperand;
@@ -23,7 +23,7 @@ import edu.mit.compilers.dataflow.operand.PhiOperand;
 public class Phi extends StoreInstruction {
     private final Map<BasicBlock, Value> basicBlockValueMap;
 
-    public Phi(LValue v, Map<BasicBlock, Value> xs) {
+    public Phi(VirtualRegister v, Map<BasicBlock, Value> xs) {
         super(v, null);
         assert xs.size() > 2;
         basicBlockValueMap = xs;
@@ -97,7 +97,7 @@ public class Phi extends StoreInstruction {
 
     @Override
     public Instruction copy() {
-        return new Phi(getDestination(), basicBlockValueMap);
+        return new Phi((VirtualRegister) getDestination(), basicBlockValueMap);
     }
 
     @Override

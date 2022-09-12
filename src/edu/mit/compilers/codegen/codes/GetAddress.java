@@ -7,6 +7,7 @@ import java.util.Optional;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.asm.AsmWriter;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.codegen.names.NumericalConstant;
 import edu.mit.compilers.codegen.names.Value;
@@ -53,6 +54,11 @@ public class GetAddress extends StoreInstruction {
     @Override
     public List<Value> getAllValues() {
         return List.of(baseAddress, getIndex(), getDestination());
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s%s = %s %s %s, %s", DOUBLE_INDENT, getDestination().repr(), "getaddr", baseAddress.repr(), baseAddress.getType().getColoredSourceCode(), getIndex().repr());
     }
 
     @Override

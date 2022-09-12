@@ -1,7 +1,12 @@
 package edu.mit.compilers.codegen;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.Stack;
 
 import edu.mit.compilers.ast.AST;
@@ -36,15 +41,15 @@ import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.FunctionCallNoResult;
 import edu.mit.compilers.codegen.codes.FunctionCallWithResult;
 import edu.mit.compilers.codegen.codes.GetAddress;
-import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.ReturnInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
+import edu.mit.compilers.codegen.names.GlobalAddress;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.codegen.names.NumericalConstant;
 import edu.mit.compilers.codegen.names.StringConstant;
 import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.codegen.names.Variable;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.descriptors.ArrayDescriptor;
 import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Operators;
@@ -52,10 +57,24 @@ import edu.mit.compilers.utils.Operators;
 class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList> {
     private final SymbolTable symbolTable;
     private final HashMap<String, StringConstant> stringLiteralMapping;
+    private final Map<String, GlobalAddress> globalAddressMap = new HashMap<>();
 
-    public AstToInstructionListConverter(SymbolTable symbolTable, HashMap<String, StringConstant> stringLiteralMapping) {
+    public AstToInstructionListConverter(SymbolTable symbolTable,
+                                         HashMap<String, StringConstant> stringLiteralMapping,
+                                         Set<GlobalAddress> globalAddresses
+    ) {
         this.symbolTable = symbolTable;
         this.stringLiteralMapping = stringLiteralMapping;
+        for (var global : globalAddresses) {
+            globalAddressMap.put(global.getLabel(), global);
+        }
+    }
+
+    private LValue newLValue(String label, Type type) {
+        return Objects.requireNonNullElseGet(
+                globalAddressMap.get(label),
+                () -> new VirtualRegister(label, type)
+        );
     }
 
     @Override
@@ -69,7 +88,7 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
                 () -> new IllegalStateException("expected to find array " + locationArray.name.getLabel() + " in scope")
         );
         final var getAddressInstruction = new GetAddress(locationArray,
-                new Variable(locationArray.name.getLabel(), arrayDescriptor.type), indexInstructionList.place, generateAddressName(arrayDescriptor.type), new NumericalConstant(arrayDescriptor.size, Type.Int));
+                newLValue(locationArray.name.getLabel(), arrayDescriptor.type), indexInstructionList.place, generateAddressName(arrayDescriptor.type), new NumericalConstant(arrayDescriptor.size, Type.Int));
         locationArrayInstructionList.add(getAddressInstruction);
 
         if (!(indexInstructionList.place instanceof NumericalConstant)) {
@@ -91,7 +110,7 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
     }
 
     private LValue resolveStoreLocation(Type type) {
-        return Variable.genTemp(type);
+        return LValue.gen(type);
     }
 
     private LValue resolveStoreLocation(LValue resultLocation, Type type) {
@@ -100,8 +119,8 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
         return resultLocation.copy();
     }
 
-    private LValue generateAddressName(Type type) {
-        return new MemoryAddress(TemporaryNameIndexGenerator.getNextTemporaryVariable(), type);
+    private MemoryAddress generateAddressName(Type type) {
+        return new MemoryAddress(type, TemporaryNameIndexGenerator.getNextTemporaryVariable());
     }
 
     @Override
@@ -124,31 +143,31 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
     @Override
     public InstructionList visit(LocationAssignExpr locationAssignExpr, LValue resultLocation) {
         final InstructionList lhs = locationAssignExpr.location.accept(this, resultLocation);
-        LValue locationVariable = (LValue) lhs.place;
+        VirtualRegister locationVariable = (VirtualRegister) lhs.place;
         final InstructionList rhs = locationAssignExpr.assignExpr.accept(this, resultLocation);
         Value valueVariable = rhs.place;
         lhs.addAll(rhs);
-        lhs.add(flattenCompoundAssign(locationVariable, valueVariable, locationAssignExpr.getSourceCode(), locationAssignExpr));
+        lhs.addAll(flattenCompoundAssign(locationVariable, valueVariable, locationAssignExpr.getSourceCode(), locationAssignExpr));
         return lhs;
     }
 
     @Override
     public InstructionList visit(MethodDefinitionParameter methodDefinitionParameter, LValue resultLocation) {
-        return new InstructionList(new Variable(methodDefinitionParameter.getName(), methodDefinitionParameter.getType()));
+        return new InstructionList(new VirtualRegister(methodDefinitionParameter.getName(), methodDefinitionParameter.getType()));
     }
 
     @Override
     public InstructionList visit(Name name, LValue resultLocation) {
         Type type = symbolTable.getDescriptorFromValidScopes(name.getLabel())
-                .orElseThrow().type;
-        return new InstructionList(new Variable(name.getLabel(), type));
+                               .orElseThrow().type;
+        return new InstructionList(newLValue(name.getLabel(), type));
     }
 
     @Override
     public InstructionList visit(LocationVariable locationVariable, LValue resultLocation) {
         Type type = symbolTable.getDescriptorFromValidScopes(locationVariable.name.getLabel())
-                .orElseThrow().type;
-        return new InstructionList(new Variable(locationVariable.name.getLabel(), type));
+                               .orElseThrow().type;
+        return new InstructionList(newLValue(locationVariable.name.getLabel(), type));
     }
 
     @Override
@@ -180,39 +199,51 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
         return initializationInstructionList;
     }
 
-    private Instruction flattenCompoundAssign(LValue lhs, Value rhs, String op, AST assignment) {
+    private InstructionList flattenCompoundAssign(Value lhs, Value rhs, String op, AST assignment) {
         final var constant = new NumericalConstant(1L, Type.Int);
-        return switch (op) {
+        var dest = VirtualRegister.gen(lhs.getType());
+        var instructionList = new InstructionList(lhs);
+        var inst = switch (op) {
             case Operators.ADD_ASSIGN ->
-                    new BinaryInstruction(lhs.copy(), lhs.copy(), Operators.PLUS, rhs.copy(), assignment.getSourceCode(), assignment);
+                    new BinaryInstruction(dest, lhs.copy(), Operators.PLUS, rhs.copy(), assignment.getSourceCode(), assignment);
             case Operators.MULTIPLY_ASSIGN ->
-                    new BinaryInstruction(lhs.copy(), lhs.copy(), Operators.MULTIPLY, rhs.copy(), assignment.getSourceCode(), assignment);
+                    new BinaryInstruction(dest, lhs.copy(), Operators.MULTIPLY, rhs.copy(), assignment.getSourceCode(), assignment);
             case Operators.MINUS_ASSIGN ->
-                    new BinaryInstruction(lhs.copy(), lhs.copy(), Operators.MINUS, rhs.copy(), assignment.getSourceCode(), assignment);
+                    new BinaryInstruction(dest, lhs.copy(), Operators.MINUS, rhs.copy(), assignment.getSourceCode(), assignment);
             case Operators.DECREMENT ->
-                    new BinaryInstruction(lhs.copy(), lhs.copy(), Operators.MINUS, constant.copy(), assignment.getSourceCode(), assignment);
+                    new BinaryInstruction(dest, lhs.copy(), Operators.MINUS, constant.copy(), assignment.getSourceCode(), assignment);
             case Operators.INCREMENT ->
-                    new BinaryInstruction(lhs.copy(), lhs.copy(), Operators.PLUS, constant.copy(), assignment.getSourceCode(), assignment);
-            default -> new CopyInstruction(lhs.copy(), rhs.copy(), assignment, assignment.getSourceCode());
+                    new BinaryInstruction(dest, lhs.copy(), Operators.PLUS, constant.copy(), assignment.getSourceCode(), assignment);
+            default -> new CopyInstruction(dest, rhs.copy(), assignment, assignment.getSourceCode());
         };
+        instructionList.add(inst);
+        instructionList.add(CopyInstruction.noAstConstructor(lhs.copy(), dest.copy()));
+        return instructionList;
     }
 
     @Override
-    public InstructionList visit(Assignment assignment, LValue resultLocation) {
+    public InstructionList visit(@NotNull Assignment assignment, LValue resultLocation) {
         var assignmentInstructionList = new InstructionList();
-        var storeLocationInstructionList = assignment.location.accept(this, resultLocation);
+        var storeLocationInstructionList = assignment.getLocation()
+                                                     .accept(this, resultLocation);
         InstructionList operandInstructionList;
         if (assignment.assignExpr.expression != null) {
-            operandInstructionList = assignment.assignExpr.expression.accept(this, storeLocationInstructionList.place.copy());
+            if (Operators.isCompoundOperator(assignment.getOperator())) {
+                var type = assignment.assignExpr.expression.getType();
+                operandInstructionList = assignment.assignExpr.expression.accept(this, VirtualRegister.gen(type));
+            } else {
+                operandInstructionList = assignment.assignExpr.expression.accept(this, storeLocationInstructionList.place.copy());
+            }
         } else {
             operandInstructionList = new InstructionList();
         }
-        assignmentInstructionList.addAll(operandInstructionList);
         assignmentInstructionList.addAll(storeLocationInstructionList);
+        assignmentInstructionList.addAll(operandInstructionList);
 
         if (!(assignment.getOperator()
-                .equals(Operators.ASSIGN) && storeLocationInstructionList.place.equals(operandInstructionList.place)))
-            assignmentInstructionList.add(flattenCompoundAssign((LValue) storeLocationInstructionList.place, operandInstructionList.place, assignment.getOperator(), assignment));
+                        .equals(Operators.ASSIGN) && storeLocationInstructionList.place.equals(operandInstructionList.place))) {
+            assignmentInstructionList.addAll(flattenCompoundAssign(storeLocationInstructionList.place, operandInstructionList.place, assignment.getOperator(), assignment));
+        }
         assignmentInstructionList.place = storeLocationInstructionList.place.copy();
         return assignmentInstructionList;
     }
@@ -231,15 +262,16 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
     public InstructionList visit(FieldDeclaration fieldDeclaration, LValue resultLocation) {
         InstructionList instructionList = new InstructionList();
         for (Array array : fieldDeclaration.arrays) {
-            var arrayName = new Variable(array.getId()
-                    .getLabel(), fieldDeclaration.getType());
+            var arrayName = newLValue(array.getId()
+                                           .getLabel(), fieldDeclaration.getType());
             var arrayLength = new NumericalConstant(array.getSize()
-                    .convertToLong(), Type.Int);
+                                                         .convertToLong(), Type.Int);
             for (long i = 0; i < array.getSize()
-                    .convertToLong(); i++) {
+                                      .convertToLong(); i++) {
                 var getAddressInstruction = new GetAddress(array, arrayName, new NumericalConstant(i, Type.Int), generateAddressName(fieldDeclaration.getType()), arrayLength);
                 instructionList.add(getAddressInstruction);
-                instructionList.add(new CopyInstruction(getAddressInstruction.getDestination().copy(), NumericalConstant.zero(), array, String.format("%s[%s] = 0", arrayName, i)));
+                instructionList.add(new CopyInstruction(getAddressInstruction.getDestination()
+                                                                             .copy(), NumericalConstant.zero(), array, String.format("%s[%s] = 0", arrayName, i)));
             }
         }
         return instructionList;
@@ -252,7 +284,7 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
         unaryOpExpressionInstructionList.addAll(operandInstructionList);
         var place = resolveStoreLocation(unaryOpExpression.getType());
         unaryOpExpressionInstructionList.add(new UnaryInstruction(place, unaryOpExpression.getUnaryOperator()
-                .getSourceCode(), operandInstructionList.place.copy(), unaryOpExpression));
+                                                                                          .getSourceCode(), operandInstructionList.place.copy(), unaryOpExpression));
         unaryOpExpressionInstructionList.place = place;
         return unaryOpExpressionInstructionList;
     }
@@ -292,11 +324,11 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
 
         if (expressionParameter.expression instanceof LocationVariable) {
             // no need for temporaries
-            expressionParameterInstructionList.place = new Variable(((Location) expressionParameter.expression).name.getLabel(), expressionParameter.expression.getType());
+            expressionParameterInstructionList.place = newLValue(((Location) expressionParameter.expression).name.getLabel(), expressionParameter.expression.getType());
         } else if (expressionParameter.expression instanceof IntLiteral) {
             expressionParameterInstructionList.place = new NumericalConstant(((IntLiteral) expressionParameter.expression).convertToLong(), Type.Int);
         } else {
-            var temporaryVariable = Variable.genTemp(expressionParameter.expression.getType());
+            var temporaryVariable = VirtualRegister.gen(expressionParameter.expression.getType());
             InstructionList expressionInstructionList = expressionParameter.expression.accept(this, resultLocation);
             expressionParameterInstructionList.addAll(expressionInstructionList);
             expressionParameterInstructionList.add(new CopyInstruction(temporaryVariable, expressionInstructionList.place.copy(), expressionParameter, temporaryVariable + " = " + expressionInstructionList.place));

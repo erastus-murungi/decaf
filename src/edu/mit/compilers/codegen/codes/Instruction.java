@@ -9,7 +9,7 @@ import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.asm.AsmWriter;
 import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.codegen.names.Variable;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 
 public abstract class Instruction {
     public static final String INDENT = "    ";
@@ -53,10 +53,10 @@ public abstract class Instruction {
                 .collect(Collectors.toList());
     }
 
-    public Collection<Variable> getAllScalarVariables() {
+    public Collection<VirtualRegister> getAllVirtualRegisters() {
         return getAllValues().stream()
-                .filter(value -> (value instanceof Variable))
-                .map(value -> (Variable) value)
+                .filter(value -> (value instanceof VirtualRegister))
+                .map(value -> (VirtualRegister) value)
                 .collect(Collectors.toList());
 
     }

@@ -29,7 +29,7 @@ import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.NumericalConstant;
 import edu.mit.compilers.codegen.names.StringConstant;
 import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.codegen.names.Variable;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.utils.Operators;
 import edu.mit.compilers.utils.Utils;
 
@@ -50,9 +50,9 @@ public class Interpreter {
     }
 
     public static void test() {
-        var a = new Variable("a", Type.Int);
-        var b = new Variable("b", Type.Int);
-        var c = new Variable("c", Type.Int);
+        var a = new VirtualRegister("a", Type.Int);
+        var b = new VirtualRegister("b", Type.Int);
+        var c = new VirtualRegister("c", Type.Int);
 
         var name = new Name("printf", null, null);
         List<MethodCallParameter> arguments = List.of(new StringLiteral(null, "%d\n"), new ExpressionParameter(new LocationVariable(new Name("a", null, null))));
@@ -73,8 +73,8 @@ public class Interpreter {
     }
 
     private Constant resolveValue(Value value) {
-        if (value instanceof LValue lValue) {
-            return globalEnv.get(lValue)
+        if (value instanceof VirtualRegister virtualRegister) {
+            return globalEnv.get(virtualRegister)
                     .orElseThrow();
         } else {
             return (Constant) value;

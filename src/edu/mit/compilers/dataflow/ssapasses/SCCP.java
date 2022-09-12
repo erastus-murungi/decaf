@@ -21,7 +21,10 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.codes.UnconditionalBranch;
+import edu.mit.compilers.codegen.names.GlobalAddress;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.MemoryAddress;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.codegen.names.NumericalConstant;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.ssapasses.worklistitems.SsaEdge;
@@ -50,10 +53,14 @@ public class SCCP {
         for (BasicBlock basicBlock : getReversePostOrder(method.entryBlock)) {
             for (Instruction instruction : basicBlock.getInstructionList()) {
                 for (Value v : instruction.getAllValues()) {
-                    if (v instanceof LValue) {
+                    if (v instanceof VirtualRegister) {
                         latticeValues.put(v, LatticeElement.top());
                     } else if (v instanceof NumericalConstant numericalConstant) {
                         latticeValues.put(v, LatticeElement.constant(numericalConstant.getValue()));
+                    } else if (v instanceof MemoryAddress) {
+                        latticeValues.put(v, LatticeElement.bottom());
+                    } else if (v instanceof GlobalAddress) {
+                        latticeValues.put(v, LatticeElement.bottom());
                     }
                 }
             }
@@ -66,9 +73,9 @@ public class SCCP {
 
     }
 
-    private List<SsaEdge> getSsaEdgesForVariable(LValue lValue) {
+    private List<SsaEdge> getSsaEdgesForVariable(LValue virtualRegister) {
         return ssaEdgeList.stream()
-                .filter(ssaEdge -> ssaEdge.getValue().equals(lValue))
+                .filter(ssaEdge -> ssaEdge.getValue().equals(virtualRegister))
                 .toList();
     }
 
@@ -80,7 +87,7 @@ public class SCCP {
         var newLatticeElement = LatticeElement.meet(values);
         if (!newLatticeElement.equals(latticeValues.get(phi.getDestination()))) {
             latticeValues.put(phi.getDestination(), LatticeElement.meet(values));
-            ssaWorkList.addAll(getSsaEdgesForVariable(phi.getDestination()));
+            ssaWorkList.addAll(getSsaEdgesForVariable((VirtualRegister) phi.getDestination()));
         }
     }
 
@@ -116,7 +123,7 @@ public class SCCP {
                 var updated = LatticeElement.constant(longVal);
                 if (!updated.equals(latticeValues.get(unaryInstruction.getDestination()))) {
                     latticeValues.put(unaryInstruction.getDestination(), updated);
-                    ssaWorkList.addAll(getSsaEdgesForVariable(unaryInstruction.getDestination()));
+                    ssaWorkList.addAll(getSsaEdgesForVariable((VirtualRegister) unaryInstruction.getDestination()));
                 }
             }
         } else if (instruction instanceof ConditionalBranch conditionalBranch) {

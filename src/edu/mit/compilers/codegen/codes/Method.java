@@ -1,22 +1,20 @@
 package edu.mit.compilers.codegen.codes;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import edu.mit.compilers.asm.AsmWriter;
 import edu.mit.compilers.ast.MethodDefinition;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
-import edu.mit.compilers.asm.AsmWriter;
-import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.codegen.names.Variable;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.utils.Utils;
 
 public class Method extends Instruction {
     public final MethodDefinition methodDefinition;
-    private final List<LValue> parameterNames;
+    private final List<VirtualRegister> parameterNames;
     /**
      * @implNote instead of storing the set of locals, we now store a method's tac list.
      * Because of optimizations, the set of locals could be re-computed;
@@ -29,19 +27,17 @@ public class Method extends Instruction {
      */
     public BasicBlock entryBlock;
     public BasicBlock exitBlock;
-    // to be filled in later by the X64Converter
-    public HashMap<String, Integer> nameToStackOffset = new HashMap<>();
     private boolean hasRuntimeException;
 
     public Method(MethodDefinition methodDefinition) {
         super(methodDefinition);
         this.methodDefinition = methodDefinition;
         parameterNames = methodDefinition.parameterList.stream()
-                .map(methodDefinitionParameter -> new Variable(methodDefinitionParameter.getName(), methodDefinitionParameter.getType()))
+                .map(methodDefinitionParameter -> new VirtualRegister(methodDefinitionParameter.getName(), methodDefinitionParameter.getType()))
                 .collect(Collectors.toList());
     }
 
-    public List<LValue> getParameterNames() {
+    public List<VirtualRegister> getParameterNames() {
         return List.copyOf(parameterNames);
     }
 

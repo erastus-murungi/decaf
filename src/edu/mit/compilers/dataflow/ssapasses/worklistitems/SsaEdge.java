@@ -4,7 +4,7 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 
 
 /**
@@ -19,7 +19,7 @@ public record SsaEdge(StoreInstruction def, HasOperand use, BasicBlock basicBloc
         return String.format("%s in [%s] -> %s", def.getDestination(), def.toString().strip(), use.toString().strip());
     }
 
-    public LValue getValue() {
-        return def.getDestination();
+    public VirtualRegister getValue() {
+        return (VirtualRegister) def.getDestination();
     }
 }

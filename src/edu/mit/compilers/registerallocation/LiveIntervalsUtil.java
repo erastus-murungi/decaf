@@ -1,7 +1,5 @@
 package edu.mit.compilers.registerallocation;
 
-import com.google.common.collect.Sets;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -10,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import edu.mit.compilers.cfg.BasicBlock;
@@ -19,7 +18,9 @@ import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
+import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
 import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.TarjanSCC;
@@ -40,6 +41,8 @@ public class LiveIntervalsUtil {
      */
 
     private final Map<Method, Map<Value, LiveInterval>> methodToMappingOfValuesToLiveIntervals = new HashMap<>();
+    Map<Instruction, Set<Value>> refCache = new ConcurrentHashMap<>();
+    Map<Instruction, Set<Value>> defCache = new ConcurrentHashMap<>();
 
     public LiveIntervalsUtil(ProgramIr programIr) {
         this.programIr = programIr;
@@ -47,7 +50,6 @@ public class LiveIntervalsUtil {
         computeLiveIntervals();
         validateLiveIntervals();
     }
-
 
     public LiveIntervalsUtil(Method method, ProgramIr programIr) {
         this.programIr = programIr;
@@ -61,7 +63,7 @@ public class LiveIntervalsUtil {
         int indexOfInstruction = 0;
         for (Instruction instruction : instructionList) {
             if (instruction.getAllValues()
-                    .contains(variable))
+                           .contains(variable))
                 break;
             indexOfInstruction++;
         }
@@ -71,6 +73,18 @@ public class LiveIntervalsUtil {
     public static boolean liveIntervalsInterfere(LiveInterval a, LiveInterval b) {
         var overlap = Math.abs(Math.min(a.startPoint(), b.endPoint() - 1) - Math.max(a.startPoint(), b.endPoint() - 1));
         return overlap > 0;
+    }
+
+    public static <T> HashSet<T> difference(Set<T> first, Set<T> second) {
+        var firstCopy = new HashSet<>(first);
+        firstCopy.removeAll(second);
+        return firstCopy;
+    }
+
+    public static <T> HashSet<T> union(Set<T> first, Set<T> second) {
+        var firstCopy = new HashSet<>(first);
+        firstCopy.addAll(second);
+        return firstCopy;
     }
 
     public Collection<LiveInterval> getLiveIntervals(Method method) {
@@ -86,15 +100,16 @@ public class LiveIntervalsUtil {
     }
 
     private void validateLiveIntervals() {
-        programIr.getMethods().forEach(
-                method ->
-                        validateMethodLiveIntervals(getLiveIntervals(method))
-        );
+        programIr.getMethods()
+                 .forEach(
+                         method ->
+                                 validateMethodLiveIntervals(getLiveIntervals(method))
+                 );
     }
 
     private boolean isLiveAtPoint(Method method, Value value, int index) {
         var liveInterval = methodToMappingOfValuesToLiveIntervals.get(method)
-                .get(value);
+                                                                 .get(value);
         return liveInterval.startPoint() <= index && index < liveInterval.endPoint();
     }
 
@@ -106,7 +121,7 @@ public class LiveIntervalsUtil {
 
     private Set<Value> ref(Instruction instruction) {
         if (instruction instanceof HasOperand hasOperand)
-            return new HashSet<>(hasOperand.getOperandLValues());
+            return new HashSet<>(hasOperand.getAllLValues());
         return Collections.emptySet();
     }
 
@@ -120,23 +135,32 @@ public class LiveIntervalsUtil {
         var liveIn = liveVariableAnalysis.liveIn(basicBlock);
         var liveOut = liveVariableAnalysis.liveOut(basicBlock);
 
+        basicBlock.getInstructionList()
+                  .parallelStream()
+                  .forEach(
+                          instruction -> {
+                              defCache.put(instruction, def(instruction));
+                              refCache.put(instruction, ref(instruction));
+                          }
+                  );
+
+
         if (liveIn.equals(liveOut))
             basicBlock.getInstructionList()
-                    .forEach(
-                            instruction -> instructionToLiveVariablesMap.put(instruction, new HashSet<>(liveIn))
-                    );
+                      .forEach(
+                              instruction -> instructionToLiveVariablesMap.put(instruction, new HashSet<>(liveIn))
+                      );
 
-        Set<Value> outLive = new HashSet<>(liveOut);
+        var outLive = new HashSet<>(liveOut);
 
         // values which are live outside this block and therefore should be conserved
-        Set<Value> outGlobal = Sets.difference(outLive, Sets.difference(outLive, basicBlock.getStoreInstructions()
-                .stream()
-                .map(StoreInstruction::getDestination)
-                .collect(Collectors.toUnmodifiableSet())));
-
-        for (Instruction instruction : basicBlock.getInstructionListReversed()) {
-            outLive = Sets.union(Sets.union(Sets.difference(outLive, def(instruction)), ref(instruction)), outGlobal);
-            instructionToLiveVariablesMap.put(instruction, new HashSet<>(outLive));
+        var outGlobal = difference(outLive, difference(outLive, basicBlock.getStoreInstructions()
+                                                                          .stream()
+                                                                          .map(StoreInstruction::getDestination)
+                                                                          .collect(Collectors.toUnmodifiableSet())));
+        for (var instruction : basicBlock.getInstructionListReversed()) {
+            outLive = union(union(difference(outLive, defCache.get(instruction)), refCache.get(instruction)), outGlobal);
+            instructionToLiveVariablesMap.put(instruction, outLive);
         }
     }
 
@@ -180,7 +204,7 @@ public class LiveIntervalsUtil {
         for (; loc >= 0; loc--) {
             var instruction = instructionList.get(loc);
             if (instructionToLiveVariablesMap.getOrDefault(instruction, Collections.emptySet())
-                    .contains(value))
+                                             .contains(value))
                 break;
         }
         return loc + 1;
@@ -199,13 +223,13 @@ public class LiveIntervalsUtil {
         if (liveIntervals.isEmpty())
             return;
         var instructionList = liveIntervals.stream()
-                .findAny()
-                .orElseThrow()
-                .instructionList();
+                                           .findAny()
+                                           .orElseThrow()
+                                           .instructionList();
         var allVariables = liveIntervals.stream()
-                .map(LiveInterval::variable)
-                .distinct()
-                .toList();
+                                        .map(LiveInterval::variable)
+                                        .distinct()
+                                        .toList();
         Map<Value, Integer> spaces = new HashMap<>();
         int spaceCount = 1;
         for (var variable : allVariables) {
@@ -213,7 +237,7 @@ public class LiveIntervalsUtil {
             System.out.print(variable);
             System.out.print(" | ");
             spaceCount = (variable.toString()
-                    .length() + 2);
+                                  .length() + 2);
         }
         System.out.println();
         int index = 0;

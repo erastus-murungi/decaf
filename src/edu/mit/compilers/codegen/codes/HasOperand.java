@@ -3,9 +3,8 @@ package edu.mit.compilers.codegen.codes;
 import java.util.List;
 
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.codegen.names.Variable;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.dataflow.operand.Operand;
 
 public abstract class HasOperand extends Instruction {
@@ -27,19 +26,19 @@ public abstract class HasOperand extends Instruction {
 
     public abstract boolean replaceValue(Value oldName, Value newName);
 
-    public List<Variable> getOperandScalarVariables() {
+    public List<VirtualRegister> getOperandLValues() {
         return getOperandValues()
                 .stream()
-                .filter(abstractName -> abstractName instanceof Variable)
-                .map(value -> (Variable) value)
+                .filter(abstractName -> abstractName instanceof VirtualRegister)
+                .map(value -> (VirtualRegister) value)
                 .toList();
     }
 
-    public List<LValue> getOperandLValues() {
+    public List<VirtualRegister> getOperandVirtualRegisters() {
         return getOperandValues()
                 .stream()
-                .filter(abstractName -> (abstractName instanceof LValue))
-                .map(abstractName -> (LValue) abstractName)
+                .filter(abstractName -> (abstractName instanceof VirtualRegister))
+                .map(abstractName -> (VirtualRegister) abstractName)
                 .toList();
     }
 }

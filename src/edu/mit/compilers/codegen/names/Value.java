@@ -32,8 +32,6 @@ public abstract class Value {
 
     public abstract <T extends Value> T copy();
 
-    public abstract void renameForSsa(int versionNumber);
-
     public abstract String repr();
 
 }

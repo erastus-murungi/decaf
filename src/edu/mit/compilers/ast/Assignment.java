@@ -10,8 +10,12 @@ import edu.mit.compilers.utils.Pair;
 
 public class Assignment extends AST {
     private final String operator;
-    public Location location;
+    private Location location;
     public AssignExpr assignExpr;
+
+    public Location getLocation() {
+        return location;
+    }
 
     public Assignment(Location location, AssignExpr assignmentExpr, String operator) {
         this.location = location;

@@ -1,5 +1,6 @@
 package edu.mit.compilers.dataflow.operand;
 
+import java.util.List;
 import java.util.Objects;
 
 import edu.mit.compilers.codegen.codes.GetAddress;
@@ -16,6 +17,11 @@ public class GetAddressOperand extends Operand {
     @Override
     public boolean contains(Value comp) {
         return getAddress.getBaseAddress().equals(comp) || getAddress.getIndex().equals(comp);
+    }
+
+    @Override
+    public List<Value> getNames() {
+        return getAddress.getOperandValues();
     }
 
     @Override

@@ -9,8 +9,10 @@ import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
+import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
-import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.GlobalAddress;
+import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.OptimizationContext;
 
@@ -34,16 +36,22 @@ public class DeadStoreEliminationSsaPass extends SsaOptimizationPass<Void> {
         }
         for (BasicBlock basicBlock : getBasicBlocksList()) {
             var deadStores = basicBlock.getStoreInstructions()
-                    .stream()
-                    .filter(storeInstruction -> !used.contains(
-                            storeInstruction.getDestination()) && (
-                            storeInstruction instanceof CopyInstruction ||
-                                    storeInstruction instanceof UnaryInstruction ||
-                                    storeInstruction instanceof BinaryInstruction))
-                    .toList();
+                                       .stream()
+                                       .filter(storeInstruction -> storeInstructionIsDead(storeInstruction, used))
+                                       .toList();
             basicBlock.getInstructionList()
-                    .removeAll(deadStores);
+                      .removeAll(deadStores);
         }
         return changesHappened;
+    }
+
+    private static boolean storeInstructionIsDead(StoreInstruction storeInstruction, Set<Value> usedValues) {
+        if (storeInstruction.getDestination() instanceof GlobalAddress || storeInstruction.getDestination() instanceof MemoryAddress) {
+            return false;
+        }
+        if (storeInstruction instanceof CopyInstruction || storeInstruction instanceof UnaryInstruction || storeInstruction instanceof BinaryInstruction) {
+            return !usedValues.contains(storeInstruction.getDestination());
+        }
+        return false;
     }
 }

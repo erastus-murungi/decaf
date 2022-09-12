@@ -7,6 +7,7 @@ public class X64CallOperand extends X64Operand {
     private final boolean isImported;
 
     public X64CallOperand(FunctionCall functionCall) {
+        super(null);
         this.methodName = functionCall.getMethodName();
         this.isImported = functionCall.isImported();
     }

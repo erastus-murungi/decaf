@@ -6,6 +6,7 @@ import java.util.Optional;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.asm.AsmWriter;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.operand.Operand;

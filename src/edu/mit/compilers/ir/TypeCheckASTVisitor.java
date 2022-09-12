@@ -141,9 +141,9 @@ public class TypeCheckASTVisitor implements ASTVisitor<Type> {
             if (testType != Type.Bool)
                 exceptions.add(new DecafSemanticException(forStatement.terminatingCondition.tokenPosition, "for-loop test must evaluate to " + Type.Bool + " not " + testType));
             forStatement.block.accept(this, symbolTable);
-            optionalDescriptor = symbolTable.getDescriptorFromValidScopes(forStatement.update.location.name.getLabel());
+            optionalDescriptor = symbolTable.getDescriptorFromValidScopes(forStatement.update.getLocation().name.getLabel());
             if (optionalDescriptor.isEmpty())
-                exceptions.add(new DecafSemanticException(forStatement.update.location.tokenPosition, forStatement.update.location.name + " must be declared in scope"));
+                exceptions.add(new DecafSemanticException(forStatement.update.getLocation().tokenPosition, forStatement.update.getLocation().name + " must be declared in scope"));
             else {
                 Descriptor updatingDescriptor = optionalDescriptor.get();
                 if (updatingDescriptor.type != Type.Int)

@@ -8,6 +8,7 @@ public class X64JumpTargetOperand extends X64Operand {
     @NotNull private final String target;
 
     public X64JumpTargetOperand(@NotNull BasicBlock target) {
+        super(null);
         this.target = target.getInstructionList().getLabelForAsm();
     }
 

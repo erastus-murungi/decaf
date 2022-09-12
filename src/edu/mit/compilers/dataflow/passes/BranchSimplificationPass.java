@@ -4,14 +4,11 @@ package edu.mit.compilers.dataflow.passes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.codes.ConditionalBranch;
-import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.dataflow.OptimizationContext;
 
 public class BranchSimplificationPass extends OptimizationPass {

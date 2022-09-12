@@ -10,7 +10,7 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.utils.CLI;
 import edu.mit.compilers.utils.GraphVizPrinter;
 import edu.mit.compilers.utils.ProgramIr;
@@ -25,7 +25,6 @@ public class Coalesce {
             if (CLI.debug)
                 liveIntervalsUtil.prettyPrintLiveIntervals(method);
             var interferenceGraph = new InterferenceGraph(liveIntervalsUtil, method);
-            GraphVizPrinter.writeInterferenceGraph(interferenceGraph);
             var unionFind = new UnionFind<>(interferenceGraph.getMoveNodes());
             for (var pair : interferenceGraph.getUniqueMoveEdges()) {
                 unionFind.union(pair.first(), pair.second());
@@ -33,8 +32,8 @@ public class Coalesce {
             var sets = unionFind.toSets();
             var allUses = sets.stream()
                     .filter(nodes -> nodes.size() > 1)
-                    .map(nodes -> nodes.stream()
-                            .map(node -> node.liveInterval()
+                    .map(nodes -> nodes.stream().filter(liveInterval -> liveInterval.variable() instanceof VirtualRegister)
+                            .map(liveInterval -> (VirtualRegister) liveInterval
                                     .variable().copy())
                             .collect(Collectors.toUnmodifiableSet()))
                     .toList();
@@ -48,7 +47,7 @@ public class Coalesce {
             new LiveIntervalsUtil(method, programIr).prettyPrintLiveIntervals(method);
     }
 
-    private static boolean renameAllUses(Collection<LValue> uses, Method method) {
+    private static boolean renameAllUses(Collection<VirtualRegister> uses, Method method) {
         var changesHappened = false;
         if (uses.size() < 2)
             return false;
@@ -56,15 +55,13 @@ public class Coalesce {
         var newName = uses.stream()
                 .min(Comparator.comparing(Object::toString))
                 .orElseThrow().copy();
-        if (newName.getVersionNumber().equals(0))
-            newName.clearVersionNumber();
         for (BasicBlock basicBlock : basicBlocks) {
             List<Instruction> instructions = new ArrayList<>();
             for (Instruction instruction : basicBlock.getInstructionList()) {
-                for (LValue lValue : instruction.getAllLValues()) {
-                    if (uses.contains(lValue)) {
+                for (VirtualRegister virtualRegister : instruction.getAllVirtualRegisters()) {
+                    if (uses.contains(virtualRegister)) {
                         changesHappened = true;
-                        lValue.renameForSsa(newName);
+                        virtualRegister.renameForSsa(newName);
                     }
                 }
                 if (instruction instanceof CopyInstruction copyInstruction) {

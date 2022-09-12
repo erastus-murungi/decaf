@@ -1,5 +1,6 @@
 package edu.mit.compilers.dataflow.operand;
 
+import java.util.List;
 import java.util.Objects;
 
 import edu.mit.compilers.codegen.codes.StoreInstruction;
@@ -18,6 +19,11 @@ public class UnmodifiedOperand extends Operand {
     @Override
     public boolean contains(Value comp) {
         return comp.equals(value);
+    }
+
+    @Override
+    public List<Value> getNames() {
+        return List.of(value);
     }
 
     @Override

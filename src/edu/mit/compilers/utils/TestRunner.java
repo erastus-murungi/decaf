@@ -46,10 +46,11 @@ public class TestRunner {
     }
 
 
-    public static void testCodegen() throws IOException {
-        String filepath = "tests/codegen/input";
-        List<File> allTestFiles = getAllTestFiles(filepath);
+    public static void testCodegen() {
+        final var filepath = "tests/codegen/input";
+        var allTestFiles = getAllTestFiles(filepath);
 
+        int nPassed = 0;
         for (var file: allTestFiles) {
             Stopwatch stopwatch = Stopwatch.createStarted();
             System.out.print("compiling... " + file.getName());
@@ -66,12 +67,13 @@ public class TestRunner {
                     System.out.println(compilation.output);
                 } else {
                     System.out.println(Utils.coloredPrint("\tPASSED: " + file.getName(), Utils.ANSIColorConstants.ANSI_GREEN_BOLD));
+                    nPassed += 1;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            continue;
         }
+        System.out.format("Passed %d out of %d\n", nPassed, allTestFiles.size());
     }
 
     private static void compileTests(String filepath) throws IOException {

@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.codegen.names.Value;
 
 // a pair (u, v, pos, block), such that u <- v is a copy assignment

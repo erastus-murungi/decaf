@@ -210,9 +210,9 @@ public class GraphVizPrinter {
                     .toString()).replace(" ", "\u2007")));
             edges.add(String.format("   %s -> %s [arrowhead=none, style=dotted, label=\"%s\"];", entry.first()
                     .hashCode(), entry.second()
-                    .hashCode(), String.format("%s <=> %s", escape(entry.first.liveInterval()
+                    .hashCode(), String.format("%s <=> %s", escape(entry.first
                     .variable()
-                    .toString()), escape(entry.second.liveInterval()
+                    .toString()), escape(entry.second
                     .variable()
                     .toString()))));
         }

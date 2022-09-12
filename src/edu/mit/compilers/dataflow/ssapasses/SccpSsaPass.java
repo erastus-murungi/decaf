@@ -4,7 +4,6 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
@@ -14,9 +13,8 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
-import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.codegen.names.NumericalConstant;
-import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.ssa.SSA;
 import edu.mit.compilers.utils.TarjanSCC;
@@ -34,7 +32,7 @@ public class SccpSsaPass extends SsaOptimizationPass<Void> {
         for (BasicBlock basicBlock : getBasicBlocksList()) {
             var instructionList = new ArrayList<Instruction>();
             for (Instruction instruction : basicBlock.getInstructionList()) {
-                if (instruction instanceof BinaryInstruction || instruction instanceof UnaryInstruction || (instruction instanceof CopyInstruction copyInstruction && copyInstruction.getValue() instanceof LValue)) {
+                if (instruction instanceof BinaryInstruction || instruction instanceof UnaryInstruction || (instruction instanceof CopyInstruction copyInstruction && copyInstruction.getValue() instanceof VirtualRegister)) {
                     var dest = ((StoreInstruction) instruction).getDestination();
                     var latticeValue = latticeValues.get(dest);
                     if (latticeValue.isConstant()) {
@@ -48,11 +46,11 @@ public class SccpSsaPass extends SsaOptimizationPass<Void> {
 
                 }
                 if (instruction instanceof HasOperand hasOperand) {
-                    for (LValue lValue : hasOperand.getOperandLValues()) {
-                        var latticeValue = latticeValues.getOrDefault(lValue, LatticeElement.bottom());
+                    for (VirtualRegister virtualRegister : hasOperand.getOperandVirtualRegisters()) {
+                        var latticeValue = latticeValues.getOrDefault(virtualRegister, LatticeElement.bottom());
                         if (latticeValue.isConstant()) {
                             var inst = hasOperand.copy();
-                            hasOperand.replaceValue(lValue, new NumericalConstant(latticeValue.getValue(), lValue.getType()));
+                            hasOperand.replaceValue(virtualRegister, new NumericalConstant(latticeValue.getValue(), virtualRegister.getType()));
                             resultList.add(new SCCPOptResult(inst, hasOperand));
                             changesHappened = true;
                         }

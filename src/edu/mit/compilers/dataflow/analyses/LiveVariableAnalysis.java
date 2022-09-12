@@ -12,7 +12,6 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.dataflow.usedef.Def;
@@ -93,8 +92,8 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
         var useSet = new HashSet<UseDef>();
         for (Instruction instruction : basicBlock.getInstructionListReversed()) {
             if (instruction instanceof HasOperand hasOperand) {
-                hasOperand.getOperandScalarVariables()
-                        .forEach(lValue -> useSet.add(new Use(lValue, instruction)));
+                hasOperand.getAllLValues()
+                          .forEach(lValue -> useSet.add(new Use(lValue, instruction)));
             }
         }
         return useSet;
@@ -104,9 +103,7 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
         var defSet = new HashSet<UseDef>();
         for (Instruction instruction : basicBlock.getInstructionListReversed()) {
             if (instruction instanceof StoreInstruction storeInstruction) {
-                if (!(storeInstruction.getDestination() instanceof MemoryAddress)) {
-                    defSet.add(new Def(storeInstruction));
-                }
+                defSet.add(new Def(storeInstruction));
             }
         }
         return defSet;

@@ -55,11 +55,6 @@ public class StringConstant extends Constant {
     }
 
     @Override
-    public void renameForSsa(int versionNumber) {
-        throw new IllegalStateException();
-    }
-
-    @Override
     public String getValue() {
         return content;
     }

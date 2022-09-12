@@ -1,5 +1,7 @@
 package edu.mit.compilers.dataflow.operand;
 
+import java.util.List;
+
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.Value;
@@ -19,6 +21,11 @@ public class BinaryOperand extends Operand {
     @Override
     public boolean contains(Value name) {
         return this.fstOperand.equals(name) || this.sndOperand.equals(name);
+    }
+
+    @Override
+    public List<Value> getNames() {
+        return List.of(fstOperand, sndOperand);
     }
 
     @Override

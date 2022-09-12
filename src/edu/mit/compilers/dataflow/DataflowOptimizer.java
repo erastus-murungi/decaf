@@ -1,14 +1,9 @@
 package edu.mit.compilers.dataflow;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
-import edu.mit.compilers.cfg.BasicBlock;
-import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.LValue;
 import edu.mit.compilers.dataflow.passes.BranchSimplificationPass;
 import edu.mit.compilers.dataflow.passes.CommonSubExpressionEliminationPass;
 import edu.mit.compilers.dataflow.passes.ConstantPropagationPass;
@@ -25,7 +20,6 @@ import edu.mit.compilers.dataflow.ssapasses.LoopAnalysisPass;
 import edu.mit.compilers.dataflow.ssapasses.RedundantPhiEliminationPass;
 import edu.mit.compilers.dataflow.ssapasses.SccpSsaPass;
 import edu.mit.compilers.utils.CLI;
-import edu.mit.compilers.utils.GraphVizPrinter;
 import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.Utils;
 

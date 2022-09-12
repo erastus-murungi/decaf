@@ -1,5 +1,6 @@
 package edu.mit.compilers.dataflow.operand;
 
+import java.util.List;
 import java.util.Objects;
 
 import edu.mit.compilers.codegen.codes.StoreInstruction;
@@ -21,6 +22,11 @@ public class PhiOperand extends Operand {
     public boolean contains(Value comp) {
         return phi.getOperandValues()
                 .contains(comp);
+    }
+
+    @Override
+    public List<Value> getNames() {
+        return phi.getOperandValues();
     }
 
     @Override

@@ -11,6 +11,7 @@ import java.util.Set;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.codegen.names.MemoryAddress;
 import edu.mit.compilers.codegen.names.Value;
 import edu.mit.compilers.dataflow.Direction;

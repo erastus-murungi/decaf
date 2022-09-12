@@ -1,26 +1,29 @@
 package edu.mit.compilers.codegen.codes;
 
+import static edu.mit.compilers.utils.Utils.WORD_SIZE;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
 
+import edu.mit.compilers.asm.AsmWriter;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.Type;
-import edu.mit.compilers.asm.AsmWriter;
-import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.GlobalAddress;
 import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.utils.Utils;
 
 public class GlobalAllocation extends Instruction {
     public static final int DEFAULT_ALIGNMENT = 8;
 
-    private final LValue value;
+    private final GlobalAddress value;
     private final long size;
     public final int alignment;
     public final Type type;
 
-    public LValue getValue() {
+    public GlobalAddress getValue() {
         return value;
     }
 
@@ -28,7 +31,7 @@ public class GlobalAllocation extends Instruction {
         return size;
     }
 
-    public GlobalAllocation(@NotNull LValue value, long size, @NotNull Type type, @Nullable AST source, @Nullable String comment) {
+    public GlobalAllocation(@NotNull GlobalAddress value, long size, @NotNull Type type, @Nullable AST source, @Nullable String comment) {
         super(source, comment);
         this.value = value;
         this.size = size;
@@ -47,7 +50,8 @@ public class GlobalAllocation extends Instruction {
 
     @Override
     public String syntaxHighlightedToString() {
-        return String.format("global %s %s", value.getType().getSourceCode(), value.repr());
+        var globalColoredString = Utils.coloredPrint("global", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
+        return String.format("%s %s [%s x %s]", globalColoredString, value.repr(), value.getType().getColoredSourceCode(), size / WORD_SIZE);
     }
 
     @Override

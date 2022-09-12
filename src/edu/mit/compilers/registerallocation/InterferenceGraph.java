@@ -5,59 +5,56 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.VirtualRegister;
 import edu.mit.compilers.utils.CLI;
 import edu.mit.compilers.utils.GraphVizPrinter;
 import edu.mit.compilers.utils.Pair;
 
 public class InterferenceGraph {
-    HashMap<Node, Set<Node>> graph = new HashMap<>();
-    Map<Node, Set<Node>> isMoveEdge = new HashMap<>();
+    HashMap<LiveInterval, Set<LiveInterval>> graph = new HashMap<>();
+    Map<LiveInterval, Set<LiveInterval>> isMoveEdge = new HashMap<>();
+
     public InterferenceGraph(LiveIntervalsUtil liveIntervalsUtil, Method method) {
         var liveIntervals = new ArrayList<>(liveIntervalsUtil.getLiveIntervals(method));
         var varToLivIntervals = liveIntervalsUtil.getValueToLiveIntervalMappingForMethod(method);
         if (liveIntervals.isEmpty()) return;
+
         for (int i = 0; i < liveIntervals.size(); i++) {
             for (int j = i + 1; j < liveIntervals.size(); j++) {
-                var a = new Node(liveIntervals.get(i));
-                var b = new Node(liveIntervals.get(j));
-                if (LiveIntervalsUtil.liveIntervalsInterfere(a.liveInterval(), b.liveInterval())) {
+                var a = (liveIntervals.get(i));
+                var b = (liveIntervals.get(j));
+                if (LiveIntervalsUtil.liveIntervalsInterfere(a, b)) {
                     insertEdge(a, b);
                 }
             }
         }
         var instructionList = liveIntervals.stream()
-                .findAny()
-                .orElseThrow()
-                .instructionList();
+                                           .findAny()
+                                           .orElseThrow()
+                                           .instructionList();
         var copyInstructions = instructionList.stream()
-                .filter(instruction -> (instruction instanceof CopyInstruction))
-                .map(instruction -> (CopyInstruction) instruction)
-                .filter(copyInstruction -> copyInstruction.getValue() instanceof LValue)
-                .collect(Collectors.toUnmodifiableSet());
+                                              .filter(instruction -> (instruction instanceof CopyInstruction))
+                                              .map(instruction -> (CopyInstruction) instruction)
+                                              .filter(copyInstruction -> copyInstruction.getValue() instanceof VirtualRegister)
+                                              .collect(Collectors.toUnmodifiableSet());
         for (var copyInstruction : copyInstructions) {
-            var a = new Node(varToLivIntervals.get(copyInstruction.getDestination()));
-            var b = new Node(varToLivIntervals.get(copyInstruction.getValue()));
-            if (!LiveIntervalsUtil.liveIntervalsInterfere(a.liveInterval(), b.liveInterval())) {
+            var a = (varToLivIntervals.get(copyInstruction.getDestination()));
+            var b = (varToLivIntervals.get(copyInstruction.getValue()));
+            if (!LiveIntervalsUtil.liveIntervalsInterfere(a, b)) {
                 insertMoveEdge(
-                        new Node(varToLivIntervals.get(copyInstruction.getDestination())),
-                        new Node(varToLivIntervals.get(copyInstruction.getValue())));
+                        (varToLivIntervals.get(copyInstruction.getDestination())),
+                        (varToLivIntervals.get(copyInstruction.getValue())));
             }
         }
-
-        if (CLI.debug)
-            GraphVizPrinter.printInterferenceGraph(this, "ig");
-
     }
 
-    private static Collection<Pair<Node, Node>> getUniqueEdgesHelper(Map<Node, Set<Node>> g) {
-        var allEdges = new HashSet<Pair<Node, Node>>();
+    private static Collection<Pair<LiveInterval, LiveInterval>> getUniqueEdgesHelper(Map<LiveInterval, Set<LiveInterval>> g) {
+        var allEdges = new HashSet<Pair<LiveInterval, LiveInterval>>();
         for (var entry : g.entrySet()) {
             for (var node2 : entry.getValue()) {
                 var a = new Pair<>(entry.getKey(), node2);
@@ -69,44 +66,44 @@ public class InterferenceGraph {
         return allEdges;
     }
 
-    public void insertEdge(Node a, Node b) {
+    public void insertEdge(LiveInterval a, LiveInterval b) {
         graph.computeIfAbsent(a, k -> new HashSet<>())
-                .add(b);
+             .add(b);
         graph.computeIfAbsent(b, k -> new HashSet<>())
-                .add(a);
+             .add(a);
     }
 
-    public void insertMoveEdge(Node a, Node b) {
+    public void insertMoveEdge(LiveInterval a, LiveInterval b) {
         isMoveEdge.computeIfAbsent(a, k -> new HashSet<>())
-                .add(b);
+                  .add(b);
         isMoveEdge.computeIfAbsent(b, k -> new HashSet<>())
-                .add(a);
+                  .add(a);
     }
 
-    public boolean isMoveEdge(Node a, Node b) {
+    public boolean isMoveEdge(LiveInterval a, LiveInterval b) {
         if (isMoveEdge.get(a) == null || isMoveEdge.get(b) == null)
             return false;
         return isMoveEdge.get(a)
-                .contains(b) && isMoveEdge.get(b)
-                .contains(a);
+                         .contains(b) && isMoveEdge.get(b)
+                                                   .contains(a);
     }
 
-    public boolean containsEdge(Node a, Node b) {
+    public boolean containsEdge(LiveInterval a, LiveInterval b) {
         return graph.get(a)
-                .contains(b) && graph.get(b)
-                .contains(a);
+                    .contains(b) && graph.get(b)
+                                         .contains(a);
     }
 
 
-    public Collection<Node> getNodesHelper(boolean isMove) {
-        Collection<Pair<Node, Node>> edges;
+    public Collection<LiveInterval> getNodesHelper(boolean isMove) {
+        Collection<Pair<LiveInterval, LiveInterval>> edges;
         if (isMove) {
             edges = getUniqueMoveEdges();
         } else {
             edges = getUniqueInterferenceGraphEdges();
         }
 
-        var allNodes = new HashSet<Node>();
+        var allNodes = new HashSet<LiveInterval>();
         for (var edge : edges) {
             allNodes.add(edge.first());
             allNodes.add(edge.second());
@@ -114,42 +111,19 @@ public class InterferenceGraph {
         return allNodes;
     }
 
-    public Collection<Node> getInterferenceGraphNodes() {
+    public Collection<LiveInterval> getInterferenceGraphNodes() {
         return getNodesHelper(false);
     }
 
-    public Collection<Node> getMoveNodes() {
+    public Collection<LiveInterval> getMoveNodes() {
         return getNodesHelper(true);
     }
 
-    public Collection<Pair<Node, Node>> getUniqueInterferenceGraphEdges() {
+    public Collection<Pair<LiveInterval, LiveInterval>> getUniqueInterferenceGraphEdges() {
         return getUniqueEdgesHelper(graph);
     }
 
-    public Collection<Pair<Node, Node>> getUniqueMoveEdges() {
+    public Collection<Pair<LiveInterval, LiveInterval>> getUniqueMoveEdges() {
         return getUniqueEdgesHelper(isMoveEdge);
     }
-
-    public record Node(LiveInterval liveInterval) {
-        @Override
-        public String toString() {
-            return liveInterval.variable()
-                    .toString();
-        }
-
-        @Override
-        public int hashCode() {
-            return liveInterval.hashCode();
-        }
-
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof Node node)) return false;
-            return Objects.equals(liveInterval, node.liveInterval);
-        }
-    }
-
-
 }
