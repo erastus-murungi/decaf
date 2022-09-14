@@ -21,12 +21,12 @@ class Main {
         TestRunner.testCodegen();
 //        CLI.debug = true;
 //        for (int i = 0 ; i < 10; i++) {
-//            var res = TestRunner.testCodegenSingleFile("11-big-array.dcf");
+//            var res = TestRunner.testCodegenSingleFile("x-33-binop-order.dcf");
 //            if (!res)
 //                break;
 //        }
 //        CLI.debug = true;
-//        var res = TestRunner.testCodegenSingleFile("16-qsort.dcf");
+//        var res = TestRunner.testCodegenSingleFile("x-07-main-recursion.dcf");
 
     }
 }

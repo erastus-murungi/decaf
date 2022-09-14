@@ -122,7 +122,7 @@ public class Compilation {
             }
             try {
                 var process = Runtime.getRuntime().exec("/Users/erastusmurungi/IdeaProjects/compiler/main");
-                process.waitFor(10  , TimeUnit.SECONDS);
+                process.waitFor(10, TimeUnit.SECONDS);
                 if (process.exitValue() == 0 || process.isAlive())
                     output = Utils.getStringFromInputStream(process.getErrorStream()) + Utils.getStringFromInputStream(process.getInputStream());
                 else

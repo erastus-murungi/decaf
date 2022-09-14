@@ -14,7 +14,7 @@ public class X64CallOperand extends X86Value {
 
     @Override
     public String toString() {
-        if (isImported)
+        if (isImported || methodName.equals("main"))
             return "_" + methodName;
         return methodName;
     }
