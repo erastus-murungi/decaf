@@ -25,6 +25,7 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.names.IrGlobal;
+import edu.mit.compilers.codegen.names.IrGlobalArray;
 import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.codegen.names.IrAssignableValue;
 import edu.mit.compilers.codegen.names.IrMemoryAddress;
@@ -105,9 +106,11 @@ public class LiveIntervalsUtil {
                                              .max()
                                              .orElseThrow(() -> new IllegalStateException(memoryRegisters.get(baseAddress)
                                                                                                          .toString()));
-
-            valueLiveIntervalMap.put(baseAddress, valueLiveIntervalMap.get(baseAddress)
-                                                                      .updateEndpoint(newEndpoint));
+            if (baseAddress instanceof IrGlobalArray) {
+                valueLiveIntervalMap.put(baseAddress,
+                    valueLiveIntervalMap.get(baseAddress)
+                                        .updateEndpoint(newEndpoint));
+            }
         }
         return valueLiveIntervalMap;
     }

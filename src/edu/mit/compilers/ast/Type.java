@@ -31,7 +31,7 @@ public enum Type {
             return Int;
         else if (type.equals(BoolArray))
             return Bool;
-        throw new IllegalArgumentException(type.getSourceCode());
+        return type;
     }
 
     public String getSourceCode() {

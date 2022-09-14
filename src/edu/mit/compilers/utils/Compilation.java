@@ -11,7 +11,6 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import edu.mit.compilers.asm.X64AsmWriter;
-import edu.mit.compilers.asm.X64Program;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.cfg.ControlFlowGraph;
 import edu.mit.compilers.codegen.BasicBlockToInstructionListConverter;
@@ -122,7 +121,7 @@ public class Compilation {
             }
             try {
                 var process = Runtime.getRuntime().exec("/Users/erastusmurungi/IdeaProjects/compiler/main");
-                process.waitFor(10, TimeUnit.SECONDS);
+                process.waitFor(30, TimeUnit.SECONDS);
                 if (process.exitValue() == 0 || process.isAlive())
                     output = Utils.getStringFromInputStream(process.getErrorStream()) + Utils.getStringFromInputStream(process.getInputStream());
                 else
@@ -312,10 +311,10 @@ public class Compilation {
         var registerAllocator = new RegisterAllocator(programIr);
         programIr.findGlobals();
         var x64AsmWriter = new X64AsmWriter(programIr, registerAllocator);
-        var x64program = x64AsmWriter.convert();
-        outputStream.println(x64program);
+        var x86Program = x64AsmWriter.getX86Program();
+        outputStream.println(x86Program);
         if (CLI.debug)
-            System.out.println(x64program);
+            System.out.println(x86Program);
         compilationState = CompilationState.ASSEMBLED;
     }
 

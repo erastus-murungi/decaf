@@ -119,6 +119,8 @@ public class SSA {
             if (instruction instanceof HasOperand hasOperand) {
                 var Vs = hasOperand.getOperandVirtualRegisters();
                 for (var V : Vs) {
+                    if (stacks.get(V) == null)
+                        System.out.println();
                     V.renameForSsa(stacks.get(V)
                             .peek());
                 }

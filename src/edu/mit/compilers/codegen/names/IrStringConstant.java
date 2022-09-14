@@ -3,14 +3,14 @@ package edu.mit.compilers.codegen.names;
 import java.util.Objects;
 
 import edu.mit.compilers.ast.Type;
-import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
+import edu.mit.compilers.codegen.LabelManager;
 
 public class IrStringConstant extends IrConstant {
     private final String content;
     private final String contentEscaped;
 
     public IrStringConstant(String content) {
-        super(Type.String, TemporaryNameIndexGenerator.getNextStringLiteralIndex());
+        super(Type.String, LabelManager.getNextStringLiteralIndex());
         this.content = content;
         this.contentEscaped = content.substring(1, content.length() - 1).translateEscapes();
     }

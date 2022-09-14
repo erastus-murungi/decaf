@@ -1,7 +1,7 @@
 package edu.mit.compilers.codegen;
 
 
-public class TemporaryNameIndexGenerator {
+public class LabelManager {
     public static int boundsCheckIndex = -1;
     public static int highestValue = 0;
     private static int variableIndex = -1;
@@ -9,7 +9,7 @@ public class TemporaryNameIndexGenerator {
     private static int stringLiteralIndex = -1;
 
 
-    private TemporaryNameIndexGenerator() {
+    private LabelManager() {
     }
 
     public static int getNextArrayBoundsCheckLabelIndex() {

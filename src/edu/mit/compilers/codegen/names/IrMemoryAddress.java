@@ -8,10 +8,10 @@ import edu.mit.compilers.ast.Type;
 
 public class IrMemoryAddress extends IrAssignableValue {
     private final int variableIndex;
-    private final IrAssignableValue baseAddress;
+    private final IrValue baseAddress;
     private final IrValue index;
 
-    public IrMemoryAddress(@NotNull Type type, int variableIndex, @NotNull IrAssignableValue baseAddress, @NotNull IrValue index) {
+    public IrMemoryAddress(@NotNull Type type, int variableIndex, @NotNull IrValue baseAddress, @NotNull IrValue index) {
         super(type, String.format("*%s", variableIndex));
         this.variableIndex = variableIndex;
         this.baseAddress = baseAddress;
@@ -36,7 +36,7 @@ public class IrMemoryAddress extends IrAssignableValue {
         return Objects.hash(variableIndex);
     }
 
-    public IrAssignableValue getBaseAddress() {
+    public IrValue getBaseAddress() {
         return baseAddress;
     }
 

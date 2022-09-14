@@ -11,7 +11,7 @@ import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.codegen.names.IrRegister;
 
 public class InstructionList extends ArrayList<Instruction> {
-    public IrValue place;
+    private IrValue place;
 
     private Integer labelIndex;
 
@@ -20,7 +20,7 @@ public class InstructionList extends ArrayList<Instruction> {
     private boolean isEntry = false;
 
     public InstructionList(IrValue place, List<Instruction> codes) {
-        this.place = place;
+        this.setPlace(place);
         this.label = "UNSET";
         addAll(codes);
     }
@@ -98,6 +98,14 @@ public class InstructionList extends ArrayList<Instruction> {
     }
 
     public InstructionList copy() {
-        return new InstructionList(place, this);
+        return new InstructionList(getPlace(), this);
+    }
+
+    public IrValue getPlace() {
+        return place;
+    }
+
+    public void setPlace(IrValue place) {
+        this.place = place;
     }
 }

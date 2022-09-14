@@ -7,6 +7,7 @@ import java.io.IOException;
 import edu.mit.compilers.utils.CLI;
 import edu.mit.compilers.utils.Compilation;
 import edu.mit.compilers.utils.TestRunner;
+import edu.mit.compilers.utils.Utils;
 
 class Main {
     public static void main(String[] args) throws IOException {
@@ -18,15 +19,16 @@ class Main {
 //          new Compilation(new FileInputStream("tests/codegen/input/11-big-array.dcf"), true).run();
 //        new Compilation().run();
 //        TestRunner.run();
-//        TestRunner.testCodegen();
+        TestRunner.testCodegen();
 //        CLI.debug = true;
 //        for (int i = 0 ; i < 10; i++) {
 //            var res = TestRunner.testCodegenSingleFile("x-33-binop-order.dcf");
 //            if (!res)
 //                break;
 //        }
-        CLI.debug = true;
-        var res = TestRunner.testCodegenSingleFile("x-12-nested-array-access.dcf");
+//        System.out.println(Utils.symbolicallyEvaluate("0"));
+//        CLI.debug = true;
+//        var res = TestRunner.testCodegenSingleFile("x-18-initial-value.dcf");
 
     }
 }

@@ -20,9 +20,9 @@ public class DecafSemanticChecker {
     }
 
     public void runChecks(DecafExceptionProcessor decafExceptionProcessor) {
-        SemanticCheckerASTVisitor semanticCheckerVisitor = new SemanticCheckerASTVisitor();
+        var semanticCheckerVisitor = new SemanticCheckerASTVisitor();
         rootNode.accept(semanticCheckerVisitor, null);
-        TypeCheckASTVisitor typeCheckVisitor = new TypeCheckASTVisitor((Program) rootNode, semanticCheckerVisitor.methods, semanticCheckerVisitor.fields, semanticCheckerVisitor.imports);
+        var typeCheckVisitor = new TypeCheckASTVisitor((Program) rootNode, semanticCheckerVisitor.methods, semanticCheckerVisitor.fields, semanticCheckerVisitor.imports);
         rootNode.accept(typeCheckVisitor, semanticCheckerVisitor.fields);
         globalDescriptor = new GlobalDescriptor(Type.Undefined, semanticCheckerVisitor.fields, semanticCheckerVisitor.methods, semanticCheckerVisitor.imports);
         hasError = ASTVisitor.exceptions.size() > 0;

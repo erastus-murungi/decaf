@@ -3,12 +3,12 @@ package edu.mit.compilers.codegen.names;
 import java.util.Objects;
 
 import edu.mit.compilers.ast.Type;
-import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
+import edu.mit.compilers.codegen.LabelManager;
 
 public class IrRegister extends IrAssignableValue {
     protected Integer versionNumber;
 
-    public IrRegister(String label, Type type, Integer versionNumber) {
+    private IrRegister(String label, Type type, Integer versionNumber) {
         super(type, label);
         this.versionNumber = versionNumber;
     }
@@ -38,7 +38,7 @@ public class IrRegister extends IrAssignableValue {
     }
 
     public static IrRegister gen(Type type) {
-        return new IrRegister(TemporaryNameIndexGenerator.getNextTemporaryVariable(), type);
+        return new IrRegister(LabelManager.getNextTemporaryVariable(), type);
     }
 
     public void clearVersionNumber() {

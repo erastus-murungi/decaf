@@ -1,5 +1,7 @@
 package edu.mit.compilers.codegen.names;
 
+import java.util.Objects;
+
 import edu.mit.compilers.ast.Type;
 
 public class IrStackArray extends IrValue {
@@ -22,5 +24,22 @@ public class IrStackArray extends IrValue {
   @Override
   public String toString() {
     return String.format("%s[%d]", label, numElements);
+  }
+
+  public long getNumElements() {
+    return numElements;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof IrStackArray that)) return false;
+    if (!super.equals(o)) return false;
+    return getNumElements() == that.getNumElements() && getLabel().equals(that.getLabel());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getNumElements(), getLabel());
   }
 }

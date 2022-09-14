@@ -279,15 +279,9 @@ public class TypeCheckASTVisitor implements ASTVisitor<Type> {
         if (descriptor.isPresent()) {
             if ((descriptor.get() instanceof ArrayDescriptor)) {
                 switch (descriptor.get().type) {
-                    case Bool:
-                    case BoolArray:
-                        type = Type.Bool;
-                        break;
-                    case Int:
-                    case IntArray:
-                        type = Type.Int;
-                        break;
-                    default:
+                    case Bool, BoolArray -> type = Type.Bool;
+                    case Int, IntArray -> type = Type.Int;
+                    default ->
                         exceptions.add(new DecafSemanticException(locationArray.tokenPosition, locationArray.name.getLabel() + " must be an array"));
                 }
             }

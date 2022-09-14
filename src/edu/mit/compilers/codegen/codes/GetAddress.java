@@ -17,26 +17,26 @@ import edu.mit.compilers.utils.Utils;
 
 
 public class GetAddress extends StoreInstruction {
-    private final IrIntegerConstant length;
-    private IrAssignableValue baseAddress;
+    private final long length;
+    private IrValue baseAddress;
     private IrValue index;
 
-    public GetAddress(IrAssignableValue baseAddress, IrValue index, IrAssignableValue dest, IrIntegerConstant length, AST source) {
+    public GetAddress(IrValue baseAddress, IrValue index, IrAssignableValue dest, long length, AST source) {
         super(dest, source);
         this.baseAddress = baseAddress;
         this.index = index;
         this.length = length;
     }
 
-    public Optional<IrIntegerConstant> getLength() {
-        return Optional.ofNullable(length);
+    public Long getLength() {
+        return length;
     }
 
     public IrValue getIndex() {
         return index;
     }
 
-    public IrAssignableValue getBaseAddress() {
+    public IrValue getBaseAddress() {
         if (baseAddress == null)
             throw new IllegalStateException("the base address is null");
         return baseAddress;

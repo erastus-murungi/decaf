@@ -34,14 +34,14 @@ import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.ProgramIr;
 
 public class BasicBlockToInstructionListConverter {
-    private final Set<IrGlobal> globalNames = new HashSet<>();
-    private final Set<BasicBlock> visitedBasicBlocks = new HashSet<>();
-    private final HashMap<String, SymbolTable> perMethodSymbolTables;
-    private final ProgramIr programIr;
-    private final HashMap<String, IrStringConstant> stringConstantsMap = new HashMap<>();
+  private final Set<IrGlobal> globalNames = new HashSet<>();
+  private final Set<BasicBlock> visitedBasicBlocks = new HashSet<>();
+  private final HashMap<String, SymbolTable> perMethodSymbolTables;
+  private final ProgramIr programIr;
+  private final HashMap<String, IrStringConstant> stringConstantsMap = new HashMap<>();
 
-    private AstToInstructionListConverter currentAstToInstructionListConverter;
-    private NOP currentMethodExitNop;
+  private AstToInstructionListConverter currentAstToInstructionListConverter;
+  private NOP currentMethodExitNop;
 
     public BasicBlockToInstructionListConverter(
             ControlFlowGraph controlFlowGraph) {
@@ -63,18 +63,22 @@ public class BasicBlockToInstructionListConverter {
         this.programIr.renumberLabels();
     }
 
-    public HashMap<String, SymbolTable> getPerMethodSymbolTables() {
-        return perMethodSymbolTables;
-    }
+  public HashMap<String, SymbolTable> getPerMethodSymbolTables() {
+    return perMethodSymbolTables;
+  }
 
-    public Set<IrGlobal> getGlobalNames() {
-        return globalNames;
-    }
+  public Set<IrGlobal> getGlobalNames() {
+    return globalNames;
+  }
 
-    private Method generateMethodInstructionList(MethodDefinition methodDefinition,
-                                                 BasicBlock methodStart,
-                                                 SymbolTable currentSymbolTable) {
-        currentAstToInstructionListConverter = new AstToInstructionListConverter(currentSymbolTable, stringConstantsMap, globalNames);
+  private Method generateMethodInstructionList(
+      MethodDefinition methodDefinition,
+      BasicBlock methodStart,
+      SymbolTable currentSymbolTable
+  ) {
+    currentAstToInstructionListConverter = new AstToInstructionListConverter(currentSymbolTable,
+        stringConstantsMap,
+        globalNames);
 
 //
 //        methodInstructionList.addAll(
@@ -84,129 +88,145 @@ public class BasicBlockToInstructionListConverter {
 //        // if the errors list is non-empty, set hasRuntimeException to true
 //        method.setHasRuntimeException(!cfgGenerationErrors.isEmpty());
 
-        final var entryBasicBlockInstructionList = visit(methodStart);
-        entryBasicBlockInstructionList.setEntry();
-        var method = new Method(methodDefinition);
-        method.entryBlock = methodStart;
-        method.exitBlock = currentMethodExitNop;
-        entryBasicBlockInstructionList.add(0, method);
+    final var entryBasicBlockInstructionList = visit(methodStart);
+    entryBasicBlockInstructionList.setEntry();
+    var method = new Method(methodDefinition);
+    method.entryBlock = methodStart;
+    method.exitBlock = currentMethodExitNop;
+    entryBasicBlockInstructionList.add(0,
+        method);
 
-        var methodExitLabel = "exit_" + methodDefinition.methodName.getLabel();
-        currentMethodExitNop.getInstructionList().setLabel(methodExitLabel);
-        currentMethodExitNop.getInstructionList()
-                .add(new MethodEnd(methodDefinition));
+    var methodExitLabel = "exit_" + methodDefinition.methodName.getLabel();
+    currentMethodExitNop.getInstructionList()
+                        .setLabel(methodExitLabel);
+    currentMethodExitNop.getInstructionList()
+                        .add(new MethodEnd(methodDefinition));
 
-        methodStart.setInstructionList(entryBasicBlockInstructionList);
-        var instructions = new ArrayList<Instruction>();
-        for (var local: ProgramIr.getNonParamLocals(method, globalNames)) {
-            instructions.add(CopyInstruction.noMetaData(local.copy(), IrIntegerConstant.zero()));
+    methodStart.setInstructionList(entryBasicBlockInstructionList);
+    var instructions = new ArrayList<Instruction>();
+    for (var local : ProgramIr.getNonParamLocals(method,
+        globalNames)) {
+      instructions.add(CopyInstruction.noMetaData(local.copy(),
+          IrIntegerConstant.zero()));
+    }
+    entryBasicBlockInstructionList.addAll(1,
+        instructions);
+    method.unoptimizedInstructionList = TraceScheduler.flattenIr(method);
+    return method;
+  }
+
+  private InstructionList getPrologue(Program program) {
+    var prologue = new InstructionList();
+    for (var fieldDeclaration : program.fieldDeclarationList) {
+      for (var name : fieldDeclaration.names) {
+        prologue.add(new GlobalAllocation(new IrGlobalScalar(name.getLabel(),
+            fieldDeclaration.getType()),
+            fieldDeclaration.getType()
+                            .getFieldSize(),
+            fieldDeclaration.getType(),
+            name,
+            "# " + name.getSourceCode()));
+      }
+      for (var array : fieldDeclaration.arrays) {
+        var size = (fieldDeclaration.getType()
+                                    .getFieldSize() * array.getSize()
+                                                           .convertToLong());
+        prologue.add(new GlobalAllocation(new IrGlobalArray(array.getId()
+                                                                 .getLabel(),
+            fieldDeclaration.getType()),
+            size,
+            fieldDeclaration.getType(),
+            array,
+            "# " + array.getSourceCode()));
+      }
+    }
+    globalNames.addAll(prologue.stream()
+                               .flatMap(instruction -> instruction.getAllValues()
+                                                                  .stream())
+                               .filter(abstractName -> abstractName instanceof IrGlobal)
+                               .map(abstractName -> (IrGlobal) abstractName)
+                               .collect(Collectors.toUnmodifiableSet()));
+
+    for (String stringLiteral : findAllStringLiterals(program)) {
+      final var stringConstant = new IrStringConstant(stringLiteral);
+      prologue.add(new StringConstantAllocation(stringConstant));
+      stringConstantsMap.put(stringLiteral,
+          stringConstant);
+    }
+    return prologue;
+  }
+
+  private Set<String> findAllStringLiterals(Program program) {
+    var literalList = new HashSet<String>();
+    var toExplore = new Stack<AST>();
+
+    toExplore.addAll(program.methodDefinitionList);
+    while (!toExplore.isEmpty()) {
+      final AST node = toExplore.pop();
+      if (node instanceof StringLiteral) literalList.add(((StringLiteral) node).literal);
+      else {
+        for (Pair<String, AST> astPair : node.getChildren()) {
+          toExplore.add(astPair.second());
         }
-        entryBasicBlockInstructionList.addAll(1, instructions);
-        method.unoptimizedInstructionList = TraceScheduler.flattenIr(method);
-        return method;
+      }
     }
+    return literalList;
+  }
 
-    private InstructionList getPrologue(Program program) {
-        var prologue = new InstructionList();
-        for (var fieldDeclaration : program.fieldDeclarationList) {
-            for (var name : fieldDeclaration.names) {
-                prologue.add(new GlobalAllocation(new IrGlobalScalar(name.getLabel(), fieldDeclaration.getType()), fieldDeclaration.getType()
-                                                                                                                                   .getFieldSize(), fieldDeclaration.getType(), name, "# " + name.getSourceCode()
-                ));
-            }
-            for (var array : fieldDeclaration.arrays) {
-                var size = (fieldDeclaration.getType()
-                        .getFieldSize() * array.getSize()
-                        .convertToLong());
-                prologue.add(new GlobalAllocation(new IrGlobalArray(array.getId()
-                                                                         .getLabel(), fieldDeclaration.getType()), size, fieldDeclaration.getType(), array, "# " + array.getSourceCode()
-                ));
-            }
-        }
-        globalNames.addAll(prologue.stream()
-                .flatMap(instruction -> instruction.getAllValues()
-                        .stream())
-                .filter(abstractName -> abstractName instanceof IrGlobal)
-                .map(abstractName -> (IrGlobal) abstractName)
-                .collect(Collectors.toUnmodifiableSet()));
-
-        for (String stringLiteral : findAllStringLiterals(program)) {
-            final var stringConstant = new IrStringConstant(stringLiteral);
-            prologue.add(new StringConstantAllocation(stringConstant));
-            stringConstantsMap.put(stringLiteral, stringConstant);
-        }
-        return prologue;
-    }
-
-    private Set<String> findAllStringLiterals(Program program) {
-        var literalList = new HashSet<String>();
-        var toExplore = new Stack<AST>();
-
-        toExplore.addAll(program.methodDefinitionList);
-        while (!toExplore.isEmpty()) {
-            final AST node = toExplore.pop();
-            if (node instanceof StringLiteral)
-                literalList.add(((StringLiteral) node).literal);
-            else {
-                for (Pair<String, AST> astPair : node.getChildren()) {
-                    toExplore.add(astPair.second());
-                }
-            }
-        }
-        return literalList;
-    }
-
-    public ProgramIr getProgramIr() {
-        return programIr;
-    }
+  public ProgramIr getProgramIr() {
+    return programIr;
+  }
 
 
-    public InstructionList visit(BasicBlock basicBlock) {
-        return switch (basicBlock.getBasicBlockType()) {
-            case NO_BRANCH -> visitBasicBlockBranchLess(basicBlock);
-            case BRANCH -> visitBasicBlockWithBranch(basicBlock);
-            default -> visitNOP((NOP) basicBlock);
-        };
-    }
+  public InstructionList visit(BasicBlock basicBlock) {
+    return switch (basicBlock.getBasicBlockType()) {
+      case NO_BRANCH -> visitBasicBlockBranchLess(basicBlock);
+      case BRANCH -> visitBasicBlockWithBranch(basicBlock);
+      default -> visitNOP((NOP) basicBlock);
+    };
+  }
 
-    public InstructionList visitBasicBlockBranchLess(BasicBlock basicBlockBranchLess) {
-        if (visitedBasicBlocks.contains(basicBlockBranchLess))
-            return basicBlockBranchLess.getInstructionList();
-        visitedBasicBlocks.add(basicBlockBranchLess);
-        InstructionList instructionList = new InstructionList();
-        for (var line : basicBlockBranchLess.getAstNodes())
-            instructionList.addAll(line.accept(currentAstToInstructionListConverter, null));
-        assert basicBlockBranchLess.getSuccessor() != null;
-        visit(basicBlockBranchLess.getSuccessor());
-        basicBlockBranchLess.setInstructionList(instructionList);
-        return instructionList;
-    }
+  public InstructionList visitBasicBlockBranchLess(BasicBlock basicBlockBranchLess) {
+    if (visitedBasicBlocks.contains(basicBlockBranchLess)) return basicBlockBranchLess.getInstructionList();
+    visitedBasicBlocks.add(basicBlockBranchLess);
+    InstructionList instructionList = new InstructionList();
+    for (var line : basicBlockBranchLess.getAstNodes())
+      instructionList.addAll(line.accept(currentAstToInstructionListConverter,
+          null));
+    assert basicBlockBranchLess.getSuccessor() != null;
+    visit(basicBlockBranchLess.getSuccessor());
+    basicBlockBranchLess.setInstructionList(instructionList);
+    return instructionList;
+  }
 
 
-    public InstructionList visitBasicBlockWithBranch(BasicBlock basicBlockWithBranch) {
-        if (visitedBasicBlocks.contains(basicBlockWithBranch))
-            return basicBlockWithBranch.getInstructionList();
+  public InstructionList visitBasicBlockWithBranch(BasicBlock basicBlockWithBranch) {
+    if (visitedBasicBlocks.contains(basicBlockWithBranch)) return basicBlockWithBranch.getInstructionList();
 
-        visitedBasicBlocks.add(basicBlockWithBranch);
+    visitedBasicBlocks.add(basicBlockWithBranch);
 
-        var condition = basicBlockWithBranch.getBranchCondition().orElseThrow();
-        var conditionInstructionList = condition.accept(currentAstToInstructionListConverter, IrRegister.gen(Type.Bool));
+    var condition = basicBlockWithBranch.getBranchCondition()
+                                        .orElseThrow();
+    var conditionInstructionList = condition.accept(currentAstToInstructionListConverter,
+        IrRegister.gen(Type.Bool));
 
-        visit(basicBlockWithBranch.getTrueTarget());
-        visit(basicBlockWithBranch.getFalseTarget());
+    visit(basicBlockWithBranch.getTrueTarget());
+    visit(basicBlockWithBranch.getFalseTarget());
 
-        var branchCondition =
-                new ConditionalBranch(conditionInstructionList.place, basicBlockWithBranch.getFalseTarget(), condition,
-                        "if !(" + basicBlockWithBranch.getBranchCondition().orElseThrow()
-                        .getSourceCode() + ")");
-        conditionInstructionList.add(branchCondition);
-        basicBlockWithBranch.setInstructionList(conditionInstructionList);
-        return conditionInstructionList;
-    }
+    var branchCondition = new ConditionalBranch(conditionInstructionList.getPlace(),
+        basicBlockWithBranch.getFalseTarget(),
+        condition,
+        "if !(" + basicBlockWithBranch.getBranchCondition()
+                                      .orElseThrow()
+                                      .getSourceCode() + ")");
+    conditionInstructionList.add(branchCondition);
+    basicBlockWithBranch.setInstructionList(conditionInstructionList);
+    return conditionInstructionList;
+  }
 
-    public InstructionList visitNOP(NOP nop) {
-        this.currentMethodExitNop = nop;
-        visitedBasicBlocks.add(nop);
-        return nop.getInstructionList();
-    }
+  public InstructionList visitNOP(NOP nop) {
+    this.currentMethodExitNop = nop;
+    visitedBasicBlocks.add(nop);
+    return nop.getInstructionList();
+  }
 }

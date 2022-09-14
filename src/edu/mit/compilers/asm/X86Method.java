@@ -7,31 +7,31 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import edu.mit.compilers.asm.instructions.X64Instruction;
-import edu.mit.compilers.asm.instructions.X64MetaData;
+import edu.mit.compilers.asm.instructions.X86MetaData;
 
-public class X64Method extends ArrayList<X64Instruction> {
+public class X86Method extends ArrayList<X64Instruction> {
     private final List<X64Instruction> prologue = new ArrayList<>();
     private final List<X64Instruction> epilogue = new ArrayList<>();
 
-    public X64Method() {
+    public X86Method() {
     }
 
-    public X64Method addPrologue(X64MetaData x64MetaData) {
-        prologue.add(x64MetaData);
+    public X86Method addPrologue(X86MetaData x86MetaData) {
+        prologue.add(x86MetaData);
         return this;
     }
 
-    public X64Method addEpilogue(X64MetaData x64MetaData) {
-        epilogue.add(x64MetaData);
+    public X86Method addEpilogue(X86MetaData x86MetaData) {
+        epilogue.add(x86MetaData);
         return this;
     }
 
-    public X64Method addLine(X64Instruction x64Instruction) {
+    public X86Method addLine(X64Instruction x64Instruction) {
         super.add(x64Instruction);
         return this;
     }
 
-    public X64Method addAtIndex(int index, X64Instruction line) {
+    public X86Method addAtIndex(int index, X64Instruction line) {
         add(index, line);
         return this;
     }
@@ -40,7 +40,7 @@ public class X64Method extends ArrayList<X64Instruction> {
         addAll(index, lines);
     }
 
-    public X64Method addLines(Collection<X64Instruction> lines) {
+    public X86Method addLines(Collection<X64Instruction> lines) {
         addAll(lines);
         return this;
     }

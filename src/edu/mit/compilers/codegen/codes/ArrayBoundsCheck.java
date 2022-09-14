@@ -14,7 +14,7 @@ public class ArrayBoundsCheck extends HasOperand {
     public Integer boundsIndex;
     private IrMemoryAddress destination;
     private IrValue index;
-    private IrAssignableValue baseAddress;
+    private IrValue baseAddress;
 
     public ArrayBoundsCheck(GetAddress getAddress, Integer boundsIndex) {
         super(null);
@@ -66,7 +66,7 @@ public class ArrayBoundsCheck extends HasOperand {
             changesHappened = true;
         }
         if (baseAddress == oldName) {
-            oldName = newName;
+            baseAddress = newName;
             changesHappened = true;
         }
         return changesHappened;
@@ -74,12 +74,12 @@ public class ArrayBoundsCheck extends HasOperand {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s %s, %s, %s", DOUBLE_INDENT, "checkbounds", destination.toString(), baseAddress.getType().getColoredSourceCode(), index, getAddress.getLength().orElseThrow());
+        return String.format("%s%s %s %s, %s, %s", DOUBLE_INDENT, "checkbounds", destination.toString(), baseAddress.getType().getColoredSourceCode(), index, getAddress.getLength());
     }
 
     public String syntaxHighlightedToString() {
         final var checkBoundsString = Utils.coloredPrint("checkbounds", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s%s %s %s, %s, %s", DOUBLE_INDENT, checkBoundsString, destination.toString(), baseAddress.getType().getColoredSourceCode(), index, getAddress.getLength().orElseThrow());
+        return String.format("%s%s %s %s, %s, %s", DOUBLE_INDENT, checkBoundsString, destination.toString(), baseAddress.getType().getColoredSourceCode(), index, getAddress.getLength());
     }
 
 }
