@@ -25,7 +25,8 @@ class Main {
 //            if (!res)
 //                break;
 //        }
-        var res = TestRunner.testCodegenSingleFile("09-global.dcf");
+//        CLI.debug = true;
+        var res = TestRunner.testCodegenSingleFile("16-qsort.dcf");
 
     }
 }
