@@ -18,7 +18,7 @@ class Main {
 //          new Compilation(new FileInputStream("tests/codegen/input/11-big-array.dcf"), true).run();
 //        new Compilation().run();
 //        TestRunner.run();
-//        TestRunner.testCodegen();
+        TestRunner.testCodegen();
 //        CLI.debug = true;
 //        for (int i = 0 ; i < 10; i++) {
 //            var res = TestRunner.testCodegenSingleFile("11-big-array.dcf");
@@ -26,7 +26,7 @@ class Main {
 //                break;
 //        }
 //        CLI.debug = true;
-        var res = TestRunner.testCodegenSingleFile("16-qsort.dcf");
+//        var res = TestRunner.testCodegenSingleFile("16-qsort.dcf");
 
     }
 }

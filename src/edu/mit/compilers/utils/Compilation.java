@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 import edu.mit.compilers.asm.X64AsmWriter;
 import edu.mit.compilers.asm.X64Program;
@@ -121,8 +122,11 @@ public class Compilation {
             }
             try {
                 var process = Runtime.getRuntime().exec("/Users/erastusmurungi/IdeaProjects/compiler/main");
-                process.waitFor();
-                output = Utils.getStringFromInputStream(process.getErrorStream()) + Utils.getStringFromInputStream(process.getInputStream());
+                process.waitFor(10  , TimeUnit.SECONDS);
+                if (process.exitValue() == 0 || process.isAlive())
+                    output = Utils.getStringFromInputStream(process.getErrorStream()) + Utils.getStringFromInputStream(process.getInputStream());
+                else
+                    output = "TIMEOUT";
                 if (CLI.debug)
                     System.out.println(output);
             } catch (IOException e) {
