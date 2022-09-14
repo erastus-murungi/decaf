@@ -367,8 +367,7 @@ public class ControlFlowGraph {
 
         // Evaluate the condition
         Expression test = Utils.rotateBinaryOpExpression(whileStatement.test);
-        BasicBlock conditionExpr = BasicBlock.branch(test, exitNop, exitNop);
-        conditionExpr.setFalseTarget(falseBlock);
+        BasicBlock conditionExpr = BasicBlock.branch(test, exitNop, falseBlock);
         falseBlock.addPredecessor(conditionExpr);
 
         // In for loops, continue should point to the evaluation expression
