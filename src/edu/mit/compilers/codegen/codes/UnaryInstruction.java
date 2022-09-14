@@ -35,15 +35,15 @@ public class UnaryInstruction extends StoreInstruction {
     @Override
     public String syntaxHighlightedToString() {
         if (getComment().isPresent())
-            return String.format("%s%s = %s %s %s %s", DOUBLE_INDENT, getDestination(), Operators.getColoredUnaryOperatorName(operator), operand.repr(), DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s = %s %s", DOUBLE_INDENT, getDestination(), Operators.getColoredUnaryOperatorName(operator), operand.repr());
+            return String.format("%s%s = %s %s %s %s", DOUBLE_INDENT, getDestination(), Operators.getColoredUnaryOperatorName(operator), operand, DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s = %s %s", DOUBLE_INDENT, getDestination(), Operators.getColoredUnaryOperatorName(operator), operand);
     }
 
     @Override
     public String toString() {
         if (getComment().isPresent())
-            return String.format("%s%s = %s %s %s %s", DOUBLE_INDENT, getDestination(), Operators.getUnaryOperatorName(operator), operand.repr(), DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s = %s %s", DOUBLE_INDENT, getDestination(), Operators.getOperatorName(operator), operand.repr());
+            return String.format("%s%s = %s %s %s %s", DOUBLE_INDENT, getDestination(), Operators.getUnaryOperatorName(operator), operand, DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s = %s %s", DOUBLE_INDENT, getDestination(), Operators.getOperatorName(operator), operand);
     }
 
     @Override

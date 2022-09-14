@@ -10,6 +10,6 @@ public class Def extends UseDef {
 
     @Override
     public String toString() {
-        return "def " + variable.repr();
+        return "def " + variable;
     }
 }

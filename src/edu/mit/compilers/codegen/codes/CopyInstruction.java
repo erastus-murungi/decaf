@@ -90,13 +90,13 @@ public class CopyInstruction extends StoreInstruction implements Cloneable {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s, %s", DOUBLE_INDENT, "store", irValue.repr(), getDestination().repr());
+        return String.format("%s%s %s, %s", DOUBLE_INDENT, "store", irValue, getDestination());
     }
 
     @Override
     public String syntaxHighlightedToString() {
         var storeString = Utils.coloredPrint("store", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s%s %s, %s", DOUBLE_INDENT, storeString, irValue.repr(), getDestination().repr());
+        return String.format("%s%s %s, %s", DOUBLE_INDENT, storeString, irValue, getDestination());
     }
 
 }

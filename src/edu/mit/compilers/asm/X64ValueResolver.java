@@ -1,5 +1,6 @@
 package edu.mit.compilers.asm;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.Math.min;
@@ -11,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -18,7 +20,7 @@ import java.util.Map;
 import java.util.Set;
 
 import edu.mit.compilers.asm.instructions.X64BinaryInstruction;
-import edu.mit.compilers.asm.operands.X64ArrayOperand;
+import edu.mit.compilers.asm.operands.X86MemoryAddressValue;
 import edu.mit.compilers.asm.operands.X86ConstantValue;
 import edu.mit.compilers.asm.operands.X86GlobalValue;
 import edu.mit.compilers.asm.operands.X86RegisterMappedValue;
@@ -33,6 +35,7 @@ import edu.mit.compilers.codegen.names.IrAssignableValue;
 import edu.mit.compilers.codegen.names.IrConstant;
 import edu.mit.compilers.codegen.names.IrGlobalArray;
 import edu.mit.compilers.codegen.names.IrGlobalScalar;
+import edu.mit.compilers.codegen.names.IrIntegerConstant;
 import edu.mit.compilers.codegen.names.IrMemoryAddress;
 import edu.mit.compilers.codegen.names.IrRegister;
 import edu.mit.compilers.codegen.names.IrValue;
@@ -184,12 +187,17 @@ public class X64ValueResolver {
       @NotNull IrValue irValue,
       ArrayList<X64RegisterType> toAvoid
   ) {
-    final var liveValuesInInterval = Utils.getLAllRegisterAllocatableValuesInInstructionList(registerAllocator.liveIntervalsUtil.getAllInstructionsInLiveIntervalOf(irValue, currentMethod));
+    final var liveValuesInInterval = irValue instanceof IrIntegerConstant ? Collections.<IrAssignableValue>emptySet() : Utils.getLAllRegisterAllocatableValuesInInstructionList(registerAllocator.liveIntervalsUtil.getAllInstructionsInLiveIntervalOf(irValue, currentMethod));
     final var m = new HashMap<X64RegisterType, Set<IrAssignableValue>>();
     for (IrAssignableValue irAssignableValue : liveValuesInInterval) {
       var location = registerMappedIrValues.get(currentMethod).get(irAssignableValue);
       if (location != null)
         m.computeIfAbsent(location.getX64RegisterType(), k -> new HashSet<>()).add(irAssignableValue);
+    }
+    for (var register: X64RegisterType.regsToAllocate) {
+      if (!m.containsKey(register)) {
+        m.put(register, new HashSet<>());
+      }
     }
     toAvoid.add(X64RegisterType.STACK);
     // get the one with the
@@ -209,11 +217,11 @@ public class X64ValueResolver {
   }
 
 
-  private X64ArrayOperand resolveIrMemoryAddress(@NotNull IrMemoryAddress irMemoryAddress) {
+  private X86MemoryAddressValue resolveIrMemoryAddress(@NotNull IrMemoryAddress irMemoryAddress) {
     X86RegisterMappedValue baseRegister, indexRegister;
     // get base index
     var indexValue = resolveIrValue(irMemoryAddress.getIndex());
-    if (indexValue instanceof X86StackMappedValue) {
+    if (indexValue instanceof X86StackMappedValue || indexValue instanceof X86ConstantValue || indexValue instanceof X86MemoryAddressValue) {
       // we should spill
       indexRegister = new X86RegisterMappedValue(genRegisterToSpill(irMemoryAddress.getIndex(), new ArrayList<>()), irMemoryAddress.getIndex());
     } else {
@@ -229,7 +237,7 @@ public class X64ValueResolver {
     if (irMemoryAddress.getBaseAddress() instanceof IrGlobalArray irGlobalArray) {
       currentX64Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq, new X86GlobalValue(irGlobalArray), baseRegister));
     }
-    return new X64ArrayOperand(baseRegister, indexRegister);
+    return new X86MemoryAddressValue(baseRegister, indexRegister);
   }
 
   private boolean isStackMappedIrValue(@NotNull IrValue irValue) {

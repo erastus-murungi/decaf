@@ -23,7 +23,7 @@ public class IrStringConstant extends IrConstant {
 
     @Override
     public String toString() {
-        return getLabel();
+        return String.format("@.%s",getLabel());
     }
 
     @Override
@@ -42,11 +42,6 @@ public class IrStringConstant extends IrConstant {
 
     public int size() {
         return contentEscaped.length();
-    }
-
-    @Override
-    public String repr() {
-        return String.format("@.%s", getLabel());
     }
 
     @Override

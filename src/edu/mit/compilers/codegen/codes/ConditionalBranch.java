@@ -33,7 +33,7 @@ public class ConditionalBranch extends HasOperand implements WithTarget {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, "if", condition.repr(), "is false goto", getTarget().getInstructionList().getLabel(), DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
+        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, "if", condition, "is false goto", getTarget().getInstructionList().getLabel(), DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
     }
 
     @Override
@@ -50,7 +50,7 @@ public class ConditionalBranch extends HasOperand implements WithTarget {
     public String syntaxHighlightedToString() {
         var ifString = Utils.coloredPrint("if false", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
         var goTo = Utils.coloredPrint("goto", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, ifString, condition.repr(), goTo, getTarget().getInstructionList()
+        return String.format("%s%s %s %s %s %s %s", DOUBLE_INDENT, ifString, condition, goTo, getTarget().getInstructionList()
                                                                                                                 .getLabel(), DOUBLE_INDENT + " # ", getComment().isPresent() ? getComment().get() : "");
     }
 

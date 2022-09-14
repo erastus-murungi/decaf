@@ -24,16 +24,6 @@ public class IrMemoryAddress extends IrAssignableValue {
     }
 
     @Override
-    public String repr() {
-        return getLabel();
-    }
-
-    @Override
-    public String toString() {
-        return getLabel();
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof IrMemoryAddress that)) return false;

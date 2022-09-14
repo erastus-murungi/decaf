@@ -64,14 +64,14 @@ public class FunctionCallNoResult extends HasOperand implements FunctionCall {
 
     @Override
     public String toString() {
-        var args = arguments.stream().map(IrValue::repr).collect(Collectors.joining(", "));
+        var args = arguments.stream().map(IrValue::toString).collect(Collectors.joining(", "));
         return String.format("%s%s %s @%s(%s) %s%s", DOUBLE_INDENT, "call", getMethodReturnType(), getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " #  " + getComment().get() : "");
     }
 
     @Override
     public String syntaxHighlightedToString() {
         var callString = Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        var args = arguments.stream().map(IrValue::repr).collect(Collectors.joining(", "));
+        var args = arguments.stream().map(IrValue::toString).collect(Collectors.joining(", "));
         return String.format("%s%s %s @%s(%s) %s%s", DOUBLE_INDENT, callString, getMethodReturnType(), getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " #  " + getComment().get() : "");
     }
 

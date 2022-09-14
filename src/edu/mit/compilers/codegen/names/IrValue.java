@@ -30,8 +30,10 @@ public abstract class IrValue {
         return toString().equals(that.toString());
     }
 
-    public abstract <T extends IrValue> T copy();
+    public abstract IrValue copy();
 
-    public abstract String repr();
-
+    @Override
+    public String toString() {
+        return getLabel();
+    }
 }

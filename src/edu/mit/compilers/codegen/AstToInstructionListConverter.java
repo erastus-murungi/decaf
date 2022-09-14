@@ -201,7 +201,7 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
         var initializationInstructionList = new InstructionList(initializationLocationInstructionList.place);
         initializationInstructionList.addAll(initializationLocationInstructionList);
         initializationInstructionList.addAll(initializationExpressionInstructionList);
-        initializationInstructionList.add(new CopyInstruction(initializationLocationInstructionList.place.copy(), initializationExpressionInstructionList.place.copy(), initialization, initialization.getSourceCode()));
+        initializationInstructionList.add(new CopyInstruction((IrAssignableValue) initializationLocationInstructionList.place.copy(), initializationExpressionInstructionList.place.copy(), initialization, initialization.getSourceCode()));
         return initializationInstructionList;
     }
 
@@ -224,9 +224,9 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
                             new BinaryInstruction(dest, lhs.copy(), Operators.PLUS, constant.copy(), assignment.getSourceCode(), assignment);
                 };
                 instructionList.add(inst);
-                instructionList.add(CopyInstruction.noAstConstructor(lhs.copy(), dest.copy()));
+                instructionList.add(CopyInstruction.noAstConstructor((IrAssignableValue) lhs.copy(), dest.copy()));
             }
-            default -> instructionList.add(new CopyInstruction(lhs.copy(), rhs.copy(), assignment, assignment.getSourceCode()));
+            default -> instructionList.add(new CopyInstruction((IrAssignableValue) lhs.copy(), rhs.copy(), assignment, assignment.getSourceCode()));
         }
         return instructionList;
     }
@@ -242,7 +242,7 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
                 var type = assignment.assignExpr.expression.getType();
                 operandInstructionList = assignment.assignExpr.expression.accept(this, IrRegister.gen(type));
             } else {
-                operandInstructionList = assignment.assignExpr.expression.accept(this, storeLocationInstructionList.place.copy());
+                operandInstructionList = assignment.assignExpr.expression.accept(this, (IrAssignableValue) storeLocationInstructionList.place.copy());
             }
         } else {
             operandInstructionList = new InstructionList();

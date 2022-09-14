@@ -120,13 +120,13 @@ public class Phi extends StoreInstruction {
 
     @Override
     public String toString() {
-        String rhs = basicBlockValueMap.values().stream().map(IrValue::repr).collect(Collectors.joining(", "));
-        return String.format("%s%s: %s = phi (%s)", DOUBLE_INDENT, getDestination().repr(), getDestination().getType().getSourceCode(), rhs);
+        String rhs = basicBlockValueMap.values().stream().map(IrValue::toString).collect(Collectors.joining(", "));
+        return String.format("%s%s: %s = phi (%s)", DOUBLE_INDENT, getDestination(), getDestination().getType().getSourceCode(), rhs);
     }
 
     @Override
     public String syntaxHighlightedToString() {
-        String rhs = basicBlockValueMap.values().stream().map(IrValue::repr).collect(Collectors.joining(", "));
-        return String.format("%s%s: %s = phi (%s)", DOUBLE_INDENT, getDestination().repr(), getDestination().getType().getColoredSourceCode(), rhs);
+        String rhs = basicBlockValueMap.values().stream().map(IrValue::toString).collect(Collectors.joining(", "));
+        return String.format("%s%s: %s = phi (%s)", DOUBLE_INDENT, getDestination(), getDestination().getType().getColoredSourceCode(), rhs);
     }
 }

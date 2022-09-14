@@ -90,8 +90,8 @@ public class BinaryInstruction extends StoreInstruction {
 
     public String syntaxHighlightedToString() {
         if (getComment().isPresent())
-            return String.format("%s%s: %s = %s %s, %s %s%s", DOUBLE_INDENT, getDestination().repr(), getDestination().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand.repr(), sndOperand.repr(), DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s: %s = %s %s, %s", DOUBLE_INDENT, getDestination().repr(), getDestination().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand.repr(), sndOperand.repr());
+            return String.format("%s%s: %s = %s %s, %s %s%s", DOUBLE_INDENT, getDestination(), getDestination().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand, sndOperand, DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s: %s = %s %s, %s", DOUBLE_INDENT, getDestination(), getDestination().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand, sndOperand);
     }
 
 }

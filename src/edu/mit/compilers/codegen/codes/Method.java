@@ -80,7 +80,7 @@ public class Method extends Instruction {
                 methodDefinition.methodName.getLabel(),
                 parameterNames.stream()
                         .map(parameterName -> parameterName.getType()
-                                .getSourceCode() + " " + parameterName.repr())
+                                .getSourceCode() + " " + parameterName)
                         .collect(Collectors.joining(", ")),
                 methodDefinition.returnType.getSourceCode(), DOUBLE_INDENT);
     }
@@ -92,7 +92,7 @@ public class Method extends Instruction {
                 methodDefinition.methodName.getLabel(),
                 parameterNames.stream()
                         .map(parameterName -> parameterName.getType()
-                                .getColoredSourceCode() + " " + parameterName.repr())
+                                .getColoredSourceCode() + " " + parameterName)
                         .collect(Collectors.joining(", ")),
                 methodDefinition.returnType.getSourceCode(), DOUBLE_INDENT);
     }

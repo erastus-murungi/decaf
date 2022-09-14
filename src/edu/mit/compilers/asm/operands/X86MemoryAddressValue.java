@@ -4,11 +4,11 @@ import org.jetbrains.annotations.NotNull;
 
 import edu.mit.compilers.asm.X64RegisterType;
 
-public class X64ArrayOperand extends X86Value {
+public class X86MemoryAddressValue extends X86Value {
     private final X86Value base;
     private final X86RegisterMappedValue index;
 
-    public X64ArrayOperand(@NotNull X86Value base, @NotNull X86RegisterMappedValue index) {
+    public X86MemoryAddressValue(@NotNull X86Value base, @NotNull X86RegisterMappedValue index) {
         super(null);
         this.base = base;
         this.index = index;

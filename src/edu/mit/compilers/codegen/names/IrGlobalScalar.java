@@ -10,7 +10,7 @@ public class IrGlobalScalar extends IrGlobal {
     }
 
     @Override
-    public IrAssignableValue copy() {
+    public IrGlobalScalar copy() {
         return new IrGlobalScalar(label, type);
     }
 

@@ -47,14 +47,14 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
     @Override
     public String syntaxHighlightedToString() {
         var callString = Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        var args = arguments.stream().map(IrValue::repr).collect(Collectors.joining(", "));
-        return String.format("%s%s: %s = %s @%s(%s) %s%s", DOUBLE_INDENT, getDestination().repr(), getMethodReturnType(), callString, getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
+        var args = arguments.stream().map(IrValue::toString).collect(Collectors.joining(", "));
+        return String.format("%s%s: %s = %s @%s(%s) %s%s", DOUBLE_INDENT, getDestination(), getMethodReturnType(), callString, getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
     }
 
     @Override
     public String toString() {
-        var args = arguments.stream().map(IrValue::repr).collect(Collectors.joining(", "));
-        return String.format("%s%s: %s = %s @%s(%s) %s%s", DOUBLE_INDENT, getDestination().repr(), getMethodReturnType(), "call", getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
+        var args = arguments.stream().map(IrValue::toString).collect(Collectors.joining(", "));
+        return String.format("%s%s: %s = %s @%s(%s) %s%s", DOUBLE_INDENT, getDestination(), getMethodReturnType(), "call", getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " # " + getComment().get() : "");
     }
 
     @Override

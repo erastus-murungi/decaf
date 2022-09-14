@@ -14,7 +14,7 @@ public class X86ConstantValue extends X86Value {
         if (getValue() instanceof IrIntegerConstant numericalConstant) {
             return String.format("$%d", numericalConstant.getValue());
         } else if (getValue() instanceof IrStringConstant stringConstant) {
-            return String.format("%s(%s)", stringConstant, "%rip");
+            return String.format("%s(%s)", stringConstant.getLabel(), "%rip");
         } else {
             throw new IllegalStateException();
         }

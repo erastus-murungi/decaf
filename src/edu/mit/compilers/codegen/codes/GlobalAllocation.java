@@ -51,7 +51,7 @@ public class GlobalAllocation extends Instruction {
     @Override
     public String syntaxHighlightedToString() {
         var globalColoredString = Utils.coloredPrint("global", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s %s [%s x %s]", globalColoredString, value.repr(), value.getType().getColoredSourceCode(), size / WORD_SIZE);
+        return String.format("%s %s [%s x %s]", globalColoredString, value, value.getType().getColoredSourceCode(), size / WORD_SIZE);
     }
 
     @Override

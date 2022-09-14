@@ -35,11 +35,6 @@ public class IrIntegerConstant extends IrConstant {
     }
 
     @Override
-    public String toString() {
-        return getLabel();
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -54,7 +49,7 @@ public class IrIntegerConstant extends IrConstant {
     }
 
     @Override
-    public String repr() {
+    public String toString() {
         String val = getLabel();
         if (type.equals(Type.Bool))
             val = getLabel().equals("1") ? "true" : "false";

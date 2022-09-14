@@ -58,13 +58,13 @@ public class GetAddress extends StoreInstruction {
 
     @Override
     public String toString() {
-        return String.format("%s%s = %s %s %s, %s", DOUBLE_INDENT, getDestination().repr(), "getaddr", baseAddress.repr(), baseAddress.getType().getColoredSourceCode(), getIndex().repr());
+        return String.format("%s%s = %s %s %s, %s", DOUBLE_INDENT, getDestination(), "getaddr", baseAddress, baseAddress.getType().getColoredSourceCode(), getIndex());
     }
 
     @Override
     public String syntaxHighlightedToString() {
         final var getAddressString = Utils.coloredPrint("getaddr", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s%s = %s %s %s, %s", DOUBLE_INDENT, getDestination().repr(), getAddressString, baseAddress.repr(), baseAddress.getType().getColoredSourceCode(), getIndex().repr());
+        return String.format("%s%s = %s %s %s, %s", DOUBLE_INDENT, getDestination(), getAddressString, baseAddress, baseAddress.getType().getColoredSourceCode(), getIndex());
     }
 
     @Override
