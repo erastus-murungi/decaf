@@ -281,14 +281,17 @@ public class X86ValueResolver {
     X86RegisterMappedValue baseRegister, indexRegister = null;
     // get base index
     var indexValue = resolveIrValue(irMemoryAddress.getIndex());
-    if (indexValue instanceof X86StackMappedValue || indexValue instanceof X86MemoryAddressValue || irMemoryAddress.getBaseAddress() instanceof IrGlobal) {
+    if (indexValue instanceof X86StackMappedValue || indexValue instanceof X86MemoryAddressValue ||
+        (irMemoryAddress.getBaseAddress() instanceof IrGlobal && !(indexValue instanceof X86RegisterMappedValue))) {
       // we should spill
       indexRegister = new X86RegisterMappedValue(genRegisterToSpill(irMemoryAddress.getIndex(),
           new ArrayList<>()),
           irMemoryAddress.getIndex());
-      currentX86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
-          indexValue,
-          indexRegister));
+      if (indexValue instanceof X86ConstantValue) {
+        currentX86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+            indexValue,
+            indexRegister));
+      }
       indexValue = indexRegister;
     }
     if (irMemoryAddress.getBaseAddress() instanceof IrStackArray irStackArray) {
@@ -300,7 +303,8 @@ public class X86ValueResolver {
     if (baseValue instanceof X86StackMappedValue) {
       // we should spill and avoid the index register
       baseRegister = new X86RegisterMappedValue(genRegisterToSpill(irMemoryAddress.getBaseAddress(),
-          new ArrayList<>(indexRegister == null ? Collections.emptyList() : List.of(indexRegister.getX64RegisterType()))),
+          new ArrayList<>(
+              indexRegister == null ? Collections.emptyList(): List.of(indexRegister.getX64RegisterType()))),
           irMemoryAddress.getBaseAddress());
     } else {
       baseRegister = (X86RegisterMappedValue) baseValue;
