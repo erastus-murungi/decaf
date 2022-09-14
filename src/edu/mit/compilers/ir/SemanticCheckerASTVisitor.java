@@ -170,7 +170,7 @@ public class SemanticCheckerASTVisitor implements ASTVisitor<Void> {
     }
 
     public Void visit(For forStatement, SymbolTable symbolTable) {
-        // this is the name of our loop variable that we initialize in the creation of the for loop
+        // this is the name of our loop irAssignableValue that we initialize in the creation of the for loop
         // for ( index = 0 ...) <-- index is the example here
         String initializedVariableName = forStatement.initialization.initLocation.getLabel();
 
@@ -179,7 +179,7 @@ public class SemanticCheckerASTVisitor implements ASTVisitor<Void> {
             forStatement.block.accept(this, symbolTable);
             --depth;
         } else {
-            // the variable referred to was not declared. Add an exception.
+            // the irAssignableValue referred to was not declared. Add an exception.
             exceptions.add(new DecafSemanticException(forStatement.tokenPosition, "Variable " + initializedVariableName + " was not declared"));
         }
         return null;
@@ -271,7 +271,7 @@ public class SemanticCheckerASTVisitor implements ASTVisitor<Void> {
     }
 
     public Void visit(If ifStatement, SymbolTable symbolTable) {
-        // variable lookup happens in ifCondition or if/else body
+        // irAssignableValue lookup happens in ifCondition or if/else body
         for (Pair<String, AST> child : ifStatement.getChildren())
             child.second().accept(this, symbolTable);
         return null;

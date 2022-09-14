@@ -6,28 +6,28 @@ import edu.mit.compilers.ast.BooleanLiteral;
 import edu.mit.compilers.ast.IntLiteral;
 import edu.mit.compilers.ast.Type;
 
-public class NumericalConstant extends Constant {
+public class IrIntegerConstant extends IrConstant {
     private final Long value;
 
-    public NumericalConstant(Long value, Type type) {
+    public IrIntegerConstant(Long value, Type type) {
         super(type, String.valueOf(value));
         this.value = value;
     }
 
-    public static NumericalConstant fromIntLiteral(IntLiteral intLiteral) {
-        return new NumericalConstant(intLiteral.convertToLong(), Type.Int);
+    public static IrIntegerConstant fromIntLiteral(IntLiteral intLiteral) {
+        return new IrIntegerConstant(intLiteral.convertToLong(), Type.Int);
     }
 
-    public static NumericalConstant fromBooleanLiteral(BooleanLiteral booleanLiteral) {
-        return new NumericalConstant(booleanLiteral.convertToLong(), Type.Bool);
+    public static IrIntegerConstant fromBooleanLiteral(BooleanLiteral booleanLiteral) {
+        return new IrIntegerConstant(booleanLiteral.convertToLong(), Type.Bool);
     }
 
-    public static NumericalConstant zero() {
-        return new NumericalConstant(0L, Type.Int);
+    public static IrIntegerConstant zero() {
+        return new IrIntegerConstant(0L, Type.Int);
     }
 
-    public static NumericalConstant one() {
-        return new NumericalConstant(1L, Type.Int);
+    public static IrIntegerConstant one() {
+        return new IrIntegerConstant(1L, Type.Int);
     }
 
     public Long getValue() {
@@ -44,13 +44,13 @@ public class NumericalConstant extends Constant {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-        NumericalConstant that = (NumericalConstant) o;
+        IrIntegerConstant that = (IrIntegerConstant) o;
         return Objects.equals(getLabel(), that.getLabel());
     }
 
     @Override
-    public NumericalConstant copy() {
-        return new NumericalConstant(Long.parseLong(getLabel()), type);
+    public IrIntegerConstant copy() {
+        return new IrIntegerConstant(Long.parseLong(getLabel()), type);
     }
 
     @Override

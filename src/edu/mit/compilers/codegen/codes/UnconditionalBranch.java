@@ -8,7 +8,7 @@ import java.util.Objects;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.asm.AsmWriter;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.utils.Utils;
 
 public class UnconditionalBranch extends Instruction implements WithTarget {
@@ -35,7 +35,7 @@ public class UnconditionalBranch extends Instruction implements WithTarget {
     }
 
     @Override
-    public List<Value> getAllValues() {
+    public List<IrValue> getAllValues() {
         return Collections.emptyList();
     }
 

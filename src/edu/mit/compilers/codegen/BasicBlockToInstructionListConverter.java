@@ -1,7 +1,5 @@
 package edu.mit.compilers.codegen;
 
-import org.checkerframework.checker.units.qual.A;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,20 +23,22 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.MethodEnd;
 import edu.mit.compilers.codegen.codes.StringConstantAllocation;
-import edu.mit.compilers.codegen.names.GlobalAddress;
-import edu.mit.compilers.codegen.names.NumericalConstant;
-import edu.mit.compilers.codegen.names.StringConstant;
-import edu.mit.compilers.codegen.names.VirtualRegister;
+import edu.mit.compilers.codegen.names.IrGlobal;
+import edu.mit.compilers.codegen.names.IrGlobalArray;
+import edu.mit.compilers.codegen.names.IrGlobalScalar;
+import edu.mit.compilers.codegen.names.IrIntegerConstant;
+import edu.mit.compilers.codegen.names.IrStringConstant;
+import edu.mit.compilers.codegen.names.IrRegister;
 import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
 import edu.mit.compilers.utils.ProgramIr;
 
 public class BasicBlockToInstructionListConverter {
-    private final Set<GlobalAddress> globalNames = new HashSet<>();
+    private final Set<IrGlobal> globalNames = new HashSet<>();
     private final Set<BasicBlock> visitedBasicBlocks = new HashSet<>();
     private final HashMap<String, SymbolTable> perMethodSymbolTables;
     private final ProgramIr programIr;
-    private final HashMap<String, StringConstant> stringConstantsMap = new HashMap<>();
+    private final HashMap<String, IrStringConstant> stringConstantsMap = new HashMap<>();
 
     private AstToInstructionListConverter currentAstToInstructionListConverter;
     private NOP currentMethodExitNop;
@@ -67,7 +67,7 @@ public class BasicBlockToInstructionListConverter {
         return perMethodSymbolTables;
     }
 
-    public Set<GlobalAddress> getGlobalNames() {
+    public Set<IrGlobal> getGlobalNames() {
         return globalNames;
     }
 
@@ -99,7 +99,7 @@ public class BasicBlockToInstructionListConverter {
         methodStart.setInstructionList(entryBasicBlockInstructionList);
         var instructions = new ArrayList<Instruction>();
         for (var local: ProgramIr.getNonParamLocals(method, globalNames)) {
-            instructions.add(CopyInstruction.noMetaData(local.copy(), NumericalConstant.zero()));
+            instructions.add(CopyInstruction.noMetaData(local.copy(), IrIntegerConstant.zero()));
         }
         entryBasicBlockInstructionList.addAll(1, instructions);
         method.unoptimizedInstructionList = TraceScheduler.flattenIr(method);
@@ -110,28 +110,28 @@ public class BasicBlockToInstructionListConverter {
         var prologue = new InstructionList();
         for (var fieldDeclaration : program.fieldDeclarationList) {
             for (var name : fieldDeclaration.names) {
-                prologue.add(new GlobalAllocation(new GlobalAddress(name.getLabel(), fieldDeclaration.getType()), fieldDeclaration.getType()
-                                                                                                                                  .getFieldSize(), fieldDeclaration.getType(), name, "# " + name.getSourceCode()
+                prologue.add(new GlobalAllocation(new IrGlobalScalar(name.getLabel(), fieldDeclaration.getType()), fieldDeclaration.getType()
+                                                                                                                                   .getFieldSize(), fieldDeclaration.getType(), name, "# " + name.getSourceCode()
                 ));
             }
             for (var array : fieldDeclaration.arrays) {
                 var size = (fieldDeclaration.getType()
                         .getFieldSize() * array.getSize()
                         .convertToLong());
-                prologue.add(new GlobalAllocation(new GlobalAddress(array.getId()
-                                                                    .getLabel(), fieldDeclaration.getType()), size, fieldDeclaration.getType(), array, "# " + array.getSourceCode()
+                prologue.add(new GlobalAllocation(new IrGlobalArray(array.getId()
+                                                                         .getLabel(), fieldDeclaration.getType()), size, fieldDeclaration.getType(), array, "# " + array.getSourceCode()
                 ));
             }
         }
         globalNames.addAll(prologue.stream()
                 .flatMap(instruction -> instruction.getAllValues()
                         .stream())
-                .filter(abstractName -> abstractName instanceof GlobalAddress)
-                .map(abstractName -> (GlobalAddress) abstractName)
+                .filter(abstractName -> abstractName instanceof IrGlobal)
+                .map(abstractName -> (IrGlobal) abstractName)
                 .collect(Collectors.toUnmodifiableSet()));
 
         for (String stringLiteral : findAllStringLiterals(program)) {
-            final var stringConstant = new StringConstant(stringLiteral);
+            final var stringConstant = new IrStringConstant(stringLiteral);
             prologue.add(new StringConstantAllocation(stringConstant));
             stringConstantsMap.put(stringLiteral, stringConstant);
         }
@@ -190,7 +190,7 @@ public class BasicBlockToInstructionListConverter {
         visitedBasicBlocks.add(basicBlockWithBranch);
 
         var condition = basicBlockWithBranch.getBranchCondition().orElseThrow();
-        var conditionInstructionList = condition.accept(currentAstToInstructionListConverter, VirtualRegister.gen(Type.Bool));
+        var conditionInstructionList = condition.accept(currentAstToInstructionListConverter, IrRegister.gen(Type.Bool));
 
         visit(basicBlockWithBranch.getTrueTarget());
         visit(basicBlockWithBranch.getFalseTarget());

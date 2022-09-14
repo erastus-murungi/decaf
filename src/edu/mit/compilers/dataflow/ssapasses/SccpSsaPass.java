@@ -13,8 +13,8 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
-import edu.mit.compilers.codegen.names.VirtualRegister;
-import edu.mit.compilers.codegen.names.NumericalConstant;
+import edu.mit.compilers.codegen.names.IrRegister;
+import edu.mit.compilers.codegen.names.IrIntegerConstant;
 import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.ssa.SSA;
 import edu.mit.compilers.utils.TarjanSCC;
@@ -32,11 +32,11 @@ public class SccpSsaPass extends SsaOptimizationPass<Void> {
         for (BasicBlock basicBlock : getBasicBlocksList()) {
             var instructionList = new ArrayList<Instruction>();
             for (Instruction instruction : basicBlock.getInstructionList()) {
-                if (instruction instanceof BinaryInstruction || instruction instanceof UnaryInstruction || (instruction instanceof CopyInstruction copyInstruction && copyInstruction.getValue() instanceof VirtualRegister)) {
+                if (instruction instanceof BinaryInstruction || instruction instanceof UnaryInstruction || (instruction instanceof CopyInstruction copyInstruction && copyInstruction.getValue() instanceof IrRegister)) {
                     var dest = ((StoreInstruction) instruction).getDestination();
                     var latticeValue = latticeValues.get(dest);
                     if (latticeValue.isConstant()) {
-                        var copyInstruction = CopyInstruction.noAstConstructor(dest, new NumericalConstant(latticeValue.getValue(), dest.getType()));
+                        var copyInstruction = CopyInstruction.noAstConstructor(dest, new IrIntegerConstant(latticeValue.getValue(), dest.getType()));
                         instructionList.add(copyInstruction);
                         resultList.add(new SCCPOptResult(instruction, copyInstruction));
                         changesHappened = true;
@@ -46,11 +46,11 @@ public class SccpSsaPass extends SsaOptimizationPass<Void> {
 
                 }
                 if (instruction instanceof HasOperand hasOperand) {
-                    for (VirtualRegister virtualRegister : hasOperand.getOperandVirtualRegisters()) {
-                        var latticeValue = latticeValues.getOrDefault(virtualRegister, LatticeElement.bottom());
+                    for (IrRegister irRegister : hasOperand.getOperandVirtualRegisters()) {
+                        var latticeValue = latticeValues.getOrDefault(irRegister, LatticeElement.bottom());
                         if (latticeValue.isConstant()) {
                             var inst = hasOperand.copy();
-                            hasOperand.replaceValue(virtualRegister, new NumericalConstant(latticeValue.getValue(), virtualRegister.getType()));
+                            hasOperand.replaceValue(irRegister, new IrIntegerConstant(latticeValue.getValue(), irRegister.getType()));
                             resultList.add(new SCCPOptResult(inst, hasOperand));
                             changesHappened = true;
                         }
@@ -71,12 +71,12 @@ public class SccpSsaPass extends SsaOptimizationPass<Void> {
                     basicBlock.convertToBranchLess(method.exitBlock);
                     changesHappened = true;
                 } else if ((basicBlock.getConditionalBranchInstruction()
-                                      .getCondition() instanceof NumericalConstant numericalConstant && numericalConstant.getValue() == 0L)) {
+                                      .getCondition() instanceof IrIntegerConstant numericalConstant && numericalConstant.getValue() == 0L)) {
                     basicBlock.convertToBranchLessSkipTrue();
                     changesHappened = true;
                 } else if (!sccp.isReachable(basicBlock.getFalseTarget()) ||
                         (basicBlock.getConditionalBranchInstruction()
-                                   .getCondition() instanceof NumericalConstant numericalConstant && numericalConstant.getValue() == 1L)) {
+                                   .getCondition() instanceof IrIntegerConstant numericalConstant && numericalConstant.getValue() == 1L)) {
                     basicBlock.convertToBranchLess(basicBlock.getTrueTarget());
                     changesHappened = true;
                 } else if (!sccp.isReachable(basicBlock.getTrueTarget())) {

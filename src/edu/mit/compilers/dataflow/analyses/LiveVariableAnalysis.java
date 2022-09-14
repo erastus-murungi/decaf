@@ -9,10 +9,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import edu.mit.compilers.cfg.BasicBlock;
+import edu.mit.compilers.codegen.codes.GetAddress;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.dataflow.usedef.Def;
 import edu.mit.compilers.dataflow.usedef.Use;
@@ -23,7 +24,7 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
         super(basicBlock);
     }
 
-    public Set<Value> liveOut(BasicBlock basicBlock) {
+    public Set<IrValue> liveOut(BasicBlock basicBlock) {
         // the set of variables actually needed later in the program
         return out
                 .get(basicBlock)
@@ -32,7 +33,7 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
                 .collect(Collectors.toSet());
     }
 
-    public Set<Value> liveIn(BasicBlock basicBlock) {
+    public Set<IrValue> liveIn(BasicBlock basicBlock) {
         return in
                 .get(basicBlock)
                 .stream()
@@ -87,12 +88,12 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
         }
     }
 
-    // an instruction makes a variable "live" it references it
+    // an instruction makes a irAssignableValue "live" it references it
     private Set<UseDef> use(BasicBlock basicBlock) {
         var useSet = new HashSet<UseDef>();
         for (Instruction instruction : basicBlock.getInstructionListReversed()) {
             if (instruction instanceof HasOperand hasOperand) {
-                hasOperand.getAllLValues()
+                hasOperand.getAllRegisterAllocatableValues()
                           .forEach(lValue -> useSet.add(new Use(lValue, instruction)));
             }
         }
@@ -103,7 +104,10 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
         var defSet = new HashSet<UseDef>();
         for (Instruction instruction : basicBlock.getInstructionListReversed()) {
             if (instruction instanceof StoreInstruction storeInstruction) {
-                defSet.add(new Def(storeInstruction));
+                defSet.add(new Def(storeInstruction.getDestination(), storeInstruction));
+            }
+            if (instruction instanceof GetAddress getAddress) {
+                defSet.add(new Def(getAddress.getBaseAddress(), getAddress));
             }
         }
         return defSet;

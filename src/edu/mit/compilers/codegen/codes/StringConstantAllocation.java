@@ -4,18 +4,18 @@ import java.util.Collections;
 import java.util.List;
 
 import edu.mit.compilers.asm.AsmWriter;
-import edu.mit.compilers.codegen.names.StringConstant;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
+import edu.mit.compilers.codegen.names.IrStringConstant;
 
 public class StringConstantAllocation extends Instruction {
-    private final StringConstant stringConstant;
+    private final IrStringConstant stringConstant;
 
-    public StringConstantAllocation(StringConstant stringConstant) {
+    public StringConstantAllocation(IrStringConstant stringConstant) {
         super(null);
         this.stringConstant = stringConstant;
     }
 
-    public StringConstant getStringConstant() {
+    public IrStringConstant getStringConstant() {
         return stringConstant;
     }
 
@@ -24,11 +24,11 @@ public class StringConstantAllocation extends Instruction {
     }
 
     @Override
-    public <T, E> void accept(AsmWriter asmWriter) {
+    public void accept(AsmWriter asmWriter) {
     }
 
     @Override
-    public List<Value> getAllValues() {
+    public List<IrValue> getAllValues() {
         return Collections.emptyList();
     }
 

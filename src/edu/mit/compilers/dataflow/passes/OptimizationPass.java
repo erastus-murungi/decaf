@@ -7,8 +7,7 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.GlobalAddress;
-import edu.mit.compilers.codegen.names.VirtualRegister;
+import edu.mit.compilers.codegen.names.IrGlobal;
 import edu.mit.compilers.dataflow.OptimizationContext;
 
 public abstract class OptimizationPass {
@@ -34,7 +33,7 @@ public abstract class OptimizationPass {
         return method;
     }
 
-    public Set<GlobalAddress> globals() {
+    public Set<IrGlobal> globals() {
         return optimizationContext.globals();
     }
 

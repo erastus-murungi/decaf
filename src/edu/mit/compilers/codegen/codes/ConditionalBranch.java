@@ -8,26 +8,26 @@ import java.util.List;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.asm.AsmWriter;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 import edu.mit.compilers.utils.Utils;
 
 public class ConditionalBranch extends HasOperand implements WithTarget {
     @NotNull
-    private Value condition;
+    private IrValue condition;
     @NotNull
     private BasicBlock falseTarget;
 
 
-    public ConditionalBranch(@NotNull Value condition, @NotNull BasicBlock falseTarget, @Nullable AST source, @Nullable String comment) {
+    public ConditionalBranch(@NotNull IrValue condition, @NotNull BasicBlock falseTarget, @Nullable AST source, @Nullable String comment) {
         super(source, comment);
         this.condition = condition;
         this.falseTarget = falseTarget;
         falseTarget.addTributary(this);
     }
 
-    public @NotNull Value getCondition() {
+    public @NotNull IrValue getCondition() {
         return condition;
     }
 
@@ -42,7 +42,7 @@ public class ConditionalBranch extends HasOperand implements WithTarget {
     }
 
     @Override
-    public List<Value> getAllValues() {
+    public List<IrValue> getAllValues() {
         return List.of(condition);
     }
 
@@ -65,11 +65,11 @@ public class ConditionalBranch extends HasOperand implements WithTarget {
     }
 
     @Override
-    public List<Value> getOperandValues() {
+    public List<IrValue> getOperandValues() {
         return List.of(condition);
     }
 
-    public boolean replaceValue(Value oldVariable, Value replacer) {
+    public boolean replaceValue(IrValue oldVariable, IrValue replacer) {
         var replaced = false;
         if (condition.equals(oldVariable)) {
             condition = replacer;

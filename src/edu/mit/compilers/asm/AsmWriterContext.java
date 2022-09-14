@@ -14,7 +14,7 @@ public class AsmWriterContext {
      * Keeps track of the last comparison operator used
      * This is useful for evaluating conditionals
      * {@code lastComparisonOperator} will always have a value if a conditional jump evaluates
-     * a variable;
+     * a irAssignableValue;
      */
     @Nullable
     private String lastComparisonOperator = null;

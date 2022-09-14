@@ -1,5 +1,6 @@
 package edu.mit.compilers.codegen.codes;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -7,9 +8,10 @@ import java.util.stream.Collectors;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.asm.AsmWriter;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.codegen.names.VirtualRegister;
+import edu.mit.compilers.codegen.names.IrValue;
+import edu.mit.compilers.codegen.names.IrAssignableValue;
+import edu.mit.compilers.codegen.names.IrMemoryAddress;
+import edu.mit.compilers.codegen.names.IrRegister;
 
 public abstract class Instruction {
     public static final String INDENT = "    ";
@@ -38,25 +40,43 @@ public abstract class Instruction {
         this.comment = comment;
     }
 
-    public abstract <T, E> void accept(AsmWriter asmWriter);
+    public abstract void accept(AsmWriter asmWriter);
 
-    public abstract List<Value> getAllValues();
+    public abstract List<IrValue> getAllValues();
 
     public abstract String syntaxHighlightedToString();
 
     public abstract Instruction copy();
 
-    public Collection<LValue> getAllLValues() {
+    public Collection<IrAssignableValue> getAllLValues() {
         return getAllValues().stream()
-                .filter(value -> (value instanceof LValue))
-                .map(value -> (LValue) value)
+                .filter(value -> (value instanceof IrAssignableValue))
+                .map(value -> (IrAssignableValue) value)
                 .collect(Collectors.toList());
     }
 
-    public Collection<VirtualRegister> getAllVirtualRegisters() {
+    /**
+     * This includes registers to store array base addresses, array indices, local variables
+     */
+    public Collection<IrAssignableValue> getAllRegisterAllocatableValues() {
+        var lValues = getAllLValues();
+        var memoryAddresses = lValues.stream()
+                                     .filter(lValue -> lValue instanceof IrMemoryAddress)
+                                     .map(lValue -> (IrMemoryAddress) lValue)
+                                     .map(IrMemoryAddress::getBaseAddress)
+                                     .toList();
+        if (!memoryAddresses.isEmpty()) {
+            var lValuesArray = new ArrayList<>(lValues);
+            lValuesArray.addAll(lValues);
+            return lValuesArray;
+        }
+        return lValues;
+    }
+
+    public Collection<IrRegister> getAllVirtualRegisters() {
         return getAllValues().stream()
-                .filter(value -> (value instanceof VirtualRegister))
-                .map(value -> (VirtualRegister) value)
+                .filter(value -> (value instanceof IrRegister))
+                .map(value -> (IrRegister) value)
                 .collect(Collectors.toList());
 
     }

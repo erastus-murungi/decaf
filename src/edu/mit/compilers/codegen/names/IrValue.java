@@ -2,12 +2,12 @@ package edu.mit.compilers.codegen.names;
 
 import edu.mit.compilers.ast.Type;
 
-public abstract class Value {
+public abstract class IrValue {
     protected Type type;
 
     protected String label;
 
-    public Value(Type type, String label) {
+    public IrValue(Type type, String label) {
         this.type = type;
         this.label = label;
     }
@@ -26,11 +26,11 @@ public abstract class Value {
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        Value that = (Value) o;
+        IrValue that = (IrValue) o;
         return toString().equals(that.toString());
     }
 
-    public abstract <T extends Value> T copy();
+    public abstract <T extends IrValue> T copy();
 
     public abstract String repr();
 

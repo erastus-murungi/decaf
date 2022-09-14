@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 import edu.mit.compilers.codegen.CodegenAstVisitor;
-import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.IrAssignableValue;
 import edu.mit.compilers.ir.ASTVisitor;
 import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
@@ -24,7 +24,7 @@ public class LocationVariable extends Location {
         return ASTVisitor.visit(this, curSymbolTable);
     }
 
-    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, LValue resultLocation) {
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignableValue resultLocation) {
         return codegenAstVisitor.visit(this, resultLocation);
     }
 

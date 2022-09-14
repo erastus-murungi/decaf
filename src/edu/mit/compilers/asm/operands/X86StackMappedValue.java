@@ -4,10 +4,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import edu.mit.compilers.asm.X64RegisterType;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.VirtualRegister;
+import edu.mit.compilers.codegen.names.IrAssignableValue;
 
-public class X64StackOperand extends X64Operand {
+public class X86StackMappedValue extends X86Value {
     @NotNull private final X64RegisterType baseReg;
     private final int offset;
 
@@ -15,13 +14,13 @@ public class X64StackOperand extends X64Operand {
         return offset;
     }
 
-    public X64StackOperand(@NotNull X64RegisterType baseReg, int offset, @Nullable LValue source) {
+    public X86StackMappedValue(@NotNull X64RegisterType baseReg, int offset, @Nullable IrAssignableValue source) {
         super(source);
         this.baseReg = baseReg;
         this.offset = offset;
     }
 
-    public X64StackOperand(@NotNull X64RegisterType baseReg, int offset) {
+    public X86StackMappedValue(@NotNull X64RegisterType baseReg, int offset) {
         this(baseReg, offset, null);
     }
 

@@ -15,24 +15,24 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.asm.AsmWriter;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.VirtualRegister;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
+import edu.mit.compilers.codegen.names.IrRegister;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.PhiOperand;
 
 public class Phi extends StoreInstruction {
-    private final Map<BasicBlock, Value> basicBlockValueMap;
+    private final Map<BasicBlock, IrValue> basicBlockValueMap;
 
-    public Phi(VirtualRegister v, Map<BasicBlock, Value> xs) {
+    public Phi(IrRegister v, Map<BasicBlock, IrValue> xs) {
         super(v, null);
         assert xs.size() > 2;
         basicBlockValueMap = xs;
     }
 
-    public void removePhiOperand(Value value) {
-        assert basicBlockValueMap.containsValue(value);
+    public void removePhiOperand(IrValue irValue) {
+        assert basicBlockValueMap.containsValue(irValue);
         for (var entrySet: basicBlockValueMap.entrySet()) {
-            if (entrySet.getValue().equals(value)) {
+            if (entrySet.getValue().equals(irValue)) {
                 basicBlockValueMap.remove(entrySet.getKey());
                 return;
             }
@@ -40,9 +40,9 @@ public class Phi extends StoreInstruction {
         throw new IllegalStateException();
     }
 
-    @NotNull public Value getVariableForB(@NotNull BasicBlock B) {
+    @NotNull public IrValue getVariableForB(@NotNull BasicBlock B) {
         var value =  basicBlockValueMap.get(B);
-        checkState(value != null, this + "\nno variable for block: \n" + B);
+        checkState(value != null, this + "\nno irAssignableValue for block: \n" + B);
         return value;
     }
 
@@ -52,10 +52,10 @@ public class Phi extends StoreInstruction {
         basicBlockValueMap.put(R, ret);
     }
 
-    @NotNull public BasicBlock getBasicBlockForV(@NotNull Value value) {
-        checkState(basicBlockValueMap.containsValue(value));
+    @NotNull public BasicBlock getBasicBlockForV(@NotNull IrValue irValue) {
+        checkState(basicBlockValueMap.containsValue(irValue));
         for (var entrySet: basicBlockValueMap.entrySet()) {
-            if (entrySet.getValue().equals(value))
+            if (entrySet.getValue().equals(irValue))
                 return entrySet.getKey();
         }
         throw new IllegalStateException();
@@ -67,12 +67,12 @@ public class Phi extends StoreInstruction {
     }
 
     @Override
-    public List<Value> getOperandValues() {
+    public List<IrValue> getOperandValues() {
         return new ArrayList<>(basicBlockValueMap.values());
     }
 
     @Override
-    public boolean replaceValue(Value oldName, Value newName) {
+    public boolean replaceValue(IrValue oldName, IrValue newName) {
         var replaced = false;
         for (BasicBlock basicBlock : basicBlockValueMap.keySet()) {
             var abstractName = basicBlockValueMap.get(basicBlock);
@@ -89,7 +89,7 @@ public class Phi extends StoreInstruction {
     }
 
     @Override
-    public List<Value> getAllValues() {
+    public List<IrValue> getAllValues() {
         var allNames = getOperandValues();
         allNames.add(getDestination());
         return allNames;
@@ -97,7 +97,7 @@ public class Phi extends StoreInstruction {
 
     @Override
     public Instruction copy() {
-        return new Phi((VirtualRegister) getDestination(), basicBlockValueMap);
+        return new Phi((IrRegister) getDestination(), basicBlockValueMap);
     }
 
     @Override
@@ -120,13 +120,13 @@ public class Phi extends StoreInstruction {
 
     @Override
     public String toString() {
-        String rhs = basicBlockValueMap.values().stream().map(Value::repr).collect(Collectors.joining(", "));
+        String rhs = basicBlockValueMap.values().stream().map(IrValue::repr).collect(Collectors.joining(", "));
         return String.format("%s%s: %s = phi (%s)", DOUBLE_INDENT, getDestination().repr(), getDestination().getType().getSourceCode(), rhs);
     }
 
     @Override
     public String syntaxHighlightedToString() {
-        String rhs = basicBlockValueMap.values().stream().map(Value::repr).collect(Collectors.joining(", "));
+        String rhs = basicBlockValueMap.values().stream().map(IrValue::repr).collect(Collectors.joining(", "));
         return String.format("%s%s: %s = phi (%s)", DOUBLE_INDENT, getDestination().repr(), getDestination().getType().getColoredSourceCode(), rhs);
     }
 }

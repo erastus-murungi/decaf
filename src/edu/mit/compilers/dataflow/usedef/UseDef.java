@@ -3,13 +3,13 @@ package edu.mit.compilers.dataflow.usedef;
 import java.util.Objects;
 
 import edu.mit.compilers.codegen.codes.Instruction;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
 
 public abstract class UseDef {
-    public final Value variable;
+    public final IrValue variable;
     public final Instruction line;
 
-    public UseDef(Value variable, Instruction line) {
+    public UseDef(IrValue variable, Instruction line) {
         this.variable = variable;
         this.line = line;
     }

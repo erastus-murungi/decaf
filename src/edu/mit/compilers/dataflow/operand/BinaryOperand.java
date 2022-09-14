@@ -4,13 +4,13 @@ import java.util.List;
 
 import edu.mit.compilers.codegen.codes.BinaryInstruction;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
 
 
 public class BinaryOperand extends Operand {
-    public final Value fstOperand;
+    public final IrValue fstOperand;
     public final String operator;
-    public final Value sndOperand;
+    public final IrValue sndOperand;
 
     public BinaryOperand(BinaryInstruction binaryInstruction) {
         this.fstOperand = binaryInstruction.fstOperand;
@@ -19,12 +19,12 @@ public class BinaryOperand extends Operand {
     }
 
     @Override
-    public boolean contains(Value name) {
+    public boolean contains(IrValue name) {
         return this.fstOperand.equals(name) || this.sndOperand.equals(name);
     }
 
     @Override
-    public List<Value> getNames() {
+    public List<IrValue> getNames() {
         return List.of(fstOperand, sndOperand);
     }
 

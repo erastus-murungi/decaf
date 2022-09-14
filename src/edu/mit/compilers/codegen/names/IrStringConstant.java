@@ -5,17 +5,17 @@ import java.util.Objects;
 import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
 
-public class StringConstant extends Constant {
+public class IrStringConstant extends IrConstant {
     private final String content;
     private final String contentEscaped;
 
-    public StringConstant(String content) {
+    public IrStringConstant(String content) {
         super(Type.String, TemporaryNameIndexGenerator.getNextStringLiteralIndex());
         this.content = content;
         this.contentEscaped = content.substring(1, content.length() - 1).translateEscapes();
     }
 
-    private StringConstant(String label, String content, String contentEscaped) {
+    private IrStringConstant(String label, String content, String contentEscaped) {
         super(Type.String, label);
         this.content = content;
         this.contentEscaped = contentEscaped;
@@ -31,13 +31,13 @@ public class StringConstant extends Constant {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-        StringConstant that = (StringConstant) o;
+        IrStringConstant that = (IrStringConstant) o;
         return Objects.equals(getLabel(), that.getLabel());
     }
 
     @Override
-    public StringConstant copy() {
-        return new StringConstant(label, content, contentEscaped);
+    public IrStringConstant copy() {
+        return new IrStringConstant(label, content, contentEscaped);
     }
 
     public int size() {

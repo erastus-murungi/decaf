@@ -13,33 +13,33 @@ import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
-import edu.mit.compilers.codegen.names.NumericalConstant;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
+import edu.mit.compilers.codegen.names.IrIntegerConstant;
 import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.utils.Utils;
 
 public class InstructionSimplifyPass extends OptimizationPass {
-    static final NumericalConstant mZero = new NumericalConstant(0L, Type.Int);
-    static final NumericalConstant mOne = new NumericalConstant(1L, Type.Int);
+    static final IrIntegerConstant mZero = new IrIntegerConstant(0L, Type.Int);
+    static final IrIntegerConstant mOne = new IrIntegerConstant(1L, Type.Int);
 
     public InstructionSimplifyPass(OptimizationContext optimizationContext, Method method) {
         super(optimizationContext, method);
     }
 
-    private static NumericalConstant getZero() {
-        return new NumericalConstant(0L, Type.Bool);
+    private static IrIntegerConstant getZero() {
+        return new IrIntegerConstant(0L, Type.Bool);
     }
 
     public static boolean matchBinOpOperandsCommutative(BinaryInstruction instruction,
-                                                        Value lhsExpected,
-                                                        Value rhsExpected) {
+                                                        IrValue lhsExpected,
+                                                        IrValue rhsExpected) {
         return matchBinOpOperands(instruction, lhsExpected, rhsExpected) ||
                 matchBinOpOperands(instruction, rhsExpected, lhsExpected);
     }
 
     public static boolean matchBinOpOperands(BinaryInstruction instruction,
-                                             Value lhsExpected,
-                                             Value rhsExpected) {
+                                             IrValue lhsExpected,
+                                             IrValue rhsExpected) {
         var lhsActual = instruction.fstOperand;
         var rhsActual = instruction.sndOperand;
         return lhsActual
@@ -48,13 +48,13 @@ public class InstructionSimplifyPass extends OptimizationPass {
                         .equals(rhsExpected);
     }
 
-    private static Value getNotEq(BinaryInstruction binaryInstruction, Value expected) {
+    private static IrValue getNotEq(BinaryInstruction binaryInstruction, IrValue expected) {
         if (binaryInstruction.fstOperand.equals(expected))
             return binaryInstruction.sndOperand;
         return binaryInstruction.fstOperand;
     }
 
-    private static Value getNonZero(BinaryInstruction binaryInstruction) {
+    private static IrValue getNonZero(BinaryInstruction binaryInstruction) {
         return getNotEq(binaryInstruction, mZero);
     }
 
@@ -109,7 +109,7 @@ public class InstructionSimplifyPass extends OptimizationPass {
     private Instruction simplifyQuadruple(BinaryInstruction binaryInstruction) {
         var aLong = Utils.symbolicallyEvaluate(String.format("%s %s %s", binaryInstruction.fstOperand.getLabel(), binaryInstruction.operator, binaryInstruction.sndOperand.getLabel()));
         if (aLong.isPresent()) {
-            return CopyInstruction.noMetaData(binaryInstruction.getDestination(), new NumericalConstant(aLong.get(), Type.Int));
+            return CopyInstruction.noMetaData(binaryInstruction.getDestination(), new IrIntegerConstant(aLong.get(), Type.Int));
         }
         Instruction newTac = null;
         switch (binaryInstruction.operator) {

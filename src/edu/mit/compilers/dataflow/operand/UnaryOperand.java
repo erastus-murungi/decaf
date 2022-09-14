@@ -5,10 +5,10 @@ import java.util.Objects;
 
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
 
 public class UnaryOperand extends Operand {
-    public final Value operand;
+    public final IrValue operand;
     public final String operator;
 
     public UnaryOperand(UnaryInstruction unaryInstruction) {
@@ -17,12 +17,12 @@ public class UnaryOperand extends Operand {
     }
 
     @Override
-    public boolean contains(Value name) {
+    public boolean contains(IrValue name) {
         return this.operand.equals(name);
     }
 
     @Override
-    public List<Value> getNames() {
+    public List<IrValue> getNames() {
         return List.of(operand);
     }
 

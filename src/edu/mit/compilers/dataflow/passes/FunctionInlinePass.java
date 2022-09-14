@@ -20,7 +20,7 @@ import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.MethodEnd;
 import edu.mit.compilers.codegen.codes.ReturnInstruction;
 import edu.mit.compilers.codegen.codes.UnconditionalBranch;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.utils.TarjanSCC;
 
 
@@ -43,10 +43,10 @@ public class FunctionInlinePass {
         return newMethodList;
     }
 
-    private Map<Value, Value> mapParametersToArguments(InstructionList functionTacList,
-                                                       List<Value> arguments) {
+    private Map<IrValue, IrValue> mapParametersToArguments(InstructionList functionTacList,
+                                                           List<IrValue> arguments) {
         var method = (Method) functionTacList.get(0);
-        var map = new HashMap<Value, Value>();
+        var map = new HashMap<IrValue, IrValue>();
         var parameters = method.getParameterNames();
         for (int indexOfCode = 0; indexOfCode < parameters.size(); indexOfCode++) {
             map.put(parameters.get(indexOfCode), arguments.get(indexOfCode));
@@ -70,7 +70,7 @@ public class FunctionInlinePass {
         return callSites;
     }
 
-    private List<Value> findArgumentNames(InstructionList instructionList, int indexOfFunctionCall) {
+    private List<IrValue> findArgumentNames(InstructionList instructionList, int indexOfFunctionCall) {
         assert instructionList.get(indexOfFunctionCall) instanceof FunctionCall;
         return ((FunctionCall) instructionList.get(indexOfFunctionCall)).getArguments();
     }
@@ -84,12 +84,12 @@ public class FunctionInlinePass {
         }
     }
 
-    private List<Instruction> findReplacementBody(List<Value> arguments,
+    private List<Instruction> findReplacementBody(List<IrValue> arguments,
                                                   InstructionList functionBody) {
         // replace all instances of arguments with
         // find my actual parameter names
         List<Instruction> newTacList = new ArrayList<>();
-        Map<Value, Value> paramToArg = mapParametersToArguments(functionBody, arguments);
+        Map<IrValue, IrValue> paramToArg = mapParametersToArguments(functionBody, arguments);
         for (var tac : functionBody) {
             if (tac instanceof MethodEnd || tac instanceof UnconditionalBranch || tac instanceof Method)
                 continue;

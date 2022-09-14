@@ -1,14 +1,11 @@
 package edu.mit.compilers.dataflow.operand;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.GlobalAddress;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.VirtualRegister;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrGlobal;
+import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.grammar.DecafScanner;
 
 public abstract class Operand {
@@ -23,9 +20,9 @@ public abstract class Operand {
         return operator.equals(DecafScanner.PLUS) || operator.equals(DecafScanner.MULTIPLY);
     }
 
-    public abstract boolean contains(Value comp);
+    public abstract boolean contains(IrValue comp);
 
-    public boolean containsAny(Set<GlobalAddress> names) {
+    public boolean containsAny(Set<IrGlobal> names) {
         return names.stream().anyMatch(this::contains);
     }
 
@@ -33,7 +30,7 @@ public abstract class Operand {
         return index;
     }
 
-    public abstract List<Value> getNames();
+    public abstract List<IrValue> getNames();
 
     public abstract boolean isContainedIn(StoreInstruction storeInstruction);
 

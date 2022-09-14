@@ -13,8 +13,8 @@ import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.NumericalConstant;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrIntegerConstant;
+import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.dataflow.analyses.ReachingDefinitions;
 
@@ -23,12 +23,12 @@ public class ConstantPropagationPass extends OptimizationPass {
         super(optimizationContext, method);
     }
 
-    private static Map<Value, NumericalConstant> getStoreToConstantMapping(Collection<StoreInstruction> storeInstructionInstructions) {
-        var storeNameToStoreInstructionMap = new HashMap<Value, NumericalConstant>();
+    private static Map<IrValue, IrIntegerConstant> getStoreToConstantMapping(Collection<StoreInstruction> storeInstructionInstructions) {
+        var storeNameToStoreInstructionMap = new HashMap<IrValue, IrIntegerConstant>();
         for (StoreInstruction storeInstruction : storeInstructionInstructions) {
             if (storeInstruction instanceof CopyInstruction assignment) {
-                if (assignment.getValue() instanceof NumericalConstant) {
-                    storeNameToStoreInstructionMap.put(storeInstruction.getDestination(), (NumericalConstant) assignment.getValue());
+                if (assignment.getValue() instanceof IrIntegerConstant) {
+                    storeNameToStoreInstructionMap.put(storeInstruction.getDestination(), (IrIntegerConstant) assignment.getValue());
                 }
             }
         }
@@ -57,7 +57,7 @@ public class ConstantPropagationPass extends OptimizationPass {
         for (Instruction instruction : basicBlock.getInstructionList()) {
             indexOfInstruction++;
             if (instruction instanceof CopyInstruction) {
-                if (((CopyInstruction) instruction).getValue() instanceof NumericalConstant constant) {
+                if (((CopyInstruction) instruction).getValue() instanceof IrIntegerConstant constant) {
                     for (HasOperand hasOperand : reachingDefinitions(indexOfInstruction, basicBlock.getInstructionList())) {
                         hasOperand.replaceValue(((CopyInstruction) instruction).getDestination(), constant);
                     }
@@ -75,7 +75,7 @@ public class ConstantPropagationPass extends OptimizationPass {
                 continue;
             for (Instruction instruction : basicBlock.getInstructionList()) {
                 if (instruction instanceof HasOperand hasOperand) {
-                    for (Value name : hasOperand.getOperandValues()) {
+                    for (IrValue name : hasOperand.getOperandValues()) {
                         if (storeToConstantMapping.containsKey(name)) {
                             hasOperand.replaceValue(name, storeToConstantMapping.get(name));
                         }

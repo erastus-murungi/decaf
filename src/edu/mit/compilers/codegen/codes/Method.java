@@ -8,13 +8,13 @@ import edu.mit.compilers.asm.AsmWriter;
 import edu.mit.compilers.ast.MethodDefinition;
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
-import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.codegen.names.VirtualRegister;
+import edu.mit.compilers.codegen.names.IrValue;
+import edu.mit.compilers.codegen.names.IrRegister;
 import edu.mit.compilers.utils.Utils;
 
 public class Method extends Instruction {
     public final MethodDefinition methodDefinition;
-    private final List<VirtualRegister> parameterNames;
+    private final List<IrRegister> parameterNames;
     /**
      * @implNote instead of storing the set of locals, we now store a method's tac list.
      * Because of optimizations, the set of locals could be re-computed;
@@ -33,11 +33,11 @@ public class Method extends Instruction {
         super(methodDefinition);
         this.methodDefinition = methodDefinition;
         parameterNames = methodDefinition.parameterList.stream()
-                .map(methodDefinitionParameter -> new VirtualRegister(methodDefinitionParameter.getName(), methodDefinitionParameter.getType()))
+                .map(methodDefinitionParameter -> new IrRegister(methodDefinitionParameter.getName(), methodDefinitionParameter.getType()))
                 .collect(Collectors.toList());
     }
 
-    public List<VirtualRegister> getParameterNames() {
+    public List<IrRegister> getParameterNames() {
         return List.copyOf(parameterNames);
     }
 
@@ -64,7 +64,7 @@ public class Method extends Instruction {
     }
 
     @Override
-    public List<Value> getAllValues() {
+    public List<IrValue> getAllValues() {
         return Collections.emptyList();
     }
 

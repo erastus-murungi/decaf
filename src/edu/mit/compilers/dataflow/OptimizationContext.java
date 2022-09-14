@@ -9,8 +9,7 @@ import java.util.Set;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.GlobalAddress;
-import edu.mit.compilers.codegen.names.VirtualRegister;
+import edu.mit.compilers.codegen.names.IrGlobal;
 import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.TarjanSCC;
 
@@ -28,7 +27,7 @@ public class OptimizationContext {
         setMethodsToOptimize(programIr.getMethods());
     }
 
-    public Set<GlobalAddress> globals() {
+    public Set<IrGlobal> globals() {
         return programIr.getGlobals();
     }
 

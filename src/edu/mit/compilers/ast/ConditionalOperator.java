@@ -1,7 +1,7 @@
 package edu.mit.compilers.ast;
 
 import edu.mit.compilers.codegen.CodegenAstVisitor;
-import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.IrAssignableValue;
 import edu.mit.compilers.grammar.DecafScanner;
 import edu.mit.compilers.grammar.TokenPosition;
 import edu.mit.compilers.ir.ASTVisitor;
@@ -41,7 +41,7 @@ public class ConditionalOperator extends BinOperator {
         }
     }
 
-    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, LValue resultLocation) {
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignableValue resultLocation) {
         return null;
     }
 }

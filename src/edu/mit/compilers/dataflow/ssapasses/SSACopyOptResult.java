@@ -7,11 +7,11 @@ import java.util.Collection;
 import java.util.Comparator;
 
 import edu.mit.compilers.codegen.codes.Instruction;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.utils.Utils;
 
-public record SSACopyOptResult(Instruction before, @Nullable Instruction after, @Nullable Value replaced,
-                               Value replacer) {
+public record SSACopyOptResult(Instruction before, @Nullable Instruction after, @Nullable IrValue replaced,
+                               IrValue replacer) {
     public static String printResults(Collection<SSACopyOptResult> results) {
         var output = new ArrayList<String>();
         if (!results.isEmpty()) {

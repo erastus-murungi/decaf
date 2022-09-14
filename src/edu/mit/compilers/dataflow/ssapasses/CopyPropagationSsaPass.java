@@ -12,8 +12,8 @@ import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.VirtualRegister;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
+import edu.mit.compilers.codegen.names.IrRegister;
 import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.dataflow.dominator.DominatorTree;
 import edu.mit.compilers.ssa.SSA;
@@ -29,16 +29,16 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
         var changesHappened = false;
         var dom = new DominatorTree(getMethod().entryBlock);
         // maps (toBeReplaced -> replacer)
-        var copiesMap = new HashMap<VirtualRegister, Value>();
+        var copiesMap = new HashMap<IrRegister, IrValue>();
 
         for (BasicBlock basicBlock : getBasicBlocksList()) {
             for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
                 if (storeInstruction instanceof CopyInstruction copyInstruction) {
                     var replacer = copyInstruction.getValue();
                     var toBeReplaced = copyInstruction.getDestination();
-                    if (toBeReplaced instanceof VirtualRegister) {
+                    if (toBeReplaced instanceof IrRegister) {
                         checkState(!copiesMap.containsKey(toBeReplaced), "CopyPropagation : Invalid SSA form: " + toBeReplaced + " found twice in program");
-                        copiesMap.put((VirtualRegister) toBeReplaced, replacer);
+                        copiesMap.put((IrRegister) toBeReplaced, replacer);
                         // as a quick optimization, we could delete this storeInstruction here
                     }
                 }
@@ -48,7 +48,7 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
         for (BasicBlock basicBlock : dom.preorder()) {
             for (Instruction instruction : basicBlock.getNonPhiInstructions()) {
                 if (instruction instanceof HasOperand hasOperand) {
-                    for (VirtualRegister toBeReplaced : hasOperand.getOperandVirtualRegisters()) {
+                    for (IrRegister toBeReplaced : hasOperand.getOperandVirtualRegisters()) {
                         if (copiesMap.containsKey(toBeReplaced)) {
                             var before = hasOperand.copy();
                             var replacer = copiesMap.get(toBeReplaced);
@@ -56,7 +56,7 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass<HasOperand> {
                             // for instance, lets imagine we have a = k
                             // it possible that our copies map has y `replaces` k, and x `replaces` y and $0 `replaces` x
                             // we want to eventually propagate so that a = $0
-                            while (replacer instanceof VirtualRegister && copiesMap.containsKey((VirtualRegister) replacer)) {
+                            while (replacer instanceof IrRegister && copiesMap.containsKey((IrRegister) replacer)) {
                                 replacer = copiesMap.get(replacer);
                             }
                             hasOperand.replaceValue(toBeReplaced, replacer);

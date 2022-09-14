@@ -5,7 +5,7 @@ import java.util.Objects;
 
 import edu.mit.compilers.codegen.codes.GetAddress;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
 
 public class GetAddressOperand extends Operand {
     private final GetAddress getAddress;
@@ -15,12 +15,12 @@ public class GetAddressOperand extends Operand {
     }
 
     @Override
-    public boolean contains(Value comp) {
+    public boolean contains(IrValue comp) {
         return getAddress.getBaseAddress().equals(comp) || getAddress.getIndex().equals(comp);
     }
 
     @Override
-    public List<Value> getNames() {
+    public List<IrValue> getNames() {
         return getAddress.getOperandValues();
     }
 

@@ -5,10 +5,10 @@ import java.util.Optional;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.asm.AsmWriter;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.VirtualRegister;
-import edu.mit.compilers.codegen.names.MemoryAddress;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
+import edu.mit.compilers.codegen.names.IrAssignableValue;
+import edu.mit.compilers.codegen.names.IrRegister;
+import edu.mit.compilers.codegen.names.IrMemoryAddress;
 import edu.mit.compilers.dataflow.operand.BinaryOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.utils.Operators;
@@ -20,19 +20,19 @@ import edu.mit.compilers.utils.Operators;
  */
 
 public class BinaryInstruction extends StoreInstruction {
-    public Value fstOperand;
+    public IrValue fstOperand;
     public String operator;
-    public Value sndOperand;
+    public IrValue sndOperand;
 
 
-    public BinaryInstruction(LValue result, Value fstOperand, String operator, Value sndOperand, String comment, AST source) {
+    public BinaryInstruction(IrAssignableValue result, IrValue fstOperand, String operator, IrValue sndOperand, String comment, AST source) {
         super(result, source, comment);
         this.fstOperand = fstOperand;
         this.operator = operator;
         this.sndOperand = sndOperand;
     }
 
-    public BinaryInstruction(VirtualRegister result, Value fstOperand, String operator, Value sndOperand) {
+    public BinaryInstruction(IrRegister result, IrValue fstOperand, String operator, IrValue sndOperand) {
         this(result, fstOperand, operator, sndOperand, String.format("%s = %s %s %s", result, fstOperand, operator, sndOperand), null);
     }
 
@@ -42,7 +42,7 @@ public class BinaryInstruction extends StoreInstruction {
     }
 
     @Override
-    public List<Value> getAllValues() {
+    public List<IrValue> getAllValues() {
         return List.of(getDestination(), fstOperand, sndOperand);
     }
 
@@ -53,12 +53,12 @@ public class BinaryInstruction extends StoreInstruction {
 
     @Override
     public Optional<Operand> getOperandNoArray() {
-        if (getDestination() instanceof MemoryAddress || fstOperand instanceof MemoryAddress || sndOperand instanceof MemoryAddress)
+        if (getDestination() instanceof IrMemoryAddress || fstOperand instanceof IrMemoryAddress || sndOperand instanceof IrMemoryAddress)
             return Optional.empty();
         return Optional.of(new BinaryOperand(this));
     }
 
-    public boolean replaceValue(Value oldVariable, Value replacer) {
+    public boolean replaceValue(IrValue oldVariable, IrValue replacer) {
         var replaced = false;
         if (fstOperand.equals(oldVariable)) {
             fstOperand = replacer;
@@ -77,7 +77,7 @@ public class BinaryInstruction extends StoreInstruction {
     }
 
     @Override
-    public List<Value> getOperandValues() {
+    public List<IrValue> getOperandValues() {
         return List.of(fstOperand, sndOperand);
     }
 

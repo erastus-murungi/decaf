@@ -3,7 +3,7 @@ package edu.mit.compilers.ast;
 import java.util.List;
 
 import edu.mit.compilers.codegen.CodegenAstVisitor;
-import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.IrAssignableValue;
 import edu.mit.compilers.ir.ASTVisitor;
 import edu.mit.compilers.symboltable.SymbolTable;
 import edu.mit.compilers.utils.Pair;
@@ -47,7 +47,7 @@ public class Assignment extends AST {
         return ASTVisitor.visit(this, currentSymbolTable);
     }
 
-    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, LValue resultLocation) {
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignableValue resultLocation) {
         return codegenAstVisitor.visit(this, resultLocation);
     }
 

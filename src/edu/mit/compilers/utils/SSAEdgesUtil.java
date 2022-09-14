@@ -12,8 +12,8 @@ import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.VirtualRegister;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrRegister;
+import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.dataflow.dominator.DominatorTree;
 import edu.mit.compilers.dataflow.ssapasses.worklistitems.SsaEdge;
 
@@ -27,15 +27,15 @@ public class SSAEdgesUtil {
     private static Set<SsaEdge> computeSsaEdges(@NotNull Method method) {
         var dominatorTree = new DominatorTree(method.entryBlock);
         var ssaEdges = new HashSet<SsaEdge>();
-        var lValueToDefMapping = new HashMap<VirtualRegister, StoreInstruction>();
+        var lValueToDefMapping = new HashMap<IrRegister, StoreInstruction>();
         var basicBlocks = dominatorTree.preorder();
 
         for (BasicBlock basicBlock : basicBlocks) {
             basicBlock.getStoreInstructions()
                     .forEach(
                             storeInstruction -> {
-                                if (storeInstruction.getDestination() instanceof VirtualRegister virtualRegister) {
-                                    lValueToDefMapping.put(virtualRegister, storeInstruction);
+                                if (storeInstruction.getDestination() instanceof IrRegister irRegister) {
+                                    lValueToDefMapping.put(irRegister, storeInstruction);
                                 }
                             }
                     );
@@ -44,13 +44,13 @@ public class SSAEdgesUtil {
         for (BasicBlock basicBlock : basicBlocks) {
             for (Instruction instruction : basicBlock.getInstructionList()) {
                 if (instruction instanceof HasOperand hasOperand) {
-                    for (VirtualRegister virtualRegister : hasOperand.getOperandVirtualRegisters()) {
-                        if (lValueToDefMapping.containsKey(virtualRegister)) {
-                            ssaEdges.add(new SsaEdge(lValueToDefMapping.get(virtualRegister), hasOperand, basicBlock));
-                        } else if (method.getParameterNames().contains(virtualRegister)) {
+                    for (IrRegister irRegister : hasOperand.getOperandVirtualRegisters()) {
+                        if (lValueToDefMapping.containsKey(irRegister)) {
+                            ssaEdges.add(new SsaEdge(lValueToDefMapping.get(irRegister), hasOperand, basicBlock));
+                        } else if (method.getParameterNames().contains(irRegister)) {
 
                         } else {
-                            throw new IllegalStateException(virtualRegister + " not found" + basicBlock.getInstructionList());
+                            throw new IllegalStateException(irRegister + " not found" + basicBlock.getInstructionList());
                         }
                     }
                 }
@@ -63,15 +63,15 @@ public class SSAEdgesUtil {
         return ssaEdges;
     }
 
-    public Set<HasOperand> getUses(@NotNull VirtualRegister virtualRegister) {
+    public Set<HasOperand> getUses(@NotNull IrRegister irRegister) {
         return getSsaEdges().stream()
                 .filter(ssaEdge -> ssaEdge.getValue()
-                        .equals(virtualRegister))
+                        .equals(irRegister))
                 .map(SsaEdge::use)
                 .collect(Collectors.toUnmodifiableSet());
     }
 
-    public void copyPropagate(@NotNull VirtualRegister toBeReplaced, Value replacer) {
+    public void copyPropagate(@NotNull IrRegister toBeReplaced, IrValue replacer) {
         var uses = getUses(toBeReplaced);
         var changesHappened = false;
         for (var use : uses) {

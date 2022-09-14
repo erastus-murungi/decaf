@@ -6,24 +6,24 @@ import java.util.Optional;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.asm.AsmWriter;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 import edu.mit.compilers.utils.Utils;
 
 public class ReturnInstruction extends HasOperand {
-    private Value returnAddress;
+    private IrValue returnAddress;
 
     public ReturnInstruction(AST source) {
         super(source);
     }
 
-    public ReturnInstruction(AST source, Value returnAddress) {
+    public ReturnInstruction(AST source, IrValue returnAddress) {
         super(source);
         this.returnAddress = returnAddress;
     }
 
-    public Optional<Value> getReturnAddress() {
+    public Optional<IrValue> getReturnAddress() {
         return Optional.ofNullable(returnAddress);
     }
 
@@ -33,7 +33,7 @@ public class ReturnInstruction extends HasOperand {
     }
 
     @Override
-    public List<Value> getAllValues() {
+    public List<IrValue> getAllValues() {
         if (returnAddress == null)
             return Collections.emptyList();
         return List.of(returnAddress);
@@ -50,14 +50,14 @@ public class ReturnInstruction extends HasOperand {
     }
 
     @Override
-    public List<Value> getOperandValues() {
+    public List<IrValue> getOperandValues() {
         if (returnAddress == null)
             return Collections.emptyList();
         return List.of(returnAddress);
     }
 
     @Override
-    public boolean replaceValue(Value oldName, Value newName) {
+    public boolean replaceValue(IrValue oldName, IrValue newName) {
         if (oldName.equals(returnAddress)) {
             returnAddress = newName;
             return true;

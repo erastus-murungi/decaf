@@ -1,5 +1,9 @@
 package edu.mit.compilers.registerallocation;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -10,17 +14,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.TraceScheduler;
+import edu.mit.compilers.codegen.codes.GetAddress;
 import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.MemoryAddress;
-import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.codegen.names.VirtualRegister;
+import edu.mit.compilers.codegen.names.IrGlobal;
+import edu.mit.compilers.codegen.names.IrValue;
+import edu.mit.compilers.codegen.names.IrAssignableValue;
+import edu.mit.compilers.codegen.names.IrMemoryAddress;
 import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
 import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.TarjanSCC;
@@ -30,19 +37,19 @@ public class LiveIntervalsUtil {
     /**
      * Maps each unique instruction in the program to a set of variables live at that point
      */
-    public final Map<Instruction, Set<Value>> instructionToLiveVariablesMap = new HashMap<>();
+    public final Map<Instruction, Set<IrValue>> instructionToLiveVariablesMap = new HashMap<>();
     /**
      * Maps each method to a list of its live intervals
      */
     public final Map<Method, List<LiveInterval>> methodToLiveIntervalsMap = new HashMap<>();
     final private ProgramIr programIr;
     /**
-     * value to live intervals
+     * Value to live intervals
      */
 
-    private final Map<Method, Map<Value, LiveInterval>> methodToMappingOfValuesToLiveIntervals = new HashMap<>();
-    Map<Instruction, Set<Value>> refCache = new ConcurrentHashMap<>();
-    Map<Instruction, Set<Value>> defCache = new ConcurrentHashMap<>();
+    private final Map<Method, Map<IrValue, LiveInterval>> methodToMappingOfValuesToLiveIntervals = new HashMap<>();
+    private final Map<Instruction, Set<IrValue>> refCache = new ConcurrentHashMap<>();
+    private final Map<Instruction, Set<IrValue>> defCache = new ConcurrentHashMap<>();
 
     public LiveIntervalsUtil(ProgramIr programIr) {
         this.programIr = programIr;
@@ -51,7 +58,7 @@ public class LiveIntervalsUtil {
         validateLiveIntervals();
     }
 
-    public LiveIntervalsUtil(Method method, ProgramIr programIr) {
+    public LiveIntervalsUtil(@NotNull Method method, @NotNull ProgramIr programIr) {
         this.programIr = programIr;
         computeMethodLivenessInformation(method);
         var liveIntervals = computeMethodLiveIntervals(method);
@@ -59,12 +66,11 @@ public class LiveIntervalsUtil {
         methodToLiveIntervalsMap.put(method, liveIntervals);
     }
 
-    private static int findFirstDefSlot(InstructionList instructionList, Value variable) {
+    private static int findFirstDefSlot(InstructionList instructionList, IrValue variable) {
         int indexOfInstruction = 0;
         for (Instruction instruction : instructionList) {
             if (instruction.getAllValues()
-                           .contains(variable))
-                break;
+                           .contains(variable)) break;
             indexOfInstruction++;
         }
         return indexOfInstruction;
@@ -87,69 +93,88 @@ public class LiveIntervalsUtil {
         return firstCopy;
     }
 
-    public Collection<LiveInterval> getLiveIntervals(Method method) {
+    @NotNull private Map<IrValue, LiveInterval> fixArrayBaseRegisters(@NotNull Map<IrValue, LiveInterval> valueLiveIntervalMap) {
+        var memoryRegisters = valueLiveIntervalMap.values()
+                                                  .stream()
+                                                  .filter(liveInterval -> liveInterval.irAssignableValue() instanceof IrMemoryAddress)
+                                                  .collect(Collectors.groupingBy(liveInterval -> ((IrMemoryAddress) liveInterval.irAssignableValue()).getBaseAddress()));
+        for (var baseAddress : memoryRegisters.keySet()) {
+            var newEndpoint = memoryRegisters.get(baseAddress)
+                                             .stream()
+                                             .mapToInt(LiveInterval::endPoint)
+                                             .max()
+                                             .orElseThrow(() -> new IllegalStateException(memoryRegisters.get(baseAddress)
+                                                                                                         .toString()));
+
+            valueLiveIntervalMap.put(baseAddress, valueLiveIntervalMap.get(baseAddress)
+                                                                      .updateEndpoint(newEndpoint));
+        }
+        return valueLiveIntervalMap;
+    }
+
+    @NotNull
+    public List<Instruction> getAllInstructionsInLiveIntervalOf(@NotNull IrValue irValue, @NotNull Method method) {
+        var liveInterval = methodToMappingOfValuesToLiveIntervals.get(method)
+                                                                 .get(irValue);
+        checkNotNull(liveInterval);
+        var instructionList = liveInterval.instructionList();
+        return IntStream.range(liveInterval.startPoint(), liveInterval.endPoint())
+                        .mapToObj(instructionList::get)
+                        .toList();
+    }
+
+    @NotNull
+    public Collection<LiveInterval> getLiveIntervals(@NotNull Method method) {
         return methodToLiveIntervalsMap.get(method);
     }
 
-    public Map<Value, LiveInterval> getValueToLiveIntervalMappingForMethod(Method method) {
+    @NotNull
+    public Map<IrValue, LiveInterval> getValueToLiveIntervalMappingForMethod(@NotNull Method method) {
         return methodToMappingOfValuesToLiveIntervals.get(method);
     }
 
-    private void validateMethodLiveIntervals(Collection<LiveInterval> liveIntervals) {
+    private void validateMethodLiveIntervals(@NotNull Collection<LiveInterval> liveIntervals) {
         checkStartComesBeforeEnd(liveIntervals);
     }
 
     private void validateLiveIntervals() {
         programIr.getMethods()
-                 .forEach(
-                         method ->
-                                 validateMethodLiveIntervals(getLiveIntervals(method))
-                 );
+                 .forEach(method -> validateMethodLiveIntervals(getLiveIntervals(method)));
     }
 
-    private boolean isLiveAtPoint(Method method, Value value, int index) {
+    private boolean isLiveAtPoint(Method method, IrValue irValue, int index) {
         var liveInterval = methodToMappingOfValuesToLiveIntervals.get(method)
-                                                                 .get(value);
+                                                                 .get(irValue);
         return liveInterval.startPoint() <= index && index < liveInterval.endPoint();
     }
 
     private void computeMethodLivenessInformation(Method method) {
         var basicBlocks = TarjanSCC.getReversePostOrder(method.entryBlock);
-        basicBlocks.forEach(basicBlock ->
-                computeLiveOutForSetBasicBlock(basicBlock, new LiveVariableAnalysis(method.entryBlock)));
+        basicBlocks.forEach(basicBlock -> computeLiveOutForSetBasicBlock(basicBlock, new LiveVariableAnalysis(method.entryBlock)));
     }
 
-    private Set<Value> ref(Instruction instruction) {
+    private Set<IrValue> ref(Instruction instruction) {
         if (instruction instanceof HasOperand hasOperand)
-            return new HashSet<>(hasOperand.getAllLValues());
+            return new HashSet<>(hasOperand.getAllRegisterAllocatableValues());
         return Collections.emptySet();
     }
 
-    private Set<Value> def(Instruction instruction) {
-        if (instruction instanceof StoreInstruction storeInstruction)
-            return Set.of(storeInstruction.getDestination());
+    private Set<IrValue> def(Instruction instruction) {
+        if (instruction instanceof GetAddress getAddress)
+            return Set.of(getAddress.getBaseAddress(), getAddress.getDestination());
+        if (instruction instanceof StoreInstruction storeInstruction) return Set.of(storeInstruction.getDestination());
         return Collections.emptySet();
     }
 
     private void computeLiveOutForSetBasicBlock(BasicBlock basicBlock, LiveVariableAnalysis liveVariableAnalysis) {
-        var liveIn = liveVariableAnalysis.liveIn(basicBlock);
         var liveOut = liveVariableAnalysis.liveOut(basicBlock);
 
         basicBlock.getInstructionList()
                   .parallelStream()
-                  .forEach(
-                          instruction -> {
-                              defCache.put(instruction, def(instruction));
-                              refCache.put(instruction, ref(instruction));
-                          }
-                  );
-
-
-        if (liveIn.equals(liveOut))
-            basicBlock.getInstructionList()
-                      .forEach(
-                              instruction -> instructionToLiveVariablesMap.put(instruction, new HashSet<>(liveIn))
-                      );
+                  .forEach(instruction -> {
+                      defCache.put(instruction, def(instruction));
+                      refCache.put(instruction, ref(instruction));
+                  });
 
         var outLive = new HashSet<>(liveOut);
 
@@ -171,26 +196,20 @@ public class LiveIntervalsUtil {
     }
 
     private List<LiveInterval> computeMethodLiveIntervals(Method method) {
-        var liveIntervalList = new ArrayList<LiveInterval>();
         var instructionList = TraceScheduler.flattenIr(method);
-        var allVariables = Utils.getAllLValuesInInstructionList(instructionList);
+        var allVariables = Utils.getLAllRegisterAllocatableValuesInInstructionList(instructionList);
 
-        // remove global variables
-        allVariables.removeAll(programIr.getGlobals());
-
-        var varToLiveInterval = new HashMap<Value, LiveInterval>();
+        var varToLiveInterval = new HashMap<IrValue, LiveInterval>();
         for (var variable : allVariables) {
             var defSlot = findFirstDefSlot(instructionList, variable);
             var lastUseSlot = findLastUseSlot(instructionList, variable);
-            // handles the case when a variable is defined but never used in the program
-            if (lastUseSlot == 0)
-                lastUseSlot = defSlot + 1;
-            var liveInterval = new LiveInterval(variable, defSlot, lastUseSlot, instructionList, method.methodName());
-            liveIntervalList.add(liveInterval);
+            // handles the case when a irAssignableValue is defined but never used in the program
+            if (lastUseSlot == 0) lastUseSlot = defSlot + 1;
+            var liveInterval = new LiveInterval(variable, defSlot, lastUseSlot, instructionList, method);
             varToLiveInterval.put(variable, liveInterval);
         }
-        methodToMappingOfValuesToLiveIntervals.put(method, varToLiveInterval);
-        return liveIntervalList;
+        methodToMappingOfValuesToLiveIntervals.put(method, fixArrayBaseRegisters(varToLiveInterval));
+        return new ArrayList<>(methodToMappingOfValuesToLiveIntervals.get(method).values());
     }
 
     private void computeLiveIntervals() {
@@ -199,18 +218,26 @@ public class LiveIntervalsUtil {
         }
     }
 
-    private int findLastUseSlot(InstructionList instructionList, Value value) {
+    private int findLastUseSlot(InstructionList instructionList, IrValue irValue) {
         int loc = instructionList.size() - 1;
-        for (; loc >= 0; loc--) {
-            var instruction = instructionList.get(loc);
-            if (instructionToLiveVariablesMap.getOrDefault(instruction, Collections.emptySet())
-                                             .contains(value))
-                break;
+        if (irValue instanceof IrMemoryAddress || irValue instanceof IrGlobal) {
+            for (; loc >= 0; loc--) {
+                var instruction = instructionList.get(loc);
+                if (instruction.getAllRegisterAllocatableValues()
+                               .contains((IrAssignableValue) irValue)) return loc + 1;
+            }
+            throw new IllegalStateException();
+        } else {
+            for (; loc >= 0; loc--) {
+                var instruction = instructionList.get(loc);
+                if (instructionToLiveVariablesMap.getOrDefault(instruction, Collections.emptySet())
+                                                 .contains(irValue)) break;
+            }
+            return loc + 1;
         }
-        return loc + 1;
     }
 
-    private void checkStartComesBeforeEnd(Collection<LiveInterval> liveIntervals) {
+    private void checkStartComesBeforeEnd(@NotNull Collection<LiveInterval> liveIntervals) {
         for (var liveInterval : liveIntervals) {
             if (liveInterval.startPoint() > liveInterval.endPoint()) {
                 throw new IllegalStateException(liveInterval.toString());
@@ -220,17 +247,16 @@ public class LiveIntervalsUtil {
 
     public void prettyPrintLiveIntervals(Method method) {
         var liveIntervals = getLiveIntervals(method);
-        if (liveIntervals.isEmpty())
-            return;
+        if (liveIntervals.isEmpty()) return;
         var instructionList = liveIntervals.stream()
                                            .findAny()
                                            .orElseThrow()
                                            .instructionList();
         var allVariables = liveIntervals.stream()
-                                        .map(LiveInterval::variable)
+                                        .map(LiveInterval::irAssignableValue)
                                         .distinct()
                                         .toList();
-        Map<Value, Integer> spaces = new HashMap<>();
+        Map<IrValue, Integer> spaces = new HashMap<>();
         int spaceCount = 1;
         for (var variable : allVariables) {
             spaces.put(variable, spaceCount);

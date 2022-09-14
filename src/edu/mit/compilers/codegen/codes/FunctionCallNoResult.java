@@ -7,20 +7,20 @@ import java.util.stream.Collectors;
 
 import edu.mit.compilers.ast.MethodCall;
 import edu.mit.compilers.asm.AsmWriter;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.dataflow.operand.MethodCallOperand;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.utils.Utils;
 
 public class FunctionCallNoResult extends HasOperand implements FunctionCall {
-    private final Stack<Value> arguments;
+    private final Stack<IrValue> arguments;
 
-    public FunctionCallNoResult(MethodCall methodCall, Stack<Value> arguments, String comment) {
+    public FunctionCallNoResult(MethodCall methodCall, Stack<IrValue> arguments, String comment) {
         super(methodCall, comment);
         this.arguments = arguments;
     }
 
-    public Stack<Value> getArguments() {
+    public Stack<IrValue> getArguments() {
         return arguments;
     }
 
@@ -35,7 +35,7 @@ public class FunctionCallNoResult extends HasOperand implements FunctionCall {
     }
 
     @Override
-    public List<Value> getAllValues() {
+    public List<IrValue> getAllValues() {
         return new ArrayList<>(arguments);
     }
 
@@ -45,15 +45,15 @@ public class FunctionCallNoResult extends HasOperand implements FunctionCall {
     }
 
     @Override
-    public List<Value> getOperandValues() {
+    public List<IrValue> getOperandValues() {
         return new ArrayList<>(arguments);
     }
 
-    public boolean replaceValue(Value oldName, Value newName) {
+    public boolean replaceValue(IrValue oldName, IrValue newName) {
         var replaced = false;
         int i = 0;
-        for (Value value : arguments) {
-            if (value.equals(oldName)) {
+        for (IrValue irValue : arguments) {
+            if (irValue.equals(oldName)) {
                 arguments.set(i, newName);
                 replaced = true;
             }
@@ -64,14 +64,14 @@ public class FunctionCallNoResult extends HasOperand implements FunctionCall {
 
     @Override
     public String toString() {
-        var args = arguments.stream().map(Value::repr).collect(Collectors.joining(", "));
+        var args = arguments.stream().map(IrValue::repr).collect(Collectors.joining(", "));
         return String.format("%s%s %s @%s(%s) %s%s", DOUBLE_INDENT, "call", getMethodReturnType(), getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " #  " + getComment().get() : "");
     }
 
     @Override
     public String syntaxHighlightedToString() {
         var callString = Utils.coloredPrint("call", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        var args = arguments.stream().map(Value::repr).collect(Collectors.joining(", "));
+        var args = arguments.stream().map(IrValue::repr).collect(Collectors.joining(", "));
         return String.format("%s%s %s @%s(%s) %s%s", DOUBLE_INDENT, callString, getMethodReturnType(), getMethodName(), args, DOUBLE_INDENT, getComment().isPresent() ? " #  " + getComment().get() : "");
     }
 

@@ -4,14 +4,14 @@ import java.util.Objects;
 
 import edu.mit.compilers.ast.Type;
 
-public class GlobalAddress extends LValue {
-    public GlobalAddress(String label, Type type) {
+public class IrGlobal extends IrAssignableValue {
+    public IrGlobal(String label, Type type) {
         super(type, label);
     }
 
     @Override
-    public GlobalAddress copy() {
-        return new GlobalAddress(label, type);
+    public IrGlobal copy() {
+        return new IrGlobal(label, type);
     }
 
     @Override
@@ -27,9 +27,9 @@ public class GlobalAddress extends LValue {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof GlobalAddress globalAddress)) return false;
+        if (!(o instanceof IrGlobal irGlobal)) return false;
         if (!super.equals(o)) return false;
-        return Objects.equals(getLabel(), globalAddress.getLabel());
+        return Objects.equals(getLabel(), irGlobal.getLabel());
     }
 
     @Override

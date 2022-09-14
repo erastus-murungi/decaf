@@ -4,6 +4,8 @@ import static edu.mit.compilers.grammar.DecafScanner.RESERVED_BOOL;
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_INT;
 import static edu.mit.compilers.grammar.DecafScanner.RESERVED_VOID;
 
+import org.jetbrains.annotations.NotNull;
+
 import edu.mit.compilers.utils.Utils;
 
 public enum Type {
@@ -24,21 +26,23 @@ public enum Type {
 //        };
 //    }
 
+    public static Type lower(@NotNull Type type) {
+        if (type.equals(IntArray))
+            return Int;
+        else if (type.equals(BoolArray))
+            return Bool;
+        throw new IllegalArgumentException(type.getSourceCode());
+    }
+
     public String getSourceCode() {
-        switch (this) {
-            case Bool:
-                return RESERVED_BOOL;
-            case BoolArray:
-                return RESERVED_BOOL + "*";
-            case Int:
-                return RESERVED_INT;
-            case IntArray:
-                return RESERVED_INT + "*";
-            case Void:
-                return RESERVED_VOID;
-            default:
-                throw new IllegalStateException("Unexpected value: " + this);
-        }
+        return switch (this) {
+            case Bool -> RESERVED_BOOL;
+            case BoolArray -> RESERVED_BOOL + "*";
+            case Int -> RESERVED_INT;
+            case IntArray -> RESERVED_INT + "*";
+            case Void -> RESERVED_VOID;
+            default -> throw new IllegalStateException("Unexpected value: " + this);
+        };
     }
 
     public String getColoredSourceCode() {
@@ -46,16 +50,10 @@ public enum Type {
     }
 
     public long getFieldSize() {
-        switch (this) {
-            case Int:
-            case IntArray:
-            case Bool:
-            case BoolArray:
-                return Utils.WORD_SIZE;
-            case Void:
-                return 0;
-            default:
-                throw new IllegalStateException("Unexpected value: " + this);
-        }
+        return switch (this) {
+            case Int, IntArray, Bool, BoolArray -> Utils.WORD_SIZE;
+            case Void -> 0;
+            default -> throw new IllegalStateException("Unexpected value: " + this);
+        };
     }
 }

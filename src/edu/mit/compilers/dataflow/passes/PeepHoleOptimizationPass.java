@@ -3,15 +3,9 @@ package edu.mit.compilers.dataflow.passes;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-import java.util.ArrayList;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.cfg.NOP;
-import edu.mit.compilers.codegen.codes.ArrayBoundsCheck;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.NumericalConstant;
 import edu.mit.compilers.dataflow.OptimizationContext;
 
 public class PeepHoleOptimizationPass extends OptimizationPass {

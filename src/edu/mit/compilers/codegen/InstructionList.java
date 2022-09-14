@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import edu.mit.compilers.codegen.codes.Instruction;
-import edu.mit.compilers.codegen.names.VirtualRegister;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
+import edu.mit.compilers.codegen.names.IrRegister;
 
 public class InstructionList extends ArrayList<Instruction> {
-    public Value place;
+    public IrValue place;
 
     private Integer labelIndex;
 
@@ -19,7 +19,7 @@ public class InstructionList extends ArrayList<Instruction> {
 
     private boolean isEntry = false;
 
-    public InstructionList(Value place, List<Instruction> codes) {
+    public InstructionList(IrValue place, List<Instruction> codes) {
         this.place = place;
         this.label = "UNSET";
         addAll(codes);
@@ -29,7 +29,7 @@ public class InstructionList extends ArrayList<Instruction> {
         this(null, instructions);
     }
 
-    public InstructionList(Value place) {
+    public InstructionList(IrValue place) {
         this(place, Collections.emptyList());
     }
 
@@ -43,7 +43,7 @@ public class InstructionList extends ArrayList<Instruction> {
         return instructionList;
     }
 
-    public static InstructionList of(Instruction instruction, VirtualRegister place) {
+    public static InstructionList of(Instruction instruction, IrRegister place) {
         var instructionList = new InstructionList(place);
         instructionList.add(instruction);
         return instructionList;

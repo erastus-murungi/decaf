@@ -329,7 +329,7 @@ public class ControlFlowGraph {
             truePair.endBlock.setSuccessor(incrementBlock);
             incrementBlock.addPredecessor(truePair.endBlock);
         }
-        // Initialize the condition variable
+        // Initialize the condition irAssignableValue
         BasicBlock initializeBlock = BasicBlock.noBranch();
         initializeBlock.addAstNode(forStatement.initialization);
 

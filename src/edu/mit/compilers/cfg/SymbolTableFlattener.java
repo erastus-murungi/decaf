@@ -98,7 +98,7 @@ public class SymbolTableFlattener {
 
     public void addChildrenVars(SymbolTable methodTable, SymbolTable currTable) {
         for (HashMap.Entry<String, Descriptor> variable : currTable.entries.entrySet()) {
-            // uniquely name each valid variable in method scope
+            // uniquely name each valid irAssignableValue in method scope
             String varName = variable.getKey();
             String newVarName = varName;
             if (methodTable.containsEntry(varName)) {

@@ -30,8 +30,8 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.InstructionList;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.VirtualRegister;
+import edu.mit.compilers.codegen.names.IrAssignableValue;
+import edu.mit.compilers.codegen.names.IrRegister;
 
 public class Utils {
     // adopted from Java 15
@@ -135,7 +135,7 @@ public class Utils {
         );
     }
 
-    public static Set<LValue> getAllLValuesInInstructionList(InstructionList instructionList) {
+    public static Set<IrAssignableValue> getAllLValuesInInstructionList(InstructionList instructionList) {
         return instructionList.stream()
                 .flatMap(instruction -> instruction.getAllLValues()
                         .stream())
@@ -143,7 +143,15 @@ public class Utils {
 
     }
 
-    public static Set<LValue> getAllLValuesInBasicBlocks(List<BasicBlock> basicBlocks) {
+    public static Set<IrAssignableValue> getLAllRegisterAllocatableValuesInInstructionList(Collection<Instruction> instructionList) {
+        return instructionList.stream()
+                              .flatMap(instruction -> instruction.getAllRegisterAllocatableValues()
+                                                                 .stream())
+                              .collect(Collectors.toSet());
+
+    }
+
+    public static Set<IrAssignableValue> getAllLValuesInBasicBlocks(List<BasicBlock> basicBlocks) {
         return (
                 basicBlocks.stream()
                         .flatMap(basicBlock -> basicBlock.getInstructionList()
@@ -154,7 +162,7 @@ public class Utils {
         );
     }
 
-    public static Set<VirtualRegister> getAllVirtualRegistersInBasicBlocks(List<BasicBlock> basicBlocks) {
+    public static Set<IrRegister> getAllVirtualRegistersInBasicBlocks(List<BasicBlock> basicBlocks) {
         return (
                 basicBlocks.stream()
                            .flatMap(basicBlock -> basicBlock.getInstructionList()

@@ -8,8 +8,8 @@ import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.MemoryAddress;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
+import edu.mit.compilers.codegen.names.IrMemoryAddress;
 import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.dataflow.analyses.AvailableCopies;
 import edu.mit.compilers.dataflow.operand.Operand;
@@ -20,7 +20,7 @@ public class CopyPropagationPass extends OptimizationPass {
         super(optimizationContext, method);
     }
 
-    private static void propagateCopy(HasOperand hasOperand, HashMap<Value, Value> copies) {
+    private static void propagateCopy(HasOperand hasOperand, HashMap<IrValue, IrValue> copies) {
         if (copies.isEmpty())
             return;
         boolean notConverged = true;
@@ -53,7 +53,7 @@ public class CopyPropagationPass extends OptimizationPass {
         }
     }
 
-    private boolean performLocalCopyPropagation(BasicBlock basicBlock, HashMap<Value, Value> copies) {
+    private boolean performLocalCopyPropagation(BasicBlock basicBlock, HashMap<IrValue, IrValue> copies) {
         // we need a reference tac list to know whether any changes occurred
         final var tacList = basicBlock.getCopyOfInstructionList();
         final var newTacList = basicBlock.getInstructionList();
@@ -68,7 +68,7 @@ public class CopyPropagationPass extends OptimizationPass {
 
             if (instruction instanceof StoreInstruction hasResult) {
                 var resultLocation = hasResult.getDestination();
-                if (!(resultLocation instanceof MemoryAddress)) {
+                if (!(resultLocation instanceof IrMemoryAddress)) {
                     for (var assignableName : new ArrayList<>(copies.keySet())) {
                         var replacer = copies.get(assignableName);
                         if (assignableName.equals(resultLocation) ||
@@ -83,7 +83,7 @@ public class CopyPropagationPass extends OptimizationPass {
                     if (operand.isPresent()) {
                         Operand op = operand.get();
                         if (op instanceof UnmodifiedOperand) {
-                            Value name = ((UnmodifiedOperand) operand.get()).value;
+                            IrValue name = ((UnmodifiedOperand) operand.get()).irValue;
                             copies.put(resultLocation, name);
                         }
                     }

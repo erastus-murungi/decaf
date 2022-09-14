@@ -10,9 +10,8 @@ import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.VirtualRegister;
+import edu.mit.compilers.codegen.names.IrRegister;
 import edu.mit.compilers.utils.CLI;
-import edu.mit.compilers.utils.GraphVizPrinter;
 import edu.mit.compilers.utils.ProgramIr;
 import edu.mit.compilers.utils.TarjanSCC;
 import edu.mit.compilers.utils.UnionFind;
@@ -32,9 +31,9 @@ public class Coalesce {
             var sets = unionFind.toSets();
             var allUses = sets.stream()
                     .filter(nodes -> nodes.size() > 1)
-                    .map(nodes -> nodes.stream().filter(liveInterval -> liveInterval.variable() instanceof VirtualRegister)
-                            .map(liveInterval -> (VirtualRegister) liveInterval
-                                    .variable().copy())
+                    .map(nodes -> nodes.stream().filter(liveInterval -> liveInterval.irAssignableValue() instanceof IrRegister)
+                            .map(liveInterval -> (IrRegister) liveInterval
+                                    .irAssignableValue().copy())
                             .collect(Collectors.toUnmodifiableSet()))
                     .toList();
             if (allUses.isEmpty())
@@ -47,7 +46,7 @@ public class Coalesce {
             new LiveIntervalsUtil(method, programIr).prettyPrintLiveIntervals(method);
     }
 
-    private static boolean renameAllUses(Collection<VirtualRegister> uses, Method method) {
+    private static boolean renameAllUses(Collection<IrRegister> uses, Method method) {
         var changesHappened = false;
         if (uses.size() < 2)
             return false;
@@ -58,10 +57,10 @@ public class Coalesce {
         for (BasicBlock basicBlock : basicBlocks) {
             List<Instruction> instructions = new ArrayList<>();
             for (Instruction instruction : basicBlock.getInstructionList()) {
-                for (VirtualRegister virtualRegister : instruction.getAllVirtualRegisters()) {
-                    if (uses.contains(virtualRegister)) {
+                for (IrRegister irRegister : instruction.getAllVirtualRegisters()) {
+                    if (uses.contains(irRegister)) {
                         changesHappened = true;
-                        virtualRegister.renameForSsa(newName);
+                        irRegister.renameForSsa(newName);
                     }
                 }
                 if (instruction instanceof CopyInstruction copyInstruction) {

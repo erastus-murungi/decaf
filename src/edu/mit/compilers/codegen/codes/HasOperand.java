@@ -3,8 +3,8 @@ package edu.mit.compilers.codegen.codes;
 import java.util.List;
 
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.codegen.names.VirtualRegister;
+import edu.mit.compilers.codegen.names.IrValue;
+import edu.mit.compilers.codegen.names.IrRegister;
 import edu.mit.compilers.dataflow.operand.Operand;
 
 public abstract class HasOperand extends Instruction {
@@ -22,23 +22,23 @@ public abstract class HasOperand extends Instruction {
 
     public abstract Operand getOperand();
 
-    public abstract List<Value> getOperandValues();
+    public abstract List<IrValue> getOperandValues();
 
-    public abstract boolean replaceValue(Value oldName, Value newName);
+    public abstract boolean replaceValue(IrValue oldName, IrValue newName);
 
-    public List<VirtualRegister> getOperandLValues() {
+    public List<IrRegister> getOperandLValues() {
         return getOperandValues()
                 .stream()
-                .filter(abstractName -> abstractName instanceof VirtualRegister)
-                .map(value -> (VirtualRegister) value)
+                .filter(abstractName -> abstractName instanceof IrRegister)
+                .map(value -> (IrRegister) value)
                 .toList();
     }
 
-    public List<VirtualRegister> getOperandVirtualRegisters() {
+    public List<IrRegister> getOperandVirtualRegisters() {
         return getOperandValues()
                 .stream()
-                .filter(abstractName -> (abstractName instanceof VirtualRegister))
-                .map(abstractName -> (VirtualRegister) abstractName)
+                .filter(abstractName -> (abstractName instanceof IrRegister))
+                .map(abstractName -> (IrRegister) abstractName)
                 .toList();
     }
 }

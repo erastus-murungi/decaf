@@ -10,8 +10,8 @@ for global_value in program.prologue:
 
 for method in program.methods:
 	for instruction in method:
-		for value in instruction:
-			M[method][value] = X64Operand(value)
+		for irValue in instruction:
+			M[method][irValue] = X64Operand(irValue)
 
 for param in method.param:
 	mov from (corresponding arg register or stack) to P[method][param]
@@ -52,3 +52,18 @@ erastusmurungi@C02F257ZMD6M compiler % gdb main
 If you decide to callee save and restore an odd number of registers, make sure to check the register alignment
 Generating assembly:
   `clang -S -mllvm --x86-asm-syntax=att scratch.c -o scratch.s -fno-asynchronous-unwind-tables`
+
+
+# TO FIX
+- Correctly generating spills and reloads
+- Currently, the code has a bug, where previous uses of a spilled variable are reference, and they continue using the old register.
+- This is especially seen when we have:
+
+   ```python
+  target:
+     use reg[x]
+     spill x to mem[x]
+     // we should instead reload x to reg[x]
+     // or replace all uses of reg[x] with mem[x]
+     jump target
+  ```

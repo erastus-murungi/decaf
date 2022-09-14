@@ -11,9 +11,9 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
-import edu.mit.compilers.codegen.names.GlobalAddress;
-import edu.mit.compilers.codegen.names.MemoryAddress;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrGlobal;
+import edu.mit.compilers.codegen.names.IrMemoryAddress;
+import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.dataflow.OptimizationContext;
 
 public class DeadStoreEliminationSsaPass extends SsaOptimizationPass<Void> {
@@ -25,7 +25,7 @@ public class DeadStoreEliminationSsaPass extends SsaOptimizationPass<Void> {
     public boolean runFunctionPass() {
         // look at the whole program and find all the uses
         var changesHappened = false;
-        var used = new HashSet<Value>();
+        var used = new HashSet<IrValue>();
 
         for (BasicBlock basicBlock : getBasicBlocksList()) {
             for (Instruction instruction : basicBlock.getInstructionList()) {
@@ -45,12 +45,12 @@ public class DeadStoreEliminationSsaPass extends SsaOptimizationPass<Void> {
         return changesHappened;
     }
 
-    private static boolean storeInstructionIsDead(StoreInstruction storeInstruction, Set<Value> usedValues) {
-        if (storeInstruction.getDestination() instanceof GlobalAddress || storeInstruction.getDestination() instanceof MemoryAddress) {
+    private static boolean storeInstructionIsDead(StoreInstruction storeInstruction, Set<IrValue> usedIrValues) {
+        if (storeInstruction.getDestination() instanceof IrGlobal || storeInstruction.getDestination() instanceof IrMemoryAddress) {
             return false;
         }
         if (storeInstruction instanceof CopyInstruction || storeInstruction instanceof UnaryInstruction || storeInstruction instanceof BinaryInstruction) {
-            return !usedValues.contains(storeInstruction.getDestination());
+            return !usedIrValues.contains(storeInstruction.getDestination());
         }
         return false;
     }

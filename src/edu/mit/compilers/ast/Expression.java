@@ -1,7 +1,7 @@
 package edu.mit.compilers.ast;
 
 import edu.mit.compilers.codegen.CodegenAstVisitor;
-import edu.mit.compilers.codegen.names.LValue;
+import edu.mit.compilers.codegen.names.IrAssignableValue;
 import edu.mit.compilers.grammar.TokenPosition;
 
 public abstract class Expression extends AST {
@@ -13,7 +13,7 @@ public abstract class Expression extends AST {
         this.tokenPosition = tokenPosition;
     }
 
-    public abstract <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, LValue resultLocation);
+    public abstract <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignableValue resultLocation);
 
     @Override
     public Type getType() {

@@ -24,12 +24,12 @@ import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.MethodEnd;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
-import edu.mit.compilers.codegen.names.Constant;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.NumericalConstant;
-import edu.mit.compilers.codegen.names.StringConstant;
-import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.codegen.names.VirtualRegister;
+import edu.mit.compilers.codegen.names.IrConstant;
+import edu.mit.compilers.codegen.names.IrValue;
+import edu.mit.compilers.codegen.names.IrAssignableValue;
+import edu.mit.compilers.codegen.names.IrIntegerConstant;
+import edu.mit.compilers.codegen.names.IrStringConstant;
+import edu.mit.compilers.codegen.names.IrRegister;
 import edu.mit.compilers.utils.Operators;
 import edu.mit.compilers.utils.Utils;
 
@@ -38,8 +38,8 @@ public class Interpreter {
     List<Instruction> currentMethodInstructions = new ArrayList<>();
 
     Method currentMethod = null;
-    Map<LValue, Optional<Constant>> globalEnv = new HashMap<>();
-    Map<Method, Map<LValue, Optional<Constant>>> localEnvs = new HashMap<>();
+    Map<IrAssignableValue, Optional<IrConstant>> globalEnv = new HashMap<>();
+    Map<Method, Map<IrAssignableValue, Optional<IrConstant>>> localEnvs = new HashMap<>();
     Map<Method, List<Instruction>> methods = new HashMap<>();
 
     public Interpreter(Collection<Instruction> instructions) {
@@ -50,18 +50,18 @@ public class Interpreter {
     }
 
     public static void test() {
-        var a = new VirtualRegister("a", Type.Int);
-        var b = new VirtualRegister("b", Type.Int);
-        var c = new VirtualRegister("c", Type.Int);
+        var a = new IrRegister("a", Type.Int);
+        var b = new IrRegister("b", Type.Int);
+        var c = new IrRegister("c", Type.Int);
 
         var name = new Name("printf", null, null);
         List<MethodCallParameter> arguments = List.of(new StringLiteral(null, "%d\n"), new ExpressionParameter(new LocationVariable(new Name("a", null, null))));
-        var argsStack = new Stack<Value>();
+        var argsStack = new Stack<IrValue>();
 
-        argsStack.add(new StringConstant("%d\n"));
+        argsStack.add(new IrStringConstant("%d\n"));
 
         List<Instruction> instructions = List.of(
-                CopyInstruction.noAstConstructor(a.copy(), new NumericalConstant(10L, Type.Int)),
+                CopyInstruction.noAstConstructor(a.copy(), new IrIntegerConstant(10L, Type.Int)),
                 CopyInstruction.noAstConstructor(b.copy(), a.copy()),
                 new BinaryInstruction(c, b, Operators.PLUS, a),
                 new FunctionCallNoResult(new MethodCall(name, arguments), argsStack, "")
@@ -72,40 +72,40 @@ public class Interpreter {
 
     }
 
-    private Constant resolveValue(Value value) {
-        if (value instanceof VirtualRegister virtualRegister) {
-            return globalEnv.get(virtualRegister)
+    private IrConstant resolveValue(IrValue irValue) {
+        if (irValue instanceof IrRegister irRegister) {
+            return globalEnv.get(irRegister)
                     .orElseThrow();
         } else {
-            return (Constant) value;
+            return (IrConstant) irValue;
         }
     }
 
-    private Constant evalBinaryInstruction(BinaryInstruction binaryInstruction) {
-        Long left = ((NumericalConstant) resolveValue(binaryInstruction.fstOperand)).getValue();
-        Long right = ((NumericalConstant) resolveValue(binaryInstruction.sndOperand)).getValue();
+    private IrConstant evalBinaryInstruction(BinaryInstruction binaryInstruction) {
+        Long left = ((IrIntegerConstant) resolveValue(binaryInstruction.fstOperand)).getValue();
+        Long right = ((IrIntegerConstant) resolveValue(binaryInstruction.sndOperand)).getValue();
         var maybeEvaluatedLong = Utils.symbolicallyEvaluate(String.format("%d %s %d", left, binaryInstruction.operator, right));
-        return new NumericalConstant(maybeEvaluatedLong.orElseThrow(), Type.Int);
+        return new IrIntegerConstant(maybeEvaluatedLong.orElseThrow(), Type.Int);
     }
 
     private void evalFunctionCallNoResult(FunctionCallNoResult functionCallNoResult) {
         if (functionCallNoResult.getMethodName()
                 .equals("printf")) {
             var arguments = new ArrayList<>(functionCallNoResult.getArguments());
-            String formatString = ((StringConstant) arguments.get(0)).getValue();
+            String formatString = ((IrStringConstant) arguments.get(0)).getValue();
             var rest = arguments.subList(1, arguments.size())
                     .stream()
                     .map(this::resolveValue)
-                    .map(Constant::getValue)
+                    .map(IrConstant::getValue)
                     .toArray();
             System.out.format(formatString, rest);
         }
     }
 
-    private NumericalConstant evalUnaryInstruction(UnaryInstruction unaryInstruction) {
-        Long operand = ((NumericalConstant) resolveValue(unaryInstruction.operand)).getValue();
+    private IrIntegerConstant evalUnaryInstruction(UnaryInstruction unaryInstruction) {
+        Long operand = ((IrIntegerConstant) resolveValue(unaryInstruction.operand)).getValue();
         var maybeEvaluatedLong = Utils.symbolicallyEvaluate(String.format("%s(%d)", unaryInstruction.operator, operand));
-        return new NumericalConstant(maybeEvaluatedLong.orElseThrow(), Type.Int);
+        return new IrIntegerConstant(maybeEvaluatedLong.orElseThrow(), Type.Int);
     }
 
     public void interpret() {
@@ -144,7 +144,7 @@ public class Interpreter {
         }
     }
 
-    public LValue getStoreOnlyIffExistsInEnv(StoreInstruction storeInstruction, Map<LValue, Optional<Constant>> env) {
+    public IrAssignableValue getStoreOnlyIffExistsInEnv(StoreInstruction storeInstruction, Map<IrAssignableValue, Optional<IrConstant>> env) {
         if (!env.containsKey(storeInstruction.getDestination())) {
             throw new IllegalStateException("`" + storeInstruction.getDestination() + "` not found in scope");
         } else {

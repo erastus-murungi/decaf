@@ -14,15 +14,15 @@ import edu.mit.compilers.codegen.codes.HasOperand;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.MemoryAddress;
-import edu.mit.compilers.codegen.names.NumericalConstant;
-import edu.mit.compilers.codegen.names.StringConstant;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
+import edu.mit.compilers.codegen.names.IrMemoryAddress;
+import edu.mit.compilers.codegen.names.IrIntegerConstant;
+import edu.mit.compilers.codegen.names.IrStringConstant;
 import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.dataflow.analyses.LiveVariableAnalysis;
 
 /**
- * A local variable that is assigned a value but is not read by any subsequent instruction is referred to as a dead store
+ * A local irAssignableValue that is assigned a value but is not read by any subsequent instruction is referred to as a dead store
  * This pass removes all dead stores from a program
  */
 
@@ -35,11 +35,11 @@ public class DeadStoreEliminationPass extends OptimizationPass {
      * Returns true is a name is a constant (value cannot be changed)
      * For instance a, %1, *b[1] return false while `const 1` and @.string_0 return true
      *
-     * @param value the name to check
+     * @param irValue the name to check
      * @return true is abstractName is a constant
      */
-    private boolean isConstant(Value value) {
-        return value instanceof NumericalConstant || value instanceof StringConstant;
+    private boolean isConstant(IrValue irValue) {
+        return irValue instanceof IrIntegerConstant || irValue instanceof IrStringConstant;
     }
 
     /**
@@ -61,7 +61,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
      * @param basicBlockLiveOut set of names which are live going out of this block
      */
 
-    private void backwardRun(BasicBlock basicBlock, Set<Value> basicBlockLiveOut) {
+    private void backwardRun(BasicBlock basicBlock, Set<IrValue> basicBlockLiveOut) {
         // we will be iterating backward
         var copyOfInstructionList = basicBlock.getCopyOfInstructionList();
         Collections.reverse(copyOfInstructionList);
@@ -71,7 +71,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
         final var instructionListToUpdate = basicBlock.getInstructionList();
         instructionListToUpdate.clear();
 
-        final var namesUsedSoFar = new HashSet<Value>();
+        final var namesUsedSoFar = new HashSet<IrValue>();
         // we iterate in reverse
         for (var possibleStoreInstruction : copyOfInstructionList) {
             // always ignore assignments like a = a, a[i] = a[i]
@@ -81,7 +81,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
             if (possibleStoreInstruction instanceof HasOperand) {
                 if (((HasOperand) possibleStoreInstruction).getOperandValues()
                         .stream()
-                        .anyMatch(abstractName -> abstractName instanceof MemoryAddress)) {
+                        .anyMatch(abstractName -> abstractName instanceof IrMemoryAddress)) {
                     instructionListToUpdate.add(possibleStoreInstruction);
                     namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandValues());
                     continue;
@@ -94,7 +94,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                 var store = ((StoreInstruction) possibleStoreInstruction).getDestination();
 
                 // ignore arrays for now
-                if (!(store instanceof MemoryAddress)) {
+                if (!(store instanceof IrMemoryAddress)) {
                     // do not eliminate global variables and store instructions where the
                     // right-hand side is composed of all constants, for example a = 1 + 2 or a = 3
                     // if (we are in the main method then we can afford to ignore global variables)
@@ -105,9 +105,9 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                         instructionListToUpdate.add(possibleStoreInstruction);
                         continue;
                     }
-                    // if we don't use this variable after this block
+                    // if we don't use this irAssignableValue after this block
                     if (!basicBlockLiveOut.contains(store) &&
-                            // and we don't use this variable in this block, after this program point
+                            // and we don't use this irAssignableValue in this block, after this program point
                             !namesUsedSoFar.contains(store)) {
                         continue;
                     }
@@ -125,7 +125,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                 .anyMatch(instruction -> instruction instanceof FunctionCall);
     }
 
-    private void forwardRun(BasicBlock basicBlock, Set<Value> basicBlockLiveOut) {
+    private void forwardRun(BasicBlock basicBlock, Set<IrValue> basicBlockLiveOut) {
         var copyOfInstructionList = new ArrayList<>(basicBlock.getInstructionList());
         Collections.reverse(copyOfInstructionList);
         final var instructionListToUpdate = basicBlock.getInstructionList();
@@ -141,14 +141,14 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                 }
                 if (((HasOperand) possibleStoreInstruction).getOperandValues()
                         .stream()
-                        .anyMatch(abstractName -> abstractName instanceof MemoryAddress)) {
+                        .anyMatch(abstractName -> abstractName instanceof IrMemoryAddress)) {
                     instructionListToUpdate.add(possibleStoreInstruction);
                     continue;
                 }
 
                 var store = storeInstruction.getDestination();
 
-                if (!(store instanceof MemoryAddress)) {
+                if (!(store instanceof IrMemoryAddress)) {
                     if (globals().contains(store) && (!method.isMain()) || anySubsequentFunctionCalls(copyOfInstructionList.subList(0, copyOfInstructionList.indexOf(possibleStoreInstruction)))) {
                         instructionListToUpdate.add(possibleStoreInstruction);
                         continue;
@@ -188,7 +188,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                                                              int indexOfStoreInstructionInBlock) {
         // this set stores all the names used in the right hands sides of instructions starting from
         // blockInstructionList[`indexOfStoreInstructionInBlock`] henceforth
-        var usedNames = new HashSet<Value>();
+        var usedNames = new HashSet<IrValue>();
 
         // Because blockInstructionList[indexOfStoreInstructionInBlock] == storeInstruction = `some operand`
         // we start our check from indexOfStoreInstructionInBlock + 1
@@ -228,7 +228,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
     }
 
     /**
-     * Checks if an assignment to a variable is the last one to assign to that variable in that basic block
+     * Checks if an assignment to a irAssignableValue is the last one to assign to that irAssignableValue in that basic block
      *
      * @param storeInstruction               the Store Instruction whose "last-ness" is to be tested
      * @param blockInstructionList           the {@link edu.mit.compilers.codegen.InstructionList} which contains an

@@ -3,18 +3,18 @@ package edu.mit.compilers.codegen.codes;
 import java.util.List;
 
 import edu.mit.compilers.asm.AsmWriter;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.MemoryAddress;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
+import edu.mit.compilers.codegen.names.IrAssignableValue;
+import edu.mit.compilers.codegen.names.IrMemoryAddress;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.utils.Utils;
 
 public class ArrayBoundsCheck extends HasOperand {
     public GetAddress getAddress;
     public Integer boundsIndex;
-    private MemoryAddress destination;
-    private Value index;
-    private LValue baseAddress;
+    private IrMemoryAddress destination;
+    private IrValue index;
+    private IrAssignableValue baseAddress;
 
     public ArrayBoundsCheck(GetAddress getAddress, Integer boundsIndex) {
         super(null);
@@ -39,7 +39,7 @@ public class ArrayBoundsCheck extends HasOperand {
     }
 
     @Override
-    public List<Value> getAllValues() {
+    public List<IrValue> getAllValues() {
         return getAddress.getOperandValues();
     }
 
@@ -54,12 +54,12 @@ public class ArrayBoundsCheck extends HasOperand {
     }
 
     @Override
-    public List<Value> getOperandValues() {
+    public List<IrValue> getOperandValues() {
         return List.of(index, baseAddress);
     }
 
     @Override
-    public boolean replaceValue(Value oldName, Value newName) {
+    public boolean replaceValue(IrValue oldName, IrValue newName) {
         var changesHappened = false;
         if (index == oldName) {
             index = newName;

@@ -6,7 +6,7 @@ import java.util.Objects;
 
 import edu.mit.compilers.codegen.codes.FunctionCall;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
 
 public class MethodCallOperand extends Operand {
     public FunctionCall functionCallWithResult;
@@ -16,12 +16,12 @@ public class MethodCallOperand extends Operand {
     }
 
     @Override
-    public boolean contains(Value comp) {
+    public boolean contains(IrValue comp) {
         return false;
     }
 
     @Override
-    public List<Value> getNames() {
+    public List<IrValue> getNames() {
         return Collections.emptyList();
     }
 

@@ -11,19 +11,19 @@ import java.util.List;
 import edu.mit.compilers.asm.AsmWriter;
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.ast.Type;
-import edu.mit.compilers.codegen.names.GlobalAddress;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrGlobal;
+import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.utils.Utils;
 
 public class GlobalAllocation extends Instruction {
     public static final int DEFAULT_ALIGNMENT = 8;
 
-    private final GlobalAddress value;
+    private final IrGlobal value;
     private final long size;
     public final int alignment;
     public final Type type;
 
-    public GlobalAddress getValue() {
+    public IrGlobal getValue() {
         return value;
     }
 
@@ -31,7 +31,7 @@ public class GlobalAllocation extends Instruction {
         return size;
     }
 
-    public GlobalAllocation(@NotNull GlobalAddress value, long size, @NotNull Type type, @Nullable AST source, @Nullable String comment) {
+    public GlobalAllocation(@NotNull IrGlobal value, long size, @NotNull Type type, @Nullable AST source, @Nullable String comment) {
         super(source, comment);
         this.value = value;
         this.size = size;
@@ -44,7 +44,7 @@ public class GlobalAllocation extends Instruction {
     }
 
     @Override
-    public List<Value> getAllValues() {
+    public List<IrValue> getAllValues() {
         return Collections.singletonList(value);
     }
 

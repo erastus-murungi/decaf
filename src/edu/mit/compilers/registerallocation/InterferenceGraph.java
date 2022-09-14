@@ -10,9 +10,7 @@ import java.util.stream.Collectors;
 
 import edu.mit.compilers.codegen.codes.CopyInstruction;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.VirtualRegister;
-import edu.mit.compilers.utils.CLI;
-import edu.mit.compilers.utils.GraphVizPrinter;
+import edu.mit.compilers.codegen.names.IrRegister;
 import edu.mit.compilers.utils.Pair;
 
 public class InterferenceGraph {
@@ -40,7 +38,7 @@ public class InterferenceGraph {
         var copyInstructions = instructionList.stream()
                                               .filter(instruction -> (instruction instanceof CopyInstruction))
                                               .map(instruction -> (CopyInstruction) instruction)
-                                              .filter(copyInstruction -> copyInstruction.getValue() instanceof VirtualRegister)
+                                              .filter(copyInstruction -> copyInstruction.getValue() instanceof IrRegister)
                                               .collect(Collectors.toUnmodifiableSet());
         for (var copyInstruction : copyInstructions) {
             var a = (varToLivIntervals.get(copyInstruction.getDestination()));

@@ -10,17 +10,16 @@ import java.util.Set;
 
 import edu.mit.compilers.cfg.BasicBlock;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.VirtualRegister;
-import edu.mit.compilers.codegen.names.MemoryAddress;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrAssignableValue;
+import edu.mit.compilers.codegen.names.IrMemoryAddress;
+import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.dataflow.Direction;
 import edu.mit.compilers.dataflow.copy.CopyQuadruple;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 
 public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
     // each basicBlock maps to another map of (u -> v) pairs
-    public HashMap<BasicBlock, HashMap<Value, Value>> availableCopies;
+    public HashMap<BasicBlock, HashMap<IrValue, IrValue>> availableCopies;
 
     public AvailableCopies(BasicBlock basicBlock) {
         super(basicBlock);
@@ -38,7 +37,7 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
         availableCopies = new HashMap<>();
         for (BasicBlock basicBlock : basicBlocks) {
             if (basicBlock.equals(entryBlock)) continue;
-            var copiesForBasicBlock = new HashMap<Value, Value>();
+            var copiesForBasicBlock = new HashMap<IrValue, IrValue>();
             for (CopyQuadruple copyQuadruple : in(basicBlock)) {
                 copiesForBasicBlock.put(copyQuadruple.u(), copyQuadruple.v());
             }
@@ -108,14 +107,14 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
 
         for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
             // check to see whether any existing assignments are invalidated by this one
-            if (!(storeInstruction.getDestination() instanceof MemoryAddress)) {
-                final LValue resulLocation = storeInstruction.getDestination();
+            if (!(storeInstruction.getDestination() instanceof IrMemoryAddress)) {
+                final IrAssignableValue resulLocation = storeInstruction.getDestination();
                 // remove any copy's where u, or v are being reassigned by "resultLocation"
                 copyQuadruples.removeIf(copyQuadruple -> copyQuadruple.contains(resulLocation));
             }
             var computation = storeInstruction.getOperand();
             if (computation instanceof UnmodifiedOperand) {
-                Value name = ((UnmodifiedOperand) computation).value;
+                IrValue name = ((UnmodifiedOperand) computation).irValue;
                 copyQuadruples.add(new CopyQuadruple(storeInstruction.getDestination(), name,
                         basicBlock
                                 .getCopyOfInstructionList()
@@ -131,8 +130,8 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
         var superSet = new HashSet<>(allTS);
         var killedCopyQuadruples = new HashSet<CopyQuadruple>();
         for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
-            if (!(storeInstruction.getDestination() instanceof MemoryAddress)) {
-                final LValue resulLocation = storeInstruction.getDestination();
+            if (!(storeInstruction.getDestination() instanceof IrMemoryAddress)) {
+                final IrAssignableValue resulLocation = storeInstruction.getDestination();
                 for (CopyQuadruple copyQuadruple : superSet) {
                     if (copyQuadruple.basicBlock() != basicBlock && copyQuadruple.contains(resulLocation)) {
                         killedCopyQuadruples.add(copyQuadruple);

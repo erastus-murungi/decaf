@@ -4,40 +4,39 @@ import java.util.Optional;
 import java.util.Set;
 
 import edu.mit.compilers.ast.AST;
-import edu.mit.compilers.codegen.names.GlobalAddress;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.VirtualRegister;
+import edu.mit.compilers.codegen.names.IrGlobal;
+import edu.mit.compilers.codegen.names.IrAssignableValue;
 import edu.mit.compilers.dataflow.operand.Operand;
 
 public abstract class StoreInstruction extends HasOperand implements Cloneable {
-    protected LValue destination;
+    protected IrAssignableValue destination;
 
-    public StoreInstruction(LValue destination, AST source) {
+    public StoreInstruction(IrAssignableValue destination, AST source) {
         super(source);
         this.destination = destination;
     }
 
-    public StoreInstruction(LValue destination) {
+    public StoreInstruction(IrAssignableValue destination) {
         super();
         this.destination = destination;
     }
 
-    public StoreInstruction(LValue destination, AST source, String comment) {
+    public StoreInstruction(IrAssignableValue destination, AST source, String comment) {
         super(source, comment);
         this.destination = destination;
     }
 
-    public LValue getDestination() {
+    public IrAssignableValue getDestination() {
         return destination;
     }
 
-    public void setDestination(LValue dst) {
+    public void setDestination(IrAssignableValue dst) {
         this.destination = dst;
     }
 
     public abstract Optional<Operand> getOperandNoArray();
 
-    public Optional<Operand> getOperandNoArrayNoGlobals(Set<GlobalAddress> globals) {
+    public Optional<Operand> getOperandNoArrayNoGlobals(Set<IrGlobal> globals) {
         Optional<Operand> operand = getOperandNoArray();
         if (operand.isPresent()) {
             if (operand.get().getNames().stream().anyMatch(globals::contains))

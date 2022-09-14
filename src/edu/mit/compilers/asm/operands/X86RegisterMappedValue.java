@@ -8,21 +8,19 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 import edu.mit.compilers.asm.X64RegisterType;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.Value;
-import edu.mit.compilers.codegen.names.VirtualRegister;
+import edu.mit.compilers.codegen.names.IrValue;
 
-public class X64RegisterOperand extends X64Operand {
+public class X86RegisterMappedValue extends X86Value {
     @NotNull X64RegisterType x64RegisterType;
 
-    public X64RegisterOperand(X64RegisterType x64RegisterType, @Nullable Value virtualRegister) {
+    public X86RegisterMappedValue(X64RegisterType x64RegisterType, @Nullable IrValue virtualRegister) {
         super(virtualRegister);
         checkArgument(!x64RegisterType.equals(X64RegisterType.STACK));
         this.x64RegisterType = x64RegisterType;
     }
 
-    public static X64RegisterOperand unassigned(X64RegisterType x64RegisterType){
-        return new X64RegisterOperand(x64RegisterType, null);
+    public static X86RegisterMappedValue unassigned(X64RegisterType x64RegisterType){
+        return new X86RegisterMappedValue(x64RegisterType, null);
     }
 
     @Override
@@ -38,7 +36,7 @@ public class X64RegisterOperand extends X64Operand {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof X64RegisterOperand that)) return false;
+        if (!(o instanceof X86RegisterMappedValue that)) return false;
         return getX64RegisterType() == that.getX64RegisterType();
     }
 

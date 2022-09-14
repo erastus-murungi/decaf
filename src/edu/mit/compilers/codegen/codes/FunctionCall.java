@@ -3,12 +3,12 @@ package edu.mit.compilers.codegen.codes;
 import java.util.Stack;
 
 import edu.mit.compilers.ast.MethodCall;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
 
 public interface FunctionCall {
     MethodCall getMethod();
 
-    Stack<Value> getArguments();
+    Stack<IrValue> getArguments();
 
     default boolean isImported() {
         return getMethod().isImported;

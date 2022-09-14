@@ -17,10 +17,10 @@ import edu.mit.compilers.codegen.TraceScheduler;
 import edu.mit.compilers.codegen.codes.GlobalAllocation;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
-import edu.mit.compilers.codegen.names.GlobalAddress;
-import edu.mit.compilers.codegen.names.VirtualRegister;
-import edu.mit.compilers.codegen.names.MemoryAddress;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrGlobal;
+import edu.mit.compilers.codegen.names.IrRegister;
+import edu.mit.compilers.codegen.names.IrMemoryAddress;
+import edu.mit.compilers.codegen.names.IrValue;
 
 public class ProgramIr {
     @NotNull
@@ -28,7 +28,7 @@ public class ProgramIr {
     @NotNull
     private List<Method> methodList;
     @NotNull
-    private Set<GlobalAddress> globals = new HashSet<>();
+    private Set<IrGlobal> globals = new HashSet<>();
 
     public ProgramIr(@NotNull InstructionList prologue, @NotNull List<Method> methodList) {
         this.prologue = prologue;
@@ -43,20 +43,20 @@ public class ProgramIr {
         this.methodList = methodList;
     }
 
-    public static List<VirtualRegister> getNonParamLocals(Method method, Set<GlobalAddress> globals) {
+    public static List<IrRegister> getNonParamLocals(Method method, Set<IrGlobal> globals) {
         return getLocals(method, globals)
                 .stream()
                 .filter(virtualRegister -> !method.getParameterNames().contains(virtualRegister))
                 .toList();
     }
 
-    public static List<VirtualRegister> getLocals(Method method, Set<GlobalAddress> globals) {
-        Set<Value> uniqueNames = new HashSet<>();
+    public static List<IrRegister> getLocals(Method method, Set<IrGlobal> globals) {
+        Set<IrValue> uniqueNames = new HashSet<>();
         var flattened = TraceScheduler.flattenIr(method);
 
         for (Instruction instruction : flattened) {
-            for (Value name : instruction.getAllValues()) {
-                if (name instanceof MemoryAddress && !globals.contains(name)) {
+            for (IrValue name : instruction.getAllValues()) {
+                if (name instanceof IrMemoryAddress && !globals.contains(name)) {
                     uniqueNames.add(name);
                 }
             }
@@ -64,15 +64,15 @@ public class ProgramIr {
 
         for (Instruction instruction : flattened) {
             for (var name : instruction.getAllValues()) {
-                if (!(name instanceof MemoryAddress) && !globals.contains(name)) {
+                if (!(name instanceof IrMemoryAddress) && !globals.contains(name)) {
                     uniqueNames.add(name);
                 }
             }
         }
         var locals = uniqueNames
                 .stream()
-                .filter((name -> ((name instanceof VirtualRegister))))
-                .map(name -> (VirtualRegister) name)
+                .filter((name -> ((name instanceof IrRegister))))
+                .map(name -> (IrRegister) name)
                 .distinct()
                 .sorted(Comparator.comparing(Object::toString))
                 .collect(Collectors.toList());
@@ -80,15 +80,15 @@ public class ProgramIr {
         return locals;
     }
 
-    private static void reorderLocals(List<VirtualRegister> locals, MethodDefinition methodDefinition) {
-        List<VirtualRegister> methodParametersNames = new ArrayList<>();
+    private static void reorderLocals(List<IrRegister> locals, MethodDefinition methodDefinition) {
+        List<IrRegister> methodParametersNames = new ArrayList<>();
 
         Set<String> methodParameters = methodDefinition.parameterList
                 .stream()
                 .map(MethodDefinitionParameter::getName)
                 .collect(Collectors.toSet());
 
-        List<VirtualRegister> methodParamNamesList = new ArrayList<>();
+        List<IrRegister> methodParamNamesList = new ArrayList<>();
         for (var name : locals) {
             if (methodParameters.contains(name.toString())) {
                 methodParamNamesList.add(name);
@@ -102,7 +102,7 @@ public class ProgramIr {
         locals.removeAll(methodParametersNames);
         locals.addAll(0, methodParamNamesList
                 .stream()
-                .sorted(Comparator.comparing(Value::toString))
+                .sorted(Comparator.comparing(IrValue::toString))
                 .toList());
     }
 
@@ -170,15 +170,15 @@ public class ProgramIr {
         );
     }
 
-    public Set<GlobalAddress> getGlobals() {
+    public Set<IrGlobal> getGlobals() {
         return Set.copyOf(globals);
     }
 
-    public void setGlobals(Set<GlobalAddress> globals) {
+    public void setGlobals(Set<IrGlobal> globals) {
         this.globals = Set.copyOf(globals);
     }
 
-    public List<VirtualRegister> getLocals(Method method) {
+    public List<IrRegister> getLocals(Method method) {
         return getLocals(method, globals);
     }
 }

@@ -211,9 +211,9 @@ public class GraphVizPrinter {
             edges.add(String.format("   %s -> %s [arrowhead=none, style=dotted, label=\"%s\"];", entry.first()
                     .hashCode(), entry.second()
                     .hashCode(), String.format("%s <=> %s", escape(entry.first
-                    .variable()
+                    .irAssignableValue()
                     .toString()), escape(entry.second
-                    .variable()
+                    .irAssignableValue()
                     .toString()))));
         }
 

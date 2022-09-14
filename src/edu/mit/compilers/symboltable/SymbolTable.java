@@ -32,7 +32,7 @@ public class SymbolTable {
     }
 
     /**
-     * Look up a variable only within the current scope
+     * Look up a irAssignableValue only within the current scope
      *
      * @param stringId the id to lookup in the symbol table hierarchy
      * @return Optional.empty if the descriptor is not found else Optional[Descriptor]
@@ -57,7 +57,7 @@ public class SymbolTable {
     }
 
     /**
-     * Look up a variable recursively up the scope hierarchy
+     * Look up a irAssignableValue recursively up the scope hierarchy
      *
      * @param stringId the id to lookup in the symbol table hierarchy
      * @return Optional.empty if the descriptor is not found else Optional[Descriptor]
@@ -72,7 +72,7 @@ public class SymbolTable {
     }
 
     /**
-     * Look up a variable recursively up the scope hierarchy to see is there is incorrect shadowing parameter
+     * Look up a irAssignableValue recursively up the scope hierarchy to see is there is incorrect shadowing parameter
      *
      * @param stringId the id to lookup in the symbol table hierarchy
      * @return true if there is incorrect shadowing of parameter and false otherwise

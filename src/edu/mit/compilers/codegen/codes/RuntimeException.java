@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 import edu.mit.compilers.asm.AsmWriter;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.exceptions.DecafException;
 
 public class RuntimeException extends Instruction {
@@ -25,7 +25,7 @@ public class RuntimeException extends Instruction {
     }
 
     @Override
-    public List<Value> getAllValues() {
+    public List<IrValue> getAllValues() {
         return Collections.emptyList();
     }
 

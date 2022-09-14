@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 import edu.mit.compilers.codegen.codes.StoreInstruction;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.ssa.Phi;
 
 public class PhiOperand extends Operand {
@@ -19,13 +19,13 @@ public class PhiOperand extends Operand {
     }
 
     @Override
-    public boolean contains(Value comp) {
+    public boolean contains(IrValue comp) {
         return phi.getOperandValues()
                 .contains(comp);
     }
 
     @Override
-    public List<Value> getNames() {
+    public List<IrValue> getNames() {
         return phi.getOperandValues();
     }
 

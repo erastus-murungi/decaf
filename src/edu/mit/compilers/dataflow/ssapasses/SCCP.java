@@ -21,12 +21,12 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
 import edu.mit.compilers.codegen.codes.UnconditionalBranch;
-import edu.mit.compilers.codegen.names.GlobalAddress;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.MemoryAddress;
-import edu.mit.compilers.codegen.names.VirtualRegister;
-import edu.mit.compilers.codegen.names.NumericalConstant;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrGlobal;
+import edu.mit.compilers.codegen.names.IrValue;
+import edu.mit.compilers.codegen.names.IrAssignableValue;
+import edu.mit.compilers.codegen.names.IrMemoryAddress;
+import edu.mit.compilers.codegen.names.IrIntegerConstant;
+import edu.mit.compilers.codegen.names.IrRegister;
 import edu.mit.compilers.dataflow.ssapasses.worklistitems.SsaEdge;
 import edu.mit.compilers.ssa.Phi;
 import edu.mit.compilers.utils.SSAEdgesUtil;
@@ -39,7 +39,7 @@ public class SCCP {
     private final Stack<BasicBlock> flowGraphWorkList = new Stack<>();
     private final Stack<SsaEdge> ssaWorkList = new Stack<>();
     private final Set<BasicBlock> reachableBasicBlocks = new HashSet<>();
-    private final Map<Value, LatticeElement> latticeValues = new HashMap<>();
+    private final Map<IrValue, LatticeElement> latticeValues = new HashMap<>();
     private final Set<BasicBlock> visitedBasicBlocks = new HashSet<>();
     private final Set<SsaEdge> ssaEdgeList = new HashSet<>();
 
@@ -52,14 +52,14 @@ public class SCCP {
     public void initializeWorkSets(Method method) {
         for (BasicBlock basicBlock : getReversePostOrder(method.entryBlock)) {
             for (Instruction instruction : basicBlock.getInstructionList()) {
-                for (Value v : instruction.getAllValues()) {
-                    if (v instanceof VirtualRegister) {
+                for (IrValue v : instruction.getAllValues()) {
+                    if (v instanceof IrRegister) {
                         latticeValues.put(v, LatticeElement.top());
-                    } else if (v instanceof NumericalConstant numericalConstant) {
+                    } else if (v instanceof IrIntegerConstant numericalConstant) {
                         latticeValues.put(v, LatticeElement.constant(numericalConstant.getValue()));
-                    } else if (v instanceof MemoryAddress) {
+                    } else if (v instanceof IrMemoryAddress) {
                         latticeValues.put(v, LatticeElement.bottom());
-                    } else if (v instanceof GlobalAddress) {
+                    } else if (v instanceof IrGlobal) {
                         latticeValues.put(v, LatticeElement.bottom());
                     }
                 }
@@ -73,7 +73,7 @@ public class SCCP {
 
     }
 
-    private List<SsaEdge> getSsaEdgesForVariable(LValue virtualRegister) {
+    private List<SsaEdge> getSsaEdgesForVariable(IrAssignableValue virtualRegister) {
         return ssaEdgeList.stream()
                 .filter(ssaEdge -> ssaEdge.getValue().equals(virtualRegister))
                 .toList();
@@ -87,7 +87,7 @@ public class SCCP {
         var newLatticeElement = LatticeElement.meet(values);
         if (!newLatticeElement.equals(latticeValues.get(phi.getDestination()))) {
             latticeValues.put(phi.getDestination(), LatticeElement.meet(values));
-            ssaWorkList.addAll(getSsaEdgesForVariable((VirtualRegister) phi.getDestination()));
+            ssaWorkList.addAll(getSsaEdgesForVariable((IrRegister) phi.getDestination()));
         }
     }
 
@@ -123,7 +123,7 @@ public class SCCP {
                 var updated = LatticeElement.constant(longVal);
                 if (!updated.equals(latticeValues.get(unaryInstruction.getDestination()))) {
                     latticeValues.put(unaryInstruction.getDestination(), updated);
-                    ssaWorkList.addAll(getSsaEdgesForVariable((VirtualRegister) unaryInstruction.getDestination()));
+                    ssaWorkList.addAll(getSsaEdgesForVariable((IrRegister) unaryInstruction.getDestination()));
                 }
             }
         } else if (instruction instanceof ConditionalBranch conditionalBranch) {
@@ -204,7 +204,7 @@ public class SCCP {
         }
     }
 
-    public Map<Value, LatticeElement> getLatticeValues() {
+    public Map<IrValue, LatticeElement> getLatticeValues() {
         return latticeValues;
     }
 }

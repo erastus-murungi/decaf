@@ -5,32 +5,31 @@ import java.util.Optional;
 
 import edu.mit.compilers.ast.AST;
 import edu.mit.compilers.asm.AsmWriter;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.VirtualRegister;
-import edu.mit.compilers.codegen.names.MemoryAddress;
-import edu.mit.compilers.codegen.names.Value;
+import edu.mit.compilers.codegen.names.IrValue;
+import edu.mit.compilers.codegen.names.IrAssignableValue;
+import edu.mit.compilers.codegen.names.IrMemoryAddress;
 import edu.mit.compilers.dataflow.operand.Operand;
 import edu.mit.compilers.dataflow.operand.UnmodifiedOperand;
 import edu.mit.compilers.utils.Utils;
 
 public class CopyInstruction extends StoreInstruction implements Cloneable {
-    private Value value;
+    private IrValue irValue;
 
-    public CopyInstruction(LValue dst, Value operand, AST source, String comment) {
+    public CopyInstruction(IrAssignableValue dst, IrValue operand, AST source, String comment) {
         super(dst, source, comment);
-        this.value = operand;
+        this.irValue = operand;
     }
 
-    public static CopyInstruction noAstConstructor(LValue dst, Value operand) {
+    public static CopyInstruction noAstConstructor(IrAssignableValue dst, IrValue operand) {
         return new CopyInstruction(dst, operand, null, String.format("%s = %s", dst, operand));
     }
 
-    public static CopyInstruction noMetaData(LValue dst, Value operand) {
+    public static CopyInstruction noMetaData(IrAssignableValue dst, IrValue operand) {
         return new CopyInstruction(dst, operand, null, "");
     }
 
-    public Value getValue() {
-        return value;
+    public IrValue getValue() {
+        return irValue;
     }
 
     @Override
@@ -39,31 +38,31 @@ public class CopyInstruction extends StoreInstruction implements Cloneable {
     }
 
     @Override
-    public List<Value> getAllValues() {
-        return List.of(getDestination(), value);
+    public List<IrValue> getAllValues() {
+        return List.of(getDestination(), irValue);
     }
 
     @Override
     public Instruction copy() {
-        return new CopyInstruction(getDestination(), value, source, getComment().orElse(null));
+        return new CopyInstruction(getDestination(), irValue, source, getComment().orElse(null));
     }
 
     @Override
     public Optional<Operand> getOperandNoArray() {
-        if (value instanceof MemoryAddress)
+        if (irValue instanceof IrMemoryAddress)
             return Optional.empty();
-        return Optional.of(new UnmodifiedOperand(value));
+        return Optional.of(new UnmodifiedOperand(irValue));
     }
 
-    public boolean contains(Value name) {
-        return getDestination().equals(name) || value.equals(name);
+    public boolean contains(IrValue name) {
+        return getDestination().equals(name) || irValue.equals(name);
     }
 
     @Override
     public CopyInstruction clone() {
         CopyInstruction clone = (CopyInstruction) super.clone();
         // TODO: copy mutable state here, so the clone can't change the internals of the original
-        clone.value = value;
+        clone.irValue = irValue;
         clone.setComment(getComment().orElse(null));
         clone.setDestination(getDestination());
         clone.source = source;
@@ -72,18 +71,18 @@ public class CopyInstruction extends StoreInstruction implements Cloneable {
 
     @Override
     public Operand getOperand() {
-        return new UnmodifiedOperand(value);
+        return new UnmodifiedOperand(irValue);
     }
 
     @Override
-    public List<Value> getOperandValues() {
-        return List.of(value);
+    public List<IrValue> getOperandValues() {
+        return List.of(irValue);
     }
 
-    public boolean replaceValue(Value oldVariable, Value replacer) {
+    public boolean replaceValue(IrValue oldVariable, IrValue replacer) {
         var replaced = false;
-        if (value.equals(oldVariable)) {
-            value = replacer;
+        if (irValue.equals(oldVariable)) {
+            irValue = replacer;
             replaced = true;
         }
         return replaced;
@@ -91,13 +90,13 @@ public class CopyInstruction extends StoreInstruction implements Cloneable {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s, %s", DOUBLE_INDENT, "store", value.repr(), getDestination().repr());
+        return String.format("%s%s %s, %s", DOUBLE_INDENT, "store", irValue.repr(), getDestination().repr());
     }
 
     @Override
     public String syntaxHighlightedToString() {
         var storeString = Utils.coloredPrint("store", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s%s %s, %s", DOUBLE_INDENT, storeString, value.repr(), getDestination().repr());
+        return String.format("%s%s %s, %s", DOUBLE_INDENT, storeString, irValue.repr(), getDestination().repr());
     }
 
 }

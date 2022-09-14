@@ -363,7 +363,7 @@ public class TypeCheckASTVisitor implements ASTVisitor<Type> {
         final Optional<Descriptor> optionalMethodDescriptor = methods.getDescriptorFromCurrentScope(methodCall.nameId.getLabel());
         final Descriptor descriptor;
         if (symbolTable.containsEntry(methodCall.nameId.getLabel())) {
-            exceptions.add(new DecafSemanticException(methodCall.tokenPosition, methodCall.nameId.getLabel() + " refers to locally defined variable"));
+            exceptions.add(new DecafSemanticException(methodCall.tokenPosition, methodCall.nameId.getLabel() + " refers to locally defined irAssignableValue"));
             return Type.Undefined;
         }
         if (imports.contains(methodCall.nameId.getLabel())) {
@@ -399,7 +399,7 @@ public class TypeCheckASTVisitor implements ASTVisitor<Type> {
     public Type visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable) {
         Optional<Descriptor> optionalDescriptor = symbolTable.getDescriptorFromValidScopes(locationAssignExpr.location.name.getLabel());
         if (optionalDescriptor.isEmpty() || (locationAssignExpr.location instanceof LocationVariable && optionalDescriptor.get() instanceof ArrayDescriptor))
-            exceptions.add(new DecafSemanticException(locationAssignExpr.tokenPosition, "id `" + locationAssignExpr.location.name.getLabel() + "` being assigned to must be a declared local/global variable or formal parameter."));
+            exceptions.add(new DecafSemanticException(locationAssignExpr.tokenPosition, "id `" + locationAssignExpr.location.name.getLabel() + "` being assigned to must be a declared local/global irAssignableValue or formal parameter."));
         else {
             if (locationAssignExpr.location instanceof final LocationArray locationArray) {
                 locationArray.expression.setType(locationArray.expression.accept(this, symbolTable));

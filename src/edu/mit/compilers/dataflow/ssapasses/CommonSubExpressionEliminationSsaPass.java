@@ -10,8 +10,7 @@ import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.codes.StoreInstruction;
 import edu.mit.compilers.codegen.codes.UnaryInstruction;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.VirtualRegister;
+import edu.mit.compilers.codegen.names.IrAssignableValue;
 import edu.mit.compilers.dataflow.OptimizationContext;
 import edu.mit.compilers.dataflow.dominator.DominatorTree;
 import edu.mit.compilers.dataflow.operand.Operand;
@@ -30,7 +29,7 @@ public class CommonSubExpressionEliminationSsaPass extends SsaOptimizationPass<S
 
     private void performReplacement(StoreInstruction storeInstruction,
                                     InstructionList instructionList,
-                                    LValue expressionStoreLocation,
+                                    IrAssignableValue expressionStoreLocation,
                                     Integer indexOfInstructionToBeReplaced) {
 
         var replacer = CopyInstruction.noMetaData(storeInstruction.getDestination(), expressionStoreLocation);

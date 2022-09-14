@@ -5,19 +5,19 @@ import java.util.Objects;
 import edu.mit.compilers.ast.Type;
 import edu.mit.compilers.codegen.TemporaryNameIndexGenerator;
 
-public class VirtualRegister extends LValue {
+public class IrRegister extends IrAssignableValue {
     protected Integer versionNumber;
 
-    public VirtualRegister(String label, Type type, Integer versionNumber) {
+    public IrRegister(String label, Type type, Integer versionNumber) {
         super(type, label);
         this.versionNumber = versionNumber;
     }
 
-    public VirtualRegister(String label, Type type) {
+    public IrRegister(String label, Type type) {
         this(label, type, null);
     }
 
-    protected VirtualRegister(long index, Type type) {
+    protected IrRegister(long index, Type type) {
         this(String.format("%%%d", index), type, null);
     }
 
@@ -30,11 +30,15 @@ public class VirtualRegister extends LValue {
         this.versionNumber = versionNumber;
     }
 
-    public void renameForSsa(VirtualRegister virtualRegister) {
-        if (getType() != virtualRegister.getType())
-            throw new IllegalArgumentException("type: " + getType() + "\nrename type: " + virtualRegister.getType());
-        this.label = virtualRegister.label;
-        this.versionNumber = virtualRegister.versionNumber;
+    public void renameForSsa(IrRegister irRegister) {
+        if (getType() != irRegister.getType())
+            throw new IllegalArgumentException("type: " + getType() + "\nrename type: " + irRegister.getType());
+        this.label = irRegister.label;
+        this.versionNumber = irRegister.versionNumber;
+    }
+
+    public static IrRegister gen(Type type) {
+        return new IrRegister(TemporaryNameIndexGenerator.getNextTemporaryVariable(), type);
     }
 
     public void clearVersionNumber() {
@@ -61,16 +65,16 @@ public class VirtualRegister extends LValue {
     }
 
     @Override
-    public VirtualRegister copy() {
-        return new VirtualRegister(label, type, versionNumber);
+    public IrRegister copy() {
+        return new IrRegister(label, type, versionNumber);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof VirtualRegister virtualRegister)) return false;
+        if (!(o instanceof IrRegister irRegister)) return false;
         if (!super.equals(o)) return false;
-        return Objects.equals(getLabel(), virtualRegister.getLabel());
+        return Objects.equals(getLabel(), irRegister.getLabel());
     }
 
     @Override

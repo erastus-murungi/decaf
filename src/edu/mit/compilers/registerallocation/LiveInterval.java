@@ -1,22 +1,22 @@
 package edu.mit.compilers.registerallocation;
 
 import edu.mit.compilers.codegen.InstructionList;
-import edu.mit.compilers.codegen.names.LValue;
-import edu.mit.compilers.codegen.names.VirtualRegister;
+import edu.mit.compilers.codegen.codes.Method;
+import edu.mit.compilers.codegen.names.IrAssignableValue;
 
 /**
- * @param variable        The variable this {@link LiveInterval} belongs to
+ * @param irAssignableValue        The irAssignableValue this {@link LiveInterval} belongs to
  * @param startPoint      The start index of the {@link edu.mit.compilers.codegen.codes.Instruction} in the given {@link InstructionList}
  * @param endPoint        The end index of the instruction in the given {@link InstructionList}
- * @param instructionList the {@link InstructionList} this {@link LiveInterval} belongs to
- * @param methodName      the name of the {@link edu.mit.compilers.codegen.codes.Method} containing this {@link LiveInterval}
+ * @param instructionList The {@link InstructionList} this {@link LiveInterval} belongs to
+ * @param method          The {@link edu.mit.compilers.codegen.codes.Method} containing this {@link LiveInterval}
  *
  *                        <ul>
- *                           <li>The <strong>live range</strong> for a variable is the set of program points at which that variable is live.</p>
+ *                           <li>The <strong>live range</strong> for a irAssignableValue is the set of program points at which that irAssignableValue is live.</p>
  *                        </ul>
  *                        <ul>
  *                           <li>
- *                              The <strong>live interval</strong> for a variable is the smallest subrange of the IR code containing all a variable's live ranges. </p>
+ *                              The <strong>live interval</strong> for a irAssignableValue is the smallest subrange of the IR code containing all a irAssignableValue's live ranges. </p>
  *                              <ul>
  *                                 <li>A property of the IR code, not CFG. </li>
  *                                 <li>Less precise than live ranges, but simpler to work with</li>
@@ -25,8 +25,10 @@ import edu.mit.compilers.codegen.names.VirtualRegister;
  *                        </ul>
  *                        </li>
  */
-public record LiveInterval(LValue variable, int startPoint, int endPoint, InstructionList instructionList,
-                           String methodName) {
+public record LiveInterval(IrAssignableValue irAssignableValue, int startPoint, int endPoint, InstructionList instructionList, Method method) {
+    public LiveInterval updateEndpoint(int endPoint) {
+        return new LiveInterval(irAssignableValue, startPoint, endPoint, instructionList, method);
+    }
     public int compareStartPoint(LiveInterval other) {
         if (startPoint == other.startPoint)
             return 0;
