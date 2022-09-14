@@ -122,9 +122,9 @@ public class X64ValueResolver {
             stackOffsets.get(method).put(irAssignableValue, pushStack());
           }
         }
-      } else if (irAssignableValue instanceof IrMemoryAddress) {
+      } else if (irAssignableValue instanceof IrMemoryAddress || irAssignableValue instanceof IrGlobalScalar) {
       } else {
-        throw new IllegalStateException(irAssignableValue.toString());
+        throw new IllegalStateException(irAssignableValue.getClass().getName() + " " + irAssignableValue);
       }
     });
     largestStackOffset.put(method, currentStackOffset);

@@ -18,14 +18,14 @@ class Main {
 //          new Compilation(new FileInputStream("tests/codegen/input/11-big-array.dcf"), true).run();
 //        new Compilation().run();
 //        TestRunner.run();
-        TestRunner.testCodegen();
+//        TestRunner.testCodegen();
 //        CLI.debug = true;
 //        for (int i = 0 ; i < 10; i++) {
 //            var res = TestRunner.testCodegenSingleFile("11-big-array.dcf");
 //            if (!res)
 //                break;
 //        }
-        var res = TestRunner.testCodegenSingleFile("05-calls.dcf");
+        var res = TestRunner.testCodegenSingleFile("09-global.dcf");
 
     }
 }
