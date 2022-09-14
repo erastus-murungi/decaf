@@ -60,11 +60,6 @@ public class IrRegister extends IrAssignableValue {
     }
 
     @Override
-    public String toString() {
-        return getLabel();
-    }
-
-    @Override
     public IrRegister copy() {
         return new IrRegister(label, type, versionNumber);
     }
@@ -75,10 +70,5 @@ public class IrRegister extends IrAssignableValue {
         if (!(o instanceof IrRegister irRegister)) return false;
         if (!super.equals(o)) return false;
         return Objects.equals(getLabel(), irRegister.getLabel());
-    }
-
-    @Override
-    public String repr() {
-        return String.format("%s", getLabel());
     }
 }
