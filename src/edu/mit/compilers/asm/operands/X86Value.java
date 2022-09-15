@@ -3,6 +3,9 @@ package edu.mit.compilers.asm.operands;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
+import edu.mit.compilers.asm.X86Register;
 import edu.mit.compilers.codegen.names.IrValue;
 
 public abstract class X86Value {
@@ -16,4 +19,6 @@ public abstract class X86Value {
     public @Nullable IrValue getValue() {
         return irValue;
     }
+
+    public abstract List<X86Register> registersInUse();
 }

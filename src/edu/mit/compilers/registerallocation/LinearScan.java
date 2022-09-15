@@ -6,22 +6,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import edu.mit.compilers.asm.X64RegisterType;
+import edu.mit.compilers.asm.X86Register;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.IrValue;
 
 public class LinearScan {
-    private final List<X64RegisterType> availableRegisters = new ArrayList<>();
-    private final Map<Method, Map<IrValue, X64RegisterType>> varToRegMap = new HashMap<>();
+    private final List<X86Register> availableRegisters = new ArrayList<>();
+    private final Map<Method, Map<IrValue, X86Register>> varToRegMap = new HashMap<>();
     private final Map<Method, List<LiveInterval>> liveIntervals;
     private List<LiveInterval> active = new ArrayList<>();
 
-    public LinearScan(Collection<X64RegisterType> availableRegisters, Map<Method, List<LiveInterval>> liveIntervals) {
+    public LinearScan(Collection<X86Register> availableRegisters, Map<Method, List<LiveInterval>> liveIntervals) {
         this.availableRegisters.addAll(availableRegisters);
         this.liveIntervals = liveIntervals;
     }
 
-    public Map<Method, Map<IrValue, X64RegisterType>> getVariableToRegisterMapping() {
+    public Map<Method, Map<IrValue, X86Register>> getVariableToRegisterMapping() {
         return varToRegMap;
     }
 
@@ -29,11 +29,11 @@ public class LinearScan {
         for (var entry : liveIntervals.entrySet()) {
             varToRegMap.put(entry.getKey(), new HashMap<>());
             availableRegisters.clear();
-            availableRegisters.addAll(List.copyOf(X64RegisterType.regsToAllocate));
+            availableRegisters.addAll(List.copyOf(X86Register.regsToAllocate));
             final var N_AVAILABLE_REGISTERS = availableRegisters.size();
             List<LiveInterval> liveIntervalsList = entry.getValue();
             liveIntervalsList.sort(LiveInterval::compareStartPoint);
-            Map<IrValue, X64RegisterType> varToReg = varToRegMap.get(entry.getKey());
+            Map<IrValue, X86Register> varToReg = varToRegMap.get(entry.getKey());
             active = new ArrayList<>();
             for (LiveInterval i : liveIntervalsList) {
                 expireOldIntervals(i, varToReg);
@@ -48,7 +48,7 @@ public class LinearScan {
         }
     }
 
-    public void expireOldIntervals(LiveInterval i, Map<IrValue, X64RegisterType> varToReg) {
+    public void expireOldIntervals(LiveInterval i, Map<IrValue, X86Register> varToReg) {
         active.sort(LiveInterval::compareEndpoint);
         for (LiveInterval j : new ArrayList<>(active)) {
             if (j.endPoint() >= i.startPoint()) {
@@ -59,16 +59,16 @@ public class LinearScan {
         }
     }
 
-    public void spillAtInterval(LiveInterval i, Map<IrValue, X64RegisterType> varToReg) {
+    public void spillAtInterval(LiveInterval i, Map<IrValue, X86Register> varToReg) {
         LiveInterval spill = active.get(active.size() - 1);
         if (spill.endPoint() > i.endPoint()) {
             varToReg.put(i.irAssignableValue(), varToReg.get(spill.irAssignableValue()));
-            varToReg.put(spill.irAssignableValue(), X64RegisterType.STACK);
+            varToReg.put(spill.irAssignableValue(), X86Register.STACK);
             active.remove(spill);
             active.add(i);
             active.sort(LiveInterval::compareEndpoint);
         } else {
-            varToReg.put(i.irAssignableValue(), X64RegisterType.STACK);
+            varToReg.put(i.irAssignableValue(), X86Register.STACK);
         }
     }
 }

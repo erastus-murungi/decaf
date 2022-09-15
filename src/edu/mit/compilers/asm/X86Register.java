@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public enum X64RegisterType {
+public enum X86Register {
     RAX,
     RBX, // causes seg faults on macosx
     RSP,
@@ -29,14 +29,14 @@ public enum X64RegisterType {
     EAX, RIP;
 
 
-    public static final Map<X64RegisterType, Integer> argumentRegistersOrdering = new HashMap<>();
+    public static final Map<X86Register, Integer> argumentRegistersOrdering = new HashMap<>();
     public static final int N_ARG_REGISTERS = 6;
-    public static final List<X64RegisterType> parameterRegisters = List.of(RDI, RSI, RDX, RCX, R8, R9);
-    public static final List<X64RegisterType> calleeSaved = List.of(R12, R13, R14, R15); //
-    public static final List<X64RegisterType> callerSaved = List.of(R10, R11, RDI, RSI, RDX, RCX, R8, R9, RAX);
+    public static final List<X86Register> argumentRegisters = List.of(RDI, RSI, RDX, RCX, R8, R9);
+    public static final List<X86Register> calleeSaved = List.of(R12, R13, R14, R15); //
+    public static final List<X86Register> callerSaved = List.of(R10, R11, RDI, RSI, RDX, RCX, R8, R9, RAX);
     // this is the order to allocate registers
     // note the argument registers are accessed in reverse order
-    public static final List<X64RegisterType> regsToAllocate = List.of(R11, R12, R13, R14, R15, RDX, RCX, R9, R8, RSI, RDI); // use in this order
+    public static final List<X86Register> regsToAllocate = List.of(R11, R12, R13, R14, R15, RDX, RCX, R9, R8, RSI, RDI); // use in this order
 
     static {
         argumentRegistersOrdering.put(RDI, 1);
@@ -64,8 +64,8 @@ public enum X64RegisterType {
                 .toLowerCase();
     }
 
-    public static X64RegisterType fromString(String string) {
-        return Arrays.stream(X64RegisterType.class.getEnumConstants()).filter(x64Register -> x64Register.toString().equals(string)).findFirst().orElseThrow();
+    public static X86Register fromString(String string) {
+        return Arrays.stream(X86Register.class.getEnumConstants()).filter(x64Register -> x64Register.toString().equals(string)).findFirst().orElseThrow();
     }
 
 }

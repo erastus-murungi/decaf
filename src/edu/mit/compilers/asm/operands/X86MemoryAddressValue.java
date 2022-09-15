@@ -1,12 +1,14 @@
 package edu.mit.compilers.asm.operands;
 
 import static com.google.common.base.Preconditions.checkState;
-
 import static edu.mit.compilers.utils.Utils.WORD_SIZE;
 
 import org.jetbrains.annotations.NotNull;
 
-import edu.mit.compilers.asm.X64RegisterType;
+import java.util.ArrayList;
+import java.util.List;
+
+import edu.mit.compilers.asm.X86Register;
 import edu.mit.compilers.codegen.names.IrIntegerConstant;
 
 public class X86MemoryAddressValue extends X86Value {
@@ -25,16 +27,26 @@ public class X86MemoryAddressValue extends X86Value {
     this.index = index;
   }
 
+  public X86Value getBase() {
+    return base;
+  }
+
+  public X86Value getIndex() {
+    return index;
+  }
+
   @Override
   public String toString() {
     // 1) if the index is constant then the base register must be RBP
     // 2) if the base is a register then we have a global array and so the index must be a register
     // 3)
 
-    if (base instanceof X86RegisterMappedValue) return String.format("(%s,%s,%s)",
-        base,
-        index,
-        8);
+    if (base instanceof X86RegisterMappedValue) {
+      return String.format("(%s,%s,%s)",
+          base,
+          index,
+          8);
+    }
     else {
       var stackMappedArray = (X86StackMappedValue) base;
       if (index instanceof X86ConstantValue x86ConstantValue) {
@@ -42,15 +54,25 @@ public class X86MemoryAddressValue extends X86Value {
         var offset = ((IrIntegerConstant) x86ConstantValue.getValue()).getValue();
         return String.format("%s(%s)",
             stackMappedArray.getOffset() + (offset * WORD_SIZE),
-            X64RegisterType.RBP);
+            X86Register.RBP);
       } else {
         checkState(index instanceof X86RegisterMappedValue);
         return String.format("%s(%s,%s,%s)",
             stackMappedArray.getOffset(),
-            X64RegisterType.RBP,
+            X86Register.RBP,
             index,
             8);
       }
     }
+  }
+
+  @Override
+  public List<X86Register> registersInUse() {
+    var registers = new ArrayList<X86Register>();
+    if (getIndex() instanceof X86RegisterMappedValue x86RegisterMappedValue)
+      registers.add(x86RegisterMappedValue.getX64RegisterType());
+    if (getBase() instanceof X86RegisterMappedValue x86RegisterMappedValue)
+      registers.add(x86RegisterMappedValue.getX64RegisterType());
+    return registers;
   }
 }

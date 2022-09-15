@@ -1,6 +1,5 @@
 package edu.mit.compilers.asm;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.Math.min;
@@ -19,12 +18,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
 
 import edu.mit.compilers.asm.instructions.X64BinaryInstruction;
-import edu.mit.compilers.asm.operands.X86MemoryAddressValue;
+import edu.mit.compilers.asm.instructions.X64Instruction;
 import edu.mit.compilers.asm.operands.X86ConstantValue;
 import edu.mit.compilers.asm.operands.X86GlobalValue;
+import edu.mit.compilers.asm.operands.X86MemoryAddressValue;
 import edu.mit.compilers.asm.operands.X86RegisterMappedValue;
 import edu.mit.compilers.asm.operands.X86StackMappedValue;
 import edu.mit.compilers.asm.operands.X86Value;
@@ -60,13 +59,15 @@ public class X86ValueResolver {
   @NotNull
   private final Map<Method, Map<IrValue, Integer>> stackOffsets = new HashMap<>();
   @NotNull
-  private final Map<X64RegisterType, Integer> temporarySaveLocations = new HashMap<>();
+  private final Map<X86Value, Integer> temporarySaveLocations = new HashMap<>();
   @NotNull
   private final Map<Method, Integer> largestStackOffset = new HashMap<>();
   @NotNull
   private final Map<Method, Map<IrAssignableValue, X86Value>> initialArgumentLocations = new HashMap<>();
   @NotNull
   private final RegisterAllocator registerAllocator;
+  @NotNull
+  private final List<X64Instruction> preparatoryInstructions = new ArrayList<>();
   @NotNull
   private Method currentMethod;
   @NotNull
@@ -126,7 +127,7 @@ public class X86ValueResolver {
       var irAssignableValue = liveInterval.irAssignableValue();
       if (irAssignableValue instanceof IrRegister || irAssignableValue instanceof IrGlobalArray) {
         var dest = methodRegisterMapping.get(irAssignableValue);
-        if (dest != null && !dest.equals(X64RegisterType.STACK)) {
+        if (dest != null && !dest.equals(X86Register.STACK)) {
           registerMappedIrValues.get(method)
                                 .put(irAssignableValue,
                                     new X86RegisterMappedValue(dest,
@@ -185,27 +186,27 @@ public class X86ValueResolver {
   @NotNull
   private X86Value localizeArgument(@NotNull IrAssignableValue argument) {
     var initialArgumentLocation = getInitialArgumentLocations().remove(argument);
-    var localizedArgumentX86Value = resolveIrValue(argument);
-    currentX86Method.add(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+    var localizedArgumentX86Value = resolveIrValueInternal(argument);
+    preparatoryInstructions.add(new X64BinaryInstruction(X64BinaryInstructionType.movq,
         initialArgumentLocation,
         localizedArgumentX86Value));
     return localizedArgumentX86Value;
   }
 
   private void spillValuesToStack(
-      @NotNull X64RegisterType x64RegisterType,
+      @NotNull X86Register x86Register,
       @NotNull Collection<IrAssignableValue> valuesToSpill
   ) {
     valuesToSpill.forEach(irAssignableValue -> {
-      var spillLocation = new X86StackMappedValue(X64RegisterType.RBP,
+      var spillLocation = new X86StackMappedValue(X86Register.RBP,
           pushStack());
-      currentX86Method.add(new X64BinaryInstruction(X64BinaryInstructionType.movq,
-          resolveIrValue(irAssignableValue),
+      preparatoryInstructions.add(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+          resolveIrValueInternal(irAssignableValue),
           spillLocation));
       checkState(registerMappedIrValues.get(currentMethod)
                                        .remove(irAssignableValue)
                                        .getX64RegisterType()
-                                       .equals(x64RegisterType));
+                                       .equals(x86Register));
       checkState(!stackOffsets.get(currentMethod)
                               .containsKey(irAssignableValue));
       stackOffsets.get(currentMethod)
@@ -217,12 +218,12 @@ public class X86ValueResolver {
 
   private void updateIrValueMappingTo(
       @NotNull IrValue irValue,
-      @NotNull X64RegisterType x64RegisterType
+      @NotNull X86Register x86Register
   ) {
-    var oldLocation = resolveIrValue(irValue);
-    var newLocation = new X86RegisterMappedValue(x64RegisterType,
+    var oldLocation = resolveIrValueInternal(irValue);
+    var newLocation = new X86RegisterMappedValue(x86Register,
         irValue);
-    currentX86Method.add(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+    preparatoryInstructions.add(new X64BinaryInstruction(X64BinaryInstructionType.movq,
         oldLocation,
         newLocation));
     registerMappedIrValues.get(currentMethod)
@@ -235,13 +236,13 @@ public class X86ValueResolver {
   }
 
 
-  private X64RegisterType genRegisterToSpill(
+  private X86Register genRegisterToSpill(
       @NotNull IrValue irValue,
-      ArrayList<X64RegisterType> toAvoid
+      ArrayList<X86Register> toAvoid
   ) {
     final var liveValuesInInterval = irValue instanceof IrIntegerConstant ? Collections.<IrAssignableValue>emptySet(): Utils.getLAllRegisterAllocatableValuesInInstructionList(registerAllocator.liveIntervalsUtil.getAllInstructionsInLiveIntervalOf(irValue,
         currentMethod));
-    final var m = new HashMap<X64RegisterType, Set<IrAssignableValue>>();
+    final var m = new HashMap<X86Register, Set<IrAssignableValue>>();
     for (IrAssignableValue irAssignableValue : liveValuesInInterval) {
       var location = registerMappedIrValues.get(currentMethod)
                                            .get(irAssignableValue);
@@ -249,16 +250,16 @@ public class X86ValueResolver {
                                  k -> new HashSet<>())
                              .add(irAssignableValue);
     }
-    for (var register : X64RegisterType.regsToAllocate) {
+    for (var register : X86Register.regsToAllocate) {
       if (!m.containsKey(register)) {
         m.put(register,
             new HashSet<>());
       }
     }
-    toAvoid.add(X64RegisterType.STACK);
+    toAvoid.add(X86Register.STACK);
     // get the one with the
     var fewestReferences = 10000;
-    var reg = X64RegisterType.STACK;
+    var reg = X86Register.STACK;
     for (var register : m.keySet()) {
       if (toAvoid.contains(register)) continue;
       if (m.get(register)
@@ -268,7 +269,7 @@ public class X86ValueResolver {
         reg = register;
       }
     }
-    checkState(reg != X64RegisterType.STACK);
+    checkState(reg != X86Register.STACK);
     spillValuesToStack(reg,
         m.get(reg));
     updateIrValueMappingTo(irValue,
@@ -280,18 +281,18 @@ public class X86ValueResolver {
   private X86MemoryAddressValue resolveIrMemoryAddress(@NotNull IrMemoryAddress irMemoryAddress) {
     X86RegisterMappedValue baseRegister, indexRegister = null;
     // get base index
-    var indexValue = resolveIrValue(irMemoryAddress.getIndex());
+    var indexValue = resolveIrValueInternal(irMemoryAddress.getIndex());
     if (indexValue instanceof X86StackMappedValue || indexValue instanceof X86MemoryAddressValue ||
         (irMemoryAddress.getBaseAddress() instanceof IrGlobal && !(indexValue instanceof X86RegisterMappedValue))) {
       // we should spill
+      // try to avoid base register if possible
+      var toAvoid = new ArrayList<X86Register>();
+      if (isRegisterMappedIrValue(irMemoryAddress.getBaseAddress()))
+        toAvoid.add(getRegisterOrFail(irMemoryAddress.getBaseAddress()));
+
       indexRegister = new X86RegisterMappedValue(genRegisterToSpill(irMemoryAddress.getIndex(),
-          new ArrayList<>()),
+          toAvoid),
           irMemoryAddress.getIndex());
-      if (indexValue instanceof X86ConstantValue) {
-        currentX86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
-            indexValue,
-            indexRegister));
-      }
       indexValue = indexRegister;
     }
     if (irMemoryAddress.getBaseAddress() instanceof IrStackArray irStackArray) {
@@ -299,7 +300,7 @@ public class X86ValueResolver {
       return new X86MemoryAddressValue(baseValue,
           indexValue);
     }
-    var baseValue = resolveIrValue(irMemoryAddress.getBaseAddress());
+    var baseValue = resolveIrValueInternal(irMemoryAddress.getBaseAddress());
     if (baseValue instanceof X86StackMappedValue) {
       // we should spill and avoid the index register
       baseRegister = new X86RegisterMappedValue(genRegisterToSpill(irMemoryAddress.getBaseAddress(),
@@ -310,7 +311,7 @@ public class X86ValueResolver {
       baseRegister = (X86RegisterMappedValue) baseValue;
     }
     if (irMemoryAddress.getBaseAddress() instanceof IrGlobalArray irGlobalArray) {
-      currentX86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+      preparatoryInstructions.add(new X64BinaryInstruction(X64BinaryInstructionType.movq,
           new X86GlobalValue(irGlobalArray),
           baseRegister));
     }
@@ -318,21 +319,64 @@ public class X86ValueResolver {
         indexValue);
   }
 
-  private boolean isStackMappedIrValue(@NotNull IrValue irValue) {
+
+  private void addTransientInstruction() {
+
+  }
+
+  public boolean isStackMappedIrValue(@NotNull IrValue irValue) {
     return irValue instanceof IrAssignableValue && stackOffsets.get(currentMethod)
                                                                .containsKey(irValue);
   }
 
+  public boolean isRegisterMappedIrValue(@NotNull IrValue irValue) {
+    return irValue instanceof IrAssignableValue && registerMappedIrValues.get(currentMethod)
+                                                                         .containsKey(irValue);
+  }
+
+  @NotNull
+  public X86Register getRegisterOrFail(@NotNull IrValue irValue) {
+    return registerMappedIrValues.get(currentMethod)
+                                 .get(irValue)
+                                 .getX64RegisterType();
+  }
+
   @NotNull
   private X86StackMappedValue resolveStackMappedIrValue(@NotNull IrValue irValue) {
-    return new X86StackMappedValue(X64RegisterType.RBP,
+    return new X86StackMappedValue(X86Register.RBP,
         checkNotNull(stackOffsets.get(currentMethod)
                                  .get(irValue)),
         irValue);
   }
 
+
+  public List<X64Instruction> getPreparatoryInstructions() {
+    return List.copyOf(preparatoryInstructions);
+  }
+
   @NotNull
   public X86Value resolveIrValue(@NotNull IrValue irValue) {
+    return resolveIrValue(irValue,
+        true);
+  }
+
+  @NotNull
+  public X86Value resolveIrValue(
+      @NotNull IrValue irValue,
+      boolean updateMethodX86InstructionList
+  ) {
+    preparatoryInstructions.clear();
+    var initialMethodLength = currentX86Method.size();
+    var resolved = resolveIrValueInternal(irValue);
+    checkState(currentX86Method.size() == initialMethodLength);
+    if (updateMethodX86InstructionList) {
+      currentX86Method.addAll(preparatoryInstructions);
+    }
+    return resolved;
+  }
+
+  @NotNull
+  private X86Value resolveIrValueInternal(@NotNull IrValue irValue) {
     if (isUnResolvedArgumentIrValue(irValue)) {
       return localizeArgument((IrAssignableValue) irValue);
     }
@@ -415,7 +459,7 @@ public class X86ValueResolver {
                 parameter));
       } else {
         destinations.put(parameter,
-            new X86StackMappedValue(X64RegisterType.RBP,
+            new X86StackMappedValue(X86Register.RBP,
                 pushStack(),
                 parameter));
       }
@@ -426,7 +470,7 @@ public class X86ValueResolver {
         destinations);
   }
 
-  private List<X64RegisterType> getUnusedRegisters(
+  private List<X86Register> getUnusedRegisters(
       @NotNull Method method,
       @NotNull RegisterAllocator registerAllocator
   ) {
@@ -436,9 +480,9 @@ public class X86ValueResolver {
     var nUsedArgRegisters = min(6,
         method.getParameterNames()
               .size());
-    var usedArgRegisters = Set.copyOf(X64RegisterType.parameterRegisters.subList(0,
+    var usedArgRegisters = Set.copyOf(X86Register.argumentRegisters.subList(0,
         nUsedArgRegisters));
-    return List.copyOf(Sets.difference(Set.copyOf(X64RegisterType.regsToAllocate),
+    return List.copyOf(Sets.difference(Set.copyOf(X86Register.regsToAllocate),
         Sets.union(usedArgRegisters,
             valueMappedRegisters)));
   }
@@ -457,16 +501,22 @@ public class X86ValueResolver {
         k -> new HashMap<>());
   }
 
-  public X86Value resolveNextStackLocation(@NotNull X64RegisterType registerType) {
-    if (temporarySaveLocations.containsKey(registerType)) return new X86StackMappedValue(X64RegisterType.RBP,
-        temporarySaveLocations.get(registerType));
+  public X86Value resolveNextStackLocation(@NotNull X86Value x86Value) {
+    if (temporarySaveLocations.containsKey(x86Value)) return new X86StackMappedValue(X86Register.RBP,
+        temporarySaveLocations.get(x86Value));
     else {
       var newLocation = pushStack();
-      temporarySaveLocations.put(registerType,
+      temporarySaveLocations.put(x86Value,
           newLocation);
-      return new X86StackMappedValue(X64RegisterType.RBP,
+      return new X86StackMappedValue(X86Register.RBP,
           newLocation);
     }
+  }
+
+  public X86Value pushStackNoSave() {
+    var newLocation = pushStack();
+    return new X86StackMappedValue(X86Register.RBP,
+        newLocation);
   }
 
   @NotNull

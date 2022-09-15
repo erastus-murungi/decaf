@@ -24,7 +24,7 @@ public class AsmWriterContext {
     private int maxStackSpaceForArgs = 0;
 
     public void setMaxStackSpaceForArgs(FunctionCall functionCall) {
-        this.maxStackSpaceForArgs = Math.max(maxStackSpaceForArgs, (functionCall.getNumArguments() - X64RegisterType.N_ARG_REGISTERS) * 8);
+        this.maxStackSpaceForArgs = Math.max(maxStackSpaceForArgs, (functionCall.getNumArguments() - X86Register.N_ARG_REGISTERS) * 8);
     }
 
     public boolean isTextLabelAdded() {

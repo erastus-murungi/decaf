@@ -8,16 +8,16 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import edu.mit.compilers.asm.X64RegisterType;
+import edu.mit.compilers.asm.X86Register;
 import edu.mit.compilers.codegen.codes.Instruction;
 import edu.mit.compilers.codegen.codes.Method;
 import edu.mit.compilers.codegen.names.IrValue;
 import edu.mit.compilers.utils.ProgramIr;
 
 public class RegisterAllocator {
-    public final Map<Method, Map<IrValue, X64RegisterType>> variableToRegisterMap = new HashMap<>();
+    public final Map<Method, Map<IrValue, X86Register>> variableToRegisterMap = new HashMap<>();
 
-    public final Map<Method, Map<Instruction, Set<X64RegisterType>>> methodToLiveRegistersInfo = new HashMap<>();
+    public final Map<Method, Map<Instruction, Set<X86Register>>> methodToLiveRegistersInfo = new HashMap<>();
 
     public final Map<Method, Map<Instruction, Set<IrValue>>> methodToLiveValuesInfo = new HashMap<>();
 
@@ -25,14 +25,14 @@ public class RegisterAllocator {
 
     public RegisterAllocator(ProgramIr programIr) {
         liveIntervalsUtil = new LiveIntervalsUtil(programIr);
-        var linearScan = new LinearScan(List.copyOf(X64RegisterType.regsToAllocate), liveIntervalsUtil.methodToLiveIntervalsMap);
+        var linearScan = new LinearScan(List.copyOf(X86Register.regsToAllocate), liveIntervalsUtil.methodToLiveIntervalsMap);
         linearScan.allocate();
         variableToRegisterMap.putAll(linearScan.getVariableToRegisterMapping());
         computeMethodToLiveRegistersInfo(programIr, liveIntervalsUtil.methodToLiveIntervalsMap);
     }
 
-    private static Map<Instruction, Set<X64RegisterType>> computeInstructionToLiveRegistersMap(ProgramIr programIr, List<LiveInterval> liveIntervals, Map<IrValue, X64RegisterType> registerMap) {
-        var instructionToLiveRegistersMap = new HashMap<Instruction, Set<X64RegisterType>>();
+    private static Map<Instruction, Set<X86Register>> computeInstructionToLiveRegistersMap(ProgramIr programIr, List<LiveInterval> liveIntervals, Map<IrValue, X86Register> registerMap) {
+        var instructionToLiveRegistersMap = new HashMap<Instruction, Set<X86Register>>();
         if (!liveIntervals.isEmpty()) {
             var instructionList = liveIntervals.get(0).instructionList();
             IntStream.range(0, instructionList.size())
@@ -54,7 +54,7 @@ public class RegisterAllocator {
         return instructionToLiveRegistersMap;
     }
 
-    private static Set<X64RegisterType> getLiveRegistersAtPoint(ProgramIr programIr, Collection<LiveInterval> liveIntervals, int index, Map<IrValue, X64RegisterType> registerMap) {
+    private static Set<X86Register> getLiveRegistersAtPoint(ProgramIr programIr, Collection<LiveInterval> liveIntervals, int index, Map<IrValue, X86Register> registerMap) {
         return liveIntervals.stream()
                 .filter(liveInterval -> liveInterval.startPoint() <= index && index < liveInterval.endPoint())
                 .map(LiveInterval::irAssignableValue)
@@ -84,11 +84,11 @@ public class RegisterAllocator {
                 )));
     }
 
-    public Map<Method, Map<IrValue, X64RegisterType>> getVariableToRegisterMap() {
+    public Map<Method, Map<IrValue, X86Register>> getVariableToRegisterMap() {
         return variableToRegisterMap;
     }
 
-    public Map<Method, Map<Instruction, Set<X64RegisterType>>> getMethodToLiveRegistersInfo() {
+    public Map<Method, Map<Instruction, Set<X86Register>>> getMethodToLiveRegistersInfo() {
         return methodToLiveRegistersInfo;
     }
 

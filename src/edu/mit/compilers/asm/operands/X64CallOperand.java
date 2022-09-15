@@ -1,5 +1,9 @@
 package edu.mit.compilers.asm.operands;
 
+import java.util.Collections;
+import java.util.List;
+
+import edu.mit.compilers.asm.X86Register;
 import edu.mit.compilers.codegen.codes.FunctionCall;
 
 public class X64CallOperand extends X86Value {
@@ -17,5 +21,10 @@ public class X64CallOperand extends X86Value {
         if (isImported || methodName.equals("main"))
             return "_" + methodName;
         return methodName;
+    }
+
+    @Override
+    public List<X86Register> registersInUse() {
+        return Collections.emptyList();
     }
 }

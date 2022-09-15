@@ -26,9 +26,8 @@ class Main {
 //            if (!res)
 //                break;
 //        }
-//        System.out.println(Utils.symbolicallyEvaluate("0"));
 //        CLI.debug = true;
-//        var res = TestRunner.testCodegenSingleFile("x-18-initial-value.dcf");
+//        var res = TestRunner.testCodegenSingleFile("08-array.dcf");
 
     }
 }
