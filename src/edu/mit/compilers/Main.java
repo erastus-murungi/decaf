@@ -27,7 +27,7 @@ class Main {
 //                break;
 //        }
 //        CLI.debug = true;
-//        var res = TestRunner.testCodegenSingleFile("08-array.dcf");
+//        var res = TestRunner.testCodegenSingleFile("x-02-for-condwithsideeffects.dcf");
 
     }
 }

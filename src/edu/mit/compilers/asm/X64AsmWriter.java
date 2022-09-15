@@ -11,7 +11,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import edu.mit.compilers.asm.instructions.X64BinaryInstruction;
@@ -348,37 +351,58 @@ public class X64AsmWriter implements AsmWriter {
       prepInstructions.add(x86ValueResolver.getPreparatoryInstructions());
     }
 
+    var addedPrep = new HashSet<Integer>();
+    var temp = new HashMap<Integer, X86StackMappedValue>();
     for (int indexOfArgument = 0; indexOfArgument < resolvedArguments.size(); indexOfArgument++) {
       var resolvedArgument = resolvedArguments.get(indexOfArgument);
       var destinationRegister = destinationRegisters.get(indexOfArgument);
 
-      x86Method.addLines(prepInstructions.get(indexOfArgument));
       if (anyResolvedValuesUseRegister(resolvedArguments.subList(indexOfArgument,
               resolvedArguments.size()),
           destinationRegister)) {
         // we need to schedule the move
+        x86Method.addLines(prepInstructions.get(indexOfArgument));
+        addedPrep.add(indexOfArgument);
         var registerCache = x86ValueResolver.pushStackNoSave();
+        temp.put(indexOfArgument, registerCache);
         moveToStack(resolvedArgument,
             registerCache);
         resolvedArguments.set(indexOfArgument,
             registerCache);
       }
     }
+    var tempSaved = new ArrayList<X64Instruction>();
     for (int indexOfArgument = resolvedArguments.size() - 1; indexOfArgument >= 0; indexOfArgument--) {
       var resolvedArgument = resolvedArguments.get(indexOfArgument);
       var correctArgumentRegister = new X86RegisterMappedValue(destinationRegisters.get(indexOfArgument),
           resolvedArgument.getValue());
-      if (resolvedArgument instanceof X86ConstantValue x86ConstantValue &&
-          x86ConstantValue.getValue() instanceof IrStringConstant) {
-        x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.leaq,
-            resolvedArgument,
-            correctArgumentRegister));
+      if (temp.containsKey(indexOfArgument)) {
+        if (resolvedArgument instanceof X86ConstantValue x86ConstantValue &&
+            x86ConstantValue.getValue() instanceof IrStringConstant) {
+          tempSaved.add(new X64BinaryInstruction(X64BinaryInstructionType.leaq,
+              resolvedArgument,
+              correctArgumentRegister));
+        } else {
+          tempSaved.add(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+              resolvedArgument,
+              correctArgumentRegister));
+        }
       } else {
-        x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
-            resolvedArgument,
-            correctArgumentRegister));
+        if (!addedPrep.contains(indexOfArgument))
+          x86Method.addLines(prepInstructions.get(indexOfArgument));
+        if (resolvedArgument instanceof X86ConstantValue x86ConstantValue &&
+            x86ConstantValue.getValue() instanceof IrStringConstant) {
+          x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.leaq,
+              resolvedArgument,
+              correctArgumentRegister));
+        } else {
+          x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+              resolvedArgument,
+              correctArgumentRegister));
+        }
       }
     }
+    x86Method.addLines(tempSaved);
   }
 
   @Override

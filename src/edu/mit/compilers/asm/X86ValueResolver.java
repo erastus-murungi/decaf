@@ -513,7 +513,7 @@ public class X86ValueResolver {
     }
   }
 
-  public X86Value pushStackNoSave() {
+  public X86StackMappedValue pushStackNoSave() {
     var newLocation = pushStack();
     return new X86StackMappedValue(X86Register.RBP,
         newLocation);

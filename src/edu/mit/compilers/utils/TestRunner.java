@@ -110,7 +110,7 @@ public class TestRunner {
     }
 
     private static void compileTests() throws IOException {
-        List<File> allTestFiles = getAllTestFiles(TestRunner.DEFAULT_DATAFLOW_TESTS_ROOT);
+        var allTestFiles = getAllTestFiles(TestRunner.DEFAULT_DATAFLOW_TESTS_ROOT);
         var nTestFiles = allTestFiles.size();
 
         String[] fileNames = new String[nTestFiles];
