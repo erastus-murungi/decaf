@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -250,6 +251,25 @@ public class Utils {
   public static int roundUp16(int n) {
     if (n == 0) return 16;
     return n >= 0 ? ((n + 16 - 1) / 16) * 16: (n / 16) * 16;
+  }
+
+  public static boolean isReachable(
+      @NotNull BasicBlock source,
+      @NotNull BasicBlock destination
+  ) {
+    var workList = new ArrayDeque<BasicBlock>();
+    workList.offer(source);
+    var explored = new HashSet<BasicBlock>();
+    while (!workList.isEmpty()) {
+      var current = workList.remove();
+      if (explored.contains(current)) continue;
+      explored.add(current);
+      if (destination == current) return true;
+      for (var successor : current.getSuccessors()) {
+        workList.offer(successor);
+      }
+    }
+    return false;
   }
 
   private String removeParentheses(String s) {

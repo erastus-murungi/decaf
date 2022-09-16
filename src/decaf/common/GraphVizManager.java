@@ -89,32 +89,22 @@ public class GraphVizManager {
             .replaceAll("\\s", "")
             .toLowerCase(Locale.ROOT);
     /**
-     * ##############################################################
-     * #                    Linux Configurations                    #
-     * ##############################################################
+     *
+     *                   Linux Configurations
      * # The dir. where temporary files will be created.
      * tempDirForLinux = /tmp
      * # Where is your dot program located? It will be called externally.
      * dotForLinux = /usr/bin/dot
-     *
-     * ##############################################################
-     * #                   Windows Configurations                   #
-     * ##############################################################
+     *                   Windows Configurations
      * # The dir. where temporary files will be created.
      * tempDirForWindows = c:/temp
      * # Where is your dot program located? It will be called externally.
      * dotForWindows = "c:/Program Files (x86)/Graphviz 2.28/bin/dot.exe"
-     *
-     * ##############################################################
-     * #                    Mac Configurations                      #
-     * ##############################################################
+     *                   Mac Configurations
      * # The dir. where temporary files will be created.
      * tempDirForMacOSX = /tmp
      * # Where is your dot program located? It will be called externally.
      * dotForMacOSX = /usr/local/bin/dot
-     */
-
-    /**
      * The dir. where temporary files will be created.
      */
     private static final String TEMP_DIR = "./dot";
@@ -353,7 +343,7 @@ public class GraphVizManager {
 
     public static void printSymbolTables(AST root,
                                          HashMap<String, SymbolTable> methods) {
-        GraphVizManager.createDotGraph(writeSymbolTable(root, methods), "symbolTables");
+        GraphVizManager.createDotGraph(writeSymbolTable(root, methods), "symbol_tables");
 //        if (!osName.equals("windows")) {
 //            try {
 //                Process process = Runtime.getRuntime().exec("open cfg.pdf");

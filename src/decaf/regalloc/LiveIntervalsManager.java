@@ -27,7 +27,7 @@ import decaf.codegen.names.IrGlobal;
 import decaf.codegen.names.IrGlobalArray;
 import decaf.codegen.names.IrMemoryAddress;
 import decaf.common.ProgramIr;
-import decaf.common.TarjanSCC;
+import decaf.common.StronglyConnectedComponentsTarjan;
 import decaf.common.Utils;
 import decaf.dataflow.analyses.LiveVariableAnalysis;
 import decaf.cfg.BasicBlock;
@@ -152,7 +152,7 @@ public class LiveIntervalsManager {
     }
 
     private void computeMethodLivenessInformation(Method method) {
-        var basicBlocks = TarjanSCC.getReversePostOrder(method.getEntryBlock());
+        var basicBlocks = StronglyConnectedComponentsTarjan.getReversePostOrder(method.getEntryBlock());
         basicBlocks.forEach(basicBlock -> computeLiveOutForSetBasicBlock(basicBlock, new LiveVariableAnalysis(method.getEntryBlock())));
     }
 

@@ -1,5 +1,7 @@
 package decaf.symboltable;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +28,7 @@ public class SymbolTable {
         this.owner = owner;
     }
 
-    private static String padRight(String s, Optional<Integer> n) {
+    private static String padRight(@NotNull String s, Optional<Integer> n) {
         return n.map(integer -> s + " ".repeat(integer + 4 - s.length()))
                 .orElse(s);
     }
@@ -98,50 +100,50 @@ public class SymbolTable {
     }
 
     public String myToString(String indent, String suffix) {
-        String repeat = " ".repeat(Math.max(0, indent.length() - 8));
-        String repeat1 = "-".repeat(Math.min(indent.length(), 8));
+        var repeat = " ".repeat(Math.max(0, indent.length() - 8));
+        var repeat1 = "-".repeat(Math.min(indent.length(), 8));
         if (this.entries.size() == 0) {
             return (repeat + repeat1 + "EmptySymbolTable " + suffix);
         }
-        final String IDENTIFIER = "Identifier";
-        final String DESCRIPTOR_CLASSES = "Descriptor Types";
-        final String BUILTIN_TYPES = "Builtin Types";
-        final String ARRAY_LENGTH = "Array Length";
+        final var IDENTIFIER = "Identifier";
+        final var DESCRIPTOR_CLASSES = "Descriptor Types";
+        final var BUILTIN_TYPES = "Builtin Types";
+        final var ARRAY_LENGTH = "Array Length";
 
-        Optional<Integer> maxLengthIds = Stream.concat(Stream.of(IDENTIFIER, "-".repeat(IDENTIFIER.length())), this.entries.keySet()
+        var maxLengthIds = Stream.concat(Stream.of(IDENTIFIER, "-".repeat(IDENTIFIER.length())), this.entries.keySet()
                         .stream()
                         .map(Object::toString))
                 .map(String::length)
                 .reduce(Math::max);
 
-        Stream<String> maxLengthIdsStream = Stream.concat(Stream.of(IDENTIFIER, "-".repeat(IDENTIFIER.length())), this.entries.keySet()
+        var maxLengthIdsStream = Stream.concat(Stream.of(IDENTIFIER, "-".repeat(IDENTIFIER.length())), this.entries.keySet()
                 .stream()
                 .map(Object::toString));
 
-        List<String> ids = maxLengthIdsStream.map(((String s) -> padRight(s, maxLengthIds)))
+        var ids = maxLengthIdsStream.map(((String s) -> padRight(s, maxLengthIds)))
                 .toList();
 
-        Optional<Integer> maxMethodD = Stream.concat(Stream.of(DESCRIPTOR_CLASSES, "-".repeat(DESCRIPTOR_CLASSES.length())), this.entries.keySet()
+        var maxMethodD = Stream.concat(Stream.of(DESCRIPTOR_CLASSES, "-".repeat(DESCRIPTOR_CLASSES.length())), this.entries.keySet()
                         .stream()
                         .map(Object::getClass)
                         .map(Class::getSimpleName))
                 .map(String::length)
                 .reduce(Math::max);
-        List<String> descriptorTypes = Stream.concat(Stream.of(DESCRIPTOR_CLASSES, "-".repeat(DESCRIPTOR_CLASSES.length())), this.entries.values()
+        var descriptorTypes = Stream.concat(Stream.of(DESCRIPTOR_CLASSES, "-".repeat(DESCRIPTOR_CLASSES.length())), this.entries.values()
                         .stream()
                         .map(Object::getClass)
                         .map(Class::getSimpleName))
                 .map(s -> padRight(s, maxMethodD))
                 .toList();
 
-        List<Descriptor> list1 = new ArrayList<>(this.entries.values());
-        List<String> builtins = new ArrayList<>();
-        for (Descriptor descriptor1 : list1) {
+        var list1 = new ArrayList<>(this.entries.values());
+        var builtins = new ArrayList<String>();
+        for (var descriptor1 : list1) {
             Type type = descriptor1.type;
             String toString = type.toString();
             builtins.add(toString);
         }
-        Optional<Integer> maxLengthTypes = Stream.concat(Stream.of(BUILTIN_TYPES, "-".repeat(BUILTIN_TYPES.length())), builtins.stream())
+        var maxLengthTypes = Stream.concat(Stream.of(BUILTIN_TYPES, "-".repeat(BUILTIN_TYPES.length())), builtins.stream())
                 .map(String::length)
                 .reduce(Math::max);
         List<String> builtinTypes = Stream.concat(Stream.of(BUILTIN_TYPES, "-".repeat(BUILTIN_TYPES.length())), builtins.stream())

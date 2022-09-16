@@ -9,7 +9,7 @@ import java.util.Set;
 
 import decaf.cfg.NOP;
 import decaf.codegen.codes.UnconditionalBranch;
-import decaf.common.TarjanSCC;
+import decaf.common.StronglyConnectedComponentsTarjan;
 import decaf.cfg.BasicBlock;
 import decaf.codegen.codes.Method;
 
@@ -39,7 +39,7 @@ public class TraceScheduler {
     }
 
     private void findBasicBlocks(Method method) {
-        basicBlocks = TarjanSCC.getReversePostOrder(method.getEntryBlock());
+        basicBlocks = StronglyConnectedComponentsTarjan.getReversePostOrder(method.getEntryBlock());
     }
 
     private Optional<BasicBlock> getNotTracedBlock(Set<BasicBlock> seenBlocks) {

@@ -186,9 +186,13 @@ public class X86ValueResolver {
   private X86Value localizeArgument(@NotNull IrAssignableValue argument) {
     var initialArgumentLocation = getInitialArgumentLocations().remove(argument);
     var localizedArgumentX86Value = resolveIrValueInternal(argument);
-    preparatoryInstructions.add(new X64BinaryInstruction(X64BinaryInstructionType.movq,
-        initialArgumentLocation,
-        localizedArgumentX86Value));
+    if (!localizedArgumentX86Value.equals(initialArgumentLocation)) {
+      preparatoryInstructions.add(new X64BinaryInstruction(
+          X64BinaryInstructionType.movq,
+          initialArgumentLocation,
+          localizedArgumentX86Value
+      ));
+    }
     return localizedArgumentX86Value;
   }
 

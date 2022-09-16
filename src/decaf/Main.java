@@ -21,7 +21,7 @@ class Main {
 //                break;
 //        }
 //        CompilationContext.setDebugModeOn(true);
-//        var res = TestRunner.testCodegenSingleFile("04-math2.dcf");
+//        var res = TestRunner.testCodegenSingleFile("13-ifs.dcf");
 
     }
 }

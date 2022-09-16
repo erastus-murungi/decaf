@@ -1,5 +1,6 @@
 package decaf.ssa;
 
+import static decaf.common.StronglyConnectedComponentsTarjan.getReversePostOrder;
 import static decaf.common.Utils.getAllVirtualRegistersInBasicBlocks;
 
 import com.google.common.graph.GraphBuilder;
@@ -36,7 +37,6 @@ import decaf.common.CompilationContext;
 import decaf.common.GraphVizManager;
 import decaf.common.Pair;
 import decaf.common.ProgramIr;
-import decaf.common.TarjanSCC;
 import decaf.common.UnionFind;
 import decaf.common.Utils;
 
@@ -46,23 +46,24 @@ public class SSA {
 
   private static void buildCfgGuava(@NotNull List<BasicBlock> basicBlocks) {
     // Gr
-    MutableGraph<BasicBlock> graph = GraphBuilder.directed().build();
-    basicBlocks.forEach(
-        basicBlock -> {
-          graph.addNode(basicBlock);
-          basicBlock.getSuccessors().forEach(
-              successor -> {
-                graph.addNode(successor);
-                graph.putEdge(basicBlock, successor);
-              }
-          );
-        }
-    );
+    MutableGraph<BasicBlock> graph = GraphBuilder.directed()
+                                                 .build();
+    basicBlocks.forEach(basicBlock -> {
+      graph.addNode(basicBlock);
+      basicBlock.getSuccessors()
+                .forEach(successor -> {
+                  graph.addNode(successor);
+                  graph.putEdge(
+                      basicBlock,
+                      successor
+                  );
+                });
+    });
   }
 
   public static void construct(@NotNull Method method) {
     var entryBlock = method.getEntryBlock();
-    var basicBlocks = TarjanSCC.getReversePostOrder(entryBlock);
+    var basicBlocks = getReversePostOrder(entryBlock);
 //    buildCfgGuava(basicBlocks);
     var dominatorTree = new DominatorTree(entryBlock);
     if (CompilationContext.isDebugModeOn()) GraphVizManager.printDominatorTree(
@@ -106,7 +107,7 @@ public class SSA {
     );
 
     var entryBlock = method.getEntryBlock();
-    var basicBlocks = TarjanSCC.getReversePostOrder(entryBlock);
+    var basicBlocks = getReversePostOrder(entryBlock);
     var immediateDominator = new DominatorTree(entryBlock);
     verifySsa(basicBlocks);
     deconstructSsa(
@@ -266,36 +267,46 @@ public class SSA {
   }
 
   private static int getNCopiesOfV(
-      @NotNull IrRegister V,
-      @NotNull BasicBlock Y,
+      @NotNull BasicBlock X,
       @NotNull Collection<BasicBlock> basicBlocksModifyingV
   ) {
-    int nCopiesOfV = (int) Y.getPredecessors()
+    int nCopiesOfV = (int) X.getPredecessors()
                             .stream()
                             .filter(basicBlocksModifyingV::contains)
                             .count();
     return nCopiesOfV;
   }
 
-  private static void addPhiNodeForVatY(
-      @NotNull IrRegister V,
-      @NotNull BasicBlock Y,
+  private static int genNCopiesOfV(
+      @NotNull BasicBlock X,
       @NotNull Collection<BasicBlock> basicBlocksModifyingV
   ) {
-    int nCopiesOfV = getNCopiesOfV(
-        V,
-        Y,
-        basicBlocksModifyingV
-    );
-    if (nCopiesOfV > 1) {
+    // we find the number of predecessors of V which can be reached by all the blocks modifying V
+    return (int) X.getPredecessors()
+                  .stream()
+                  .filter(predecessor -> basicBlocksModifyingV.stream()
+                                                              .anyMatch(modifier -> Utils.isReachable(
+                                                                  predecessor,
+                                                                  modifier
+                                                              )))
+                  .count();
+  }
+
+  private static void addPhiNodeForVatY(
+      @NotNull IrRegister V,
+      @NotNull BasicBlock X,
+      @NotNull Collection<BasicBlock> basicBlocksModifyingV
+  ) {
+    var copiesOfV = genNCopiesOfV(X, basicBlocksModifyingV);
+    if (copiesOfV > 1) {
       var blockToVariable = new HashMap<BasicBlock, IrValue>();
-      for (var P : Y.getPredecessors()) {
+      for (var P : X.getPredecessors()) {
         blockToVariable.put(
             P,
             V.copy()
         );
       }
-      Y.getInstructionList()
+      X.getInstructionList()
        .add(
            0,
            new Phi(
@@ -312,9 +323,9 @@ public class SSA {
    * @param entryBlock the first basic block of the function
    */
   private static void placePhiFunctions(
-      BasicBlock entryBlock,
-      List<BasicBlock> basicBlocks,
-      DominatorTree dominatorTree
+      @NotNull BasicBlock entryBlock,
+      @NotNull List<BasicBlock> basicBlocks,
+      @NotNull DominatorTree dominatorTree
   ) {
     var liveVariableAnalysis = new LiveVariableAnalysis(entryBlock);
 
@@ -376,7 +387,7 @@ public class SSA {
     renameMethodArgs(method);
   }
 
-  private static void verifySsa(List<BasicBlock> basicBlocks) {
+  private static void verifySsa(@NotNull List<BasicBlock> basicBlocks) {
     var seen = new HashSet<IrRegister>();
     for (var B : basicBlocks) {
       for (var store : B.getStoreInstructions()) {
@@ -388,9 +399,10 @@ public class SSA {
           }
           if (store instanceof Phi) {
             var numPhiOperands = store.getOperandValues()
-                         .size();
+                                      .size();
             if (numPhiOperands < 1) {
-              throw new IllegalStateException(store.syntaxHighlightedToString() + " has " + numPhiOperands + " operands");
+              throw new IllegalStateException(
+                  store.syntaxHighlightedToString() + " has " + numPhiOperands + " operands");
             }
           }
         }
@@ -398,15 +410,15 @@ public class SSA {
     }
   }
 
-  public static void verifySsa(Method method) {
-    var basicBlocks = TarjanSCC.getReversePostOrder(method.getEntryBlock());
+  public static void verifySsa(@NotNull Method method) {
+    var basicBlocks = getReversePostOrder(method.getEntryBlock());
     SSA.verifySsa(basicBlocks);
   }
 
   private static void deconstructSsa(
-      BasicBlock entryBlock,
-      List<BasicBlock> basicBlocks,
-      DominatorTree dominatorTree
+      @NotNull BasicBlock entryBlock,
+      @NotNull List<BasicBlock> basicBlocks,
+      @NotNull DominatorTree dominatorTree
   ) {
     var stacks = new HashMap<IrRegister, Stack<IrRegister>>();
     initializeForSsaDestruction(
@@ -422,7 +434,7 @@ public class SSA {
     removePhiNodes(basicBlocks);
   }
 
-  private static void removePhiNodes(List<BasicBlock> basicBlocks) {
+  private static void removePhiNodes(@NotNull List<BasicBlock> basicBlocks) {
     for (BasicBlock basicBlock : basicBlocks) {
       basicBlock.getInstructionList()
                 .reset(basicBlock.getInstructionList()
@@ -433,10 +445,10 @@ public class SSA {
   }
 
   private static void insertCopies(
-      BasicBlock basicBlock,
-      DominatorTree dominatorTree,
-      LiveVariableAnalysis liveVariableAnalysis,
-      Map<IrRegister, Stack<IrRegister>> stacks
+      @NotNull BasicBlock basicBlock,
+      @NotNull DominatorTree dominatorTree,
+      @NotNull LiveVariableAnalysis liveVariableAnalysis,
+      @NotNull Map<IrRegister, Stack<IrRegister>> stacks
   ) {
     var pushed = new ArrayList<IrRegister>();
 
@@ -480,10 +492,10 @@ public class SSA {
 
 
   private static void scheduleCopies(
-      BasicBlock basicBlock,
-      Set<IrValue> liveOut,
-      Map<IrRegister, Stack<IrRegister>> stacks,
-      ArrayList<IrRegister> pushed
+      @NotNull BasicBlock basicBlock,
+      @NotNull Set<IrValue> liveOut,
+      @NotNull Map<IrRegister, Stack<IrRegister>> stacks,
+      @NotNull ArrayList<IrRegister> pushed
   ) {
     /* Pass One: Initialize the data structures */
     Stack<Pair<IrValue, IrRegister>> copySet = new Stack<>();
@@ -659,7 +671,7 @@ public class SSA {
       Method method
   ) {
     var changesHappened = false;
-    var basicBlocks = TarjanSCC.getReversePostOrder(method.getEntryBlock());
+    var basicBlocks = getReversePostOrder(method.getEntryBlock());
     var newName = uses.stream()
                       .min(Comparator.comparing(Object::toString))
                       .orElseThrow()

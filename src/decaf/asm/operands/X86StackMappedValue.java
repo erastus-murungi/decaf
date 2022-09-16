@@ -5,6 +5,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import decaf.asm.X86Register;
 import decaf.codegen.names.IrValue;
@@ -37,5 +38,21 @@ public class X86StackMappedValue extends X86Value {
     @Override
     public List<X86Register> registersInUse() {
         return Collections.emptyList();
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof X86StackMappedValue that)) return false;
+        return getOffset() == that.getOffset() && baseReg == that.baseReg;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+            baseReg,
+            getOffset()
+        );
     }
 }
