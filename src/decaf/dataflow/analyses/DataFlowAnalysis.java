@@ -15,7 +15,7 @@ import decaf.cfg.NOP;
 import decaf.codegen.InstructionList;
 import decaf.codegen.codes.Instruction;
 import decaf.dataflow.Direction;
-import decaf.common.TarjanSCC;
+import decaf.common.StronglyConnectedComponentsTarjan;
 
 public abstract class DataFlowAnalysis<T> {
     public Map<BasicBlock, Set<T>> out;
@@ -62,7 +62,7 @@ public abstract class DataFlowAnalysis<T> {
     public abstract void computeUniversalSetsOfValues();
 
     private void findAllBasicBlocksInReversePostOrder() {
-        basicBlocks = TarjanSCC.getReversePostOrder(entryBlock);
+        basicBlocks = StronglyConnectedComponentsTarjan.getReversePostOrder(entryBlock);
     }
 
     private void findExitBlock() {

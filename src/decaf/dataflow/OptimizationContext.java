@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import decaf.common.ProgramIr;
-import decaf.common.TarjanSCC;
+import decaf.common.StronglyConnectedComponentsTarjan;
 import decaf.cfg.BasicBlock;
 import decaf.codegen.codes.Method;
 import decaf.codegen.names.IrGlobal;
@@ -23,7 +23,7 @@ public class OptimizationContext {
     public OptimizationContext(ProgramIr programIr) {
         this.programIr = programIr;
         for (Method method : programIr.getMethods())
-            methodToBlocks.put(method, List.copyOf(TarjanSCC.getReversePostOrder(method.getEntryBlock())));
+            methodToBlocks.put(method, List.copyOf(StronglyConnectedComponentsTarjan.getReversePostOrder(method.getEntryBlock())));
         setMethodsToOptimize(programIr.getMethods());
     }
 

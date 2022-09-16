@@ -27,7 +27,7 @@ import decaf.codegen.names.IrMemoryAddress;
 import decaf.codegen.names.IrRegister;
 import decaf.codegen.names.IrValue;
 import decaf.common.SSAEdgesUtil;
-import decaf.common.TarjanSCC;
+import decaf.common.StronglyConnectedComponentsTarjan;
 import decaf.common.Utils;
 import decaf.dataflow.ssapasses.worklistitems.SsaEdge;
 import decaf.ssa.Phi;
@@ -50,7 +50,7 @@ public class SCCP {
   }
 
   public void initializeWorkSets(Method method) {
-    for (BasicBlock basicBlock : TarjanSCC.getReversePostOrder(method.getEntryBlock())) {
+    for (BasicBlock basicBlock : StronglyConnectedComponentsTarjan.getReversePostOrder(method.getEntryBlock())) {
       for (Instruction instruction : basicBlock.getInstructionList()) {
         for (IrValue v : instruction.getAllValues()) {
           if (v instanceof IrRegister) {

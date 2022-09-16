@@ -13,7 +13,7 @@ import decaf.codegen.codes.HasOperand;
 import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.ReturnInstruction;
 import decaf.codegen.codes.UnconditionalBranch;
-import decaf.common.TarjanSCC;
+import decaf.common.StronglyConnectedComponentsTarjan;
 import decaf.cfg.BasicBlock;
 import decaf.codegen.TraceScheduler;
 import decaf.codegen.codes.ArrayBoundsCheck;
@@ -57,7 +57,7 @@ public class FunctionInlinePass {
 
     private Map<InstructionList, List<Integer>> findCallSites(Method method, String functionName) {
         var callSites = new HashMap<InstructionList, List<Integer>>();
-        for (BasicBlock basicBlock : TarjanSCC.getReversePostOrder(method.getEntryBlock())) {
+        for (BasicBlock basicBlock : StronglyConnectedComponentsTarjan.getReversePostOrder(method.getEntryBlock())) {
             var threeAddressCodeList = basicBlock.getInstructionList();
             callSites.put(threeAddressCodeList, new ArrayList<>());
             IntStream.range(0, threeAddressCodeList.size())

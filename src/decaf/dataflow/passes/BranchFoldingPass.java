@@ -7,15 +7,15 @@ import java.util.List;
 import java.util.Optional;
 
 import decaf.cfg.NOP;
-import decaf.common.TarjanSCC;
+import decaf.common.StronglyConnectedComponentsTarjan;
 import decaf.ast.AST;
 import decaf.cfg.BasicBlock;
 
 public class BranchFoldingPass {
     public static void run(Collection<BasicBlock> basicBlocks) {
         for (BasicBlock entryBlock : basicBlocks) {
-            TarjanSCC.correctPredecessors(entryBlock);
-            mergeTails(TarjanSCC.getReversePostOrder(entryBlock));
+            StronglyConnectedComponentsTarjan.correctPredecessors(entryBlock);
+            mergeTails(StronglyConnectedComponentsTarjan.getReversePostOrder(entryBlock));
         }
     }
 

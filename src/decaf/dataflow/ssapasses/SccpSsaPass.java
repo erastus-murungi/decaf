@@ -18,7 +18,7 @@ import decaf.codegen.codes.StoreInstruction;
 import decaf.codegen.codes.UnaryInstruction;
 import decaf.codegen.names.IrIntegerConstant;
 import decaf.codegen.names.IrRegister;
-import decaf.common.TarjanSCC;
+import decaf.common.StronglyConnectedComponentsTarjan;
 import decaf.dataflow.OptimizationContext;
 import decaf.ssa.SSA;
 
@@ -158,7 +158,7 @@ public class SccpSsaPass extends SsaOptimizationPass {
     }
     optimizationContext.setBasicBlocks(
         method,
-        TarjanSCC.getReversePostOrder(method.getEntryBlock())
+        StronglyConnectedComponentsTarjan.getReversePostOrder(method.getEntryBlock())
     );
   }
 

@@ -14,7 +14,7 @@ import java.util.Set;
 
 import decaf.cfg.BasicBlock;
 import decaf.cfg.NOP;
-import decaf.common.TarjanSCC;
+import decaf.common.StronglyConnectedComponentsTarjan;
 
 public class DominatorTree extends HashMap<BasicBlock, BasicBlock> {
   /**
@@ -92,7 +92,7 @@ public class DominatorTree extends HashMap<BasicBlock, BasicBlock> {
         NOP.NOPType.METHOD_ENTRY
     );
     entry.setSuccessor(entryBlock);
-    TarjanSCC.correctPredecessors(entry);
+    StronglyConnectedComponentsTarjan.correctPredecessors(entry);
     return entry;
   }
 
