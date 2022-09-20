@@ -4,7 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import decaf.codegen.CodegenAstVisitor;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrAssignable;
+import decaf.codegen.names.IrAssignable;
 import decaf.common.Pair;
 import decaf.ir.AstVisitor;
 import decaf.symboltable.SymbolTable;
@@ -70,7 +71,7 @@ public class Block extends AST {
         return ASTVisitor.visit(this, curSymbolTable);
     }
 
-    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignableValue resultLocation) {
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignable resultLocation) {
         return codegenAstVisitor.visit(this, resultLocation);
     }
 }

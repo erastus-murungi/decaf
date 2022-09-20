@@ -11,19 +11,18 @@ import java.util.List;
 import decaf.asm.AsmWriter;
 import decaf.ast.AST;
 import decaf.ast.Type;
-import decaf.codegen.names.IrGlobal;
 import decaf.codegen.names.IrValue;
 import decaf.common.Utils;
 
 public class GlobalAllocation extends Instruction {
     public static final int DEFAULT_ALIGNMENT = 8;
 
-    private final IrGlobal value;
+    private final IrValue value;
     private final long size;
     public final int alignment;
     public final Type type;
 
-    public IrGlobal getValue() {
+    public IrValue getValue() {
         return value;
     }
 
@@ -31,7 +30,7 @@ public class GlobalAllocation extends Instruction {
         return size;
     }
 
-    public GlobalAllocation(@NotNull IrGlobal value, long size, @NotNull Type type, @Nullable AST source, @Nullable String comment) {
+    public GlobalAllocation(@NotNull IrValue value, long size, @NotNull Type type, @Nullable AST source, @Nullable String comment) {
         super(source, comment);
         this.value = value;
         this.size = size;
@@ -44,7 +43,7 @@ public class GlobalAllocation extends Instruction {
     }
 
     @Override
-    public List<IrValue> getAllValues() {
+    public List<IrValue> genIrValuesSurface() {
         return Collections.singletonList(value);
     }
 
@@ -56,7 +55,8 @@ public class GlobalAllocation extends Instruction {
 
     @Override
     public Instruction copy() {
-        return new GlobalAllocation(value, size, type, source, getComment().orElse(null));
+        return new GlobalAllocation(value, size, type,
+                                    getSource(), getComment().orElse(null));
     }
 
     @Override

@@ -1,7 +1,7 @@
 package decaf.codegen;
 
 
-public class LabelManager {
+public class IndexManager {
     public static int boundsCheckIndex = -1;
     public static int highestValue = 0;
     private static int variableIndex = -1;
@@ -9,7 +9,7 @@ public class LabelManager {
     private static int stringLiteralIndex = -1;
 
 
-    private LabelManager() {
+    private IndexManager() {
     }
 
     public static int getNextArrayBoundsCheckLabelIndex() {
@@ -27,12 +27,12 @@ public class LabelManager {
         variableIndex = -1;
     }
 
-    public static int getNextTemporaryVariable() {
+    public static int genRegisterIndex() {
         ++variableIndex;
         return variableIndex;
     }
 
-    public static int getNextLabel() {
+    public static int genLabelIndex() {
         ++labelIndex;
         return labelIndex;
     }
@@ -41,7 +41,7 @@ public class LabelManager {
         labelIndex = 0;
     }
 
-    public static String getNextStringLiteralIndex() {
+    public static String genStringConstantLabel() {
         ++stringLiteralIndex;
         return "string_" + stringLiteralIndex;
     }

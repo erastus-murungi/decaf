@@ -1,6 +1,7 @@
 package decaf.ast;
 
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrAssignable;
+import decaf.codegen.names.IrAssignable;
 import decaf.grammar.DecafScanner;
 import decaf.grammar.TokenPosition;
 import decaf.ir.AstVisitor;
@@ -34,19 +35,15 @@ public class CompoundAssignOperator extends Operator {
 
     @Override
     public String getSourceCode() {
-        switch (label) {
-            case DecafScanner.ADD_ASSIGN:
-                return "+=";
-            case DecafScanner.MINUS_ASSIGN:
-                return "-=";
-            case DecafScanner.MULTIPLY_ASSIGN:
-                return "*=";
-            default:
-                throw new IllegalArgumentException("please register compound assign operator: " + label);
-        }
+        return switch (label) {
+            case DecafScanner.ADD_ASSIGN -> "+=";
+            case DecafScanner.MINUS_ASSIGN -> "-=";
+            case DecafScanner.MULTIPLY_ASSIGN -> "*=";
+            default -> throw new IllegalArgumentException("please register compound assign operator: " + label);
+        };
     }
 
-    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignableValue resultLocation) {
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignable resultLocation) {
         return null;
     }
 }

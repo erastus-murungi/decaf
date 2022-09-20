@@ -13,5 +13,6 @@ public enum OptimizationPassType {
     DeadStoreEliminationSsa,
     SccpSsa,
     RedundantPhiEliminationPass,
-    LoopAnalysisPass
+    LoopAnalysisPass,
+    FunctionInlinePass
 }

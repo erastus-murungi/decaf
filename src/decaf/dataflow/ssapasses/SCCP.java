@@ -20,11 +20,13 @@ import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.Method;
 import decaf.codegen.codes.UnaryInstruction;
 import decaf.codegen.codes.UnconditionalBranch;
-import decaf.codegen.names.IrAssignableValue;
-import decaf.codegen.names.IrGlobal;
+import decaf.codegen.names.IrAssignable;
+import decaf.codegen.names.IrGlobalArray;
+import decaf.codegen.names.IrGlobalScalar;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.names.IrIntegerConstant;
 import decaf.codegen.names.IrMemoryAddress;
-import decaf.codegen.names.IrRegister;
+import decaf.codegen.names.IrStackArray;
 import decaf.codegen.names.IrValue;
 import decaf.common.SSAEdgesUtil;
 import decaf.common.StronglyConnectedComponentsTarjan;
@@ -52,14 +54,18 @@ public class SCCP {
   public void initializeWorkSets(Method method) {
     for (BasicBlock basicBlock : StronglyConnectedComponentsTarjan.getReversePostOrder(method.getEntryBlock())) {
       for (Instruction instruction : basicBlock.getInstructionList()) {
-        for (IrValue v : instruction.getAllValues()) {
-          if (v instanceof IrRegister) {
+        for (IrValue v : instruction.genIrValues()) {
+          if (v instanceof IrSsaRegister) {
             latticeValues.put(v, LatticeElement.top());
           } else if (v instanceof IrIntegerConstant numericalConstant) {
             latticeValues.put(v, LatticeElement.constant(numericalConstant.getValue()));
           } else if (v instanceof IrMemoryAddress) {
             latticeValues.put(v, LatticeElement.bottom());
-          } else if (v instanceof IrGlobal) {
+          } else if (v instanceof IrGlobalScalar) {
+            latticeValues.put(v, LatticeElement.bottom());
+          } else if (v instanceof IrGlobalArray) {
+            latticeValues.put(v, LatticeElement.bottom());
+          } else if (v instanceof IrStackArray) {
             latticeValues.put(v, LatticeElement.bottom());
           }
         }
@@ -73,12 +79,12 @@ public class SCCP {
 
   }
 
-  private List<SsaEdge> getSsaEdgesForVariable(IrAssignableValue virtualRegister) {
+  private List<SsaEdge> getSsaEdgesForVariable(IrAssignable virtualRegister) {
     return ssaEdgeList.stream().filter(ssaEdge -> ssaEdge.getValue().equals(virtualRegister)).toList();
   }
 
   private void visitPhi(Phi phi) {
-    var values = phi.getOperandValues().stream()
+    var values = phi.genOperandIrValuesSurface().stream()
                     .map(value -> reachableBasicBlocks.contains(phi.getBasicBlockForV(value)) ? latticeValues.get(value): LatticeElement.top())
                     .collect(Collectors.toList());
     var newLatticeElement = LatticeElement.meet(values);

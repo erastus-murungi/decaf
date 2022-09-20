@@ -10,6 +10,7 @@ import decaf.codegen.InstructionList;
 import decaf.codegen.codes.HasOperand;
 import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.StoreInstruction;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.dataflow.OptimizationContext;
 import decaf.dataflow.analyses.ReachingDefinitions;
 import decaf.cfg.BasicBlock;
@@ -75,7 +76,7 @@ public class ConstantPropagationPass extends OptimizationPass {
                 continue;
             for (Instruction instruction : basicBlock.getInstructionList()) {
                 if (instruction instanceof HasOperand hasOperand) {
-                    for (IrValue name : hasOperand.getOperandValues()) {
+                    for (IrValue name : hasOperand.genOperandIrValuesFiltered(IrSsaRegister.class)) {
                         if (storeToConstantMapping.containsKey(name)) {
                             hasOperand.replaceValue(name, storeToConstantMapping.get(name));
                         }

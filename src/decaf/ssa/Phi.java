@@ -14,7 +14,8 @@ import java.util.stream.Collectors;
 import decaf.asm.AsmWriter;
 import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.StoreInstruction;
-import decaf.codegen.names.IrRegister;
+import decaf.codegen.names.IrSsaRegister;
+import decaf.common.Utils;
 import decaf.dataflow.operand.Operand;
 import decaf.dataflow.operand.PhiOperand;
 import decaf.cfg.BasicBlock;
@@ -24,7 +25,7 @@ public class Phi extends StoreInstruction {
   private final Map<BasicBlock, IrValue> basicBlockValueMap;
 
   public Phi(
-      IrRegister v,
+      IrSsaRegister v,
       Map<BasicBlock, IrValue> xs
   ) {
     super(v,
@@ -84,7 +85,7 @@ public class Phi extends StoreInstruction {
   }
 
   @Override
-  public List<IrValue> getOperandValues() {
+  public List<IrValue> genOperandIrValuesSurface() {
     return new ArrayList<>(basicBlockValueMap.values());
   }
 
@@ -110,15 +111,15 @@ public class Phi extends StoreInstruction {
   }
 
   @Override
-  public List<IrValue> getAllValues() {
-    var allNames = getOperandValues();
+  public List<IrValue> genIrValuesSurface() {
+    var allNames = genOperandIrValuesSurface();
     allNames.add(getDestination());
     return allNames;
   }
 
   @Override
   public Instruction copy() {
-    return new Phi((IrRegister) getDestination(),
+    return new Phi((IrSsaRegister) getDestination(),
         basicBlockValueMap);
   }
 
@@ -148,8 +149,9 @@ public class Phi extends StoreInstruction {
                                    .stream()
                                    .map(IrValue::toString)
                                    .collect(Collectors.joining(", "));
-    return String.format("%s%s: %s = phi (%s)",
+    return String.format("%s%s %s: %s = phi(%s)",
         DOUBLE_INDENT,
+        getPrefix(),
         getDestination(),
         getDestination().getType()
                         .getSourceCode(),
@@ -162,11 +164,13 @@ public class Phi extends StoreInstruction {
                                    .stream()
                                    .map(IrValue::toString)
                                    .collect(Collectors.joining(", "));
-    return String.format("%s%s: %s = phi (%s)",
+    return String.format("%s%s %s: %s = %s(%s)",
         DOUBLE_INDENT,
+        getPrefixSyntaxHighlighted(),
         getDestination(),
         getDestination().getType()
                         .getColoredSourceCode(),
+                         Utils.coloredPrint("phi", Utils.ANSIColorConstants.ANSI_GREEN_BOLD),
         rhs);
   }
 }

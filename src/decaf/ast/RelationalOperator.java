@@ -1,7 +1,7 @@
 package decaf.ast;
 
 import decaf.codegen.CodegenAstVisitor;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrAssignable;
 import decaf.grammar.DecafScanner;
 import decaf.grammar.TokenPosition;
 import decaf.ir.AstVisitor;
@@ -49,7 +49,7 @@ public class RelationalOperator extends BinOperator {
         }
     }
 
-    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignableValue resultLocation) {
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignable resultLocation) {
         return null;
     }
 }

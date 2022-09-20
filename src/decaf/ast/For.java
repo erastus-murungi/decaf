@@ -5,7 +5,7 @@ import java.util.List;
 import decaf.grammar.DecafScanner;
 import decaf.grammar.TokenPosition;
 import decaf.codegen.CodegenAstVisitor;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrAssignable;
 import decaf.ir.AstVisitor;
 import decaf.symboltable.SymbolTable;
 import decaf.common.Pair;
@@ -77,7 +77,7 @@ public class For extends Statement implements HasExpression {
             terminatingCondition = newExpr;
     }
 
-    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignableValue resultLocation) {
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignable resultLocation) {
         return null;
     }
 }

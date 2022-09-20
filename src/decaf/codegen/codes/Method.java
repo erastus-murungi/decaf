@@ -7,14 +7,14 @@ import java.util.stream.Collectors;
 import decaf.asm.AsmWriter;
 import decaf.ast.MethodDefinition;
 import decaf.codegen.InstructionList;
-import decaf.codegen.names.IrRegister;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.common.Utils;
 import decaf.cfg.BasicBlock;
 import decaf.codegen.names.IrValue;
 
 public class Method extends Instruction {
   private final MethodDefinition methodDefinition;
-  private final List<IrRegister> parameterNames;
+  private final List<IrSsaRegister> parameterNames;
   private InstructionList unoptimizedInstructionList;
   private BasicBlock entryBlock;
   private BasicBlock exitBlock;
@@ -24,14 +24,14 @@ public class Method extends Instruction {
     super(methodDefinition);
     this.methodDefinition = methodDefinition;
     parameterNames = methodDefinition.parameterList.stream()
-                                                   .map(methodDefinitionParameter -> new IrRegister(
+                                                   .map(methodDefinitionParameter -> new IrSsaRegister(
                                                        methodDefinitionParameter.getName(),
                                                        methodDefinitionParameter.getType()
                                                    ))
                                                    .collect(Collectors.toList());
   }
 
-  public List<IrRegister> getParameterNames() {
+  public List<IrSsaRegister> getParameterNames() {
     return List.copyOf(parameterNames);
   }
 
@@ -54,7 +54,7 @@ public class Method extends Instruction {
   }
 
   @Override
-  public List<IrValue> getAllValues() {
+  public List<IrValue> genIrValuesSurface() {
     return Collections.emptyList();
   }
 

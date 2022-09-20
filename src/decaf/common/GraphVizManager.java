@@ -201,9 +201,9 @@ public class GraphVizManager {
             edges.add(String.format("   %s -> %s [arrowhead=none, style=dotted, label=\"%s\"];", entry.first()
                     .hashCode(), entry.second()
                     .hashCode(), String.format("%s <=> %s", escape(entry.first
-                    .irAssignableValue()
+                    .irSsaRegister()
                     .toString()), escape(entry.second
-                    .irAssignableValue()
+                    .irSsaRegister()
                     .toString()))));
         }
 
@@ -567,9 +567,9 @@ public class GraphVizManager {
      * @return A string to open a graph.
      */
     public String start_graph() {
-        return "digraph G {  graph [fontname = \"Courier New\"];\n" +
-                " node [fontname = \"Courier\"];\n" +
-                " edge [fontname = \"Courier\"];";
+        return "digraph G {  graph [fontname = \"Menlo\"];\n" +
+                " node [fontname = \"Menlo\"];\n" +
+                " edge [fontname = \"Menlo\"];";
     }
 
     /**

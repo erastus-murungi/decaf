@@ -2,11 +2,12 @@ package decaf.regalloc;
 
 import decaf.codegen.InstructionList;
 import decaf.codegen.codes.Instruction;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.codes.Method;
+import decaf.codegen.names.IrValue;
 
 /**
- * @param irAssignableValue        The irAssignableValue this {@link LiveInterval} belongs to
+ * @param irSsaRegister        The irAssignableValue this {@link LiveInterval} belongs to
  * @param startPoint      The start index of the {@link Instruction} in the given {@link InstructionList}
  * @param endPoint        The end index of the instruction in the given {@link InstructionList}
  * @param instructionList The {@link InstructionList} this {@link LiveInterval} belongs to
@@ -26,9 +27,9 @@ import decaf.codegen.codes.Method;
  *                        </ul>
  *                        </li>
  */
-public record LiveInterval(IrAssignableValue irAssignableValue, int startPoint, int endPoint, InstructionList instructionList, Method method) {
+public record LiveInterval(IrValue irSsaRegister, int startPoint, int endPoint, InstructionList instructionList, Method method) {
     public LiveInterval updateEndpoint(int endPoint) {
-        return new LiveInterval(irAssignableValue, startPoint, endPoint, instructionList, method);
+        return new LiveInterval(irSsaRegister, startPoint, endPoint, instructionList, method);
     }
     public int compareStartPoint(LiveInterval other) {
         if (startPoint == other.startPoint)

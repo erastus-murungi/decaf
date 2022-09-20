@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 import decaf.codegen.CodegenAstVisitor;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrAssignable;
 import decaf.common.Pair;
 import decaf.grammar.DecafScanner;
 import decaf.grammar.TokenPosition;
@@ -44,7 +44,7 @@ public class Return extends Statement implements HasExpression {
         return ASTVisitor.visit(this, curSymbolTable);
     }
 
-    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignableValue resultLocation) {
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignable resultLocation) {
         return codegenAstVisitor.visit(this, resultLocation);
     }
 

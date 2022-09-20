@@ -1,12 +1,17 @@
 package decaf.codegen.names;
 
+import java.util.List;
 import java.util.Objects;
 
 import decaf.ast.Type;
 
-public class IrGlobalArray extends IrGlobal {
+public class IrGlobalArray extends IrValue implements IrRegisterAllocatable, IrGlobal {
+
     public IrGlobalArray(String label, Type type) {
-        super(label, type);
+        super(
+            type,
+            label
+        );
     }
 
     @Override
@@ -25,5 +30,10 @@ public class IrGlobalArray extends IrGlobal {
     @Override
     public int hashCode() {
         return Objects.hashCode(getLabel());
+    }
+
+    @Override
+    public List<IrValue> get() {
+        return List.of(this);
     }
 }

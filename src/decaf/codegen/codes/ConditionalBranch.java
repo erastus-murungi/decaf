@@ -42,7 +42,7 @@ public class ConditionalBranch extends HasOperand implements WithTarget {
     }
 
     @Override
-    public List<IrValue> getAllValues() {
+    public List<IrValue> genIrValuesSurface() {
         return List.of(condition);
     }
 
@@ -56,7 +56,8 @@ public class ConditionalBranch extends HasOperand implements WithTarget {
 
     @Override
     public Instruction copy() {
-        return new ConditionalBranch(condition, getTarget(), source, getComment().orElse(null));
+        return new ConditionalBranch(condition, getTarget(),
+                                     getSource(), getComment().orElse(null));
     }
 
     @Override
@@ -65,7 +66,7 @@ public class ConditionalBranch extends HasOperand implements WithTarget {
     }
 
     @Override
-    public List<IrValue> getOperandValues() {
+    public List<IrValue> genOperandIrValuesSurface() {
         return List.of(condition);
     }
 

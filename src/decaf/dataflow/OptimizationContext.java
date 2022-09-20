@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import decaf.codegen.names.IrValue;
 import decaf.common.ProgramIr;
 import decaf.common.StronglyConnectedComponentsTarjan;
 import decaf.cfg.BasicBlock;
 import decaf.codegen.codes.Method;
-import decaf.codegen.names.IrGlobal;
 
 public class OptimizationContext {
     private final Map<Method, List<BasicBlock>> methodToBlocks = new HashMap<>();
@@ -27,7 +27,7 @@ public class OptimizationContext {
         setMethodsToOptimize(programIr.getMethods());
     }
 
-    public Set<IrGlobal> globals() {
+    public Set<IrValue> globals() {
         return programIr.getGlobals();
     }
 

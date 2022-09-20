@@ -21,7 +21,7 @@ public class GetAddressOperand extends Operand {
 
     @Override
     public List<IrValue> getNames() {
-        return getAddress.getOperandValues();
+        return getAddress.genOperandIrValuesSurface();
     }
 
     @Override

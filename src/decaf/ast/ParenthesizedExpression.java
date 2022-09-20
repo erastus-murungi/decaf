@@ -2,7 +2,7 @@ package decaf.ast;
 
 import java.util.List;
 
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrAssignable;
 import decaf.common.Pair;
 import decaf.grammar.TokenPosition;
 import decaf.ir.AstVisitor;
@@ -42,7 +42,7 @@ public class ParenthesizedExpression extends Expression implements HasExpression
         return ASTVisitor.visit(this, curSymbolTable);
     }
 
-    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignableValue resultLocation) {
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignable resultLocation) {
         return codegenAstVisitor.visit(this, resultLocation);
     }
 

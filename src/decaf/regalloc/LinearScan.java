@@ -48,7 +48,7 @@ public class LinearScan {
                 if (active.size() == nAvailableRegisters) {
                     spillAtInterval(i, varToReg);
                 } else {
-                    varToReg.put(i.irAssignableValue(), availableRegisters.remove(0));
+                    varToReg.put(i.irSsaRegister(), availableRegisters.remove(0));
                     active.add(i);
                     active.sort(LiveInterval::compareEndpoint);
                 }
@@ -63,20 +63,20 @@ public class LinearScan {
                 return;
             }
             active.remove(j);
-            availableRegisters.add(varToReg.get(j.irAssignableValue()));
+            availableRegisters.add(varToReg.get(j.irSsaRegister()));
         }
     }
 
     public void spillAtInterval(LiveInterval i, Map<IrValue, X86Register> varToReg) {
         LiveInterval spill = active.get(active.size() - 1);
         if (spill.endPoint() > i.endPoint()) {
-            varToReg.put(i.irAssignableValue(), varToReg.get(spill.irAssignableValue()));
-            varToReg.put(spill.irAssignableValue(), X86Register.STACK);
+            varToReg.put(i.irSsaRegister(), varToReg.get(spill.irSsaRegister()));
+            varToReg.put(spill.irSsaRegister(), X86Register.STACK);
             active.remove(spill);
             active.add(i);
             active.sort(LiveInterval::compareEndpoint);
         } else {
-            varToReg.put(i.irAssignableValue(), X86Register.STACK);
+            varToReg.put(i.irSsaRegister(), X86Register.STACK);
         }
     }
 }

@@ -4,7 +4,7 @@ import decaf.codegen.codes.HasOperand;
 import decaf.cfg.BasicBlock;
 import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.StoreInstruction;
-import decaf.codegen.names.IrRegister;
+import decaf.codegen.names.IrSsaRegister;
 
 
 /**
@@ -19,7 +19,7 @@ public record SsaEdge(StoreInstruction def, HasOperand use, BasicBlock basicBloc
         return String.format("%s in [%s] -> %s", def.getDestination(), def.toString().strip(), use.toString().strip());
     }
 
-    public IrRegister getValue() {
-        return (IrRegister) def.getDestination();
+    public IrSsaRegister getValue() {
+        return (IrSsaRegister) def.getDestination();
     }
 }

@@ -30,11 +30,11 @@ import decaf.ast.MethodCallParameter;
 import decaf.ast.ParenthesizedExpression;
 import decaf.ast.UnaryOpExpression;
 import decaf.cfg.BasicBlock;
-import decaf.codegen.InstructionList;
 import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.Method;
-import decaf.codegen.names.IrAssignableValue;
-import decaf.codegen.names.IrRegister;
+import decaf.codegen.names.IrSsaRegister;
+import decaf.codegen.names.IrValue;
+import decaf.codegen.names.IrValuePredicates;
 
 public class Utils {
   // adopted from Java 15
@@ -180,38 +180,21 @@ public class Utils {
     );
   }
 
-  public static Set<IrAssignableValue> getAllLValuesInInstructionList(InstructionList instructionList) {
+  public static Set<IrValue> genRegAllocatableValuesFromInstructions(Collection<Instruction> instructionList) {
     return instructionList.stream()
-                          .flatMap(instruction -> instruction.getAllLValues()
+                          .flatMap(instruction -> instruction.genIrValuesFiltered(IrValuePredicates.isRegisterAllocatable())
                                                              .stream())
                           .collect(Collectors.toSet());
 
   }
 
-  public static Set<IrAssignableValue> genRegAllocatableValuesFromInstructions(Collection<Instruction> instructionList) {
-    return instructionList.stream()
-                          .flatMap(instruction -> instruction.getAllRegisterAllocatableValues()
-                                                             .stream())
-                          .collect(Collectors.toSet());
-
-  }
-
-  public static Set<IrAssignableValue> getAllLValuesInBasicBlocks(List<BasicBlock> basicBlocks) {
-    return (basicBlocks.stream()
+  public static Set<IrSsaRegister> genIrSsaRegistersIn(List<BasicBlock> basicBlocks) {
+    return basicBlocks.stream()
                        .flatMap(basicBlock -> basicBlock.getInstructionList()
                                                         .stream())
-                       .flatMap(instruction -> instruction.getAllLValues()
+                       .flatMap(instruction -> instruction.genIrValuesFiltered(IrSsaRegister.class)
                                                           .stream())
-                       .collect(Collectors.toUnmodifiableSet()));
-  }
-
-  public static Set<IrRegister> getAllVirtualRegistersInBasicBlocks(List<BasicBlock> basicBlocks) {
-    return (basicBlocks.stream()
-                       .flatMap(basicBlock -> basicBlock.getInstructionList()
-                                                        .stream())
-                       .flatMap(instruction -> instruction.getAllVirtualRegisters()
-                                                          .stream())
-                       .collect(Collectors.toUnmodifiableSet()));
+                       .collect(Collectors.toUnmodifiableSet());
   }
 
   public static Expression rotateBinaryOpExpression(Expression expr) {

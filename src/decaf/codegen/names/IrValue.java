@@ -44,4 +44,8 @@ public abstract class IrValue {
   public String toString() {
     return getLabel();
   }
+
+  public boolean isGlobal() {
+    return false;
+  }
 }

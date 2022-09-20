@@ -10,6 +10,10 @@ public class X86MetaData extends X64Instruction {
         verifyConstruction();
     }
 
+    public static X86MetaData blockComment(@NotNull String comment) {
+        return new X86MetaData(String.format("/* %s */", comment));
+    }
+
     @Override
     protected void verifyConstruction() {
     }

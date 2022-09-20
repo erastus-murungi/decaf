@@ -35,7 +35,7 @@ public class UnconditionalBranch extends Instruction implements WithTarget {
     }
 
     @Override
-    public List<IrValue> getAllValues() {
+    public List<IrValue> genIrValuesSurface() {
         return Collections.emptyList();
     }
 

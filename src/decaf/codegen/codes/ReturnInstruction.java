@@ -33,7 +33,7 @@ public class ReturnInstruction extends HasOperand {
     }
 
     @Override
-    public List<IrValue> getAllValues() {
+    public List<IrValue> genIrValuesSurface() {
         if (returnAddress == null)
             return Collections.emptyList();
         return List.of(returnAddress);
@@ -41,7 +41,7 @@ public class ReturnInstruction extends HasOperand {
 
     @Override
     public Instruction copy() {
-        return new ReturnInstruction(source, returnAddress);
+        return new ReturnInstruction(getSource(), returnAddress);
     }
 
     @Override
@@ -50,7 +50,7 @@ public class ReturnInstruction extends HasOperand {
     }
 
     @Override
-    public List<IrValue> getOperandValues() {
+    public List<IrValue> genOperandIrValuesSurface() {
         if (returnAddress == null)
             return Collections.emptyList();
         return List.of(returnAddress);
@@ -58,11 +58,12 @@ public class ReturnInstruction extends HasOperand {
 
     @Override
     public boolean replaceValue(IrValue oldName, IrValue newName) {
+        var replaced = false;
         if (oldName.equals(returnAddress)) {
             returnAddress = newName;
-            return true;
+            replaced = true;
         }
-        return false;
+        return replaced;
     }
 
     @Override

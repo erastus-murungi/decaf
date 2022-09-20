@@ -28,7 +28,7 @@ public class StringConstantAllocation extends Instruction {
     }
 
     @Override
-    public List<IrValue> getAllValues() {
+    public List<IrValue> genIrValuesSurface() {
         return Collections.emptyList();
     }
 

@@ -14,7 +14,7 @@ import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.Method;
 import decaf.codegen.codes.StoreInstruction;
 import decaf.codegen.names.IrValue;
-import decaf.codegen.names.IrRegister;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.dataflow.OptimizationContext;
 import decaf.dataflow.dominator.DominatorTree;
 
@@ -35,20 +35,20 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass {
     var changesHappened = false;
     var dom = new DominatorTree(getMethod().getEntryBlock());
     // maps (toBeReplaced -> replacer)
-    var copiesMap = new HashMap<IrRegister, IrValue>();
+    var copiesMap = new HashMap<IrSsaRegister, IrValue>();
 
     for (BasicBlock basicBlock : getBasicBlocksList()) {
       for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
         if (storeInstruction instanceof CopyInstruction copyInstruction) {
           var replacer = copyInstruction.getValue();
           var toBeReplaced = copyInstruction.getDestination();
-          if (toBeReplaced instanceof IrRegister irRegisterToBeReplaced) {
+          if (toBeReplaced instanceof IrSsaRegister irSsaRegisterToBeReplaced) {
             checkState(
-                !copiesMap.containsKey(irRegisterToBeReplaced),
+                !copiesMap.containsKey(irSsaRegisterToBeReplaced),
                 "CopyPropagation : Invalid SSA form: " + toBeReplaced + " found twice in program"
             );
             copiesMap.put(
-                irRegisterToBeReplaced,
+                irSsaRegisterToBeReplaced,
                 replacer
             );
             // as a quick optimization, we could delete this storeInstruction here
@@ -60,7 +60,7 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass {
     for (BasicBlock basicBlock : dom.preorder()) {
       for (Instruction instruction : basicBlock.getNonPhiInstructions()) {
         if (instruction instanceof HasOperand hasOperand) {
-          for (IrRegister toBeReplaced : hasOperand.getOperandVirtualRegisters()) {
+          for (IrSsaRegister toBeReplaced : hasOperand.genOperandIrValuesFiltered(IrSsaRegister.class)) {
             if (copiesMap.containsKey(toBeReplaced)) {
               var before = hasOperand.copy();
               var replacer = copiesMap.get(toBeReplaced);
@@ -68,7 +68,7 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass {
               // for instance, lets imagine we have a = k
               // it possible that our copies map has y `replaces` k, and x `replaces` y and $0 `replaces` x
               // we want to eventually propagate so that a = $0
-              while (replacer instanceof IrRegister && copiesMap.containsKey((IrRegister) replacer)) {
+              while (replacer instanceof IrSsaRegister && copiesMap.containsKey((IrSsaRegister) replacer)) {
                 replacer = copiesMap.get(replacer);
               }
               hasOperand.replaceValue(
@@ -98,7 +98,6 @@ public class CopyPropagationSsaPass extends SsaOptimizationPass {
   @Override
   public boolean runFunctionPass() {
     resetForPass();
-    resultList.clear();
     var changesHappened = performGlobalCopyPropagation();
     SSA.verifySsa(method);
     return changesHappened;

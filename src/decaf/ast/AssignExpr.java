@@ -1,7 +1,5 @@
 package decaf.ast;
 
-import decaf.codegen.CodegenAstVisitor;
-import decaf.codegen.names.IrAssignableValue;
 import decaf.grammar.TokenPosition;
 
 public abstract class AssignExpr extends AST {
@@ -19,7 +17,4 @@ public abstract class AssignExpr extends AST {
     }
 
     public abstract String getOperator();
-
-    public abstract <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignableValue resultLocation);
-
 }

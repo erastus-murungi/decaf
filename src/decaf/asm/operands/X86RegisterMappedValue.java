@@ -11,7 +11,7 @@ import java.util.Objects;
 import decaf.asm.X86Register;
 import decaf.codegen.names.IrValue;
 
-public class X86RegisterMappedValue extends X86Value {
+public class X86RegisterMappedValue extends X86MappedValue {
     @NotNull X86Register x86Register;
 
     public X86RegisterMappedValue(X86Register x86Register, @Nullable IrValue virtualRegister) {

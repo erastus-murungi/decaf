@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 import decaf.codegen.codes.Instruction;
 import decaf.codegen.names.IrValue;
-import decaf.codegen.names.IrRegister;
+import decaf.codegen.names.IrSsaRegister;
 
 public class InstructionList extends ArrayList<Instruction> {
     private IrValue place;
@@ -43,7 +43,7 @@ public class InstructionList extends ArrayList<Instruction> {
         return instructionList;
     }
 
-    public static InstructionList of(Instruction instruction, IrRegister place) {
+    public static InstructionList of(Instruction instruction, IrSsaRegister place) {
         var instructionList = new InstructionList(place);
         instructionList.add(instruction);
         return instructionList;

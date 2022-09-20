@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.Optional;
 
 import decaf.asm.AsmWriter;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrAssignable;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.names.IrMemoryAddress;
-import decaf.codegen.names.IrRegister;
 import decaf.common.Operators;
 import decaf.ast.AST;
 import decaf.codegen.names.IrValue;
@@ -25,14 +25,14 @@ public class BinaryInstruction extends StoreInstruction {
     public IrValue sndOperand;
 
 
-    public BinaryInstruction(IrAssignableValue result, IrValue fstOperand, String operator, IrValue sndOperand, String comment, AST source) {
+    public BinaryInstruction(IrAssignable result, IrValue fstOperand, String operator, IrValue sndOperand, String comment, AST source) {
         super(result, source, comment);
         this.fstOperand = fstOperand;
         this.operator = operator;
         this.sndOperand = sndOperand;
     }
 
-    public BinaryInstruction(IrRegister result, IrValue fstOperand, String operator, IrValue sndOperand) {
+    public BinaryInstruction(IrSsaRegister result, IrValue fstOperand, String operator, IrValue sndOperand) {
         this(result, fstOperand, operator, sndOperand, String.format("%s = %s %s %s", result, fstOperand, operator, sndOperand), null);
     }
 
@@ -42,13 +42,15 @@ public class BinaryInstruction extends StoreInstruction {
     }
 
     @Override
-    public List<IrValue> getAllValues() {
+    public List<IrValue> genIrValuesSurface() {
         return List.of(getDestination(), fstOperand, sndOperand);
     }
 
     @Override
     public Instruction copy() {
-        return new BinaryInstruction(getDestination(), fstOperand, operator, sndOperand, getComment().orElse(null), source);
+        return new BinaryInstruction(getDestination(), fstOperand, operator, sndOperand, getComment().orElse(null),
+                                     getSource()
+        );
     }
 
     @Override
@@ -77,7 +79,7 @@ public class BinaryInstruction extends StoreInstruction {
     }
 
     @Override
-    public List<IrValue> getOperandValues() {
+    public List<IrValue> genOperandIrValuesSurface() {
         return List.of(fstOperand, sndOperand);
     }
 
@@ -90,8 +92,8 @@ public class BinaryInstruction extends StoreInstruction {
 
     public String syntaxHighlightedToString() {
         if (getComment().isPresent())
-            return String.format("%s%s: %s = %s %s, %s %s%s", DOUBLE_INDENT, getDestination(), getDestination().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand, sndOperand, DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s: %s = %s %s, %s", DOUBLE_INDENT, getDestination(), getDestination().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand, sndOperand);
+            return String.format("%s%s %s: %s = %s %s, %s %s%s", DOUBLE_INDENT, getPrefixSyntaxHighlighted(), getDestination(), getDestination().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand, sndOperand, DOUBLE_INDENT, " # " + getComment().get());
+        return String.format("%s%s %s: %s = %s %s, %s", DOUBLE_INDENT, getDestination(), getPrefixSyntaxHighlighted(), getDestination().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand, sndOperand);
     }
 
 }

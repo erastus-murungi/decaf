@@ -17,7 +17,7 @@ public class MethodEnd extends Instruction {
     }
 
     public String methodName() {
-        return ((MethodDefinition) source).methodName.getLabel();
+        return ((MethodDefinition) getSource()).methodName.getLabel();
     }
 
     @Override
@@ -26,13 +26,13 @@ public class MethodEnd extends Instruction {
     }
 
     @Override
-    public List<IrValue> getAllValues() {
+    public List<IrValue> genIrValuesSurface() {
         return Collections.emptyList();
     }
 
     @Override
     public Instruction copy() {
-        return new MethodEnd((MethodDefinition) source);
+        return new MethodEnd((MethodDefinition) getSource());
     }
 
     @Override

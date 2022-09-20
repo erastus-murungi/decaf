@@ -26,7 +26,7 @@ public class FunctionCallNoResult extends HasOperand implements FunctionCall {
 
     @Override
     public MethodCall getMethod() {
-        return (MethodCall) source;
+        return (MethodCall) getSource();
     }
 
     @Override
@@ -35,7 +35,7 @@ public class FunctionCallNoResult extends HasOperand implements FunctionCall {
     }
 
     @Override
-    public List<IrValue> getAllValues() {
+    public List<IrValue> genIrValuesSurface() {
         return new ArrayList<>(arguments);
     }
 
@@ -45,16 +45,16 @@ public class FunctionCallNoResult extends HasOperand implements FunctionCall {
     }
 
     @Override
-    public List<IrValue> getOperandValues() {
+    public List<IrValue> genOperandIrValuesSurface() {
         return new ArrayList<>(arguments);
     }
 
-    public boolean replaceValue(IrValue oldName, IrValue newName) {
+    public boolean replaceValue(IrValue oldVariable, IrValue replacer) {
         var replaced = false;
         int i = 0;
         for (IrValue irValue : arguments) {
-            if (irValue.equals(oldName)) {
-                arguments.set(i, newName);
+            if (irValue.equals(oldVariable)) {
+                arguments.set(i, replacer);
                 replaced = true;
             }
             i += 1;
@@ -77,6 +77,6 @@ public class FunctionCallNoResult extends HasOperand implements FunctionCall {
 
     @Override
     public Instruction copy() {
-        return new FunctionCallNoResult((MethodCall) source, arguments, getComment().orElse(null));
+        return new FunctionCallNoResult((MethodCall) getSource(), arguments, getComment().orElse(null));
     }
 }

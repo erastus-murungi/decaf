@@ -11,6 +11,7 @@ import decaf.codegen.InstructionList;
 import decaf.codegen.codes.HasOperand;
 import decaf.codegen.codes.StoreInstruction;
 import decaf.codegen.names.IrMemoryAddress;
+import decaf.codegen.names.IrValuePredicates;
 import decaf.dataflow.analyses.LiveVariableAnalysis;
 import decaf.cfg.BasicBlock;
 import decaf.codegen.codes.FunctionCall;
@@ -50,10 +51,8 @@ public class DeadStoreEliminationPass extends OptimizationPass {
      * @return true if a threeAddressCode has a right-hand side and all the operands on the right-hand side are constants
      */
     private boolean allOperandNamesConstant(Instruction instruction) {
-        if (instruction instanceof HasOperand)
-            return ((HasOperand) instruction).getOperandValues()
-                    .stream()
-                    .allMatch(this::isConstant);
+        if (instruction instanceof HasOperand hasOperand)
+            return hasOperand.genOperandIrValues().stream().allMatch(IrValuePredicates.isConstant());
         return false;
     }
 
@@ -80,11 +79,11 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                 continue;
 
             if (possibleStoreInstruction instanceof HasOperand) {
-                if (((HasOperand) possibleStoreInstruction).getOperandValues()
+                if (((HasOperand) possibleStoreInstruction).genOperandIrValues()
                         .stream()
                         .anyMatch(abstractName -> abstractName instanceof IrMemoryAddress)) {
                     instructionListToUpdate.add(possibleStoreInstruction);
-                    namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandValues());
+                    namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).genOperandIrValues());
                     continue;
                 }
             }
@@ -102,7 +101,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                     if ((globals().contains(store) &&
                             (!method.isMain()) || anySubsequentFunctionCalls(copyOfInstructionList.subList(0, copyOfInstructionList.indexOf(possibleStoreInstruction))))
                             || allOperandNamesConstant(possibleStoreInstruction)) {
-                        namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandValues());
+                        namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).genOperandIrValues());
                         instructionListToUpdate.add(possibleStoreInstruction);
                         continue;
                     }
@@ -115,7 +114,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                 }
             }
             if (possibleStoreInstruction instanceof HasOperand)
-                namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).getOperandValues());
+                namesUsedSoFar.addAll(((HasOperand) possibleStoreInstruction).genOperandIrValues());
 
             instructionListToUpdate.add(possibleStoreInstruction);
         }
@@ -140,7 +139,7 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                     instructionListToUpdate.add(possibleStoreInstruction);
                     continue;
                 }
-                if (((HasOperand) possibleStoreInstruction).getOperandValues()
+                if (((HasOperand) possibleStoreInstruction).genOperandIrValues()
                         .stream()
                         .anyMatch(abstractName -> abstractName instanceof IrMemoryAddress)) {
                     instructionListToUpdate.add(possibleStoreInstruction);
@@ -216,13 +215,13 @@ public class DeadStoreEliminationPass extends OptimizationPass {
                      *  Without doing so we report that a = 0 is never used before the reassignment at line 5
                      */
                     var storeInstructionWithOperand = ((HasOperand) candidateStoreInstruction);
-                    usedNames.addAll(storeInstructionWithOperand.getOperandValues());
+                    usedNames.addAll(storeInstructionWithOperand.genOperandIrValues());
                     break;
                 }
             }
             // add all names on the right-hand side;
             if (possibleStoreInstruction instanceof HasOperand storeInstructionWithOperand) {
-                usedNames.addAll(storeInstructionWithOperand.getOperandValues());
+                usedNames.addAll(storeInstructionWithOperand.genOperandIrValues());
             }
         }
         return usedNames.contains(storeInstruction.getDestination());

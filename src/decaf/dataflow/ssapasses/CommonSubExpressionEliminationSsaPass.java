@@ -10,7 +10,7 @@ import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.Method;
 import decaf.codegen.codes.StoreInstruction;
 import decaf.codegen.codes.UnaryInstruction;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.dataflow.OptimizationContext;
 import decaf.dataflow.dominator.DominatorTree;
 import decaf.dataflow.operand.Operand;
@@ -41,7 +41,7 @@ public class CommonSubExpressionEliminationSsaPass extends SsaOptimizationPass {
   private void performReplacement(
       StoreInstruction storeInstruction,
       InstructionList instructionList,
-      IrAssignableValue expressionStoreLocation,
+      IrSsaRegister expressionStoreLocation,
       Integer indexOfInstructionToBeReplaced
   ) {
 
@@ -79,7 +79,7 @@ public class CommonSubExpressionEliminationSsaPass extends SsaOptimizationPass {
             performReplacement(
                 storeInstruction,
                 instructionList,
-                Y.getDestination(),
+                (IrSsaRegister) Y.getDestination(),
                 indexOfInstruction
             );
             changesHappened = true;

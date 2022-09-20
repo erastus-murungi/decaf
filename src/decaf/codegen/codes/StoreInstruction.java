@@ -4,39 +4,42 @@ import java.util.Optional;
 import java.util.Set;
 
 import decaf.ast.AST;
-import decaf.codegen.names.IrGlobal;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrAssignable;
+import decaf.codegen.names.IrMemoryAddress;
+import decaf.codegen.names.IrSsaRegister;
+import decaf.codegen.names.IrValue;
+import decaf.common.Utils;
 import decaf.dataflow.operand.Operand;
 
 public abstract class StoreInstruction extends HasOperand implements Cloneable {
-    protected IrAssignableValue destination;
+    protected IrAssignable destination;
 
-    public StoreInstruction(IrAssignableValue destination, AST source) {
+    public StoreInstruction(IrAssignable destination, AST source) {
         super(source);
         this.destination = destination;
     }
 
-    public StoreInstruction(IrAssignableValue destination) {
+    public StoreInstruction(IrAssignable destination) {
         super();
         this.destination = destination;
     }
 
-    public StoreInstruction(IrAssignableValue destination, AST source, String comment) {
+    public StoreInstruction(IrAssignable destination, AST source, String comment) {
         super(source, comment);
         this.destination = destination;
     }
 
-    public IrAssignableValue getDestination() {
+    public IrAssignable getDestination() {
         return destination;
     }
 
-    public void setDestination(IrAssignableValue dst) {
+    public void setDestination(IrAssignable dst) {
         this.destination = dst;
     }
 
     public abstract Optional<Operand> getOperandNoArray();
 
-    public Optional<Operand> getOperandNoArrayNoGlobals(Set<IrGlobal> globals) {
+    public Optional<Operand> getOperandNoArrayNoGlobals(Set<IrValue> globals) {
         Optional<Operand> operand = getOperandNoArray();
         if (operand.isPresent()) {
             if (operand.get().getNames().stream().anyMatch(globals::contains))
@@ -55,5 +58,17 @@ public abstract class StoreInstruction extends HasOperand implements Cloneable {
         } catch (CloneNotSupportedException e) {
             throw new AssertionError();
         }
+    }
+
+    public String getPrefix() {
+        if (getDestination() instanceof IrMemoryAddress) {
+            return "setmem";
+        } else {
+            return "setreg";
+        }
+    }
+
+    public String getPrefixSyntaxHighlighted() {
+        return Utils.coloredPrint(getPrefix(), Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
     }
 }

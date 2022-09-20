@@ -2,7 +2,7 @@ package decaf.ast;
 
 
 import decaf.codegen.CodegenAstVisitor;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrAssignable;
 import decaf.grammar.DecafScanner;
 import decaf.grammar.TokenPosition;
 import decaf.ir.AstVisitor;
@@ -15,20 +15,14 @@ public class ArithmeticOperator extends BinOperator {
 
     @Override
     public String opRep() {
-        switch (label) {
-            case DecafScanner.PLUS:
-                return "Add";
-            case DecafScanner.MINUS:
-                return "Sub";
-            case DecafScanner.MULTIPLY:
-                return "Multiply";
-            case DecafScanner.DIVIDE:
-                return "Divide";
-            case DecafScanner.MOD:
-                return "Mod";
-            default:
-                throw new IllegalArgumentException("please register a display string for: " + label);
-        }
+        return switch (label) {
+            case DecafScanner.PLUS -> "Add";
+            case DecafScanner.MINUS -> "Sub";
+            case DecafScanner.MULTIPLY -> "Multiply";
+            case DecafScanner.DIVIDE -> "Divide";
+            case DecafScanner.MOD -> "Mod";
+            default -> throw new IllegalArgumentException("please register a display string for: " + label);
+        };
     }
 
     @Override
@@ -43,23 +37,17 @@ public class ArithmeticOperator extends BinOperator {
 
     @Override
     public String getSourceCode() {
-        switch (label) {
-            case DecafScanner.PLUS:
-                return "+";
-            case DecafScanner.MINUS:
-                return "-";
-            case DecafScanner.MULTIPLY:
-                return "*";
-            case DecafScanner.DIVIDE:
-                return "/";
-            case DecafScanner.MOD:
-                return "%";
-            default:
-                throw new IllegalArgumentException("please register a display string for: " + label);
-        }
+        return switch (label) {
+            case DecafScanner.PLUS -> "+";
+            case DecafScanner.MINUS -> "-";
+            case DecafScanner.MULTIPLY -> "*";
+            case DecafScanner.DIVIDE -> "/";
+            case DecafScanner.MOD -> "%";
+            default -> throw new IllegalArgumentException("please register a display string for: " + label);
+        };
     }
 
-    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignableValue resultLocation) {
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignable resultLocation) {
         return null;
     }
 }

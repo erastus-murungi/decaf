@@ -10,7 +10,7 @@ import java.util.Objects;
 import decaf.asm.X86Register;
 import decaf.codegen.names.IrValue;
 
-public class X86StackMappedValue extends X86Value {
+public class X86StackMappedValue extends X86MappedValue {
     @NotNull private final X86Register baseReg;
     private final int offset;
 

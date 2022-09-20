@@ -20,13 +20,13 @@ public class PhiOperand extends Operand {
 
     @Override
     public boolean contains(IrValue comp) {
-        return phi.getOperandValues()
+        return phi.genOperandIrValuesSurface()
                 .contains(comp);
     }
 
     @Override
     public List<IrValue> getNames() {
-        return phi.getOperandValues();
+        return phi.genOperandIrValuesSurface();
     }
 
     @Override
@@ -42,11 +42,11 @@ public class PhiOperand extends Operand {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PhiOperand that = (PhiOperand) o;
-        return Objects.equals(getPhi().getOperandValues(), that.getPhi().getOperandValues());
+        return Objects.equals(getPhi().genOperandIrValuesSurface(), that.getPhi().genOperandIrValuesSurface());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getPhi().getOperandValues());
+        return Objects.hash(getPhi().genOperandIrValuesSurface());
     }
 }

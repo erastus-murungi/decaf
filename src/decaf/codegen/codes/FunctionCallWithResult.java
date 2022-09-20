@@ -7,7 +7,8 @@ import java.util.Stack;
 import java.util.stream.Collectors;
 
 import decaf.asm.AsmWriter;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrAssignable;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.names.IrMemoryAddress;
 import decaf.common.Utils;
 import decaf.ast.MethodCall;
@@ -18,7 +19,7 @@ import decaf.dataflow.operand.Operand;
 public class FunctionCallWithResult extends StoreInstruction implements FunctionCall {
     private final Stack<IrValue> arguments;
 
-    public FunctionCallWithResult(MethodCall methodCall, IrAssignableValue resultLocation, Stack<IrValue> arguments, String comment) {
+    public FunctionCallWithResult(MethodCall methodCall, IrAssignable resultLocation, Stack<IrValue> arguments, String comment) {
         super(resultLocation, methodCall, comment);
         this.arguments = arguments;
     }
@@ -29,7 +30,7 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
 
     @Override
     public MethodCall getMethod() {
-        return (MethodCall) source;
+        return (MethodCall) getSource();
     }
 
     @Override
@@ -38,7 +39,7 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
     }
 
     @Override
-    public List<IrValue> getAllValues() {
+    public List<IrValue> genIrValuesSurface() {
         var args = new ArrayList<>(getArguments());
         args.add(getDestination());
         return args;
@@ -59,7 +60,7 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
 
     @Override
     public Instruction copy() {
-        return new FunctionCallWithResult((MethodCall) source, getDestination(), arguments, getComment().orElse(null));
+        return new FunctionCallWithResult((MethodCall) getSource(), getDestination(), arguments, getComment().orElse(null));
     }
 
     @Override
@@ -75,17 +76,17 @@ public class FunctionCallWithResult extends StoreInstruction implements Function
     }
 
     @Override
-    public List<IrValue> getOperandValues() {
+    public List<IrValue> genOperandIrValuesSurface() {
         return new ArrayList<>(arguments);
     }
 
     @Override
-    public boolean replaceValue(IrValue oldName, IrValue newName) {
+    public boolean replaceValue(IrValue oldVariable, IrValue replacer) {
         var replaced = false;
         int i = 0;
         for (IrValue irValue : arguments) {
-            if (irValue.equals(oldName)) {
-                arguments.set(i, newName);
+            if (irValue.equals(oldVariable)) {
+                arguments.set(i, replacer);
                 replaced = true;
             }
             i += 1;

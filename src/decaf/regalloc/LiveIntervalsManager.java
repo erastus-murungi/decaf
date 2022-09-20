@@ -22,10 +22,10 @@ import decaf.codegen.codes.HasOperand;
 import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.Method;
 import decaf.codegen.codes.StoreInstruction;
-import decaf.codegen.names.IrAssignableValue;
-import decaf.codegen.names.IrGlobal;
+import decaf.codegen.names.IrGlobalScalar;
 import decaf.codegen.names.IrGlobalArray;
 import decaf.codegen.names.IrMemoryAddress;
+import decaf.codegen.names.IrValuePredicates;
 import decaf.common.ProgramIr;
 import decaf.common.StronglyConnectedComponentsTarjan;
 import decaf.common.Utils;
@@ -70,7 +70,7 @@ public class LiveIntervalsManager {
     private static int findFirstDefSlot(InstructionList instructionList, IrValue variable) {
         int indexOfInstruction = 0;
         for (Instruction instruction : instructionList) {
-            if (instruction.getAllValues()
+            if (instruction.genIrValuesSurface()
                            .contains(variable)) break;
             indexOfInstruction++;
         }
@@ -92,27 +92,6 @@ public class LiveIntervalsManager {
         var firstCopy = new HashSet<>(first);
         firstCopy.addAll(second);
         return firstCopy;
-    }
-
-    @NotNull private Map<IrValue, LiveInterval> fixArrayBaseRegisters(@NotNull Map<IrValue, LiveInterval> valueLiveIntervalMap) {
-        var memoryRegisters = valueLiveIntervalMap.values()
-                                                  .stream()
-                                                  .filter(liveInterval -> liveInterval.irAssignableValue() instanceof IrMemoryAddress)
-                                                  .collect(Collectors.groupingBy(liveInterval -> ((IrMemoryAddress) liveInterval.irAssignableValue()).getBaseAddress()));
-        for (var baseAddress : memoryRegisters.keySet()) {
-            var newEndpoint = memoryRegisters.get(baseAddress)
-                                             .stream()
-                                             .mapToInt(LiveInterval::endPoint)
-                                             .max()
-                                             .orElseThrow(() -> new IllegalStateException(memoryRegisters.get(baseAddress)
-                                                                                                         .toString()));
-            if (baseAddress instanceof IrGlobalArray) {
-                valueLiveIntervalMap.put(baseAddress,
-                    valueLiveIntervalMap.get(baseAddress)
-                                        .updateEndpoint(newEndpoint));
-            }
-        }
-        return valueLiveIntervalMap;
     }
 
     @NotNull
@@ -158,7 +137,7 @@ public class LiveIntervalsManager {
 
     private Set<IrValue> ref(Instruction instruction) {
         if (instruction instanceof HasOperand hasOperand)
-            return new HashSet<>(hasOperand.getAllRegisterAllocatableValues());
+            return new HashSet<>(hasOperand.genIrValuesFiltered(IrValuePredicates.isRegisterAllocatable()));
         return Collections.emptySet();
     }
 
@@ -211,7 +190,7 @@ public class LiveIntervalsManager {
             var liveInterval = new LiveInterval(variable, defSlot, lastUseSlot, instructionList, method);
             varToLiveInterval.put(variable, liveInterval);
         }
-        methodToMappingOfValuesToLiveIntervals.put(method, fixArrayBaseRegisters(varToLiveInterval));
+        methodToMappingOfValuesToLiveIntervals.put(method, varToLiveInterval);
         return new ArrayList<>(methodToMappingOfValuesToLiveIntervals.get(method).values());
     }
 
@@ -223,11 +202,11 @@ public class LiveIntervalsManager {
 
     private int findLastUseSlot(InstructionList instructionList, IrValue irValue) {
         int loc = instructionList.size() - 1;
-        if (irValue instanceof IrMemoryAddress || irValue instanceof IrGlobal) {
+        if (irValue instanceof IrMemoryAddress || irValue instanceof IrGlobalScalar || irValue instanceof IrGlobalArray) {
             for (; loc >= 0; loc--) {
                 var instruction = instructionList.get(loc);
-                if (instruction.getAllRegisterAllocatableValues()
-                               .contains((IrAssignableValue) irValue)) return loc + 1;
+                if (instruction.genIrValuesFiltered(IrValuePredicates.isRegisterAllocatable())
+                               .contains(irValue)) return loc + 1;
             }
             throw new IllegalStateException();
         } else {
@@ -256,7 +235,7 @@ public class LiveIntervalsManager {
                                            .orElseThrow()
                                            .instructionList();
         var allVariables = liveIntervals.stream()
-                                        .map(LiveInterval::irAssignableValue)
+                                        .map(LiveInterval::irSsaRegister)
                                         .distinct()
                                         .toList();
         Map<IrValue, Integer> spaces = new HashMap<>();

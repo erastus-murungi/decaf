@@ -4,9 +4,12 @@ import java.util.Objects;
 
 import decaf.ast.Type;
 
-public class IrGlobalScalar extends IrGlobal {
+public class IrGlobalScalar extends IrAssignable implements IrGlobal {
     public IrGlobalScalar(String label, Type type) {
-        super(label, type);
+        super(
+            type,
+            label
+        );
     }
 
     @Override

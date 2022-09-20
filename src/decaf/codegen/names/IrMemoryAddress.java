@@ -1,46 +1,66 @@
 package decaf.codegen.names;
 
-import org.jetbrains.annotations.NotNull;
-
+import java.util.List;
 import java.util.Objects;
 
 import decaf.ast.Type;
 
-public class IrMemoryAddress extends IrAssignableValue {
-    private final int variableIndex;
-    private final IrValue baseAddress;
-    private final IrValue index;
+public class IrMemoryAddress extends IrRegister implements IrRegisterAllocatable {
+  IrMemoryAddress(
+      String label,
+      Type type
+  ) {
+    super(
+        type,
+        label
+    );
+  }
 
-    public IrMemoryAddress(@NotNull Type type, int variableIndex, @NotNull IrValue baseAddress, @NotNull IrValue index) {
-        super(type, String.format("*%s", variableIndex));
-        this.variableIndex = variableIndex;
-        this.baseAddress = baseAddress;
-        this.index = index;
-    }
+  public IrMemoryAddress(
+      long index,
+      Type type
+  ) {
+    this(
+        String.format(
+            "%%%d",
+            index
+        ),
+        type
+    );
+  }
 
-    @Override
-    public IrMemoryAddress copy() {
-        return new IrMemoryAddress(getType(), variableIndex, baseAddress, index);
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(getLabel());
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof IrMemoryAddress that)) return false;
-        if (!super.equals(o)) return false;
-        return variableIndex == that.variableIndex;
-    }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof IrMemoryAddress irMemoryAddress)) return false;
+    if (!super.equals(o)) return false;
+    return Objects.equals(
+        getLabel(),
+        irMemoryAddress.getLabel()
+    );
+  }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(variableIndex);
-    }
+  @Override
+  public List<IrValue> get() {
+    return List.of(this);
+  }
 
-    public IrValue getBaseAddress() {
-        return baseAddress;
-    }
 
-    public IrValue getIndex() {
-        return index;
-    }
+  @Override
+  public String toString() {
+    return "*" + super.toString();
+  }
+
+  @Override
+  public IrMemoryAddress copy() {
+    return new IrMemoryAddress(
+        label,
+        type
+    );
+  }
 }

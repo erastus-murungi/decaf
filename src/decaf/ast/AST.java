@@ -3,7 +3,7 @@ package decaf.ast;
 import java.util.List;
 
 import decaf.codegen.CodegenAstVisitor;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrAssignable;
 import decaf.common.Pair;
 import decaf.ir.AstVisitor;
 import decaf.symboltable.SymbolTable;
@@ -17,7 +17,7 @@ public abstract class AST {
 
     public abstract <T> T accept(AstVisitor<T> ASTVisitor, SymbolTable currentSymbolTable);
 
-    public abstract <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignableValue resultLocation);
+    public abstract <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignable resultLocation);
 
     @Override
     public String toString() {

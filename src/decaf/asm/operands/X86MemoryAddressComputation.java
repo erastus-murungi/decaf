@@ -11,11 +11,11 @@ import decaf.common.Utils;
 import decaf.asm.X86Register;
 import decaf.codegen.names.IrIntegerConstant;
 
-public class X86MemoryAddressValue extends X86Value {
+public class X86MemoryAddressComputation extends X86Value {
   private final X86Value base;
   private final X86Value index;
 
-  public X86MemoryAddressValue(
+  public X86MemoryAddressComputation(
       @NotNull X86Value base,
       @NotNull X86Value index
   ) {

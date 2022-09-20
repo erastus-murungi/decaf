@@ -19,7 +19,8 @@ import decaf.asm.instructions.X64Instruction;
 import decaf.asm.instructions.X64NoOperandInstruction;
 import decaf.asm.instructions.X64UnaryInstruction;
 import decaf.asm.instructions.X86MetaData;
-import decaf.asm.operands.X86MemoryAddressValue;
+import decaf.asm.operands.X86MemoryAddressComputation;
+import decaf.asm.operands.X86MemoryAddressInRegister;
 import decaf.asm.operands.X86StackMappedValue;
 import decaf.asm.operands.X86Value;
 import decaf.asm.types.X64BinaryInstructionType;
@@ -86,8 +87,10 @@ public class X86AsmWriter implements AsmWriter {
   ) {
     this.registerAllocator = registerAllocator;
     this.programIr = programIr;
-    this.x86ValueResolver = new X86ValueResolver(programIr,
-        registerAllocator);
+    this.x86ValueResolver = new X86ValueResolver(
+        programIr,
+        registerAllocator
+    );
     if (CompilationContext.isDebugModeOn()) {
       System.out.println(registerAllocator.getVariableToRegisterMap());
     }
@@ -96,17 +99,11 @@ public class X86AsmWriter implements AsmWriter {
                              .get(0);
   }
 
-  private X86Value resolveIrValue(
-      @NotNull IrValue irValue,
-      boolean updateMethodX86InstructionList
-  ) {
-    return x86ValueResolver.resolveIrValue(irValue,
-        updateMethodX86InstructionList);
-  }
-
   private X86Value resolveIrValue(@NotNull IrValue irValue) {
-    return x86ValueResolver.resolveIrValue(irValue,
-        true);
+    return x86ValueResolver.resolveIrValue(
+        irValue,
+        true
+    );
   }
 
   private void emit() {
@@ -122,10 +119,12 @@ public class X86AsmWriter implements AsmWriter {
       if (instruction instanceof StringConstantAllocation stringConstantAllocation) {
         prologue.add(new X86MetaData(stringConstantAllocation.getASM()));
       } else if (instruction instanceof GlobalAllocation globalAllocation) {
-        prologue.add(new X86MetaData(String.format(".comm %s, %s, %s",
+        prologue.add(new X86MetaData(String.format(
+            ".comm %s, %s, %s",
             globalAllocation.getValue(),
             globalAllocation.getSize(),
-            64)));
+            64
+        )));
       } else {
         throw new IllegalStateException();
       }
@@ -146,14 +145,18 @@ public class X86AsmWriter implements AsmWriter {
   private X86Method emitMethod(@NotNull Method method) {
     currentMethod = method;
     x86Method = new X86Method();
-    x86ValueResolver.prepareForMethod(currentMethod,
-        x86Method);
+    x86ValueResolver.prepareForMethod(
+        currentMethod,
+        x86Method
+    );
     for (var instructionList : TraceScheduler.getInstructionTrace(method)) {
       if (!instructionList.isEntry() && !instructionList.getLabel()
                                                         .equals("UNSET")) {
         var label = instructionList.getLabel();
-        x86Method.add(new X86MetaData(String.format(".%s:",
-            label)));
+        x86Method.add(new X86MetaData(String.format(
+            ".%s:",
+            label
+        )));
       }
       for (var instruction : instructionList) {
         currentInstruction = instruction;
@@ -174,18 +177,23 @@ public class X86AsmWriter implements AsmWriter {
   private void calleeSave() {
     var toSave = X86Register.calleeSaved;
     for (var register : toSave) {
-      x86Method.addAtIndex(asmWriterContext.getLocationOfSubqInst(),
+      x86Method.addAtIndex(
+          asmWriterContext.getLocationOfSubqInst(),
           new X64UnaryInstruction(
               X64UnaryInstructionType.pushq,
-              X86RegisterMappedValue.unassigned(register)));
+              X86RegisterMappedValue.unassigned(register)
+          )
+      );
     }
   }
 
   private void calleeRestore() {
     var toRestore = new ArrayList<>(X86Register.calleeSaved);
     for (var register : toRestore) {
-      x86Method.addLine(new X64UnaryInstruction(X64UnaryInstructionType.popq,
-          X86RegisterMappedValue.unassigned(register)));
+      x86Method.addLine(new X64UnaryInstruction(
+          X64UnaryInstructionType.popq,
+          X86RegisterMappedValue.unassigned(register)
+      ));
     }
   }
 
@@ -199,23 +207,34 @@ public class X86AsmWriter implements AsmWriter {
       var dst = x86ValueResolver.resolveInitialArgumentLocation(parameter);
 
       if (parameterIndex < N_ARG_REGISTERS) {
-        var src = new X86RegisterMappedValue(X86Register.argumentRegisters.get(parameterIndex),
-            parameter);
+        var src = new X86RegisterMappedValue(
+            X86Register.argumentRegisters.get(parameterIndex),
+            parameter
+        );
         x86Method.addLine(new X64BinaryInstruction(
             X64BinaryInstructionType.movq,
             src,
-            dst));
+            dst
+        ));
       } else {
-        var src = new X86StackMappedValue(X86Register.RBP,
-                                          (parameterIndex - 5) * Utils.WORD_SIZE + 8,
-                                          parameter);
-        x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+        var src = new X86StackMappedValue(
+            X86Register.RBP,
+            (parameterIndex - 5) * Utils.WORD_SIZE + 8,
+            parameter
+        );
+        x86Method.addLine(new X64BinaryInstruction(
+            X64BinaryInstructionType.movq,
             src,
-            new X86RegisterMappedValue(COPY_TEMP_REGISTER,
-                parameter)));
-        x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+            new X86RegisterMappedValue(
+                COPY_TEMP_REGISTER,
+                parameter
+            )
+        ));
+        x86Method.addLine(new X64BinaryInstruction(
+            X64BinaryInstructionType.movq,
             X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER),
-            dst));
+            dst
+        ));
       }
     }
     for (int parameterIndex = 0; parameterIndex < method.getParameterNames()
@@ -230,32 +249,44 @@ public class X86AsmWriter implements AsmWriter {
 
   private void callerRestore(@Nullable X86Value returnAddressRegister) {
     var registerMapping = registerAllocator.getMethodToLiveRegistersInfo()
-                                           .getOrDefault(currentMethod,
-                                               Collections.emptyMap())
-                                           .getOrDefault(currentInstruction,
-                                               Collections.emptySet());
+                                           .getOrDefault(
+                                               currentMethod,
+                                               Collections.emptyMap()
+                                           )
+                                           .getOrDefault(
+                                               currentInstruction,
+                                               Collections.emptySet()
+                                           );
     var toRestore = registerMapping.stream()
                                    .filter(X86Register.callerSaved::contains)
                                    .toList();
     for (var x64Register : toRestore) {
       if (x64Register.equals(X86Register.STACK)) continue;
       var regOperand = X86RegisterMappedValue.unassigned(x64Register);
-      if (!Objects.equals(returnAddressRegister,
-          regOperand)) {
+      if (!Objects.equals(
+          returnAddressRegister,
+          regOperand
+      )) {
         var location = resolveNextStackLocation(regOperand);
-        x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+        x86Method.addLine(new X64BinaryInstruction(
+            X64BinaryInstructionType.movq,
             location,
-            regOperand));
+            regOperand
+        ));
       }
     }
   }
 
   private void callerSave(@Nullable X86Value returnAddressRegister) {
     var registerMapping = registerAllocator.getMethodToLiveRegistersInfo()
-                                           .getOrDefault(currentMethod,
-                                               Collections.emptyMap())
-                                           .getOrDefault(currentInstruction,
-                                               Collections.emptySet());
+                                           .getOrDefault(
+                                               currentMethod,
+                                               Collections.emptyMap()
+                                           )
+                                           .getOrDefault(
+                                               currentInstruction,
+                                               Collections.emptySet()
+                                           );
     var toSave = registerMapping.stream()
                                 .filter(X86Register.callerSaved::contains)
                                 .toList();
@@ -263,13 +294,19 @@ public class X86AsmWriter implements AsmWriter {
     for (var x64Register : toSave) {
       if (x64Register.equals(X86Register.STACK)) continue;
       var regOperand = X86RegisterMappedValue.unassigned(x64Register);
-      if (!Objects.equals(returnAddressRegister,
-          regOperand)) {
+      if (!Objects.equals(
+          returnAddressRegister,
+          regOperand
+      )) {
         var location = resolveNextStackLocation(regOperand);
-        x86Method.addAtIndex(startIndex,
-            new X64BinaryInstruction(X64BinaryInstructionType.movq,
+        x86Method.addAtIndex(
+            startIndex,
+            new X64BinaryInstruction(
+                X64BinaryInstructionType.movq,
                 regOperand,
-                location));
+                location
+            )
+        );
       }
     }
   }
@@ -279,29 +316,40 @@ public class X86AsmWriter implements AsmWriter {
     var arguments = functionCall.getArguments();
     // we need to create stack space for the start arguments
     if (arguments.size() > N_ARG_REGISTERS) {
-      var stackSpaceForArgs = new X86ConstantValue(new IrIntegerConstant((long) Utils.roundUp16(
-          (arguments.size() - N_ARG_REGISTERS) * Utils.WORD_SIZE),
-                                                                         Type.Int));
-      x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.subq,
+      var stackSpaceForArgs = new X86ConstantValue(new IrIntegerConstant(
+          (long) Utils.roundUp16((arguments.size() - N_ARG_REGISTERS) * Utils.WORD_SIZE),
+          Type.Int
+      ));
+      x86Method.addLine(new X64BinaryInstruction(
+          X64BinaryInstructionType.subq,
           stackSpaceForArgs,
-          X86RegisterMappedValue.unassigned(X86Register.RSP)));
+          X86RegisterMappedValue.unassigned(X86Register.RSP)
+      ));
     }
     for (int stackArgumentIndex = N_ARG_REGISTERS; stackArgumentIndex < arguments.size(); stackArgumentIndex++) {
       var stackArgument = arguments.get(stackArgumentIndex);
-      final var dst = new X86StackMappedValue(X86Register.RSP,
-          (stackArgumentIndex - N_ARG_REGISTERS) * Utils.WORD_SIZE);
+      final var dst = new X86StackMappedValue(
+          X86Register.RSP,
+          (stackArgumentIndex - N_ARG_REGISTERS) * Utils.WORD_SIZE
+      );
       if (stackArgument instanceof IrStackArray || x86ValueResolver.isStackMappedIrValue(stackArgument) ||
           stackArgument instanceof IrMemoryAddress) {
-        x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+        x86Method.addLine(new X64BinaryInstruction(
+            X64BinaryInstructionType.movq,
             resolveIrValue(arguments.get(stackArgumentIndex)),
-            X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)));
-        x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+            X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)
+        ));
+        x86Method.addLine(new X64BinaryInstruction(
+            X64BinaryInstructionType.movq,
             X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER),
-            dst));
+            dst
+        ));
       } else {
-        x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+        x86Method.addLine(new X64BinaryInstruction(
+            X64BinaryInstructionType.movq,
             resolveIrValue(arguments.get(stackArgumentIndex)),
-            dst));
+            dst
+        ));
       }
     }
   }
@@ -319,17 +367,23 @@ public class X86AsmWriter implements AsmWriter {
       X86Value resolvedArgument,
       X86Value registerCache
   ) {
-    if (resolvedArgument instanceof X86MemoryAddressValue) {
-      x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+    if (resolvedArgument instanceof X86MemoryAddressComputation) {
+      x86Method.addLine(new X64BinaryInstruction(
+          X64BinaryInstructionType.movq,
           resolvedArgument,
-          X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)));
-      x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+          X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)
+      ));
+      x86Method.addLine(new X64BinaryInstruction(
+          X64BinaryInstructionType.movq,
           X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER),
-          registerCache));
+          registerCache
+      ));
     } else {
-      x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+      x86Method.addLine(new X64BinaryInstruction(
+          X64BinaryInstructionType.movq,
           resolvedArgument,
-          registerCache));
+          registerCache
+      ));
     }
   }
 
@@ -337,16 +391,24 @@ public class X86AsmWriter implements AsmWriter {
     emitStackArgumentsInstructions(functionCall);
 
     var registerArguments = new ArrayList<>(functionCall.getArguments()
-                                                        .subList(0,
-                                                            Math.min(N_ARG_REGISTERS,
-                                                                functionCall.getNumArguments())));
+                                                        .subList(
+                                                            0,
+                                                            Math.min(
+                                                                N_ARG_REGISTERS,
+                                                                functionCall.getNumArguments()
+                                                            )
+                                                        ));
     var resolvedArguments = new ArrayList<X86Value>();
     var prepInstructions = new ArrayList<List<X64Instruction>>();
-    var destinationRegisters = List.copyOf(X86Register.argumentRegisters.subList(0,
-        registerArguments.size()));
+    var destinationRegisters = List.copyOf(X86Register.argumentRegisters.subList(
+        0,
+        registerArguments.size()
+    ));
     for (var registerArgument : registerArguments) {
-      var resolvedX86Value = resolveIrValue(registerArgument,
-          false);
+      var resolvedX86Value = x86ValueResolver.resolveIrValue(
+          registerArgument,
+          false
+      );
       resolvedArguments.add(resolvedX86Value);
       prepInstructions.add(x86ValueResolver.getPreparatoryInstructions());
     }
@@ -357,48 +419,68 @@ public class X86AsmWriter implements AsmWriter {
       var resolvedArgument = resolvedArguments.get(indexOfArgument);
       var destinationRegister = destinationRegisters.get(indexOfArgument);
 
-      if (anyResolvedValuesUseRegister(resolvedArguments.subList(indexOfArgument,
-              resolvedArguments.size()),
-          destinationRegister)) {
+      if (anyResolvedValuesUseRegister(
+          resolvedArguments.subList(
+              indexOfArgument,
+              resolvedArguments.size()
+          ),
+          destinationRegister
+      )) {
         // we need to schedule the move
         x86Method.addLines(prepInstructions.get(indexOfArgument));
         addedPrep.add(indexOfArgument);
         var registerCache = x86ValueResolver.pushStackNoSave();
-        temp.put(indexOfArgument, registerCache);
-        moveToStack(resolvedArgument,
-            registerCache);
-        resolvedArguments.set(indexOfArgument,
-            registerCache);
+        temp.put(
+            indexOfArgument,
+            registerCache
+        );
+        moveToStack(
+            resolvedArgument,
+            registerCache
+        );
+        resolvedArguments.set(
+            indexOfArgument,
+            registerCache
+        );
       }
     }
     var tempSaved = new ArrayList<X64Instruction>();
     for (int indexOfArgument = resolvedArguments.size() - 1; indexOfArgument >= 0; indexOfArgument--) {
       var resolvedArgument = resolvedArguments.get(indexOfArgument);
-      var correctArgumentRegister = new X86RegisterMappedValue(destinationRegisters.get(indexOfArgument),
-          resolvedArgument.getValue());
+      var correctArgumentRegister = new X86RegisterMappedValue(
+          destinationRegisters.get(indexOfArgument),
+          resolvedArgument.getValue()
+      );
       if (temp.containsKey(indexOfArgument)) {
         if (resolvedArgument instanceof X86ConstantValue x86ConstantValue &&
             x86ConstantValue.getValue() instanceof IrStringConstant) {
-          tempSaved.add(new X64BinaryInstruction(X64BinaryInstructionType.leaq,
+          tempSaved.add(new X64BinaryInstruction(
+              X64BinaryInstructionType.leaq,
               resolvedArgument,
-              correctArgumentRegister));
+              correctArgumentRegister
+          ));
         } else {
-          tempSaved.add(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+          tempSaved.add(new X64BinaryInstruction(
+              X64BinaryInstructionType.movq,
               resolvedArgument,
-              correctArgumentRegister));
+              correctArgumentRegister
+          ));
         }
       } else {
-        if (!addedPrep.contains(indexOfArgument))
-          x86Method.addLines(prepInstructions.get(indexOfArgument));
+        if (!addedPrep.contains(indexOfArgument)) x86Method.addLines(prepInstructions.get(indexOfArgument));
         if (resolvedArgument instanceof X86ConstantValue x86ConstantValue &&
             x86ConstantValue.getValue() instanceof IrStringConstant) {
-          x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.leaq,
+          x86Method.addLine(new X64BinaryInstruction(
+              X64BinaryInstructionType.leaq,
               resolvedArgument,
-              correctArgumentRegister));
+              correctArgumentRegister
+          ));
         } else {
-          x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+          x86Method.addLine(new X64BinaryInstruction(
+              X64BinaryInstructionType.movq,
               resolvedArgument,
-              correctArgumentRegister));
+              correctArgumentRegister
+          ));
         }
       }
     }
@@ -410,20 +492,30 @@ public class X86AsmWriter implements AsmWriter {
     callerSave(resolveIrValue(functionCallWithResult.getDestination()));
     schedule(functionCallWithResult);
     if (functionCallWithResult.isImported()) {
-      x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.xorl,
+      x86Method.addLine(new X64BinaryInstruction(
+          X64BinaryInstructionType.xorl,
           X86RegisterMappedValue.unassigned(X86Register.EAX),
-          X86RegisterMappedValue.unassigned(X86Register.EAX)));
-      x86Method.addLine(new X64UnaryInstruction(X64UnaryInstructionType.callq,
-                   new X64CallOperand(functionCallWithResult)))
-               .addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+          X86RegisterMappedValue.unassigned(X86Register.EAX)
+      ));
+      x86Method.addLine(new X64UnaryInstruction(
+                   X64UnaryInstructionType.callq,
+                   new X64CallOperand(functionCallWithResult)
+               ))
+               .addLine(new X64BinaryInstruction(
+                   X64BinaryInstructionType.movq,
                    X86RegisterMappedValue.unassigned(X86Register.RAX),
-                   resolveIrValue(functionCallWithResult.getDestination())));
+                   resolveIrValue(functionCallWithResult.getDestination())
+               ));
     } else {
-      x86Method.addLine(new X64UnaryInstruction(X64UnaryInstructionType.callq,
-                   new X64CallOperand(functionCallWithResult)))
-               .addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+      x86Method.addLine(new X64UnaryInstruction(
+                   X64UnaryInstructionType.callq,
+                   new X64CallOperand(functionCallWithResult)
+               ))
+               .addLine(new X64BinaryInstruction(
+                   X64BinaryInstructionType.movq,
                    X86RegisterMappedValue.unassigned(X86Register.RAX),
-                   resolveIrValue(functionCallWithResult.getDestination())));
+                   resolveIrValue(functionCallWithResult.getDestination())
+               ));
     }
     restoreStack(functionCallWithResult);
     callerRestore(resolveIrValue(functionCallWithResult.getDestination()));
@@ -433,10 +525,14 @@ public class X86AsmWriter implements AsmWriter {
   private void restoreStack(@NotNull FunctionCall functionCall) {
     if (functionCall.getNumArguments() > N_ARG_REGISTERS) {
       long numStackArgs = functionCall.getNumArguments() - N_ARG_REGISTERS;
-      x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.addq,
-          new X86ConstantValue(new IrIntegerConstant((long) Utils.roundUp16((int) (numStackArgs * Utils.WORD_SIZE)),
-              Type.Int)),
-          X86RegisterMappedValue.unassigned(X86Register.RSP)));
+      x86Method.addLine(new X64BinaryInstruction(
+          X64BinaryInstructionType.addq,
+          new X86ConstantValue(new IrIntegerConstant(
+              (long) Utils.roundUp16((int) (numStackArgs * Utils.WORD_SIZE)),
+              Type.Int
+          )),
+          X86RegisterMappedValue.unassigned(X86Register.RSP)
+      ));
     }
   }
 
@@ -468,25 +564,37 @@ public class X86AsmWriter implements AsmWriter {
     var resolvedCondition = resolveIrValue(conditionalBranch.getCondition());
     if (asmWriterContext.getLastComparisonOperator() == null) {
       if (conditionalBranch.getCondition() instanceof IrIntegerConstant) {
-        x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+        x86Method.addLine(new X64BinaryInstruction(
+                     X64BinaryInstructionType.movq,
                      resolvedCondition,
-                     X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)))
-                 .addLine(new X64BinaryInstruction(X64BinaryInstructionType.cmpq,
+                     X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)
+                 ))
+                 .addLine(new X64BinaryInstruction(
+                     X64BinaryInstructionType.cmpq,
                      new X86ConstantValue(IrIntegerConstant.zero()),
-                     X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)))
-                 .addLine(new X64UnaryInstruction(X64UnaryInstructionType.je,
-                     new X64JumpTargetOperand(conditionalBranch.getTarget())));
+                     X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)
+                 ))
+                 .addLine(new X64UnaryInstruction(
+                     X64UnaryInstructionType.je,
+                     new X64JumpTargetOperand(conditionalBranch.getTarget())
+                 ));
       } else {
-        x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.cmpq,
+        x86Method.addLine(new X64BinaryInstruction(
+                     X64BinaryInstructionType.cmpq,
                      new X86ConstantValue(IrIntegerConstant.zero()),
-                     resolvedCondition))
-                 .addLine(new X64UnaryInstruction(X64UnaryInstructionType.je,
-                     new X64JumpTargetOperand(conditionalBranch.getTarget())));
+                     resolvedCondition
+                 ))
+                 .addLine(new X64UnaryInstruction(
+                     X64UnaryInstructionType.je,
+                     new X64JumpTargetOperand(conditionalBranch.getTarget())
+                 ));
       }
       return;
     } else {
-      x86Method.addLine(new X64UnaryInstruction(X64UnaryInstructionType.getCorrectJumpIfFalseInstruction(asmWriterContext.getLastComparisonOperator()),
-          new X64JumpTargetOperand(conditionalBranch.getTarget())));
+      x86Method.addLine(new X64UnaryInstruction(
+          X64UnaryInstructionType.getCorrectJumpIfFalseInstruction(asmWriterContext.getLastComparisonOperator()),
+          new X64JumpTargetOperand(conditionalBranch.getTarget())
+      ));
     }
     asmWriterContext.setLastComparisonOperator(null);
   }
@@ -495,58 +603,88 @@ public class X86AsmWriter implements AsmWriter {
   public void emitInstruction(@NotNull FunctionCallNoResult functionCallNoResult) {
     callerSave(null);
     schedule(functionCallNoResult);
-    if (functionCallNoResult.isImported()) x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.xorl,
+    if (functionCallNoResult.isImported()) x86Method.addLine(new X64BinaryInstruction(
+                                                        X64BinaryInstructionType.xorl,
                                                         X86RegisterMappedValue.unassigned(X86Register.EAX),
-                                                        X86RegisterMappedValue.unassigned(X86Register.EAX)))
-                                                    .addLine(new X64UnaryInstruction(X64UnaryInstructionType.callq,
-                                                        new X64CallOperand(functionCallNoResult)));
-    else x86Method.addLine(new X64UnaryInstruction(X64UnaryInstructionType.callq,
-        new X64CallOperand(functionCallNoResult)));
+                                                        X86RegisterMappedValue.unassigned(X86Register.EAX)
+                                                    ))
+                                                    .addLine(new X64UnaryInstruction(
+                                                        X64UnaryInstructionType.callq,
+                                                        new X64CallOperand(functionCallNoResult)
+                                                    ));
+    else x86Method.addLine(new X64UnaryInstruction(
+        X64UnaryInstructionType.callq,
+        new X64CallOperand(functionCallNoResult)
+    ));
     restoreStack(functionCallNoResult);
     callerRestore(null);
   }
 
   @Override
   public void emitInstruction(@NotNull MethodEnd methodEnd) {
-    var space = new X86ConstantValue(new IrIntegerConstant((long) Utils.roundUp16(-x86ValueResolver.getCurrentStackOffset()),
-        Type.Int));
+    var space = new X86ConstantValue(new IrIntegerConstant(
+        (long) Utils.roundUp16(-x86ValueResolver.getCurrentStackOffset()),
+        Type.Int
+    ));
 
-    x86Method.addAtIndex(asmWriterContext.getLocationOfSubqInst(),
-        new X64BinaryInstruction(X64BinaryInstructionType.subq,
+    x86Method.addAtIndex(
+        asmWriterContext.getLocationOfSubqInst(),
+        new X64BinaryInstruction(
+            X64BinaryInstructionType.subq,
             space,
-            X86RegisterMappedValue.unassigned(X86Register.RSP)));
+            X86RegisterMappedValue.unassigned(X86Register.RSP)
+        )
+    );
     calleeSave();
-    x86Method.addAtIndex(asmWriterContext.getLocationOfSubqInst(),
-        new X64BinaryInstruction(X64BinaryInstructionType.movq,
+    x86Method.addAtIndex(
+        asmWriterContext.getLocationOfSubqInst(),
+        new X64BinaryInstruction(
+            X64BinaryInstructionType.movq,
             X86RegisterMappedValue.unassigned(X86Register.RSP),
-            X86RegisterMappedValue.unassigned(X86Register.RBP)));
-    x86Method.addAtIndex(asmWriterContext.getLocationOfSubqInst(),
-        new X64UnaryInstruction(X64UnaryInstructionType.pushq,
-            X86RegisterMappedValue.unassigned(X86Register.RBP)));
-    x86Method = (methodEnd.isMain() ? x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.xorl,
+            X86RegisterMappedValue.unassigned(X86Register.RBP)
+        )
+    );
+    x86Method.addAtIndex(
+        asmWriterContext.getLocationOfSubqInst(),
+        new X64UnaryInstruction(
+            X64UnaryInstructionType.pushq,
+            X86RegisterMappedValue.unassigned(X86Register.RBP)
+        )
+    );
+    x86Method = (methodEnd.isMain() ? x86Method.addLine(new X64BinaryInstruction(
+        X64BinaryInstructionType.xorl,
         X86RegisterMappedValue.unassigned(X86Register.EAX),
-        X86RegisterMappedValue.unassigned(X86Register.EAX))): x86Method);
+        X86RegisterMappedValue.unassigned(X86Register.EAX)
+    )): x86Method);
 
-    x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.addq,
+    x86Method.addLine(new X64BinaryInstruction(
+        X64BinaryInstructionType.addq,
         space,
-        X86RegisterMappedValue.unassigned(X86Register.RSP)));
+        X86RegisterMappedValue.unassigned(X86Register.RSP)
+    ));
 
     calleeRestore();
-    x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+    x86Method.addLine(new X64BinaryInstruction(
+                 X64BinaryInstructionType.movq,
                  X86RegisterMappedValue.unassigned(X86Register.RBP),
-                 X86RegisterMappedValue.unassigned(X86Register.RSP)))
-             .addLine(new X64UnaryInstruction(X64UnaryInstructionType.popq,
-                 X86RegisterMappedValue.unassigned(X86Register.RBP)));
+                 X86RegisterMappedValue.unassigned(X86Register.RSP)
+             ))
+             .addLine(new X64UnaryInstruction(
+                 X64UnaryInstructionType.popq,
+                 X86RegisterMappedValue.unassigned(X86Register.RBP)
+             ));
     x86Method.addLine(new X64NoOperandInstruction(X64NopInstructionType.retq));
   }
 
   @Override
   public void emitInstruction(@NotNull ReturnInstruction returnInstruction) {
     if (returnInstruction.getReturnAddress()
-                         .isPresent()) x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+                         .isPresent()) x86Method.addLine(new X64BinaryInstruction(
+        X64BinaryInstructionType.movq,
         resolveIrValue(returnInstruction.getReturnAddress()
                                         .get()),
-        X86RegisterMappedValue.unassigned(X86Register.RAX)));
+        X86RegisterMappedValue.unassigned(X86Register.RAX)
+    ));
   }
 
   @Override
@@ -554,32 +692,46 @@ public class X86AsmWriter implements AsmWriter {
     switch (unaryInstruction.operator) {
       case Operators.NOT -> {
         asmWriterContext.setLastComparisonOperator(null);
-        x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+        x86Method.addLine(new X64BinaryInstruction(
+                     X64BinaryInstructionType.movq,
                      resolveIrValue(unaryInstruction.operand),
-                     X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)))
-                 .addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+                     X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)
+                 ))
+                 .addLine(new X64BinaryInstruction(
+                     X64BinaryInstructionType.movq,
                      X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER),
-                     resolveIrValue(unaryInstruction.getDestination())))
-                 .addLine(new X64BinaryInstruction(X64BinaryInstructionType.xorq,
+                     resolveIrValue(unaryInstruction.getDestination())
+                 ))
+                 .addLine(new X64BinaryInstruction(
+                     X64BinaryInstructionType.xorq,
                      new X86ConstantValue(IrIntegerConstant.one()),
-                     resolveIrValue(unaryInstruction.getDestination())));
+                     resolveIrValue(unaryInstruction.getDestination())
+                 ));
       }
-      case Operators.MINUS -> x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+      case Operators.MINUS -> x86Method.addLine(new X64BinaryInstruction(
+                                           X64BinaryInstructionType.movq,
                                            resolveIrValue(unaryInstruction.operand),
-                                           X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)))
-                                       .addLine(new X64UnaryInstruction(X64UnaryInstructionType.neg,
-                                           X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)))
-                                       .addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+                                           X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)
+                                       ))
+                                       .addLine(new X64UnaryInstruction(
+                                           X64UnaryInstructionType.neg,
+                                           X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)
+                                       ))
+                                       .addLine(new X64BinaryInstruction(
+                                           X64BinaryInstructionType.movq,
                                            X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER),
-                                           resolveIrValue(unaryInstruction.getDestination())));
+                                           resolveIrValue(unaryInstruction.getDestination())
+                                       ));
       default -> throw new IllegalStateException(unaryInstruction.toString());
     }
   }
 
   @Override
   public void emitInstruction(@NotNull UnconditionalBranch unconditionalBranch) {
-    x86Method.addLine(new X64UnaryInstruction(X64UnaryInstructionType.jmp,
-        new X64JumpTargetOperand(unconditionalBranch.getTarget())));
+    x86Method.addLine(new X64UnaryInstruction(
+        X64UnaryInstructionType.jmp,
+        new X64JumpTargetOperand(unconditionalBranch.getTarget())
+    ));
   }
 
   @Override
@@ -594,88 +746,130 @@ public class X86AsmWriter implements AsmWriter {
   public void emitInstruction(@NotNull CopyInstruction copyInstruction) {
     if (!resolveIrValue(copyInstruction.getValue()).equals(resolveIrValue(copyInstruction.getDestination()))) {
       if (resolveIrValue(copyInstruction.getValue()) instanceof X86RegisterMappedValue ||
-          resolveIrValue(copyInstruction.getValue()) instanceof X86ConstantValue)
-        x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+          resolveIrValue(copyInstruction.getValue()) instanceof X86ConstantValue ||
+      resolveIrValue(copyInstruction.getValue()) instanceof X86MemoryAddressInRegister)
+        x86Method.addLine(new X64BinaryInstruction(
+            X64BinaryInstructionType.movq,
             resolveIrValue(copyInstruction.getValue()),
-            resolveIrValue(copyInstruction.getDestination())));
-      else x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+            resolveIrValue(copyInstruction.getDestination())
+        ));
+      else x86Method.addLine(new X64BinaryInstruction(
+                        X64BinaryInstructionType.movq,
                         resolveIrValue(copyInstruction.getValue()),
-                        X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)))
-                    .addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+                        X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)
+                    ))
+                    .addLine(new X64BinaryInstruction(
+                        X64BinaryInstructionType.movq,
                         X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER),
-                        resolveIrValue(copyInstruction.getDestination())));
+                        resolveIrValue(copyInstruction.getDestination())
+                    ));
     }
   }
 
   @Override
   public void emitInstruction(@NotNull GetAddress getAddress) {
+    x86Method.addLine(X86MetaData.blockComment(String.format("&(%s)", getAddress.getSource().getSourceCode())));
+    x86ValueResolver.processGetAddress(getAddress);
   }
 
   @Override
   public void emitInstruction(@NotNull BinaryInstruction binaryInstruction) {
+    x86Method.addLine(X86MetaData.blockComment(binaryInstruction.getSource().getSourceCode()));
     switch (binaryInstruction.operator) {
       case Operators.PLUS, Operators.MINUS, Operators.MULTIPLY, Operators.CONDITIONAL_OR, Operators.CONDITIONAL_AND ->
-          x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+          x86Method.addLine(new X64BinaryInstruction(
+                       X64BinaryInstructionType.movq,
                        resolveIrValue(binaryInstruction.fstOperand),
-                       X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)))
-                   .addLine(new X64BinaryInstruction(X64BinaryInstructionType.getX64BinaryInstruction(binaryInstruction.operator),
+                       X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)
+                   ))
+                   .addLine(new X64BinaryInstruction(
+                       X64BinaryInstructionType.getX64BinaryInstruction(binaryInstruction.operator),
                        resolveIrValue(binaryInstruction.sndOperand),
-                       X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)))
-                   .addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+                       X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)
+                   ))
+                   .addLine(new X64BinaryInstruction(
+                       X64BinaryInstructionType.movq,
                        X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER),
-                       resolveIrValue(binaryInstruction.getDestination())));
+                       resolveIrValue(binaryInstruction.getDestination())
+                   ));
       case Operators.DIVIDE, Operators.MOD -> {
         // If we are planning to use RDX, we spill it first
         if (!resolveIrValue(binaryInstruction.getDestination()).toString()
                                                                .equals(X86Register.RDX.toString()))
-          x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+          x86Method.addLine(new X64BinaryInstruction(
+              X64BinaryInstructionType.movq,
               X86RegisterMappedValue.unassigned(X86Register.RDX),
-              resolveNextStackLocation(X86RegisterMappedValue.unassigned(X86Register.RDX))));
+              resolveNextStackLocation(X86RegisterMappedValue.unassigned(X86Register.RDX))
+          ));
         if (binaryInstruction.sndOperand instanceof IrIntegerConstant) {
-          x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+          x86Method.addLine(new X64BinaryInstruction(
+                       X64BinaryInstructionType.movq,
                        resolveIrValue(binaryInstruction.fstOperand),
-                       X86RegisterMappedValue.unassigned(X86Register.RAX)))
-                   .addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+                       X86RegisterMappedValue.unassigned(X86Register.RAX)
+                   ))
+                   .addLine(new X64BinaryInstruction(
+                       X64BinaryInstructionType.movq,
                        resolveIrValue(binaryInstruction.sndOperand),
-                       X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)))
+                       X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)
+                   ))
                    .addLine(new X64NoOperandInstruction(X64NopInstructionType.cqto))
-                   .addLine(new X64UnaryInstruction(X64UnaryInstructionType.idivq,
-                       X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)));
+                   .addLine(new X64UnaryInstruction(
+                       X64UnaryInstructionType.idivq,
+                       X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)
+                   ));
         } else {
-          x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+          x86Method.addLine(new X64BinaryInstruction(
+                       X64BinaryInstructionType.movq,
                        resolveIrValue(binaryInstruction.fstOperand),
-                       X86RegisterMappedValue.unassigned(X86Register.RAX)))
+                       X86RegisterMappedValue.unassigned(X86Register.RAX)
+                   ))
                    .addLine(new X64NoOperandInstruction(X64NopInstructionType.cqto))
-                   .addLine(new X64UnaryInstruction(X64UnaryInstructionType.idivq,
-                       resolveIrValue(binaryInstruction.sndOperand)));
+                   .addLine(new X64UnaryInstruction(
+                       X64UnaryInstructionType.idivq,
+                       resolveIrValue(binaryInstruction.sndOperand)
+                   ));
         }
-        x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+        x86Method.addLine(new X64BinaryInstruction(
+            X64BinaryInstructionType.movq,
             X86RegisterMappedValue.unassigned(binaryInstruction.operator.equals("%") ? X86Register.RDX: X86Register.RAX),
-            resolveIrValue(binaryInstruction.getDestination())));
+            resolveIrValue(binaryInstruction.getDestination())
+        ));
         // restore RDX
         if (!resolveIrValue(binaryInstruction.getDestination()).toString()
                                                                .equals(X86Register.RDX.toString()))
-          x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+          x86Method.addLine(new X64BinaryInstruction(
+              X64BinaryInstructionType.movq,
               resolveNextStackLocation(X86RegisterMappedValue.unassigned(X86Register.RDX)),
-              X86RegisterMappedValue.unassigned(X86Register.RDX)));
+              X86RegisterMappedValue.unassigned(X86Register.RDX)
+          ));
       }
       // comparison operators
       case Operators.EQ, Operators.NEQ, Operators.LT, Operators.GT, Operators.LEQ, Operators.GEQ -> {
         asmWriterContext.setLastComparisonOperator(binaryInstruction.operator);
-        x86Method.addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+        x86Method.addLine(new X64BinaryInstruction(
+                     X64BinaryInstructionType.movq,
                      resolveIrValue(binaryInstruction.fstOperand),
-                     X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)))
-                 .addLine(new X64BinaryInstruction(X64BinaryInstructionType.cmpq,
+                     X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)
+                 ))
+                 .addLine(new X64BinaryInstruction(
+                     X64BinaryInstructionType.cmpq,
                      resolveIrValue(binaryInstruction.sndOperand),
-                     X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)))
-                 .addLine(new X64UnaryInstruction(X64UnaryInstructionType.getCorrectComparisonSetInstruction(binaryInstruction.operator),
-                     X86RegisterMappedValue.unassigned(X86Register.al)))
-                 .addLine(new X64BinaryInstruction(X64BinaryInstructionType.movzbq,
+                     X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)
+                 ))
+                 .addLine(new X64UnaryInstruction(
+                     X64UnaryInstructionType.getCorrectComparisonSetInstruction(binaryInstruction.operator),
+                     X86RegisterMappedValue.unassigned(X86Register.al)
+                 ))
+                 .addLine(new X64BinaryInstruction(
+                     X64BinaryInstructionType.movzbq,
                      X86RegisterMappedValue.unassigned(X86Register.al),
-                     X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)))
-                 .addLine(new X64BinaryInstruction(X64BinaryInstructionType.movq,
+                     X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER)
+                 ))
+                 .addLine(new X64BinaryInstruction(
+                     X64BinaryInstructionType.movq,
                      X86RegisterMappedValue.unassigned(COPY_TEMP_REGISTER),
-                     resolveIrValue(binaryInstruction.getDestination())));
+                     resolveIrValue(binaryInstruction.getDestination())
+                 ));
       }
       default -> throw new IllegalStateException(binaryInstruction.toString());
     }

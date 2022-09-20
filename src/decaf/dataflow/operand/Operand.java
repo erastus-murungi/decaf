@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Set;
 
 import decaf.codegen.codes.StoreInstruction;
-import decaf.codegen.names.IrGlobal;
 import decaf.grammar.DecafScanner;
 import decaf.codegen.names.IrValue;
 
@@ -22,7 +21,7 @@ public abstract class Operand {
 
     public abstract boolean contains(IrValue comp);
 
-    public boolean containsAny(Set<IrGlobal> names) {
+    public boolean containsAny(Set<IrValue> names) {
         return names.stream().anyMatch(this::contains);
     }
 

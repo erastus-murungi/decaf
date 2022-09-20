@@ -43,8 +43,7 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
             pred.setSuccessor(replacer);
           }
           replacer.addPredecessor(pred);
-          basicBlock.getTributaries()
-                    .forEach(withTarget -> withTarget.replaceTarget(replacer));
+          BasicBlock.correctTributaries(basicBlock, replacer);
           changesHappened = true;
         }
         if (replacer.phiPresent()) {

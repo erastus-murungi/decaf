@@ -12,7 +12,7 @@ import decaf.codegen.codes.StoreInstruction;
 import decaf.dataflow.ssapasses.worklistitems.SsaEdge;
 import decaf.cfg.BasicBlock;
 import decaf.codegen.codes.Method;
-import decaf.codegen.names.IrRegister;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.names.IrValue;
 import decaf.dataflow.dominator.DominatorTree;
 
@@ -26,15 +26,15 @@ public class SSAEdgesUtil {
   private static Set<SsaEdge> computeSsaEdges(@NotNull Method method) {
     var dominatorTree = new DominatorTree(method.getEntryBlock());
     var ssaEdges = new HashSet<SsaEdge>();
-    var lValueToDefMapping = new HashMap<IrRegister, StoreInstruction>();
+    var lValueToDefMapping = new HashMap<IrSsaRegister, StoreInstruction>();
     var basicBlocks = dominatorTree.preorder();
 
     for (BasicBlock basicBlock : basicBlocks) {
       basicBlock.getStoreInstructions()
                 .forEach(storeInstruction -> {
-                  if (storeInstruction.getDestination() instanceof IrRegister irRegister) {
+                  if (storeInstruction.getDestination() instanceof IrSsaRegister irSsaRegister) {
                     lValueToDefMapping.put(
-                        irRegister,
+                        irSsaRegister,
                         storeInstruction
                     );
                   }
@@ -44,16 +44,16 @@ public class SSAEdgesUtil {
     for (var basicBlock : basicBlocks) {
       for (var instruction : basicBlock.getInstructionList()) {
         if (instruction instanceof HasOperand hasOperand) {
-          for (IrRegister irRegister : hasOperand.getOperandVirtualRegisters()) {
-            if (lValueToDefMapping.containsKey(irRegister)) {
+          for (IrSsaRegister irSsaRegister : hasOperand.genOperandIrValuesFiltered(IrSsaRegister.class)) {
+            if (lValueToDefMapping.containsKey(irSsaRegister)) {
               ssaEdges.add(new SsaEdge(
-                  lValueToDefMapping.get(irRegister),
+                  lValueToDefMapping.get(irSsaRegister),
                   hasOperand,
                   basicBlock
               ));
             } else if (!method.getParameterNames()
-                              .contains(irRegister)) {
-              throw new IllegalStateException(irRegister + " not found\n" + basicBlock.getInstructionList());
+                              .contains(irSsaRegister)) {
+              throw new IllegalStateException(instruction.toString() + "\n" + irSsaRegister + " not found\n" + basicBlock.getInstructionList());
             }
           }
         }
@@ -66,16 +66,16 @@ public class SSAEdgesUtil {
     return ssaEdges;
   }
 
-  public Set<HasOperand> getUses(@NotNull IrRegister irRegister) {
+  public Set<HasOperand> getUses(@NotNull IrSsaRegister irSsaRegister) {
     return getSsaEdges().stream()
                         .filter(ssaEdge -> ssaEdge.getValue()
-                                                  .equals(irRegister))
+                                                  .equals(irSsaRegister))
                         .map(SsaEdge::use)
                         .collect(Collectors.toUnmodifiableSet());
   }
 
   public void copyPropagate(
-      @NotNull IrRegister toBeReplaced,
+      @NotNull IrSsaRegister toBeReplaced,
       IrValue replacer
   ) {
     var uses = getUses(toBeReplaced);

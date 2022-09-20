@@ -1,7 +1,8 @@
 package decaf.ast;
 
 import decaf.codegen.CodegenAstVisitor;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrAssignable;
+import decaf.codegen.names.IrAssignable;
 import decaf.grammar.DecafScanner;
 import decaf.grammar.TokenPosition;
 import decaf.ir.AstVisitor;
@@ -14,14 +15,11 @@ public class ConditionalOperator extends BinOperator {
 
     @Override
     public String opRep() {
-        switch (label) {
-            case DecafScanner.CONDITIONAL_OR:
-                return "Or";
-            case DecafScanner.CONDITIONAL_AND:
-                return "And";
-            default:
-                throw new IllegalArgumentException("please register conditional operator: " + label);
-        }
+        return switch (label) {
+            case DecafScanner.CONDITIONAL_OR -> "Or";
+            case DecafScanner.CONDITIONAL_AND -> "And";
+            default -> throw new IllegalArgumentException("please register conditional operator: " + label);
+        };
     }
 
     @Override
@@ -31,17 +29,14 @@ public class ConditionalOperator extends BinOperator {
 
     @Override
     public String getSourceCode() {
-        switch (label) {
-            case DecafScanner.CONDITIONAL_OR:
-                return "||";
-            case DecafScanner.CONDITIONAL_AND:
-                return "&&";
-            default:
-                throw new IllegalArgumentException("please register conditional operator: " + label);
-        }
+        return switch (label) {
+            case DecafScanner.CONDITIONAL_OR -> "||";
+            case DecafScanner.CONDITIONAL_AND -> "&&";
+            default -> throw new IllegalArgumentException("please register conditional operator: " + label);
+        };
     }
 
-    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignableValue resultLocation) {
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignable resultLocation) {
         return null;
     }
 }

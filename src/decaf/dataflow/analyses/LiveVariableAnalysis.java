@@ -14,6 +14,7 @@ import decaf.codegen.codes.GetAddress;
 import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.StoreInstruction;
 import decaf.codegen.names.IrValue;
+import decaf.codegen.names.IrValuePredicates;
 import decaf.dataflow.Direction;
 import decaf.dataflow.usedef.Def;
 import decaf.dataflow.usedef.Use;
@@ -93,7 +94,7 @@ public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
         var useSet = new HashSet<UseDef>();
         for (Instruction instruction : basicBlock.getInstructionListReversed()) {
             if (instruction instanceof HasOperand hasOperand) {
-                hasOperand.getAllRegisterAllocatableValues()
+                hasOperand.genOperandIrValuesFiltered(IrValuePredicates.isRegisterAllocatable())
                           .forEach(lValue -> useSet.add(new Use(lValue, instruction)));
             }
         }

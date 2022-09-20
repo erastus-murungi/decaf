@@ -1,14 +1,16 @@
 package decaf.codegen.codes;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 import decaf.asm.AsmWriter;
 import decaf.ast.AST;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.names.IrMemoryAddress;
-import decaf.codegen.names.IrRegister;
 import decaf.codegen.names.IrValue;
 import decaf.common.Utils;
 import decaf.dataflow.operand.GetAddressOperand;
@@ -20,7 +22,7 @@ public class GetAddress extends StoreInstruction {
     private IrValue baseAddress;
     private IrValue index;
 
-    public GetAddress(IrValue baseAddress, IrValue index, IrAssignableValue dest, long length, AST source) {
+    public GetAddress(@NotNull IrValue baseAddress, @NotNull IrValue index, @NotNull IrMemoryAddress dest, long length, @Nullable AST source) {
         super(dest, source);
         this.baseAddress = baseAddress;
         this.index = index;
@@ -51,24 +53,26 @@ public class GetAddress extends StoreInstruction {
     }
 
     @Override
-    public List<IrValue> getAllValues() {
+    public List<IrValue> genIrValuesSurface() {
         return List.of(baseAddress, getIndex(), getDestination());
     }
 
     @Override
     public String toString() {
-        return String.format("%s%s = %s %s %s : %s", DOUBLE_INDENT, getDestination(), baseAddress.getType().getSourceCode(), "getaddr", baseAddress, getIndex());
+        return String.format("%s%s: %s = %s %s : %s", DOUBLE_INDENT, getDestination(), baseAddress.getType().getSourceCode(), "getaddr", baseAddress, getIndex());
     }
 
     @Override
     public String syntaxHighlightedToString() {
         final var getAddressString = Utils.coloredPrint("getaddr", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s%s = %s %s %s : %s", DOUBLE_INDENT, getDestination(), baseAddress.getType().getColoredSourceCode(), getAddressString, baseAddress, getIndex());
+        return String.format("%s%s: %s = %s %s : %s", DOUBLE_INDENT, getDestination(), baseAddress.getType().getColoredSourceCode(), getAddressString, baseAddress, getIndex());
     }
 
     @Override
     public Instruction copy() {
-        return new GetAddress(baseAddress, index, getDestination(), length, source);
+        return new GetAddress(baseAddress, index, getDestination(), length,
+                              getSource()
+        );
     }
 
     @Override
@@ -77,7 +81,7 @@ public class GetAddress extends StoreInstruction {
     }
 
     @Override
-    public List<IrValue> getOperandValues() {
+    public List<IrValue> genOperandIrValuesSurface() {
         if (index != null)
             return List.of(baseAddress, index);
         return List.of(baseAddress);
@@ -85,20 +89,7 @@ public class GetAddress extends StoreInstruction {
 
     @Override
     public boolean replaceValue(IrValue oldName, IrValue newName) {
-        var replaced = false;
-        if (oldName == baseAddress) {
-            if (!(newName instanceof IrRegister)) {
-                throw new IllegalArgumentException();
-            } else {
-                baseAddress = (IrAssignableValue) newName;
-                replaced = true;
-            }
-        }
-        if (oldName == index) {
-            index = newName;
-            replaced = true;
-        }
-        return replaced;
+        return false;
     }
 
     @Override

@@ -25,7 +25,7 @@ public class RuntimeException extends Instruction {
     }
 
     @Override
-    public List<IrValue> getAllValues() {
+    public List<IrValue> genIrValuesSurface() {
         return Collections.emptyList();
     }
 

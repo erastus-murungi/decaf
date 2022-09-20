@@ -3,8 +3,8 @@ package decaf.dataflow.ssapasses;
 import java.util.HashSet;
 import java.util.Set;
 
+import decaf.codegen.codes.FunctionCallWithResult;
 import decaf.codegen.codes.HasOperand;
-import decaf.codegen.names.IrMemoryAddress;
 import decaf.cfg.BasicBlock;
 import decaf.codegen.codes.BinaryInstruction;
 import decaf.codegen.codes.CopyInstruction;
@@ -12,7 +12,7 @@ import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.Method;
 import decaf.codegen.codes.StoreInstruction;
 import decaf.codegen.codes.UnaryInstruction;
-import decaf.codegen.names.IrGlobal;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.names.IrValue;
 import decaf.dataflow.OptimizationContext;
 
@@ -20,6 +20,7 @@ public class DeadStoreEliminationSsaPass extends SsaOptimizationPass {
     public DeadStoreEliminationSsaPass(OptimizationContext optimizationContext, Method method) {
         super(optimizationContext, method);
     }
+
     @Override
     protected void resetForPass() {
     }
@@ -33,7 +34,7 @@ public class DeadStoreEliminationSsaPass extends SsaOptimizationPass {
         for (BasicBlock basicBlock : getBasicBlocksList()) {
             for (Instruction instruction : basicBlock.getInstructionList()) {
                 if (instruction instanceof HasOperand hasOperand) {
-                    used.addAll(hasOperand.getOperandLValues());
+                    used.addAll(hasOperand.genOperandIrValuesFiltered(IrSsaRegister.class));
                 }
             }
         }
@@ -49,10 +50,10 @@ public class DeadStoreEliminationSsaPass extends SsaOptimizationPass {
     }
 
     private static boolean storeInstructionIsDead(StoreInstruction storeInstruction, Set<IrValue> usedIrValues) {
-        if (storeInstruction.getDestination() instanceof IrGlobal || storeInstruction.getDestination() instanceof IrMemoryAddress) {
+        if (!(storeInstruction.getDestination() instanceof IrSsaRegister)) {
             return false;
         }
-        if (storeInstruction instanceof CopyInstruction || storeInstruction instanceof UnaryInstruction || storeInstruction instanceof BinaryInstruction) {
+        if (storeInstruction instanceof CopyInstruction || storeInstruction instanceof UnaryInstruction || storeInstruction instanceof BinaryInstruction || storeInstruction instanceof FunctionCallWithResult) {
             return !usedIrValues.contains(storeInstruction.getDestination());
         }
         return false;

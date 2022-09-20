@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import decaf.codegen.codes.StoreInstruction;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.names.IrMemoryAddress;
 import decaf.dataflow.copy.CopyQuadruple;
 import decaf.dataflow.operand.UnmodifiedOperand;
@@ -108,14 +108,14 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
         for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
             // check to see whether any existing assignments are invalidated by this one
             if (!(storeInstruction.getDestination() instanceof IrMemoryAddress)) {
-                final IrAssignableValue resulLocation = storeInstruction.getDestination();
+                final var resulLocation = storeInstruction.getDestination();
                 // remove any copy's where u, or v are being reassigned by "resultLocation"
                 copyQuadruples.removeIf(copyQuadruple -> copyQuadruple.contains(resulLocation));
             }
             var computation = storeInstruction.getOperand();
             if (computation instanceof UnmodifiedOperand) {
                 IrValue name = ((UnmodifiedOperand) computation).irValue;
-                copyQuadruples.add(new CopyQuadruple(storeInstruction.getDestination(), name,
+                copyQuadruples.add(new CopyQuadruple((IrSsaRegister) storeInstruction.getDestination(), name,
                         basicBlock
                                 .getCopyOfInstructionList()
                                 .indexOf(storeInstruction), basicBlock));
@@ -131,7 +131,7 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
         var killedCopyQuadruples = new HashSet<CopyQuadruple>();
         for (StoreInstruction storeInstruction : basicBlock.getStoreInstructions()) {
             if (!(storeInstruction.getDestination() instanceof IrMemoryAddress)) {
-                final IrAssignableValue resulLocation = storeInstruction.getDestination();
+                final var resulLocation = storeInstruction.getDestination();
                 for (CopyQuadruple copyQuadruple : superSet) {
                     if (copyQuadruple.basicBlock() != basicBlock && copyQuadruple.contains(resulLocation)) {
                         killedCopyQuadruples.add(copyQuadruple);

@@ -2,7 +2,7 @@ package decaf.dataflow;
 
 import decaf.cfg.NOP;
 import decaf.common.DecafExceptionProcessor;
-import decaf.common.TarjanSCC;
+import decaf.common.StronglyConnectedComponentsTarjan;
 import decaf.grammar.DecafParser;
 import decaf.grammar.DecafScanner;
 import decaf.ir.SemanticCheckingManager;
@@ -33,7 +33,7 @@ public class DataFlowAnalysisTest {
                                                              semChecker.getGlobalDescriptor()
         );
         cfgGenerator.build();
-        basicBlockList = TarjanSCC.getReversePostOrder(cfgGenerator.getMethodNameToEntryBlock().get("main"));
+        basicBlockList = StronglyConnectedComponentsTarjan.getReversePostOrder(cfgGenerator.getMethodNameToEntryBlock().get("main"));
     }
 
     @Test

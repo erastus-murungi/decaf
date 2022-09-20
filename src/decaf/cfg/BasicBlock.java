@@ -1,5 +1,6 @@
 package decaf.cfg;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 import decaf.ast.AST;
 import decaf.ast.Expression;
 import decaf.codegen.InstructionList;
+import decaf.codegen.IndexManager;
 import decaf.codegen.codes.ConditionalBranch;
 import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.StoreInstruction;
@@ -375,5 +377,38 @@ public class BasicBlock {
 
   public enum BasicBlockType {
     NOP, BRANCH, NO_BRANCH,
+  }
+
+
+  public BasicBlock split(int index) {
+    checkArgument(index >= 0);
+    checkArgument(index < getInstructionList().size());
+
+    var newBasicBlock = BasicBlock.noBranch();
+    newBasicBlock.successor = this;
+    newBasicBlock.getPredecessors().addAll(this.predecessors);
+    this.predecessors.clear();
+    this.addPredecessor(newBasicBlock);
+    newBasicBlock.getInstructionList().addAll(getInstructionList().subList(0, index));
+    this.getInstructionList().removeAll(newBasicBlock.getInstructionList());
+    newBasicBlock.getInstructionList().forEach(
+        instruction -> {
+          if (instruction.getSource() != null) {
+            newBasicBlock.addAstNode(instruction.getSource());
+          }
+        }
+    );
+    correctTributaries(this, newBasicBlock);
+    newBasicBlock.tributaries.addAll(this.getTributaries());
+
+    this.getTributaries().clear();
+    newBasicBlock.getInstructionList().setLabel(this.getInstructionList().getLabel());
+    this.getInstructionList().setLabel(IndexManager.genLabelIndex());
+    return newBasicBlock;
+  }
+
+  public static void correctTributaries(@NotNull BasicBlock basicBlock, @NotNull BasicBlock replacer) {
+    basicBlock.getTributaries()
+              .forEach(withTarget -> withTarget.replaceTarget(replacer));
   }
 }

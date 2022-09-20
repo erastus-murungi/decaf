@@ -3,14 +3,14 @@ package decaf.codegen.names;
 import java.util.Objects;
 
 import decaf.ast.Type;
-import decaf.codegen.LabelManager;
+import decaf.codegen.IndexManager;
 
 public class IrStringConstant extends IrConstant {
     private final String content;
     private final String contentEscaped;
 
     public IrStringConstant(String content) {
-        super(Type.String, LabelManager.getNextStringLiteralIndex());
+        super(Type.String, IndexManager.genStringConstantLabel());
         this.content = content;
         this.contentEscaped = content.substring(1, content.length() - 1).translateEscapes();
     }

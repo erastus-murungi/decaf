@@ -1,5 +1,7 @@
 package decaf.dataflow.passes;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,25 +24,18 @@ import decaf.codegen.codes.FunctionCall;
 import decaf.codegen.codes.Method;
 import decaf.codegen.codes.MethodEnd;
 import decaf.codegen.names.IrValue;
+import decaf.dataflow.OptimizationContext;
 
 
-public class FunctionInlinePass {
-    List<Method> methodList;
-
-    public FunctionInlinePass(List<Method> methodList) {
-        this.methodList = methodList;
-    }
-
-    public List<Method> run() {
-        List<Method> newMethodList = new ArrayList<>();
-        for (var methodBegin : methodList) {
-            if (shouldBeInlined(methodBegin)) {
-                inlineMethodBegin(methodBegin);
-                continue;
-            }
-            newMethodList.add(methodBegin);
-        }
-        return newMethodList;
+public class FunctionInlinePass extends OptimizationPass {
+    public FunctionInlinePass(
+        OptimizationContext optimizationContext,
+        Method method
+    ) {
+        super(
+            optimizationContext,
+            method
+        );
     }
 
     private Map<IrValue, IrValue> mapParametersToArguments(
@@ -76,12 +71,12 @@ public class FunctionInlinePass {
         return ((FunctionCall) instructionList.get(indexOfFunctionCall)).getArguments();
     }
 
-    private void inlineMethodBegin(Method method) {
-        var functionName = method.methodName();
-        for (Method targetMethod : methodList) {
-            if (method == targetMethod)
+    private void inlineMethod(@NotNull Method methodToInline) {
+        var functionName = methodToInline.methodName();
+        for (var targetMethod : optimizationContext.getMethodsToOptimize()) {
+            if (methodToInline == targetMethod)
                 continue;
-            findCallSites(targetMethod, functionName).forEach(((threeAddressCodeList, indicesOfCallSites) -> inlineCallSite(threeAddressCodeList, indicesOfCallSites, TraceScheduler.flattenIr(method))));
+            findCallSites(targetMethod, functionName).forEach(((threeAddressCodeList, indicesOfCallSites) -> inlineCallSite(threeAddressCodeList, indicesOfCallSites, TraceScheduler.flattenIr(methodToInline))));
         }
     }
 
@@ -103,13 +98,6 @@ public class FunctionInlinePass {
         return newTacList;
     }
 
-    /**
-     * Assumes the indices of the call sites are sorted
-     *
-     * @param targetTacList
-     * @param indicesOfCallSite
-     * @param functionBody
-     */
     private void inlineCallSite(InstructionList targetTacList, List<Integer> indicesOfCallSite, InstructionList functionBody) {
         if (targetTacList.isEmpty())
             return;
@@ -162,7 +150,7 @@ public class FunctionInlinePass {
 
     private int getNumberOfCallsToFunction(String functionName) {
         int numberOfCalls = 0;
-        for (Method method : methodList) {
+        for (Method method : optimizationContext.getMethodsToOptimize()) {
             for (Instruction instruction : method.getEntryBlock()
                                                  .getInstructionList()) {
                 if (isMethodCallAndNameMatches(instruction, functionName)) {
@@ -175,7 +163,7 @@ public class FunctionInlinePass {
 
     private int getProgramSize() {
         int programSize = 0;
-        for (Method method : methodList) {
+        for (Method method : optimizationContext.getMethodsToOptimize()) {
             programSize += TraceScheduler.flattenIr(method).size();
         }
         return programSize;
@@ -210,8 +198,6 @@ public class FunctionInlinePass {
             return false;
         if (isRecursive(method))
             return false;
-        if (hasBranching(method))
-            return false;
         if (hasArrayAccesses(method))
             return false;
         final var functionName = method.methodName();
@@ -220,5 +206,20 @@ public class FunctionInlinePass {
         final int numberOfCalls = getNumberOfCallsToFunction(functionName);
 
         return methodSize * numberOfCalls < programSize;
+    }
+
+    @Override
+    public boolean runFunctionPass() {
+        var oldCountMethods = optimizationContext.getMethodsToOptimize().size();
+        var filteredMethods = new ArrayList<Method>();
+        for (var method : optimizationContext.getMethodsToOptimize()) {
+            if (shouldBeInlined(method)) {
+                inlineMethod(method);
+                continue;
+            }
+            filteredMethods.add(method);
+        }
+        optimizationContext.setMethodsToOptimize(filteredMethods);
+        return filteredMethods.size() == oldCountMethods;
     }
 }

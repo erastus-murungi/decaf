@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import decaf.asm.AsmWriter;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrAssignable;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.names.IrMemoryAddress;
 import decaf.common.Utils;
 import decaf.dataflow.operand.UnmodifiedOperand;
@@ -15,16 +16,16 @@ import decaf.dataflow.operand.Operand;
 public class CopyInstruction extends StoreInstruction implements Cloneable {
     private IrValue irValue;
 
-    public CopyInstruction(IrAssignableValue dst, IrValue operand, AST source, String comment) {
+    public CopyInstruction(IrAssignable dst, IrValue operand, AST source, String comment) {
         super(dst, source, comment);
         this.irValue = operand;
     }
 
-    public static CopyInstruction noAstConstructor(IrAssignableValue dst, IrValue operand) {
+    public static CopyInstruction noAstConstructor(IrAssignable dst, IrValue operand) {
         return new CopyInstruction(dst, operand, null, String.format("%s = %s", dst, operand));
     }
 
-    public static CopyInstruction noMetaData(IrAssignableValue dst, IrValue operand) {
+    public static CopyInstruction noMetaData(IrAssignable dst, IrValue operand) {
         return new CopyInstruction(dst, operand, null, "");
     }
 
@@ -38,13 +39,14 @@ public class CopyInstruction extends StoreInstruction implements Cloneable {
     }
 
     @Override
-    public List<IrValue> getAllValues() {
+    public List<IrValue> genIrValuesSurface() {
         return List.of(getDestination(), irValue);
     }
 
     @Override
     public Instruction copy() {
-        return new CopyInstruction(getDestination(), irValue, source, getComment().orElse(null));
+        return new CopyInstruction(getDestination(), irValue,
+                                   getSource(), getComment().orElse(null));
     }
 
     @Override
@@ -65,7 +67,7 @@ public class CopyInstruction extends StoreInstruction implements Cloneable {
         clone.irValue = irValue;
         clone.setComment(getComment().orElse(null));
         clone.setDestination(getDestination());
-        clone.source = source;
+        clone.setSource(getSource());
         return clone;
     }
 
@@ -75,7 +77,7 @@ public class CopyInstruction extends StoreInstruction implements Cloneable {
     }
 
     @Override
-    public List<IrValue> getOperandValues() {
+    public List<IrValue> genOperandIrValuesSurface() {
         return List.of(irValue);
     }
 
@@ -90,13 +92,12 @@ public class CopyInstruction extends StoreInstruction implements Cloneable {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s, %s", DOUBLE_INDENT, "store", irValue, getDestination());
+        return String.format("%s%s %s: %s = %s", DOUBLE_INDENT, getPrefix(), getDestination(), getDestination().getType().getSourceCode(), irValue);
     }
 
     @Override
     public String syntaxHighlightedToString() {
-        var storeString = Utils.coloredPrint("store", Utils.ANSIColorConstants.ANSI_GREEN_BOLD);
-        return String.format("%s%s %s, %s", DOUBLE_INDENT, storeString, irValue, getDestination());
+        return String.format("%s%s %s: %s = %s", DOUBLE_INDENT, getPrefixSyntaxHighlighted(), getDestination(),  getDestination().getType().getColoredSourceCode(), irValue);
     }
 
 }

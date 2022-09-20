@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 import decaf.common.Pair;
 import decaf.codegen.codes.CopyInstruction;
 import decaf.codegen.codes.Method;
-import decaf.codegen.names.IrRegister;
+import decaf.codegen.names.IrSsaRegister;
 
 public class InterferenceGraph {
     HashMap<LiveInterval, Set<LiveInterval>> graph = new HashMap<>();
@@ -38,7 +38,7 @@ public class InterferenceGraph {
         var copyInstructions = instructionList.stream()
                                               .filter(instruction -> (instruction instanceof CopyInstruction))
                                               .map(instruction -> (CopyInstruction) instruction)
-                                              .filter(copyInstruction -> copyInstruction.getValue() instanceof IrRegister)
+                                              .filter(copyInstruction -> copyInstruction.getValue() instanceof IrSsaRegister)
                                               .collect(Collectors.toUnmodifiableSet());
         for (var copyInstruction : copyInstructions) {
             var a = (varToLivIntervals.get(copyInstruction.getDestination()));

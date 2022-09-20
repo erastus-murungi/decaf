@@ -7,7 +7,7 @@ import decaf.common.SSAEdgesUtil;
 import decaf.ssa.SSA;
 import decaf.codegen.codes.CopyInstruction;
 import decaf.codegen.codes.Method;
-import decaf.codegen.names.IrRegister;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.dataflow.OptimizationContext;
 import decaf.ssa.Phi;
 
@@ -38,18 +38,18 @@ public class RedundantPhiEliminationPass extends SsaOptimizationPass {
         for (var instruction : basicBlock.getInstructionList()) {
           if (instruction instanceof Phi phi) {
             // x=phi(x,x,x) (remove only)
-            if (phi.getOperandValues()
+            if (phi.genOperandIrValuesSurface()
                    .stream()
                    .allMatch(lValue -> lValue.equals(phi.getDestination()))) {
               changesHappened = true;
               continue;
             }
             // 2) x=phi(y,y,y) (regard as `x=y` and do copy propagation)
-            if (phi.getOperandValues()
+            if (phi.genOperandIrValuesSurface()
                    .stream()
                    .distinct()
                    .count() == 1) {
-              var y = phi.getOperandValues()
+              var y = phi.genOperandIrValuesSurface()
                          .stream()
                          .findFirst()
                          .orElseThrow();
@@ -58,18 +58,18 @@ public class RedundantPhiEliminationPass extends SsaOptimizationPass {
                   y
               ));
               ssaEdgesUtil.copyPropagate(
-                  (IrRegister) phi.getDestination(),
+                  (IrSsaRegister) phi.getDestination(),
                   y
               );
               changesHappened = true;
               continue;
             }
             // 3) x=phi(y,y,x) (regard as `x=y` and do copy propagation)
-            if (phi.getOperandValues()
+            if (phi.genOperandIrValuesSurface()
                    .stream()
                    .filter(value -> value.equals(phi.getDestination()))
                    .count() == 1) {
-              var y = phi.getOperandValues()
+              var y = phi.genOperandIrValuesSurface()
                          .stream()
                          .filter(value -> !value.equals(phi.getDestination()))
                          .findFirst()
@@ -79,7 +79,7 @@ public class RedundantPhiEliminationPass extends SsaOptimizationPass {
                   y
               ));
               ssaEdgesUtil.copyPropagate(
-                  (IrRegister) phi.getDestination(),
+                  (IrSsaRegister) phi.getDestination(),
                   y
               );
               changesHappened = true;

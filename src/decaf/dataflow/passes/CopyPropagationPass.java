@@ -7,6 +7,7 @@ import decaf.codegen.codes.HasOperand;
 import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.StoreInstruction;
 import decaf.codegen.names.IrMemoryAddress;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.dataflow.OptimizationContext;
 import decaf.cfg.BasicBlock;
 import decaf.codegen.codes.Method;
@@ -30,7 +31,7 @@ public class CopyPropagationPass extends OptimizationPass {
             // it possible that our copies map has y `replaces` k, and x `replaces` y and $0 `replaces` x
             // we want to eventually propagate so that a = $0
             notConverged = false;
-            for (var toBeReplaced : hasOperand.getOperandVirtualRegisters()) {
+            for (var toBeReplaced : hasOperand.genOperandIrValuesFiltered(IrSsaRegister.class)) {
                 if (hasOperand instanceof StoreInstruction && ((StoreInstruction) hasOperand).getDestination()
                                                                                              .equals(toBeReplaced))
                     continue;

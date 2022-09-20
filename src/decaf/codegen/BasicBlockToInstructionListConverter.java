@@ -25,16 +25,17 @@ import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.Method;
 import decaf.codegen.codes.MethodEnd;
 import decaf.codegen.codes.StringConstantAllocation;
-import decaf.codegen.names.IrGlobal;
 import decaf.codegen.names.IrIntegerConstant;
 import decaf.codegen.names.IrStringConstant;
-import decaf.codegen.names.IrRegister;
+import decaf.codegen.names.IrSsaRegister;
+import decaf.codegen.names.IrValue;
+import decaf.codegen.names.IrValuePredicates;
 import decaf.symboltable.SymbolTable;
 import decaf.common.Pair;
 import decaf.common.ProgramIr;
 
 public class BasicBlockToInstructionListConverter {
-  private final Set<IrGlobal> globalNames = new HashSet<>();
+  private final Set<IrValue> globalNames = new HashSet<>();
   private final Set<BasicBlock> visitedBasicBlocks = new HashSet<>();
   private final HashMap<String, SymbolTable> perMethodSymbolTables;
   private final ProgramIr programIr;
@@ -67,7 +68,7 @@ public class BasicBlockToInstructionListConverter {
     return perMethodSymbolTables;
   }
 
-  public Set<IrGlobal> getGlobalNames() {
+  public Set<IrValue> getGlobalNames() {
     return globalNames;
   }
 
@@ -141,10 +142,8 @@ public class BasicBlockToInstructionListConverter {
       }
     }
     globalNames.addAll(prologue.stream()
-                               .flatMap(instruction -> instruction.getAllValues()
+                               .flatMap(instruction -> instruction.genIrValuesFiltered(IrValuePredicates.isGlobal())
                                                                   .stream())
-                               .filter(abstractName -> abstractName instanceof IrGlobal)
-                               .map(abstractName -> (IrGlobal) abstractName)
                                .collect(Collectors.toUnmodifiableSet()));
 
     for (String stringLiteral : findAllStringLiterals(program)) {
@@ -208,7 +207,7 @@ public class BasicBlockToInstructionListConverter {
     var condition = basicBlockWithBranch.getBranchCondition()
                                         .orElseThrow();
     var conditionInstructionList = condition.accept(currentAstToInstructionListConverter,
-        IrRegister.gen(Type.Bool));
+                                                    IrSsaRegister.gen(Type.Bool));
 
     visit(basicBlockWithBranch.getTrueTarget());
     visit(basicBlockWithBranch.getFalseTarget());

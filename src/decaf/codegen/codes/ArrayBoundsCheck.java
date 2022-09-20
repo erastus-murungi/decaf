@@ -38,8 +38,8 @@ public class ArrayBoundsCheck extends HasOperand {
     }
 
     @Override
-    public List<IrValue> getAllValues() {
-        return getAddress.getOperandValues();
+    public List<IrValue> genIrValuesSurface() {
+        return getAddress.genOperandIrValuesSurface();
     }
 
     @Override
@@ -53,7 +53,7 @@ public class ArrayBoundsCheck extends HasOperand {
     }
 
     @Override
-    public List<IrValue> getOperandValues() {
+    public List<IrValue> genOperandIrValuesSurface() {
         return List.of(index, baseAddress);
     }
 

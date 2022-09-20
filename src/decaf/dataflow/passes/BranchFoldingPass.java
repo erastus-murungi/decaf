@@ -36,7 +36,7 @@ public class BranchFoldingPass {
 
     private static void mergeTails(List<BasicBlock> basicBlocks) {
         for (BasicBlock basicBlock : basicBlocks) {
-            if (!(basicBlock instanceof NOP) && basicBlock.getPredecessors().size() > 1 && haveSameSuccessor(basicBlock.getPredecessors())) {
+            if (basicBlock.getPredecessors().size() > 1 && haveSameSuccessor(basicBlock.getPredecessors())) {
                 var commonInstructions = getCommonInstructions(basicBlock.getPredecessors());
                 if (commonInstructions.isPresent()) {
                     var common = BasicBlock.noBranch();

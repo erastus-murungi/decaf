@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import decaf.codegen.codes.Instruction;
-import decaf.codegen.names.IrGlobal;
+import decaf.codegen.names.IrValue;
 import decaf.dataflow.OptimizationContext;
 import decaf.cfg.BasicBlock;
 import decaf.codegen.codes.CopyInstruction;
@@ -33,7 +33,7 @@ public abstract class OptimizationPass {
         return method;
     }
 
-    public Set<IrGlobal> globals() {
+    public Set<IrValue> globals() {
         return optimizationContext.globals();
     }
 

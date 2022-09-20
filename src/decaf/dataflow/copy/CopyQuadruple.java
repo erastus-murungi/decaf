@@ -5,12 +5,12 @@ import java.util.Objects;
 
 import decaf.cfg.BasicBlock;
 import decaf.codegen.names.IrValue;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrSsaRegister;
 
 // a pair (u, v, pos, block), such that u <- v is a copy assignment
 // and pos is the position in block is the block where the assignment occurs
 // adapted from page 358 of the whale book
-public record CopyQuadruple(IrAssignableValue u, IrValue v, int position, BasicBlock basicBlock) {
+public record CopyQuadruple(IrSsaRegister u, IrValue v, int position, BasicBlock basicBlock) {
 
     @Override
     public String toString() {

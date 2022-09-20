@@ -3,20 +3,20 @@ package decaf.codegen.codes;
 import java.util.List;
 import java.util.Optional;
 
-import decaf.codegen.names.IrMemoryAddress;
 import decaf.asm.AsmWriter;
 import decaf.ast.AST;
+import decaf.codegen.names.IrAssignable;
+import decaf.codegen.names.IrMemoryAddress;
 import decaf.codegen.names.IrValue;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.common.Operators;
 import decaf.dataflow.operand.Operand;
 import decaf.dataflow.operand.UnaryOperand;
-import decaf.common.Operators;
 
 public class UnaryInstruction extends StoreInstruction {
     public IrValue operand;
     public String operator;
 
-    public UnaryInstruction(IrAssignableValue result, String operator, IrValue operand, AST source) {
+    public UnaryInstruction(IrAssignable result, String operator, IrValue operand, AST source) {
         super(result, source);
         this.operand = operand;
         this.operator = operator;
@@ -28,7 +28,7 @@ public class UnaryInstruction extends StoreInstruction {
     }
 
     @Override
-    public List<IrValue> getAllValues() {
+    public List<IrValue> genIrValuesSurface() {
         return List.of(getDestination(), operand);
     }
 
@@ -48,7 +48,9 @@ public class UnaryInstruction extends StoreInstruction {
 
     @Override
     public Instruction copy() {
-        return new UnaryInstruction(getDestination(), operator, operand, source);
+        return new UnaryInstruction(getDestination(), operator, operand,
+                                    getSource()
+        );
     }
 
     @Override
@@ -65,7 +67,7 @@ public class UnaryInstruction extends StoreInstruction {
         clone.operator = operator;
         clone.setComment(getComment().orElse(null));
         clone.setDestination(destination);
-        clone.source = source;
+        clone.setSource(getSource());
         return clone;
     }
 
@@ -84,7 +86,7 @@ public class UnaryInstruction extends StoreInstruction {
     }
 
     @Override
-    public List<IrValue> getOperandValues() {
+    public List<IrValue> genOperandIrValuesSurface() {
         return List.of(operand);
     }
 

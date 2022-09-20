@@ -8,7 +8,7 @@ import org.junit.Before;
 
 import decaf.ast.Type;
 import decaf.codegen.codes.UnaryInstruction;
-import decaf.codegen.names.IrRegister;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.dataflow.analyses.AvailableExpressions;
 import decaf.grammar.DecafScanner;
 import decaf.codegen.codes.BinaryInstruction;
@@ -16,19 +16,19 @@ import decaf.codegen.codes.BinaryInstruction;
 public class AvailableExpressionsTest extends TestCase {
   private static final String[] allDecafOperators = {DecafScanner.PLUS, DecafScanner.MULTIPLY, DecafScanner.MINUS, DecafScanner.DIVIDE, DecafScanner.GEQ, DecafScanner.MOD, DecafScanner.GT, DecafScanner.LEQ, DecafScanner.LT};
   private static final String[] commutativeOperators = {DecafScanner.PLUS, DecafScanner.MULTIPLY,};
-  private final IrRegister a = new IrRegister(
+  private final IrSsaRegister a = new IrSsaRegister(
       "a",
       Type.Int
   );
-  private final IrRegister b = new IrRegister(
+  private final IrSsaRegister b = new IrSsaRegister(
       "b",
       Type.Int
   );
-  private final IrRegister c = new IrRegister(
+  private final IrSsaRegister c = new IrSsaRegister(
       "c",
       Type.Int
   );
-  private final IrRegister d = new IrRegister(
+  private final IrSsaRegister d = new IrSsaRegister(
       "d",
       Type.Int
   );

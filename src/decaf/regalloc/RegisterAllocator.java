@@ -57,7 +57,7 @@ public class RegisterAllocator {
     private static Set<X86Register> getLiveRegistersAtPoint(ProgramIr programIr, Collection<LiveInterval> liveIntervals, int index, Map<IrValue, X86Register> registerMap) {
         return liveIntervals.stream()
                 .filter(liveInterval -> liveInterval.startPoint() <= index && index < liveInterval.endPoint())
-                .map(LiveInterval::irAssignableValue)
+                .map(LiveInterval::irSsaRegister)
                 .filter(name -> !programIr.getGlobals().contains(name))
                 .map(registerMap::get)
                 .collect(Collectors.toUnmodifiableSet());
@@ -66,7 +66,7 @@ public class RegisterAllocator {
     private static Set<IrValue> getLiveValuesAtPoint(Collection<LiveInterval> liveIntervals, int index) {
         return liveIntervals.stream()
                             .filter(liveInterval -> liveInterval.startPoint() <= index && index < liveInterval.endPoint())
-                            .map(LiveInterval::irAssignableValue)
+                            .map(LiveInterval::irSsaRegister)
                             .collect(Collectors.toUnmodifiableSet());
     }
 

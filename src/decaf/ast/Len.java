@@ -5,7 +5,7 @@ import java.util.List;
 import decaf.grammar.DecafScanner;
 import decaf.grammar.TokenPosition;
 import decaf.codegen.CodegenAstVisitor;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrAssignable;
 import decaf.ir.AstVisitor;
 import decaf.symboltable.SymbolTable;
 import decaf.common.Pair;
@@ -45,7 +45,7 @@ public class Len extends Expression {
         return ASTVisitor.visit(this, curSymbolTable);
     }
 
-    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignableValue resultLocation) {
+    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignable resultLocation) {
         return codegenAstVisitor.visit(this);
     }
 

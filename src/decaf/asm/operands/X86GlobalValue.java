@@ -5,15 +5,15 @@ import java.util.List;
 
 import decaf.codegen.names.IrGlobalArray;
 import decaf.asm.X86Register;
-import decaf.codegen.names.IrGlobal;
+import decaf.codegen.names.IrValue;
 
 public class X86GlobalValue extends X86Value {
-    public X86GlobalValue(IrGlobal irGlobal) {
+    public X86GlobalValue(IrValue irGlobal) {
         super(irGlobal);
     }
 
-    public IrGlobal getGlobalAddress() {
-        return (IrGlobal) getValue();
+    public IrValue getGlobalAddress() {
+        return getValue();
     }
 
     @Override

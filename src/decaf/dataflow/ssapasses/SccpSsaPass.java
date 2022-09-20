@@ -17,7 +17,7 @@ import decaf.codegen.codes.Method;
 import decaf.codegen.codes.StoreInstruction;
 import decaf.codegen.codes.UnaryInstruction;
 import decaf.codegen.names.IrIntegerConstant;
-import decaf.codegen.names.IrRegister;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.common.StronglyConnectedComponentsTarjan;
 import decaf.dataflow.OptimizationContext;
 import decaf.ssa.SSA;
@@ -46,7 +46,7 @@ public class SccpSsaPass extends SsaOptimizationPass {
       for (Instruction instruction : basicBlock.getInstructionList()) {
         if (instruction instanceof BinaryInstruction || instruction instanceof UnaryInstruction ||
             (instruction instanceof CopyInstruction copyInstruction &&
-                copyInstruction.getValue() instanceof IrRegister)) {
+                copyInstruction.getValue() instanceof IrSsaRegister)) {
           var dest = ((StoreInstruction) instruction).getDestination();
           var latticeValue = latticeValues.get(dest);
           if (latticeValue.isConstant()) {
@@ -69,18 +69,18 @@ public class SccpSsaPass extends SsaOptimizationPass {
 
         }
         if (instruction instanceof HasOperand hasOperand) {
-          for (IrRegister irRegister : hasOperand.getOperandVirtualRegisters()) {
+          for (IrSsaRegister irSsaRegister : hasOperand.genOperandIrValuesFiltered(IrSsaRegister.class)) {
             var latticeValue = latticeValues.getOrDefault(
-                irRegister,
+                irSsaRegister,
                 LatticeElement.bottom()
             );
             if (latticeValue.isConstant()) {
               var inst = hasOperand.copy();
               hasOperand.replaceValue(
-                  irRegister,
+                  irSsaRegister,
                   new IrIntegerConstant(
                       latticeValue.getValue(),
-                      irRegister.getType()
+                      irSsaRegister.getType()
                   )
               );
               resultList.add(new SCCPOptResult(
@@ -147,7 +147,7 @@ public class SccpSsaPass extends SsaOptimizationPass {
   private void removePhisFromUnreachableBlocks() {
     for (var basicBlock : getBasicBlocksList()) {
       for (var phi : basicBlock.getPhiFunctions()) {
-        for (var lValue : phi.getOperandValues()) {
+        for (var lValue : phi.genOperandIrValuesSurface()) {
           var owner = phi.getBasicBlockForV(lValue);
           if (!(sccp.isReachable(owner))) {
             phi.removePhiOperand(lValue);

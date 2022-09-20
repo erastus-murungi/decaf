@@ -13,7 +13,8 @@ import decaf.codegen.InstructionList;
 import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.StoreInstruction;
 import decaf.codegen.codes.UnaryInstruction;
-import decaf.codegen.names.IrAssignableValue;
+import decaf.codegen.names.IrAssignable;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.names.IrConstant;
 import decaf.common.Operators;
 import decaf.common.Utils;
@@ -31,15 +32,14 @@ import decaf.codegen.codes.MethodEnd;
 import decaf.codegen.names.IrValue;
 import decaf.codegen.names.IrIntegerConstant;
 import decaf.codegen.names.IrStringConstant;
-import decaf.codegen.names.IrRegister;
 
 public class Interpreter {
     private final Collection<Instruction> instructions;
     List<Instruction> currentMethodInstructions = new ArrayList<>();
 
     Method currentMethod = null;
-    Map<IrAssignableValue, Optional<IrConstant>> globalEnv = new HashMap<>();
-    Map<Method, Map<IrAssignableValue, Optional<IrConstant>>> localEnvs = new HashMap<>();
+    Map<IrValue, Optional<IrConstant>> globalEnv = new HashMap<>();
+    Map<Method, Map<IrSsaRegister, Optional<IrConstant>>> localEnvs = new HashMap<>();
     Map<Method, List<Instruction>> methods = new HashMap<>();
 
     public Interpreter(Collection<Instruction> instructions) {
@@ -50,9 +50,9 @@ public class Interpreter {
     }
 
     public static void test() {
-        var a = new IrRegister("a", Type.Int);
-        var b = new IrRegister("b", Type.Int);
-        var c = new IrRegister("c", Type.Int);
+        var a = new IrSsaRegister("a", Type.Int);
+        var b = new IrSsaRegister("b", Type.Int);
+        var c = new IrSsaRegister("c", Type.Int);
 
         var name = new Name("printf", null, null);
         List<MethodCallParameter> arguments = List.of(new StringLiteral(null, "%d\n"), new ExpressionParameter(new LocationVariable(new Name("a", null, null))));
@@ -73,8 +73,8 @@ public class Interpreter {
     }
 
     private IrConstant resolveValue(IrValue irValue) {
-        if (irValue instanceof IrRegister irRegister) {
-            return globalEnv.get(irRegister)
+        if (irValue instanceof IrSsaRegister irSsaRegister) {
+            return globalEnv.get(irSsaRegister)
                     .orElseThrow();
         } else {
             return (IrConstant) irValue;
@@ -144,7 +144,7 @@ public class Interpreter {
         }
     }
 
-    public IrAssignableValue getStoreOnlyIffExistsInEnv(StoreInstruction storeInstruction, Map<IrAssignableValue, Optional<IrConstant>> env) {
+    public IrAssignable getStoreOnlyIffExistsInEnv(StoreInstruction storeInstruction, Map<IrValue, Optional<IrConstant>> env) {
         if (!env.containsKey(storeInstruction.getDestination())) {
             throw new IllegalStateException("`" + storeInstruction.getDestination() + "` not found in scope");
         } else {

@@ -9,18 +9,17 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import decaf.codegen.names.IrStackArray;
 import decaf.codegen.names.IrMemoryAddress;
 import decaf.ast.MethodDefinition;
 import decaf.ast.MethodDefinitionParameter;
 import decaf.codegen.InstructionList;
-import decaf.codegen.LabelManager;
+import decaf.codegen.IndexManager;
 import decaf.codegen.TraceScheduler;
 import decaf.codegen.codes.GlobalAllocation;
 import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.Method;
-import decaf.codegen.names.IrGlobal;
-import decaf.codegen.names.IrRegister;
-import decaf.codegen.names.IrStackArray;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.names.IrValue;
 
 public class ProgramIr {
@@ -29,7 +28,7 @@ public class ProgramIr {
   @NotNull
   private List<Method> methodList;
   @NotNull
-  private Set<IrGlobal> globals = new HashSet<>();
+  private Set<IrValue> globals = new HashSet<>();
 
   public ProgramIr(
       @NotNull InstructionList prologue,
@@ -39,27 +38,28 @@ public class ProgramIr {
     this.methodList = methodList;
   }
 
-  public static List<IrRegister> getNonParamLocals(
+  public static List<IrSsaRegister> getNonParamLocals(
       Method method,
-      Set<IrGlobal> globals
+      Set<IrValue> globals
   ) {
-    return getLocals(method,
-        globals)
-        .stream()
-        .filter(virtualRegister -> !method.getParameterNames()
-                                          .contains(virtualRegister))
-        .toList();
+    return getLocals(
+        method,
+        globals
+    ).stream()
+     .filter(virtualRegister -> !method.getParameterNames()
+                                       .contains(virtualRegister))
+     .toList();
   }
 
-  public static List<IrRegister> getLocals(
+  public static List<IrSsaRegister> getLocals(
       Method method,
-      Set<IrGlobal> globals
+      Set<IrValue> globals
   ) {
     Set<IrValue> uniqueNames = new HashSet<>();
     var flattened = TraceScheduler.flattenIr(method);
 
     for (Instruction instruction : flattened) {
-      for (IrValue name : instruction.getAllValues()) {
+      for (IrValue name : instruction.genIrValues()) {
         if (name instanceof IrMemoryAddress && !globals.contains(name)) {
           uniqueNames.add(name);
         }
@@ -67,37 +67,36 @@ public class ProgramIr {
     }
 
     for (Instruction instruction : flattened) {
-      for (var name : instruction.getAllValues()) {
+      for (var name : instruction.genIrValues()) {
         if (!(name instanceof IrMemoryAddress) && !globals.contains(name)) {
           uniqueNames.add(name);
         }
       }
     }
-    var locals = uniqueNames
-        .stream()
-        .filter((name -> ((name instanceof IrRegister))))
-        .map(name -> (IrRegister) name)
-        .distinct()
-        .sorted(Comparator.comparing(Object::toString))
-        .collect(Collectors.toList());
-    reorderLocals(locals,
-                  method.getMethodDefinition()
+    var locals = uniqueNames.stream()
+                            .filter((name -> ((name instanceof IrSsaRegister))))
+                            .map(name -> (IrSsaRegister) name)
+                            .distinct()
+                            .sorted(Comparator.comparing(Object::toString))
+                            .collect(Collectors.toList());
+    reorderLocals(
+        locals,
+        method.getMethodDefinition()
     );
     return locals;
   }
 
   private static void reorderLocals(
-      List<IrRegister> locals,
+      List<IrSsaRegister> locals,
       MethodDefinition methodDefinition
   ) {
-    List<IrRegister> methodParametersNames = new ArrayList<>();
+    List<IrSsaRegister> methodParametersNames = new ArrayList<>();
 
-    Set<String> methodParameters = methodDefinition.parameterList
-        .stream()
-        .map(MethodDefinitionParameter::getName)
-        .collect(Collectors.toSet());
+    Set<String> methodParameters = methodDefinition.parameterList.stream()
+                                                                 .map(MethodDefinitionParameter::getName)
+                                                                 .collect(Collectors.toSet());
 
-    List<IrRegister> methodParamNamesList = new ArrayList<>();
+    List<IrSsaRegister> methodParamNamesList = new ArrayList<>();
     for (var name : locals) {
       if (methodParameters.contains(name.toString())) {
         methodParamNamesList.add(name);
@@ -109,23 +108,34 @@ public class ProgramIr {
       }
     }
     locals.removeAll(methodParametersNames);
-    locals.addAll(0,
-        methodParamNamesList
-            .stream()
-            .sorted(Comparator.comparing(IrValue::toString))
-            .toList());
+    locals.addAll(
+        0,
+        methodParamNamesList.stream()
+                            .sorted(Comparator.comparing(IrValue::toString))
+                            .toList()
+    );
   }
 
   public static String mergeMethod(Method method) {
     List<String> output = new ArrayList<>();
     for (InstructionList instructionList : TraceScheduler.getInstructionTrace(method)) {
       if (!instructionList.getLabel()
-                          .equals("UNSET"))
-        output.add("    " + instructionList.getLabel() + ":");
+                          .equals("UNSET")) output.add("    " + instructionList.getLabel() + ":");
       instructionList.forEach(instruction -> output.add(instruction.syntaxHighlightedToString()));
     }
-    return String.join("\n",
-        output);
+    return String.join(
+        "\n",
+        output
+    );
+  }
+
+  public static List<IrStackArray> getIrStackArrays(Method method) {
+    return TraceScheduler.flattenIr(method)
+                         .stream()
+                         .flatMap(instruction -> instruction.genIrValuesFiltered(IrStackArray.class)
+                                                            .stream())
+                         .distinct()
+                         .toList();
   }
 
   public List<Method> getMethods() {
@@ -158,59 +168,45 @@ public class ProgramIr {
     for (Method method : methodList) {
       for (InstructionList instructionList : TraceScheduler.getInstructionTrace(method)) {
         if (!instructionList.getLabel()
-                            .equals("UNSET"))
-          output.add("    " + instructionList.getLabel() + ":");
+                            .equals("UNSET")) output.add("    " + instructionList.getLabel() + ":");
         instructionList.forEach(instruction -> output.add(instruction.syntaxHighlightedToString()));
       }
     }
-    return String.join("\n",
-        output);
-  }
-
-  public void findGlobals() {
-    globals = prologue
-        .stream()
-        .filter(instruction -> instruction instanceof GlobalAllocation)
-        .map(instruction -> (GlobalAllocation) instruction)
-        .map(GlobalAllocation::getValue)
-        .collect(Collectors.toUnmodifiableSet());
-  }
-
-  public void renumberLabels() {
-    LabelManager.resetLabels();
-    methodList.forEach(
-        method ->
-            TraceScheduler.getInstructionTrace(method)
-                          .forEach(
-                              instructionList -> {
-                                if (!instructionList.isEntry())
-                                  instructionList.setLabel(LabelManager.getNextLabel());
-                              }
-                          )
+    return String.join(
+        "\n",
+        output
     );
   }
 
-  public Set<IrGlobal> getGlobals() {
+  public void findGlobals() {
+    globals = prologue.stream()
+                      .filter(instruction -> instruction instanceof GlobalAllocation)
+                      .map(instruction -> (GlobalAllocation) instruction)
+                      .map(GlobalAllocation::getValue)
+                      .collect(Collectors.toUnmodifiableSet());
+  }
+
+  public void renumberLabels() {
+    IndexManager.resetLabels();
+    methodList.forEach(method -> TraceScheduler.getInstructionTrace(method)
+                                               .forEach(instructionList -> {
+                                                 if (!instructionList.isEntry())
+                                                   instructionList.setLabel(IndexManager.genLabelIndex());
+                                               }));
+  }
+
+  public Set<IrValue> getGlobals() {
     return Set.copyOf(globals);
   }
 
-  public void setGlobals(Set<IrGlobal> globals) {
+  public void setGlobals(Set<IrValue> globals) {
     this.globals = Set.copyOf(globals);
   }
 
-  public List<IrRegister> getLocals(Method method) {
-    return getLocals(method,
-        globals);
-  }
-
-  public static List<IrStackArray> getIrStackArrays(Method method) {
-    return TraceScheduler.flattenIr(method)
-                         .stream()
-                         .flatMap(instruction -> instruction.getAllValues()
-                                                            .stream())
-                         .filter(irValue -> irValue instanceof IrStackArray)
-                         .map(irValue -> (IrStackArray) irValue)
-                         .distinct()
-                         .toList();
+  public List<IrSsaRegister> getLocals(Method method) {
+    return getLocals(
+        method,
+        globals
+    );
   }
 }

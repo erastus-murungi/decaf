@@ -1,8 +1,15 @@
-Hello! Welcome to the Java Skeleton REPO.
+# Decaf IR
 
-You will need to modify Main.java, Decafscanner, DecafParser and Token as you see fit. This is just a minimal suggestion for your project's organization. Feel free to change and/or add any files. Ultimately, the only constraint is that the `run.sh` and `build.sh` correctly run your compiler.
 
-Happy parsing!
+**define** @\<func-name\> -> <type> **{**
 
-Russell, Cam and Michael + spring 2022 6.035 staff
-# compiling__
+**call** \<type\> @\<func-name\>**(**\<arg\>***)**
+
+**setreg** \<var-name\> **:** \<returnable-type\> **=** \<bin-op\> | \<un-op\> | \<func-call\>
+
+**setmem** \<mem-address\> **:** \<returnable-type\> **=** \<bin-op\> | \<un-op\> | \<func-call\>
+
+
+
+\<type\>:: \<returnable-type\> | **void**
+\<returnable-type\>:: **int** | **bool**
