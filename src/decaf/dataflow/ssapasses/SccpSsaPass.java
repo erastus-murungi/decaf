@@ -2,9 +2,6 @@ package decaf.dataflow.ssapasses;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,9 +21,8 @@ import decaf.ssa.SSA;
 
 public class SccpSsaPass extends SsaOptimizationPass {
   boolean changesHappened = false;
-  @NotNull
+
   private List<SCCPOptResult> resultList = new ArrayList<>();
-  @MonotonicNonNull
   private SCCP sccp;
 
   public SccpSsaPass(
@@ -102,7 +98,9 @@ public class SccpSsaPass extends SsaOptimizationPass {
   private void removeUnreachableBasicBlocks() {
     for (var basicBlock : getBasicBlocksList()) {
       if (basicBlock.hasBranch()) {
-        if (basicBlock.getInstructionList().toString().contains("%15.25"))
+        if (basicBlock.getInstructionList()
+                      .toString()
+                      .contains("%15.25"))
           System.out.println();
         if (!sccp.isReachable(basicBlock.getTrueTarget()) && !sccp.isReachable(basicBlock.getFalseTarget())) {
           basicBlock.convertToBranchLess(method.getExitBlock());
@@ -163,7 +161,7 @@ public class SccpSsaPass extends SsaOptimizationPass {
   }
 
   @Override
-    protected void resetForPass() {
+  protected void resetForPass() {
     sccp = new SCCP(method);
     resultList = new ArrayList<>();
     changesHappened = false;

@@ -1,8 +1,7 @@
 package decaf.ssa;
 
-import static com.google.common.base.Preconditions.checkState;
 
-import org.jetbrains.annotations.NotNull;
+import static decaf.common.Preconditions.checkState;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,14 +11,14 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import decaf.asm.AsmWriter;
+import decaf.cfg.BasicBlock;
 import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.StoreInstruction;
 import decaf.codegen.names.IrSsaRegister;
+import decaf.codegen.names.IrValue;
 import decaf.common.Utils;
 import decaf.dataflow.operand.Operand;
 import decaf.dataflow.operand.PhiOperand;
-import decaf.cfg.BasicBlock;
-import decaf.codegen.names.IrValue;
 
 public class Phi extends StoreInstruction {
   private final Map<BasicBlock, IrValue> basicBlockValueMap;
@@ -28,8 +27,10 @@ public class Phi extends StoreInstruction {
       IrSsaRegister v,
       Map<BasicBlock, IrValue> xs
   ) {
-    super(v,
-        null);
+    super(
+        v,
+        null
+    );
     assert xs.size() > 2;
     basicBlockValueMap = xs;
   }
@@ -46,31 +47,35 @@ public class Phi extends StoreInstruction {
     throw new IllegalStateException();
   }
 
-  public void removePhiOperandForBlock(@NotNull BasicBlock basicBlock) {
+  public void removePhiOperandForBlock(BasicBlock basicBlock) {
     checkState(basicBlockValueMap.containsKey(basicBlock));
     basicBlockValueMap.remove(basicBlock);
   }
 
-  @NotNull
-  public IrValue getVariableForB(@NotNull BasicBlock B) {
+
+  public IrValue getVariableForB(BasicBlock B) {
     var value = basicBlockValueMap.get(B);
-    checkState(value != null,
-        this + "\nno irAssignableValue for block: \n" + B);
+    checkState(
+        value != null,
+        this + "\nno irAssignableValue for block: \n" + B
+    );
     return value;
   }
 
-  public void replaceBlock(@NotNull BasicBlock B) {
+  public void replaceBlock(BasicBlock B) {
     var Rs = B.getPredecessors();
     if (Rs.isEmpty()) return;
     var ret = basicBlockValueMap.remove(B);
     checkState(ret != null);
-    Rs.forEach(R -> basicBlockValueMap.put(R,
-        ret));
+    Rs.forEach(R -> basicBlockValueMap.put(
+        R,
+        ret
+    ));
 
   }
 
-  @NotNull
-  public BasicBlock getBasicBlockForV(@NotNull IrValue irValue) {
+
+  public BasicBlock getBasicBlockForV(IrValue irValue) {
     checkState(basicBlockValueMap.containsValue(irValue));
     for (var entrySet : basicBlockValueMap.entrySet()) {
       if (entrySet.getValue()
@@ -98,8 +103,10 @@ public class Phi extends StoreInstruction {
     for (BasicBlock basicBlock : basicBlockValueMap.keySet()) {
       var abstractName = basicBlockValueMap.get(basicBlock);
       if (abstractName.equals(oldName)) {
-        basicBlockValueMap.put(basicBlock,
-            newName);
+        basicBlockValueMap.put(
+            basicBlock,
+            newName
+        );
         replaced = true;
       }
     }
@@ -119,8 +126,10 @@ public class Phi extends StoreInstruction {
 
   @Override
   public Instruction copy() {
-    return new Phi((IrSsaRegister) getDestination(),
-        basicBlockValueMap);
+    return new Phi(
+        (IrSsaRegister) getDestination(),
+        basicBlockValueMap
+    );
   }
 
   @Override
@@ -133,9 +142,13 @@ public class Phi extends StoreInstruction {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     Phi phi = (Phi) o;
-    return Objects.equals(basicBlockValueMap.values(),
-        phi.basicBlockValueMap.values()) && Objects.equals(getDestination(),
-        phi.getDestination());
+    return Objects.equals(
+        basicBlockValueMap.values(),
+        phi.basicBlockValueMap.values()
+    ) && Objects.equals(
+        getDestination(),
+        phi.getDestination()
+    );
   }
 
   @Override
@@ -149,13 +162,15 @@ public class Phi extends StoreInstruction {
                                    .stream()
                                    .map(IrValue::toString)
                                    .collect(Collectors.joining(", "));
-    return String.format("%s%s %s: %s = phi(%s)",
+    return String.format(
+        "%s%s %s: %s = phi(%s)",
         DOUBLE_INDENT,
         getPrefix(),
         getDestination(),
         getDestination().getType()
                         .getSourceCode(),
-        rhs);
+        rhs
+    );
   }
 
   @Override
@@ -164,13 +179,18 @@ public class Phi extends StoreInstruction {
                                    .stream()
                                    .map(IrValue::toString)
                                    .collect(Collectors.joining(", "));
-    return String.format("%s%s %s: %s = %s(%s)",
+    return String.format(
+        "%s%s %s: %s = %s(%s)",
         DOUBLE_INDENT,
         getPrefixSyntaxHighlighted(),
         getDestination(),
         getDestination().getType()
                         .getColoredSourceCode(),
-                         Utils.coloredPrint("phi", Utils.ANSIColorConstants.ANSI_GREEN_BOLD),
-        rhs);
+        Utils.coloredPrint(
+            "phi",
+            Utils.ANSIColorConstants.ANSI_GREEN_BOLD
+        ),
+        rhs
+    );
   }
 }

@@ -2,8 +2,6 @@ package decaf.dataflow.ssapasses;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -23,9 +21,9 @@ import decaf.codegen.codes.UnconditionalBranch;
 import decaf.codegen.names.IrAssignable;
 import decaf.codegen.names.IrGlobalArray;
 import decaf.codegen.names.IrGlobalScalar;
-import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.names.IrIntegerConstant;
 import decaf.codegen.names.IrMemoryAddress;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.names.IrStackArray;
 import decaf.codegen.names.IrValue;
 import decaf.common.SSAEdgesUtil;
@@ -56,17 +54,35 @@ public class SCCP {
       for (Instruction instruction : basicBlock.getInstructionList()) {
         for (IrValue v : instruction.genIrValues()) {
           if (v instanceof IrSsaRegister) {
-            latticeValues.put(v, LatticeElement.top());
+            latticeValues.put(
+                v,
+                LatticeElement.top()
+            );
           } else if (v instanceof IrIntegerConstant numericalConstant) {
-            latticeValues.put(v, LatticeElement.constant(numericalConstant.getValue()));
+            latticeValues.put(
+                v,
+                LatticeElement.constant(numericalConstant.getValue())
+            );
           } else if (v instanceof IrMemoryAddress) {
-            latticeValues.put(v, LatticeElement.bottom());
+            latticeValues.put(
+                v,
+                LatticeElement.bottom()
+            );
           } else if (v instanceof IrGlobalScalar) {
-            latticeValues.put(v, LatticeElement.bottom());
+            latticeValues.put(
+                v,
+                LatticeElement.bottom()
+            );
           } else if (v instanceof IrGlobalArray) {
-            latticeValues.put(v, LatticeElement.bottom());
+            latticeValues.put(
+                v,
+                LatticeElement.bottom()
+            );
           } else if (v instanceof IrStackArray) {
-            latticeValues.put(v, LatticeElement.bottom());
+            latticeValues.put(
+                v,
+                LatticeElement.bottom()
+            );
           }
         }
       }
@@ -80,16 +96,23 @@ public class SCCP {
   }
 
   private List<SsaEdge> getSsaEdgesForVariable(IrAssignable virtualRegister) {
-    return ssaEdgeList.stream().filter(ssaEdge -> ssaEdge.getValue().equals(virtualRegister)).toList();
+    return ssaEdgeList.stream()
+                      .filter(ssaEdge -> ssaEdge.getValue()
+                                                .equals(virtualRegister))
+                      .toList();
   }
 
   private void visitPhi(Phi phi) {
-    var values = phi.genOperandIrValuesSurface().stream()
+    var values = phi.genOperandIrValuesSurface()
+                    .stream()
                     .map(value -> reachableBasicBlocks.contains(phi.getBasicBlockForV(value)) ? latticeValues.get(value): LatticeElement.top())
                     .collect(Collectors.toList());
     var newLatticeElement = LatticeElement.meet(values);
     if (!newLatticeElement.equals(latticeValues.get(phi.getDestination()))) {
-      latticeValues.put(phi.getDestination(), LatticeElement.meet(values));
+      latticeValues.put(
+          phi.getDestination(),
+          LatticeElement.meet(values)
+      );
       ssaWorkList.addAll(getSsaEdgesForVariable(phi.getDestination()));
     }
   }
@@ -101,43 +124,65 @@ public class SCCP {
     if (instruction instanceof CopyInstruction copyInstruction) {
       var updated = latticeValues.get(copyInstruction.getValue());
       if (!updated.equals(latticeValues.get(copyInstruction.getDestination()))) {
-        latticeValues.put(copyInstruction.getDestination(), updated);
+        latticeValues.put(
+            copyInstruction.getDestination(),
+            updated
+        );
         ssaWorkList.addAll(getSsaEdgesForVariable(copyInstruction.getDestination()));
       }
     } else if (instruction instanceof BinaryInstruction binaryInstruction) {
       var a = latticeValues.get(binaryInstruction.fstOperand);
       var b = latticeValues.get(binaryInstruction.sndOperand);
       if (!a.isBottom() && !b.isBottom()) {
-        @NotNull LatticeElement updated;
+        LatticeElement updated;
         if (a.isConstant() && b.isConstant()) {
-          var longVal = Utils.symbolicallyEvaluate(String.format("%d %s %d", a.getValue(), binaryInstruction.operator, b.getValue()))
+          var longVal = Utils.symbolicallyEvaluate(String.format(
+                                 "%d %s %d",
+                                 a.getValue(),
+                                 binaryInstruction.operator,
+                                 b.getValue()
+                             ))
                              .orElseThrow();
           updated = LatticeElement.constant(longVal);
         } else {
-          updated = LatticeElement.meet(a, b);
+          updated = LatticeElement.meet(
+              a,
+              b
+          );
         }
         if (!updated.equals(latticeValues.get(binaryInstruction.getDestination()))) {
-          latticeValues.put(binaryInstruction.getDestination(), updated);
+          latticeValues.put(
+              binaryInstruction.getDestination(),
+              updated
+          );
           ssaWorkList.addAll(getSsaEdgesForVariable(binaryInstruction.getDestination()));
         }
       }
     } else if (instruction instanceof UnaryInstruction unaryInstruction) {
       var a = latticeValues.get(unaryInstruction.operand);
       if (a.isConstant()) {
-        var longVal = Utils.symbolicallyEvaluateUnaryInstruction(unaryInstruction.operator, a.getValue());
+        var longVal = Utils.symbolicallyEvaluateUnaryInstruction(
+            unaryInstruction.operator,
+            a.getValue()
+        );
         var updated = LatticeElement.constant(longVal);
         if (!updated.equals(latticeValues.get(unaryInstruction.getDestination()))) {
-          latticeValues.put(unaryInstruction.getDestination(), updated);
+          latticeValues.put(
+              unaryInstruction.getDestination(),
+              updated
+          );
           ssaWorkList.addAll(getSsaEdgesForVariable(unaryInstruction.getDestination()));
         }
       }
     } else if (instruction instanceof ConditionalBranch conditionalBranch) {
       var updated = latticeValues.get(conditionalBranch.getCondition());
       if (updated.isConstant()) {
-        if (updated.getValue().equals(1L)) {
+        if (updated.getValue()
+                   .equals(1L)) {
           flowGraphWorkList.add(basicBlock.getTrueTarget());
         } else {
-          assert updated.getValue().equals(0L);
+          assert updated.getValue()
+                        .equals(0L);
           flowGraphWorkList.add(basicBlock.getFalseTarget());
         }
       } else {
@@ -169,14 +214,19 @@ public class SCCP {
         if (!isReachable(basicBlock)) {
           reachableBasicBlocks.add(basicBlock);
           // (b) Perform Visit-phi for all the phi functions at the destination node
-          basicBlock.getPhiFunctions().forEach(this::visitPhi);
+          basicBlock.getPhiFunctions()
+                    .forEach(this::visitPhi);
 
           // (c) If only one of the ExecutableFlags associated with the incoming
           //     program flow graph edges is true (i.e. this the first time this
           //     node has been evaluated), then perform VisitExpression for all expressions
           //     in this node.
           if (!visitedBasicBlocks.contains(basicBlock)) {
-            basicBlock.getNonPhiInstructions().forEach(instruction -> visitExpression(instruction, basicBlock));
+            basicBlock.getNonPhiInstructions()
+                      .forEach(instruction -> visitExpression(
+                          instruction,
+                          basicBlock
+                      ));
             visitedBasicBlocks.add(basicBlock);
           }
 
@@ -200,8 +250,14 @@ public class SCCP {
 
         if (ssaEdge.use() instanceof Phi) {
           visitPhi((Phi) ssaEdge.use());
-        } else if (ssaEdge.basicBlockOfUse().getPredecessors().stream().anyMatch(this::isReachable)) {
-          visitExpression(ssaEdge.use(), ssaEdge.basicBlockOfUse());
+        } else if (ssaEdge.basicBlockOfUse()
+                          .getPredecessors()
+                          .stream()
+                          .anyMatch(this::isReachable)) {
+          visitExpression(
+              ssaEdge.use(),
+              ssaEdge.basicBlockOfUse()
+          );
         }
       }
     }

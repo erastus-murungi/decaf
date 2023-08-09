@@ -1,6 +1,5 @@
 package decaf.common;
 
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,7 +35,7 @@ public class StronglyConnectedComponentsTarjan {
     }
   }
 
-  public static List<BasicBlock> allBasicBlocks(@NotNull BasicBlock entryPoint) {
+  public static List<BasicBlock> allBasicBlocks(BasicBlock entryPoint) {
     var seen = new HashSet<BasicBlock>();
     var toExplore = new Stack<BasicBlock>();
     toExplore.add(entryPoint);

@@ -1,5 +1,6 @@
 package decaf.codegen;
 
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -7,9 +8,6 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
-import decaf.codegen.codes.ConditionalBranch;
-import decaf.codegen.names.IrGlobalArray;
-import decaf.codegen.names.IrGlobalScalar;
 import decaf.ast.AST;
 import decaf.ast.MethodDefinition;
 import decaf.ast.Program;
@@ -19,20 +17,23 @@ import decaf.cfg.BasicBlock;
 import decaf.cfg.ControlFlowGraph;
 import decaf.cfg.NOP;
 import decaf.cfg.SymbolTableFlattener;
+import decaf.codegen.codes.ConditionalBranch;
 import decaf.codegen.codes.CopyInstruction;
 import decaf.codegen.codes.GlobalAllocation;
 import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.Method;
 import decaf.codegen.codes.MethodEnd;
 import decaf.codegen.codes.StringConstantAllocation;
+import decaf.codegen.names.IrGlobalArray;
+import decaf.codegen.names.IrGlobalScalar;
 import decaf.codegen.names.IrIntegerConstant;
-import decaf.codegen.names.IrStringConstant;
 import decaf.codegen.names.IrSsaRegister;
+import decaf.codegen.names.IrStringConstant;
 import decaf.codegen.names.IrValue;
 import decaf.codegen.names.IrValuePredicates;
-import decaf.symboltable.SymbolTable;
 import decaf.common.Pair;
 import decaf.common.ProgramIr;
+import decaf.symboltable.SymbolTable;
 
 public class BasicBlockToInstructionListConverter {
   private final Set<IrValue> globalNames = new HashSet<>();
@@ -44,25 +45,33 @@ public class BasicBlockToInstructionListConverter {
   private AstToInstructionListConverter currentAstToInstructionListConverter;
   private NOP currentMethodExitNop;
 
-    public BasicBlockToInstructionListConverter(
-            ControlFlowGraph controlFlowGraph) {
-        var symbolTableFlattener = new SymbolTableFlattener(controlFlowGraph.getGlobalDescriptor());
-        this.perMethodSymbolTables = symbolTableFlattener.createCFGSymbolTables();
-        var prologue = getPrologue(controlFlowGraph.getProgram());
-        var methods = new ArrayList<Method>();
-        controlFlowGraph.getMethodNameToEntryBlock().forEach(
-                (methodName, entryBlock) -> methods
-                        .add(generateMethodInstructionList(
-                                controlFlowGraph.getProgram().methodDefinitionList
+  public BasicBlockToInstructionListConverter(
+      ControlFlowGraph controlFlowGraph
+  ) {
+    var symbolTableFlattener = new SymbolTableFlattener(controlFlowGraph.getGlobalDescriptor());
+    perMethodSymbolTables = symbolTableFlattener.createCFGSymbolTables();
+    var prologue = genPrologue(controlFlowGraph.getProgram());
+    var methods = new ArrayList<Method>();
+    controlFlowGraph.getMethodNameToEntryBlock()
+                    .forEach((methodName, entryBlock) -> methods.add(generateMethodInstructionList(
+                        controlFlowGraph.getProgram()
+                                        .getMethodDefinitionList()
                                         .stream()
-                                        .filter(methodDefinition -> methodDefinition.methodName.getLabel()
-                                                .equals(methodName))
+                                        .filter(methodDefinition -> methodDefinition.getMethodName()
+                                                                                    .getLabel()
+                                                                                    .equals(methodName))
                                         .findFirst()
-                                        .orElseThrow(() -> new IllegalStateException("expected to find method " + methodName))
-                                , entryBlock.getSuccessor(), perMethodSymbolTables.get(methodName))));
-        this.programIr = new ProgramIr(prologue, methods);
-        this.programIr.renumberLabels();
-    }
+                                        .orElseThrow(() -> new IllegalStateException(
+                                            "expected to find method " + methodName)),
+                        entryBlock.getSuccessor(),
+                        perMethodSymbolTables.get(methodName)
+                    )));
+    this.programIr = new ProgramIr(
+        prologue,
+        methods
+    );
+    this.programIr.renumberLabels();
+  }
 
   public HashMap<String, SymbolTable> getPerMethodSymbolTables() {
     return perMethodSymbolTables;
@@ -77,9 +86,11 @@ public class BasicBlockToInstructionListConverter {
       BasicBlock methodStart,
       SymbolTable currentSymbolTable
   ) {
-    currentAstToInstructionListConverter = new AstToInstructionListConverter(currentSymbolTable,
+    currentAstToInstructionListConverter = new AstToInstructionListConverter(
+        currentSymbolTable,
         stringConstantsMap,
-        globalNames);
+        globalNames
+    );
 
 //
 //        methodInstructionList.addAll(
@@ -94,10 +105,13 @@ public class BasicBlockToInstructionListConverter {
     var method = new Method(methodDefinition);
     method.setEntryBlock(methodStart);
     method.setExitBlock(currentMethodExitNop);
-    entryBasicBlockInstructionList.add(0,
-        method);
+    entryBasicBlockInstructionList.add(
+        0,
+        method
+    );
 
-    var methodExitLabel = "exit_" + methodDefinition.methodName.getLabel();
+    var methodExitLabel = "exit_" + methodDefinition.getMethodName()
+                                                    .getLabel();
     currentMethodExitNop.getInstructionList()
                         .setLabel(methodExitLabel);
     currentMethodExitNop.getInstructionList()
@@ -105,40 +119,47 @@ public class BasicBlockToInstructionListConverter {
 
     methodStart.setInstructionList(entryBasicBlockInstructionList);
     var instructions = new ArrayList<Instruction>();
-    for (var local : ProgramIr.getNonParamLocals(method,
-        globalNames)) {
-      instructions.add(CopyInstruction.noMetaData(local.copy(),
-          IrIntegerConstant.zero()));
+    for (var local : ProgramIr.getLocals(method)) {
+      if (local instanceof IrSsaRegister irSsaRegister) instructions.add(CopyInstruction.noMetaData(
+          irSsaRegister.copy(),
+          IrIntegerConstant.zero()
+      ));
     }
-    entryBasicBlockInstructionList.addAll(1,
-        instructions);
+    entryBasicBlockInstructionList.addAll(
+        1,
+        instructions
+    );
     method.setUnoptimizedInstructionList(TraceScheduler.flattenIr(method));
     return method;
   }
 
-  private InstructionList getPrologue(Program program) {
+  private InstructionList genPrologue(Program program) {
     var prologue = new InstructionList();
-    for (var fieldDeclaration : program.fieldDeclarationList) {
+    for (var fieldDeclaration : program.getFieldDeclarationList()) {
       for (var name : fieldDeclaration.names) {
-        prologue.add(new GlobalAllocation(new IrGlobalScalar(name.getLabel(),
-                                                             fieldDeclaration.getType()),
-            fieldDeclaration.getType()
-                            .getFieldSize(),
-            fieldDeclaration.getType(),
+        prologue.add(new GlobalAllocation(
+            new IrGlobalScalar(
+                name.getLabel(),
+                fieldDeclaration.getType()
+            ),
             name,
-            "# " + name.getSourceCode()));
+            "# " + name.getSourceCode()
+        ));
       }
       for (var array : fieldDeclaration.arrays) {
         var size = (fieldDeclaration.getType()
                                     .getFieldSize() * array.getSize()
                                                            .convertToLong());
-        prologue.add(new GlobalAllocation(new IrGlobalArray(array.getId()
-                                                                 .getLabel(),
-                                                            fieldDeclaration.getType()),
-            size,
-            fieldDeclaration.getType(),
+        prologue.add(new GlobalAllocation(
+            new IrGlobalArray(
+                array.getId()
+                     .getLabel(),
+                fieldDeclaration.getType(),
+                size
+            ),
             array,
-            "# " + array.getSourceCode()));
+            "# " + array.getSourceCode()
+        ));
       }
     }
     globalNames.addAll(prologue.stream()
@@ -146,11 +167,13 @@ public class BasicBlockToInstructionListConverter {
                                                                   .stream())
                                .collect(Collectors.toUnmodifiableSet()));
 
-    for (String stringLiteral : findAllStringLiterals(program)) {
+    for (var stringLiteral : findAllStringLiterals(program)) {
       final var stringConstant = new IrStringConstant(stringLiteral);
       prologue.add(new StringConstantAllocation(stringConstant));
-      stringConstantsMap.put(stringLiteral,
-          stringConstant);
+      stringConstantsMap.put(
+          stringLiteral,
+          stringConstant
+      );
     }
     return prologue;
   }
@@ -159,7 +182,7 @@ public class BasicBlockToInstructionListConverter {
     var literalList = new HashSet<String>();
     var toExplore = new Stack<AST>();
 
-    toExplore.addAll(program.methodDefinitionList);
+    toExplore.addAll(program.getMethodDefinitionList());
     while (!toExplore.isEmpty()) {
       final AST node = toExplore.pop();
       if (node instanceof StringLiteral) literalList.add(((StringLiteral) node).literal);
@@ -190,8 +213,10 @@ public class BasicBlockToInstructionListConverter {
     visitedBasicBlocks.add(basicBlockBranchLess);
     InstructionList instructionList = new InstructionList();
     for (var line : basicBlockBranchLess.getAstNodes())
-      instructionList.addAll(line.accept(currentAstToInstructionListConverter,
-          null));
+      instructionList.addAll(line.accept(
+          currentAstToInstructionListConverter,
+          null
+      ));
     assert basicBlockBranchLess.getSuccessor() != null;
     visit(basicBlockBranchLess.getSuccessor());
     basicBlockBranchLess.setInstructionList(instructionList);
@@ -206,18 +231,22 @@ public class BasicBlockToInstructionListConverter {
 
     var condition = basicBlockWithBranch.getBranchCondition()
                                         .orElseThrow();
-    var conditionInstructionList = condition.accept(currentAstToInstructionListConverter,
-                                                    IrSsaRegister.gen(Type.Bool));
+    var conditionInstructionList = condition.accept(
+        currentAstToInstructionListConverter,
+        IrSsaRegister.gen(Type.Bool)
+    );
 
     visit(basicBlockWithBranch.getTrueTarget());
     visit(basicBlockWithBranch.getFalseTarget());
 
-    var branchCondition = new ConditionalBranch(conditionInstructionList.getPlace(),
-                                                basicBlockWithBranch.getFalseTarget(),
-                                                condition,
-                                                "if !(" + basicBlockWithBranch.getBranchCondition()
+    var branchCondition = new ConditionalBranch(
+        conditionInstructionList.getPlace(),
+        basicBlockWithBranch.getFalseTarget(),
+        condition,
+        "if !(" + basicBlockWithBranch.getBranchCondition()
                                       .orElseThrow()
-                                      .getSourceCode() + ")");
+                                      .getSourceCode() + ")"
+    );
     conditionInstructionList.add(branchCondition);
     basicBlockWithBranch.setInstructionList(conditionInstructionList);
     return conditionInstructionList;

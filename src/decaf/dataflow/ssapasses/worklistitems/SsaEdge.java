@@ -1,7 +1,7 @@
 package decaf.dataflow.ssapasses.worklistitems;
 
-import decaf.codegen.codes.HasOperand;
 import decaf.cfg.BasicBlock;
+import decaf.codegen.codes.HasOperand;
 import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.StoreInstruction;
 import decaf.codegen.names.IrSsaRegister;
@@ -14,12 +14,19 @@ import decaf.codegen.names.IrSsaRegister;
  */
 public record SsaEdge(StoreInstruction def, HasOperand use, BasicBlock basicBlockOfUse) {
 
-    @Override
-    public String toString() {
-        return String.format("%s in [%s] -> %s", def.getDestination(), def.toString().strip(), use.toString().strip());
-    }
+  @Override
+  public String toString() {
+    return String.format(
+        "%s in [%s] -> %s",
+        def.getDestination(),
+        def.toString()
+           .strip(),
+        use.toString()
+           .strip()
+    );
+  }
 
-    public IrSsaRegister getValue() {
-        return (IrSsaRegister) def.getDestination();
-    }
+  public IrSsaRegister getValue() {
+    return (IrSsaRegister) def.getDestination();
+  }
 }

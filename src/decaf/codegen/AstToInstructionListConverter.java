@@ -1,6 +1,5 @@
 package decaf.codegen;
 
-import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.List;
@@ -8,9 +7,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
-import decaf.ast.Len;
-import decaf.codegen.names.IrAssignable;
-import decaf.codegen.names.IrMemoryAddress;
 import decaf.ast.AST;
 import decaf.ast.Assignment;
 import decaf.ast.BinaryOpExpression;
@@ -21,6 +17,7 @@ import decaf.ast.ExpressionParameter;
 import decaf.ast.FieldDeclaration;
 import decaf.ast.Initialization;
 import decaf.ast.IntLiteral;
+import decaf.ast.Len;
 import decaf.ast.Location;
 import decaf.ast.LocationArray;
 import decaf.ast.LocationAssignExpr;
@@ -43,14 +40,16 @@ import decaf.codegen.codes.FunctionCallWithResult;
 import decaf.codegen.codes.GetAddress;
 import decaf.codegen.codes.ReturnInstruction;
 import decaf.codegen.codes.UnaryInstruction;
-import decaf.codegen.names.IrSsaRegister;
+import decaf.codegen.names.IrAssignable;
 import decaf.codegen.names.IrIntegerConstant;
+import decaf.codegen.names.IrMemoryAddress;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.names.IrStackArray;
 import decaf.codegen.names.IrStringConstant;
 import decaf.codegen.names.IrValue;
+import decaf.common.Operators;
 import decaf.descriptors.ArrayDescriptor;
 import decaf.symboltable.SymbolTable;
-import decaf.common.Operators;
 
 class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList> {
   private final SymbolTable symbolTable;
@@ -73,8 +72,8 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
   }
 
   private IrValue newIrLocation(
-      @NotNull String label,
-      @NotNull Type type
+      String label,
+      Type type
   ) {
     if (cachedAddresses.containsKey(label)) return cachedAddresses.get(label)
                                                                   .copy();
@@ -123,8 +122,8 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
   }
 
   private Stack<IrValue> lowerMethodCallParameters(
-      @NotNull InstructionList instructionList,
-      @NotNull List<MethodCallParameter> methodCallParameterList
+      InstructionList instructionList,
+      List<MethodCallParameter> methodCallParameterList
   ) {
     var parameterIrRegisters = new Stack<IrValue>();
     for (MethodCallParameter methodCallParameter : methodCallParameterList) {
@@ -185,7 +184,7 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
       MethodCallStatement methodCallStatement,
       IrAssignable resultLocation
   ) {
-    InstructionList instructionList = new InstructionList();
+    var instructionList = new InstructionList();
     instructionList.add(new FunctionCallNoResult(
         methodCallStatement.methodCall,
         lowerMethodCallParameters(
@@ -318,10 +317,10 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
   }
 
   private InstructionList lowerAugmentedAssignment(
-      @NotNull IrValue lhs,
+      IrValue lhs,
       IrValue rhs,
-      @NotNull String op,
-      @NotNull AST assignment
+      String op,
+      AST assignment
   ) {
     var instructionList = new InstructionList(lhs);
     switch (op) {
@@ -391,7 +390,7 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
 
   @Override
   public InstructionList visit(
-      @NotNull Assignment assignment,
+      Assignment assignment,
       IrAssignable resultLocation
   ) {
     var assignmentInstructionList = new InstructionList();

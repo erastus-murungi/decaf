@@ -1,5 +1,6 @@
 package decaf.descriptors;
 
+
 import java.util.TreeSet;
 
 import decaf.ast.Type;
@@ -16,18 +17,37 @@ import decaf.symboltable.SymbolTableType;
  */
 
 public class GlobalDescriptor extends Descriptor {
-    public SymbolTable globalVariablesSymbolTable;
-    public SymbolTable methodsSymbolTable;
-    public TreeSet<String> imports = new TreeSet<>();
+  public SymbolTable globalVariablesSymbolTable;
+  public SymbolTable methodsSymbolTable;
+  public TreeSet<String> imports = new TreeSet<>();
 
-    public GlobalDescriptor(Type type, SymbolTable globalVariablesSymbolTable, SymbolTable methodsSymbolTable, TreeSet<String> importDeclarations) {
-        super(type, "<program>");
-        this.globalVariablesSymbolTable = globalVariablesSymbolTable;
-        this.methodsSymbolTable = methodsSymbolTable;
-        this.imports.addAll(importDeclarations);
-    }
+  public GlobalDescriptor(
+      Type type,
+      SymbolTable globalVariablesSymbolTable,
+      SymbolTable methodsSymbolTable,
+      TreeSet<String> importDeclarations
+  ) {
+    super(
+        type,
+        "<program>"
+    );
+    this.globalVariablesSymbolTable = globalVariablesSymbolTable;
+    this.methodsSymbolTable = methodsSymbolTable;
+    this.imports.addAll(importDeclarations);
+  }
 
-    public GlobalDescriptor() {
-        this(Type.Undefined, new SymbolTable(null, SymbolTableType.Field, null), new SymbolTable(null, SymbolTableType.Method, null), new TreeSet<>());
-    }
+  public GlobalDescriptor() {
+    this(
+        Type.Undefined,
+        new SymbolTable(null,
+                        SymbolTableType.Field,
+                        null
+        ),
+        new SymbolTable(null,
+                        SymbolTableType.Method,
+                        null
+        ),
+        new TreeSet<>()
+    );
+  }
 }

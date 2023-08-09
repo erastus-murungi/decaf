@@ -1,17 +1,13 @@
 package decaf.cfg;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.jetbrains.annotations.NotNull;
+import static decaf.common.Preconditions.checkNotNull;
 
 import java.util.HashMap;
 
 
 public class MaximalBasicBlocksUtil {
-  @MonotonicNonNull
   private NOP exitNOP;
-  @NotNull
+
   private HashMap<BasicBlock, Integer> visited = new HashMap<>();
 
   public BasicBlock visit(BasicBlock basicBlock) {

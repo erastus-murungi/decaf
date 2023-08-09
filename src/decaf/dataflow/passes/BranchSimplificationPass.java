@@ -5,47 +5,55 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import decaf.cfg.BasicBlock;
 import decaf.codegen.InstructionList;
 import decaf.codegen.codes.ConditionalBranch;
-import decaf.dataflow.OptimizationContext;
-import decaf.cfg.BasicBlock;
 import decaf.codegen.codes.Method;
+import decaf.dataflow.OptimizationContext;
 
 public class BranchSimplificationPass extends OptimizationPass {
-    boolean noChanges = true;
+  boolean noChanges = true;
 
-    public BranchSimplificationPass(OptimizationContext optimizationContext, Method method) {
-        super(optimizationContext, method);
+  public BranchSimplificationPass(
+      OptimizationContext optimizationContext,
+      Method method
+  ) {
+    super(
+        optimizationContext,
+        method
+    );
+  }
+
+  private boolean isTrue(ConditionalBranch conditionalBranch) {
+    return conditionalBranch.getCondition()
+                            .equals(InstructionSimplifyPass.mOne);
+  }
+
+  private boolean isFalse(ConditionalBranch conditionalBranch) {
+    return conditionalBranch.getCondition()
+                            .equals(InstructionSimplifyPass.mZero);
+  }
+
+  private Optional<ConditionalBranch> getConditional(InstructionList instructionList) {
+    return instructionList
+        .stream()
+        .dropWhile(threeAddressCode -> !(threeAddressCode instanceof ConditionalBranch))
+        .map(threeAddressCode -> (ConditionalBranch) threeAddressCode)
+        .findFirst();
+  }
+
+  private Boolean getStateOfBlockCondition(BasicBlock basicBlockWithBranch) {
+    Optional<ConditionalBranch> conditionalJump = getConditional(basicBlockWithBranch.getInstructionList());
+    if (conditionalJump.isPresent()) {
+      if (isTrue(conditionalJump.get())) {
+        return true;
+      } else if (isFalse(conditionalJump.get()))
+        return false;
     }
+    return null;
+  }
 
-    private boolean isTrue(ConditionalBranch conditionalBranch) {
-        return conditionalBranch.getCondition().equals(InstructionSimplifyPass.mOne);
-    }
-
-    private boolean isFalse(ConditionalBranch conditionalBranch) {
-        return conditionalBranch.getCondition().equals(InstructionSimplifyPass.mZero);
-    }
-
-    private Optional<ConditionalBranch> getConditional(InstructionList instructionList) {
-        return instructionList
-                .stream()
-                .dropWhile(threeAddressCode -> !(threeAddressCode instanceof ConditionalBranch))
-                .map(threeAddressCode -> (ConditionalBranch) threeAddressCode)
-                .findFirst();
-    }
-
-    private Boolean getStateOfBlockCondition(BasicBlock basicBlockWithBranch) {
-        Optional<ConditionalBranch> conditionalJump = getConditional(basicBlockWithBranch.getInstructionList());
-        if (conditionalJump.isPresent()) {
-            if (isTrue(conditionalJump.get())) {
-                return true;
-            } else if (isFalse(conditionalJump.get()))
-                return false;
-        }
-        return null;
-    }
-
-    private void removeFalseBranch(BasicBlock basicBlockWithBranch) {
+  private void removeFalseBranch(BasicBlock basicBlockWithBranch) {
 //        // if (true) || if (1)
 //        // just reduce this to the true branch
 //        var trueChild = basicBlockWithBranch.trueChild;
@@ -63,9 +71,9 @@ public class BranchSimplificationPass extends OptimizationPass {
 //            label.aliasLabels.remove(0);
 //        }
 //        noChanges = false;
-    }
+  }
 
-    private void removeTrueBranch(BasicBlock basicBlockWithBranch) {
+  private void removeTrueBranch(BasicBlock basicBlockWithBranch) {
 //        // if (false) || if (0)
 //        // just reduce this to the true branch
 //        var trueChild = basicBlockWithBranch.trueChild;
@@ -110,32 +118,32 @@ public class BranchSimplificationPass extends OptimizationPass {
 //            nextTacList = nextTacList.nextInstructionList;
 //        }
 //        noChanges = false;
-    }
+  }
 
-    private void removeUselessBranches() {
-        List<BasicBlock> evaluateToTrue = new ArrayList<>();
-        List<BasicBlock> evaluateToFalse = new ArrayList<>();
-        for (var basicBlock : getBasicBlocksList()) {
-            if (basicBlock.hasBranch()) {
-                Boolean evaluatesTrueBranch = getStateOfBlockCondition(basicBlock);
-                if (evaluatesTrueBranch == null)
-                    continue;
-                if (evaluatesTrueBranch)
-                    evaluateToTrue.add(basicBlock);
-                else
-                    evaluateToFalse.add(basicBlock);
-            }
-        }
-        if (evaluateToFalse.isEmpty() || evaluateToTrue.isEmpty())
-            noChanges = true;
-        evaluateToTrue.forEach(this::removeFalseBranch);
-        evaluateToFalse.forEach(this::removeTrueBranch);
+  private void removeUselessBranches() {
+    List<BasicBlock> evaluateToTrue = new ArrayList<>();
+    List<BasicBlock> evaluateToFalse = new ArrayList<>();
+    for (var basicBlock : getBasicBlocksList()) {
+      if (basicBlock.hasBranch()) {
+        Boolean evaluatesTrueBranch = getStateOfBlockCondition(basicBlock);
+        if (evaluatesTrueBranch == null)
+          continue;
+        if (evaluatesTrueBranch)
+          evaluateToTrue.add(basicBlock);
+        else
+          evaluateToFalse.add(basicBlock);
+      }
     }
+    if (evaluateToFalse.isEmpty() || evaluateToTrue.isEmpty())
+      noChanges = true;
+    evaluateToTrue.forEach(this::removeFalseBranch);
+    evaluateToFalse.forEach(this::removeTrueBranch);
+  }
 
 
-    @Override
-    public boolean runFunctionPass() {
-        removeUselessBranches();
-        return noChanges;
-    }
+  @Override
+  public boolean runFunctionPass() {
+    removeUselessBranches();
+    return noChanges;
+  }
 }

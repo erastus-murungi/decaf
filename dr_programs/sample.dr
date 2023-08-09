@@ -1,0 +1,57 @@
+global array [int x 10]
+@.string_0 = "%d "        # 3 bytes
+@.string_1 = "\n"        # 1 bytes
+@.string_2 = "below output should be 18 16 14 12 10 8 6 4 2 0\n"        # 48 bytes
+define @main() -> void {        
+        call int @printf(@.string_2)          #  printf("below output should be 18 16 14 12 10 8 6 4 2 0\n")
+        setreg j.2: int = 0
+        setreg %4.1: bool = false
+        setreg %3.1: int = j.2
+        setreg %0.1: bool = %4.1
+    L1:
+        setreg %14: bool = %4.1
+        setreg %11: bool = %4.1
+        setreg %10: int = j.2
+        setreg %0.2: bool = lt %10, 10          # j < len (array)
+        setreg j.4: int = 0
+        setreg %9.2: int = j.4
+        setmem *%7.2: int = %9.2
+        setreg %6.2: int = *%7.2
+        setreg %5.2: int = %6.2
+        setreg %4.2: bool = %4.1
+        if false %0.2 goto L4          #  if !(j < len (array))
+    L2:
+        *%1.1: int = getaddr array : %10
+        checkbounds *%1 int, %10, 10
+        setreg %3.2: int = add %10, 1          # j += 1
+        setreg j.6: int = %3.2
+        setreg j.2: int = j.6
+        setreg %4.1: bool = %4.2
+        setreg %3.1: int = %3.2
+        setreg %0.1: bool = %0.2
+        goto L1
+    L4:
+        setreg %13: bool = %4.2
+        setreg %12: int = j.4
+        setreg %4.3: bool = lt %12, 10          # j < 10
+        if false %4.3 goto L7          #  if !(j < 10)
+    L5:
+        setreg %6.3: int = sub 9, %12          # 9 - j
+        *%7.3: int = getaddr array : %6.3
+        checkbounds *%7 int, %6.3, 10
+        setreg %5.3: int = *%7.3
+        call int @printf(@.string_0, *%7.3)          #  printf("%d ", array[9 - j])
+        setreg %9.3: int = add %12, 1          # j += 1
+        setreg j.5: int = %9.3
+        setreg j.4: int = j.5
+        setreg %9.2: int = %9.3
+        setmem *%7.2: int = *%7.3
+        setreg %6.2: int = %6.3
+        setreg %5.2: int = %5.3
+        setreg %4.2: bool = %4.3
+        goto L4
+    L7:
+        call int @printf(@.string_1)          #  printf("\n")
+        goto L9
+    L9:
+}

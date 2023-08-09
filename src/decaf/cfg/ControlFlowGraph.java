@@ -1,8 +1,7 @@
 package decaf.cfg;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 
-import org.jetbrains.annotations.NotNull;
+import static decaf.common.Preconditions.checkNotNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -78,9 +77,9 @@ public class ControlFlowGraph {
   }
 
   public static void visit(
-      @NotNull BasicBlock basicBlock,
-      @NotNull Set<BasicBlock> seen,
-      @NotNull NOP methodExitNop
+      BasicBlock basicBlock,
+      Set<BasicBlock> seen,
+      NOP methodExitNop
   ) {
     switch (basicBlock.getBasicBlockType()) {
       case NO_BRANCH -> visitBasicBlockBranchLess(
@@ -234,8 +233,9 @@ public class ControlFlowGraph {
     if (returningPaths.size() != nonReturningPaths.size()) {
       errors.addAll(nonReturningPaths.stream()
                                      .map(basicBlock -> new DecafException(
-                                         methodDefinition.tokenPosition,
-                                         methodDefinition.methodName.getLabel() + "'s execution path ends with" +
+                                         methodDefinition.getTokenPosition(),
+                                         methodDefinition.getMethodName()
+                                                         .getLabel() + "'s execution path ends with" +
                                              (basicBlock.getAstNodes()
                                                         .isEmpty() ? "": (basicBlock.lastAstLine()
                                                                                     .getSourceCode())) +
@@ -245,9 +245,10 @@ public class ControlFlowGraph {
     }
     if (returningPaths.isEmpty()) {
       errors.add(new DecafException(
-          methodDefinition.tokenPosition,
-          methodDefinition.methodName.getLabel() + " method does not return expected type " +
-              methodDefinition.returnType
+          methodDefinition.getTokenPosition(),
+          methodDefinition.getMethodName()
+                          .getLabel() + " method does not return expected type " +
+              methodDefinition.getReturnType()
       ));
     }
   }
@@ -282,7 +283,7 @@ public class ControlFlowGraph {
         (NOP) prologue.getSuccessor()
     );
     HashMap<String, BasicBlock> methodBlocksCFG = new HashMap<>();
-    methodNameToEntryBlock.forEach((k, v) -> {
+    methodNameToEntryBlock.forEach((var k, var v) -> {
       if (v.getLinesOfCodeString()
            .isBlank()) {
         if (v.getSuccessor() != null) {
@@ -366,7 +367,8 @@ public class ControlFlowGraph {
       SymbolTable symbolTable
   ) {
     var methodEntryNop = new NOP(
-        methodDefinition.methodName.getLabel(),
+        methodDefinition.getMethodName()
+                        .getLabel(),
         NOP.NOPType.METHOD_ENTRY
     );
     var currentPair = new BasicBlocksPair(
@@ -375,7 +377,7 @@ public class ControlFlowGraph {
     );
     methodEntryNop.setSuccessor(currentPair.endBlock);
     currentPair.startBlock.setSuccessor(currentPair.endBlock);
-    for (var param : methodDefinition.parameterList) {
+    for (var param : methodDefinition.getParameterList()) {
       var placeholder = dispatch(
           param,
           symbolTable
@@ -385,7 +387,7 @@ public class ControlFlowGraph {
       currentPair = placeholder;
     }
     var methodBody = dispatch(
-        methodDefinition.block,
+        methodDefinition.getBlock(),
         symbolTable
     );
     currentPair.endBlock.setSuccessor(methodBody.startBlock);
@@ -544,7 +546,7 @@ public class ControlFlowGraph {
         )
     );
     prologue.setSuccessor(curPair.endBlock);
-    for (var import_ : program.importDeclarationList) {
+    for (var import_ : program.getImportDeclarationList()) {
       BasicBlocksPair placeholder = dispatch(
           import_,
           symbolTable
@@ -553,7 +555,7 @@ public class ControlFlowGraph {
       placeholder.startBlock.addPredecessor(curPair.endBlock);
       curPair = placeholder;
     }
-    for (var field : program.fieldDeclarationList) {
+    for (var field : program.getFieldDeclarationList()) {
       BasicBlocksPair placeholder = dispatch(
           field,
           symbolTable
@@ -562,20 +564,23 @@ public class ControlFlowGraph {
       placeholder.startBlock.addPredecessor(curPair.endBlock);
       curPair = placeholder;
     }
-    for (var method : program.methodDefinitionList) {
+    for (var method : program.getMethodDefinitionList()) {
       exitNop = new NOP(
-          method.methodName.getLabel(),
+          method.getMethodName()
+                .getLabel(),
           NOP.NOPType.METHOD_EXIT
       );
       methodNameToEntryBlock.put(
-          method.methodName.getLabel(),
+          method.getMethodName()
+                .getLabel(),
           dispatch(
               method,
               symbolTable
           ).startBlock
       );
       methodNameToExitNop.put(
-          method.methodName.getLabel(),
+          method.getMethodName()
+                .getLabel(),
           exitNop
       );
     }

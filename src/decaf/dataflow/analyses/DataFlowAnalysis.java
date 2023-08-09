@@ -14,85 +14,94 @@ import decaf.cfg.BasicBlock;
 import decaf.cfg.NOP;
 import decaf.codegen.InstructionList;
 import decaf.codegen.codes.Instruction;
-import decaf.dataflow.Direction;
 import decaf.common.StronglyConnectedComponentsTarjan;
+import decaf.dataflow.Direction;
 
 public abstract class DataFlowAnalysis<T> {
-    public Map<BasicBlock, Set<T>> out;
-    public Map<BasicBlock, Set<T>> in;
-    Set<T> allTS;
-    // the list of all basic blocks
-    List<BasicBlock> basicBlocks;
-    NOP entryBlock;
-    NOP exitBlock;
+  public Map<BasicBlock, Set<T>> out;
+  public Map<BasicBlock, Set<T>> in;
+  Set<T> allTS;
+  // the list of all basic blocks
+  List<BasicBlock> basicBlocks;
+  NOP entryBlock;
+  NOP exitBlock;
 
-    public DataFlowAnalysis(BasicBlock basicBlock) {
-        attachEntryNode(basicBlock);
-        findAllBasicBlocksInReversePostOrder();
-        findExitBlock();
-        computeUniversalSetsOfValues();
-        initializeWorkSets();
-        runWorkList();
+  public DataFlowAnalysis(BasicBlock basicBlock) {
+    attachEntryNode(basicBlock);
+    findAllBasicBlocksInReversePostOrder();
+    findExitBlock();
+    computeUniversalSetsOfValues();
+    initializeWorkSets();
+    runWorkList();
+  }
+
+  public static Map<Instruction, Integer> getInstructionToIndexMapping(InstructionList instructionList) {
+    var instructionToIndexMapping = new LinkedHashMap<Instruction, Integer>();
+    var index = 0;
+    for (Instruction instruction : instructionList) {
+      instructionToIndexMapping.put(
+          instruction,
+          index
+      );
+      ++index;
     }
+    return instructionToIndexMapping;
+  }
 
-    public static Map<Instruction, Integer> getInstructionToIndexMapping(InstructionList instructionList) {
-        var instructionToIndexMapping = new LinkedHashMap<Instruction, Integer>();
-        var index = 0;
-        for (Instruction instruction : instructionList) {
-            instructionToIndexMapping.put(instruction, index);
-            ++index;
-        }
-        return instructionToIndexMapping;
-    }
+  Set<T> in(BasicBlock basicBlock) {
+    return in.get(basicBlock);
+  }
 
-    Set<T> in(BasicBlock basicBlock) {
-        return in.get(basicBlock);
-    }
+  Set<T> out(BasicBlock basicBlock) {
+    return out.get(basicBlock);
+  }
 
-    Set<T> out(BasicBlock basicBlock) {
-        return out.get(basicBlock);
-    }
+  private void attachEntryNode(BasicBlock basicBlock) {
+    entryBlock = new NOP(
+        "Entry",
+        NOP.NOPType.METHOD_ENTRY
+    );
+    entryBlock.setSuccessor(basicBlock);
+    basicBlock.addPredecessor(entryBlock);
+  }
 
-    private void attachEntryNode(BasicBlock basicBlock) {
-        entryBlock = new NOP("Entry", NOP.NOPType.METHOD_ENTRY);
-        entryBlock.setSuccessor(basicBlock);
-        basicBlock.addPredecessor(entryBlock);
-    }
+  public abstract void computeUniversalSetsOfValues();
 
-    public abstract void computeUniversalSetsOfValues();
+  private void findAllBasicBlocksInReversePostOrder() {
+    basicBlocks = StronglyConnectedComponentsTarjan.getReversePostOrder(entryBlock);
+  }
 
-    private void findAllBasicBlocksInReversePostOrder() {
-        basicBlocks = StronglyConnectedComponentsTarjan.getReversePostOrder(entryBlock);
-    }
+  private void findExitBlock() {
+    List<NOP> exitBlockList = basicBlocks
+        .stream()
+        .filter(basicBlock -> basicBlock instanceof NOP)
+        .map(basicBlock -> (NOP) basicBlock)
+        .filter(NOP::isExitNop)
+        .toList();
+    checkState(
+        exitBlockList.size() == 1,
+        "expected 1 exit node, found " + exitBlockList.size()
+    );
+    exitBlock = exitBlockList.get(0);
+  }
 
-    private void findExitBlock() {
-        List<NOP> exitBlockList = basicBlocks
-                .stream()
-                .filter(basicBlock -> basicBlock instanceof NOP)
-                .map(basicBlock -> (NOP) basicBlock)
-                .filter(NOP::isExitNop)
-                .toList();
-        checkState(exitBlockList.size() == 1, "expected 1 exit node, found " + exitBlockList.size());
-        exitBlock = exitBlockList.get(0);
-    }
+  public abstract Set<T> meet(BasicBlock basicBlock);
 
-    public abstract Set<T> meet(BasicBlock basicBlock);
+  public abstract Set<T> transferFunction(T domainElement);
 
-    public abstract Set<T> transferFunction(T domainElement);
+  public abstract Direction direction();
 
-    public abstract Direction direction();
+  public abstract void initializeWorkSets();
 
-    public abstract void initializeWorkSets();
+  public abstract void runWorkList();
 
-    public abstract void runWorkList();
-
-    public String getResultForPrint() {
-        return Stream
-                .of(basicBlocks)
-                .flatMap(Collection::stream)
-                .map(basicBlock -> in.get(basicBlock))
-                .flatMap(Collection::stream)
-                .map(T::toString)
-                .collect(Collectors.joining("\n"));
-    }
+  public String getResultForPrint() {
+    return Stream
+        .of(basicBlocks)
+        .flatMap(Collection::stream)
+        .map(basicBlock -> in.get(basicBlock))
+        .flatMap(Collection::stream)
+        .map(T::toString)
+        .collect(Collectors.joining("\n"));
+  }
 }

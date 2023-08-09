@@ -6,8 +6,6 @@ import static java.lang.Math.min;
 
 import com.google.common.collect.Sets;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -52,36 +50,36 @@ import decaf.regalloc.RegisterAllocator;
  * Resolve names
  */
 public class X86ValueResolver {
-  @NotNull
+
   private final Map<Method, Map<IrValue, X86RegisterMappedValue>> registerMappedIrValues = new HashMap<>();
-  @NotNull
+
   private final Map<IrConstant, X86ConstantValue> constants = new HashMap<>();
-  @NotNull
+
   private final Map<IrValue, X86GlobalValue> globals = new HashMap<>();
-  @NotNull
+
   private final Map<Method, Map<IrValue, Integer>> stackOffsets = new HashMap<>();
-  @NotNull
+
   private final Map<X86Value, Integer> temporarySaveLocations = new HashMap<>();
-  @NotNull
+
   private final Map<Method, Integer> largestStackOffset = new HashMap<>();
-  @NotNull
+
   private final Map<Method, Map<IrSsaRegister, X86Value>> initialArgumentLocations = new HashMap<>();
-  @NotNull
+
   private final Map<IrMemoryAddress, X86MemoryAddress> memoryAddresses = new HashMap<>();
-  @NotNull
+
   private final RegisterAllocator registerAllocator;
-  @NotNull
+
   private final List<X64Instruction> preparatoryInstructions = new ArrayList<>();
-  @NotNull
+
   private Method currentMethod;
-  @NotNull
+
   private X86Method currentX86Method;
   private int currentStackOffset = 0;
 
 
   public X86ValueResolver(
-      @NotNull ProgramIr programIr,
-      @NotNull RegisterAllocator registerAllocator
+      ProgramIr programIr,
+      RegisterAllocator registerAllocator
   ) {
     currentMethod = programIr.getMethods()
                              .get(0);
@@ -94,17 +92,17 @@ public class X86ValueResolver {
     );
   }
 
-  public boolean parameterUsedInCurrentMethod(@NotNull IrValue irValue) {
+  public boolean parameterUsedInCurrentMethod(IrValue irValue) {
     return registerAllocator.getVariableToRegisterMap()
                             .get(currentMethod)
                             .containsKey(irValue);
   }
 
-  public void setCurrentMethod(@NotNull Method currentMethod) {
+  public void setCurrentMethod(Method currentMethod) {
     this.currentMethod = currentMethod;
   }
 
-  public void setCurrentX64Method(@NotNull X86Method currentX86Method) {
+  public void setCurrentX64Method(X86Method currentX86Method) {
     this.currentX86Method = currentX86Method;
   }
 
@@ -129,8 +127,8 @@ public class X86ValueResolver {
   }
 
   private void mapLocalToX64OperandsForMethod(
-      @NotNull Method method,
-      @NotNull RegisterAllocator registerAllocator
+      Method method,
+      RegisterAllocator registerAllocator
   ) {
     var methodRegisterMapping = registerAllocator.getVariableToRegisterMap()
                                                  .get(method);
@@ -179,7 +177,7 @@ public class X86ValueResolver {
     );
   }
 
-  private void mapIrStackArraysToStack(@NotNull Method method) {
+  private void mapIrStackArraysToStack(Method method) {
     ProgramIr.getIrStackArrays(method)
              .forEach(irStackArray -> {
                int offset = -Utils.roundUp16(Math.abs(pushStack((int) irStackArray.getNumElements())));
@@ -192,26 +190,26 @@ public class X86ValueResolver {
              });
   }
 
-  @NotNull
+
   private Map<IrSsaRegister, X86Value> getInitialArgumentLocations() {
     return initialArgumentLocations.get(currentMethod);
   }
 
-  @NotNull
-  private X86ConstantValue resolveIrConstantValue(@NotNull IrConstant irConstant) {
+
+  private X86ConstantValue resolveIrConstantValue(IrConstant irConstant) {
     return checkNotNull(constants.computeIfAbsent(
         irConstant,
         k -> new X86ConstantValue(irConstant)
     ));
   }
 
-  boolean isUnResolvedArgumentIrValue(@NotNull IrValue irValue) {
+  boolean isUnResolvedArgumentIrValue(IrValue irValue) {
     return irValue instanceof IrSsaRegister argumentIrRegister &&
         getInitialArgumentLocations().containsKey(argumentIrRegister);
   }
 
-  @NotNull
-  private X86Value localizeArgument(@NotNull IrSsaRegister argument) {
+
+  private X86Value localizeArgument(IrSsaRegister argument) {
     var initialArgumentLocation = getInitialArgumentLocations().remove(argument);
     var localizedArgumentX86Value = resolveIrValueInternal(argument);
     if (!localizedArgumentX86Value.equals(initialArgumentLocation)) {
@@ -225,8 +223,8 @@ public class X86ValueResolver {
   }
 
   private void spillValuesToStack(
-      @NotNull X86Register x86Register,
-      @NotNull Collection<IrValue> valuesToSpill
+      X86Register x86Register,
+      Collection<IrValue> valuesToSpill
   ) {
     valuesToSpill.forEach(irAssignableValue -> {
       var spillLocation = new X86StackMappedValue(
@@ -254,8 +252,8 @@ public class X86ValueResolver {
 
 
   private void updateIrValueMappingTo(
-      @NotNull IrValue irValue,
-      @NotNull X86Register x86Register
+      IrValue irValue,
+      X86Register x86Register
   ) {
     var oldLocation = resolveIrValueInternal(irValue);
     var newLocation = new X86RegisterMappedValue(
@@ -278,7 +276,7 @@ public class X86ValueResolver {
                           );
   }
 
-  private Set<IrValue> getVariablesInLiveIntervalOf(@NotNull IrValue irValue) {
+  private Set<IrValue> getVariablesInLiveIntervalOf(IrValue irValue) {
     if (irValue instanceof IrIntegerConstant) {
       return Collections.emptySet();
     } else {
@@ -291,7 +289,7 @@ public class X86ValueResolver {
   }
 
   public void processGetAddress(
-      @NotNull GetAddress getAddress
+      GetAddress getAddress
   ) {
     X86MemoryAddressComputation address;
     X86MemoryAddress destination;
@@ -359,7 +357,8 @@ public class X86ValueResolver {
           indexValue
       );
       memoryAddresses.put(
-          getAddress.getDestination(), destination
+          getAddress.getDestination(),
+          destination
       );
     }
     currentX86Method.add(new X64BinaryInstruction(
@@ -370,7 +369,7 @@ public class X86ValueResolver {
   }
 
   private X86Register genRegisterToSpill(
-      @NotNull IrValue irValue,
+      IrValue irValue,
       ArrayList<X86Register> toAvoid
   ) {
     final var liveValuesInInterval = getVariablesInLiveIntervalOf(irValue);
@@ -421,25 +420,25 @@ public class X86ValueResolver {
 
   }
 
-  public boolean isStackMappedIrValue(@NotNull IrValue irValue) {
+  public boolean isStackMappedIrValue(IrValue irValue) {
     return irValue instanceof IrSsaRegister && stackOffsets.get(currentMethod)
                                                            .containsKey(irValue);
   }
 
-  public boolean isRegisterMappedIrValue(@NotNull IrValue irValue) {
+  public boolean isRegisterMappedIrValue(IrValue irValue) {
     return irValue instanceof IrRegisterAllocatable && registerMappedIrValues.get(currentMethod)
-                                                                     .containsKey(irValue);
+                                                                             .containsKey(irValue);
   }
 
-  @NotNull
-  public X86Register getRegisterOrFail(@NotNull IrValue irValue) {
+
+  public X86Register getRegisterOrFail(IrValue irValue) {
     return registerMappedIrValues.get(currentMethod)
                                  .get(irValue)
                                  .getX64RegisterType();
   }
 
-  @NotNull
-  private X86StackMappedValue resolveStackMappedIrValue(@NotNull IrValue irValue) {
+
+  private X86StackMappedValue resolveStackMappedIrValue(IrValue irValue) {
     return new X86StackMappedValue(
         X86Register.RBP,
         checkNotNull(stackOffsets.get(currentMethod)
@@ -453,9 +452,9 @@ public class X86ValueResolver {
     return List.copyOf(preparatoryInstructions);
   }
 
-  @NotNull
+
   public X86Value resolveIrValue(
-      @NotNull IrValue irValue,
+      IrValue irValue,
       boolean updateMethodX86InstructionList
   ) {
     preparatoryInstructions.clear();
@@ -468,8 +467,8 @@ public class X86ValueResolver {
     return resolved;
   }
 
-  @NotNull
-  private X86Value resolveIrValueInternal(@NotNull IrValue irValue) {
+
+  private X86Value resolveIrValueInternal(IrValue irValue) {
     if (isUnResolvedArgumentIrValue(irValue)) {
       return localizeArgument((IrSsaRegister) irValue);
     }
@@ -489,24 +488,24 @@ public class X86ValueResolver {
     }
   }
 
-  @NotNull private X86Value resolveMemoryAddress(@NotNull IrMemoryAddress irMemoryAddress) {
+  private X86Value resolveMemoryAddress(IrMemoryAddress irMemoryAddress) {
     return memoryAddresses.get(irMemoryAddress);
   }
 
-  @NotNull
-  private X86RegisterMappedValue resolveRegisterMappedIrValue(@NotNull IrValue irValue) {
+
+  private X86RegisterMappedValue resolveRegisterMappedIrValue(IrValue irValue) {
     checkState(irValue instanceof IrRegisterAllocatable);
     if (!isRegisterMappedIrValue(irValue)) throw new IllegalArgumentException(irValue.toString());
     return registerMappedIrValues.get(currentMethod)
                                  .get(irValue);
   }
 
-  @NotNull
-  private X86Value resolveIrGlobal(@NotNull IrGlobal irGlobal) {
+
+  private X86Value resolveIrGlobal(IrGlobal irGlobal) {
     return globals.get((IrValue) irGlobal);
   }
 
-  private void mapGlobalsToX64Operands(@NotNull ProgramIr programIr) {
+  private void mapGlobalsToX64Operands(ProgramIr programIr) {
     for (Instruction instruction : programIr.getPrologue()) {
       if (instruction instanceof GlobalAllocation globalAllocation) {
         if (globalAllocation.getValue() instanceof IrGlobalScalar) {
@@ -538,8 +537,8 @@ public class X86ValueResolver {
   }
 
   private void mapParametersToLocations(
-      @NotNull Method method,
-      @NotNull RegisterAllocator registerAllocator
+      Method method,
+      RegisterAllocator registerAllocator
   ) {
     // store all method args in unused registers and stack space if needed
     // the only registers we will ignore are the ones used to store the method args
@@ -587,8 +586,8 @@ public class X86ValueResolver {
   }
 
   private List<X86Register> getUnusedRegisters(
-      @NotNull Method method,
-      @NotNull RegisterAllocator registerAllocator
+      Method method,
+      RegisterAllocator registerAllocator
   ) {
     var valueMappedRegisters = Set.copyOf(registerAllocator.getVariableToRegisterMap()
                                                            .get(method)
@@ -612,8 +611,8 @@ public class X86ValueResolver {
   }
 
   public void prepareForMethod(
-      @NotNull Method method,
-      @NotNull X86Method x86Method
+      Method method,
+      X86Method x86Method
   ) {
     setCurrentMethod(method);
     setCurrentX64Method(x86Method);
@@ -631,7 +630,7 @@ public class X86ValueResolver {
     );
   }
 
-  public X86Value resolveNextStackLocation(@NotNull X86Value x86Value) {
+  public X86Value resolveNextStackLocation(X86Value x86Value) {
     if (temporarySaveLocations.containsKey(x86Value)) return new X86StackMappedValue(
         X86Register.RBP,
         temporarySaveLocations.get(x86Value)
@@ -657,8 +656,8 @@ public class X86ValueResolver {
     );
   }
 
-  @NotNull
-  public X86Value resolveInitialArgumentLocation(@NotNull IrSsaRegister irSsaRegister) {
+
+  public X86Value resolveInitialArgumentLocation(IrSsaRegister irSsaRegister) {
     return initialArgumentLocations.get(currentMethod)
                                    .get(irSsaRegister);
   }

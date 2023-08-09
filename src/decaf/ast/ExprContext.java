@@ -1,5 +1,5 @@
 package decaf.ast;
 
 public enum ExprContext {
-    LOAD, STORE, DECLARE, IMPORT
+  LOAD, STORE, DECLARE, IMPORT
 }

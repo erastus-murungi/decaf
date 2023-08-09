@@ -3,9 +3,6 @@ package decaf.asm;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static decaf.asm.X86Register.N_ARG_REGISTERS;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -19,71 +16,71 @@ import decaf.asm.instructions.X64Instruction;
 import decaf.asm.instructions.X64NoOperandInstruction;
 import decaf.asm.instructions.X64UnaryInstruction;
 import decaf.asm.instructions.X86MetaData;
+import decaf.asm.operands.X64CallOperand;
+import decaf.asm.operands.X64JumpTargetOperand;
+import decaf.asm.operands.X86ConstantValue;
 import decaf.asm.operands.X86MemoryAddressComputation;
 import decaf.asm.operands.X86MemoryAddressInRegister;
+import decaf.asm.operands.X86RegisterMappedValue;
 import decaf.asm.operands.X86StackMappedValue;
 import decaf.asm.operands.X86Value;
 import decaf.asm.types.X64BinaryInstructionType;
 import decaf.asm.types.X64NopInstructionType;
 import decaf.asm.types.X64UnaryInstructionType;
 import decaf.ast.Type;
-import decaf.codegen.codes.ConditionalBranch;
-import decaf.codegen.codes.GlobalAllocation;
-import decaf.codegen.codes.Instruction;
-import decaf.codegen.codes.ReturnInstruction;
-import decaf.codegen.codes.UnaryInstruction;
-import decaf.codegen.codes.UnconditionalBranch;
-import decaf.codegen.names.IrMemoryAddress;
-import decaf.codegen.names.IrStackArray;
-import decaf.common.CompilationContext;
-import decaf.common.Operators;
-import decaf.common.ProgramIr;
-import decaf.common.Utils;
-import decaf.asm.operands.X64CallOperand;
-import decaf.asm.operands.X64JumpTargetOperand;
-import decaf.asm.operands.X86ConstantValue;
-import decaf.asm.operands.X86RegisterMappedValue;
 import decaf.codegen.TraceScheduler;
 import decaf.codegen.codes.ArrayBoundsCheck;
 import decaf.codegen.codes.BinaryInstruction;
+import decaf.codegen.codes.ConditionalBranch;
 import decaf.codegen.codes.CopyInstruction;
 import decaf.codegen.codes.FunctionCall;
 import decaf.codegen.codes.FunctionCallNoResult;
 import decaf.codegen.codes.FunctionCallWithResult;
 import decaf.codegen.codes.GetAddress;
+import decaf.codegen.codes.GlobalAllocation;
+import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.Method;
 import decaf.codegen.codes.MethodEnd;
+import decaf.codegen.codes.ReturnInstruction;
 import decaf.codegen.codes.RuntimeException;
 import decaf.codegen.codes.StringConstantAllocation;
+import decaf.codegen.codes.UnaryInstruction;
+import decaf.codegen.codes.UnconditionalBranch;
 import decaf.codegen.names.IrIntegerConstant;
+import decaf.codegen.names.IrMemoryAddress;
+import decaf.codegen.names.IrStackArray;
 import decaf.codegen.names.IrStringConstant;
 import decaf.codegen.names.IrValue;
+import decaf.common.CompilationContext;
+import decaf.common.Operators;
+import decaf.common.ProgramIr;
+import decaf.common.Utils;
 import decaf.regalloc.RegisterAllocator;
 
 public class X86AsmWriter implements AsmWriter {
-  @NotNull
+
   private static final X86Register COPY_TEMP_REGISTER = X86Register.R10;
-  @NotNull
+
   private final RegisterAllocator registerAllocator;
-  @NotNull
+
   private final ProgramIr programIr;
-  @NotNull
+
   private final X86Program x86Program = new X86Program();
-  @NotNull
+
   private final AsmWriterContext asmWriterContext = new AsmWriterContext();
-  @NotNull
+
   private final X86ValueResolver x86ValueResolver;
-  @NotNull
+
   private X86Method x86Method = new X86Method();
-  @Nullable
+
   private Instruction currentInstruction;
-  @NotNull
+
   private Method currentMethod;
 
 
   public X86AsmWriter(
-      @NotNull ProgramIr programIr,
-      @NotNull RegisterAllocator registerAllocator
+      ProgramIr programIr,
+      RegisterAllocator registerAllocator
   ) {
     this.registerAllocator = registerAllocator;
     this.programIr = programIr;
@@ -99,7 +96,7 @@ public class X86AsmWriter implements AsmWriter {
                              .get(0);
   }
 
-  private X86Value resolveIrValue(@NotNull IrValue irValue) {
+  private X86Value resolveIrValue(IrValue irValue) {
     return x86ValueResolver.resolveIrValue(
         irValue,
         true
@@ -119,17 +116,13 @@ public class X86AsmWriter implements AsmWriter {
       if (instruction instanceof StringConstantAllocation stringConstantAllocation) {
         prologue.add(new X86MetaData(stringConstantAllocation.getASM()));
       } else if (instruction instanceof GlobalAllocation globalAllocation) {
-        prologue.add(new X86MetaData(String.format(
-            ".comm %s, %s, %s",
-            globalAllocation.getValue(),
-            globalAllocation.getSize(),
-            64
-        )));
+        prologue.add(new X86MetaData(globalAllocation.toString()));
       } else {
         throw new IllegalStateException();
       }
     }
     x86Program.addPrologue(prologue);
+    x86Program.add(new X86MetaData("\n"));
   }
 
   private void emitProgramEpilogue() {
@@ -142,7 +135,7 @@ public class X86AsmWriter implements AsmWriter {
     }
   }
 
-  private X86Method emitMethod(@NotNull Method method) {
+  private X86Method emitMethod(Method method) {
     currentMethod = method;
     x86Method = new X86Method();
     x86ValueResolver.prepareForMethod(
@@ -166,11 +159,11 @@ public class X86AsmWriter implements AsmWriter {
     return x86Method;
   }
 
-  public @NotNull X86Program getX86Program() {
+  public X86Program getX86Program() {
     return x86Program;
   }
 
-  public X86Value resolveNextStackLocation(@NotNull X86Value x86Value) {
+  public X86Value resolveNextStackLocation(X86Value x86Value) {
     return x86ValueResolver.resolveNextStackLocation(x86Value);
   }
 
@@ -197,7 +190,7 @@ public class X86AsmWriter implements AsmWriter {
     }
   }
 
-  private void saveMethodArgsToLocations(@NotNull Method method) {
+  private void saveMethodArgsToLocations(Method method) {
     // next we save all the arguments to their corresponding locations
     for (int parameterIndex = 0; parameterIndex < method.getParameterNames()
                                                         .size(); parameterIndex++) {
@@ -247,7 +240,7 @@ public class X86AsmWriter implements AsmWriter {
     }
   }
 
-  private void callerRestore(@Nullable X86Value returnAddressRegister) {
+  private void callerRestore(X86Value returnAddressRegister) {
     var registerMapping = registerAllocator.getMethodToLiveRegistersInfo()
                                            .getOrDefault(
                                                currentMethod,
@@ -277,7 +270,7 @@ public class X86AsmWriter implements AsmWriter {
     }
   }
 
-  private void callerSave(@Nullable X86Value returnAddressRegister) {
+  private void callerSave(X86Value returnAddressRegister) {
     var registerMapping = registerAllocator.getMethodToLiveRegistersInfo()
                                            .getOrDefault(
                                                currentMethod,
@@ -312,7 +305,7 @@ public class X86AsmWriter implements AsmWriter {
   }
 
 
-  private void emitStackArgumentsInstructions(@NotNull FunctionCall functionCall) {
+  private void emitStackArgumentsInstructions(FunctionCall functionCall) {
     var arguments = functionCall.getArguments();
     // we need to create stack space for the start arguments
     if (arguments.size() > N_ARG_REGISTERS) {
@@ -355,8 +348,8 @@ public class X86AsmWriter implements AsmWriter {
   }
 
   private boolean anyResolvedValuesUseRegister(
-      @NotNull Collection<X86Value> resolvedValues,
-      @NotNull X86Register register
+      Collection<X86Value> resolvedValues,
+      X86Register register
   ) {
     return resolvedValues.stream()
                          .anyMatch(x86Value -> x86Value.registersInUse()
@@ -387,7 +380,7 @@ public class X86AsmWriter implements AsmWriter {
     }
   }
 
-  public void schedule(@NotNull FunctionCall functionCall) {
+  public void schedule(FunctionCall functionCall) {
     emitStackArgumentsInstructions(functionCall);
 
     var registerArguments = new ArrayList<>(functionCall.getArguments()
@@ -488,7 +481,7 @@ public class X86AsmWriter implements AsmWriter {
   }
 
   @Override
-  public void emitInstruction(@NotNull FunctionCallWithResult functionCallWithResult) {
+  public void emitInstruction(FunctionCallWithResult functionCallWithResult) {
     callerSave(resolveIrValue(functionCallWithResult.getDestination()));
     schedule(functionCallWithResult);
     if (functionCallWithResult.isImported()) {
@@ -522,7 +515,7 @@ public class X86AsmWriter implements AsmWriter {
     asmWriterContext.setMaxStackSpaceForArgs(functionCallWithResult);
   }
 
-  private void restoreStack(@NotNull FunctionCall functionCall) {
+  private void restoreStack(FunctionCall functionCall) {
     if (functionCall.getNumArguments() > N_ARG_REGISTERS) {
       long numStackArgs = functionCall.getNumArguments() - N_ARG_REGISTERS;
       x86Method.addLine(new X64BinaryInstruction(
@@ -537,7 +530,7 @@ public class X86AsmWriter implements AsmWriter {
   }
 
   @Override
-  public void emitInstruction(@NotNull Method method) {
+  public void emitInstruction(Method method) {
     asmWriterContext.setLastComparisonOperator(null);
     currentMethod = method;
 
@@ -560,7 +553,7 @@ public class X86AsmWriter implements AsmWriter {
   }
 
   @Override
-  public void emitInstruction(@NotNull ConditionalBranch conditionalBranch) {
+  public void emitInstruction(ConditionalBranch conditionalBranch) {
     var resolvedCondition = resolveIrValue(conditionalBranch.getCondition());
     if (asmWriterContext.getLastComparisonOperator() == null) {
       if (conditionalBranch.getCondition() instanceof IrIntegerConstant) {
@@ -600,7 +593,7 @@ public class X86AsmWriter implements AsmWriter {
   }
 
   @Override
-  public void emitInstruction(@NotNull FunctionCallNoResult functionCallNoResult) {
+  public void emitInstruction(FunctionCallNoResult functionCallNoResult) {
     callerSave(null);
     schedule(functionCallNoResult);
     if (functionCallNoResult.isImported()) x86Method.addLine(new X64BinaryInstruction(
@@ -621,7 +614,7 @@ public class X86AsmWriter implements AsmWriter {
   }
 
   @Override
-  public void emitInstruction(@NotNull MethodEnd methodEnd) {
+  public void emitInstruction(MethodEnd methodEnd) {
     var space = new X86ConstantValue(new IrIntegerConstant(
         (long) Utils.roundUp16(-x86ValueResolver.getCurrentStackOffset()),
         Type.Int
@@ -677,7 +670,7 @@ public class X86AsmWriter implements AsmWriter {
   }
 
   @Override
-  public void emitInstruction(@NotNull ReturnInstruction returnInstruction) {
+  public void emitInstruction(ReturnInstruction returnInstruction) {
     if (returnInstruction.getReturnAddress()
                          .isPresent()) x86Method.addLine(new X64BinaryInstruction(
         X64BinaryInstructionType.movq,
@@ -688,7 +681,7 @@ public class X86AsmWriter implements AsmWriter {
   }
 
   @Override
-  public void emitInstruction(@NotNull UnaryInstruction unaryInstruction) {
+  public void emitInstruction(UnaryInstruction unaryInstruction) {
     switch (unaryInstruction.operator) {
       case Operators.NOT -> {
         asmWriterContext.setLastComparisonOperator(null);
@@ -727,7 +720,7 @@ public class X86AsmWriter implements AsmWriter {
   }
 
   @Override
-  public void emitInstruction(@NotNull UnconditionalBranch unconditionalBranch) {
+  public void emitInstruction(UnconditionalBranch unconditionalBranch) {
     x86Method.addLine(new X64UnaryInstruction(
         X64UnaryInstructionType.jmp,
         new X64JumpTargetOperand(unconditionalBranch.getTarget())
@@ -735,19 +728,19 @@ public class X86AsmWriter implements AsmWriter {
   }
 
   @Override
-  public void emitInstruction(@NotNull ArrayBoundsCheck arrayBoundsCheck) {
+  public void emitInstruction(ArrayBoundsCheck arrayBoundsCheck) {
   }
 
   @Override
-  public void emitInstruction(@NotNull RuntimeException runtimeException) {
+  public void emitInstruction(RuntimeException runtimeException) {
   }
 
   @Override
-  public void emitInstruction(@NotNull CopyInstruction copyInstruction) {
+  public void emitInstruction(CopyInstruction copyInstruction) {
     if (!resolveIrValue(copyInstruction.getValue()).equals(resolveIrValue(copyInstruction.getDestination()))) {
       if (resolveIrValue(copyInstruction.getValue()) instanceof X86RegisterMappedValue ||
           resolveIrValue(copyInstruction.getValue()) instanceof X86ConstantValue ||
-      resolveIrValue(copyInstruction.getValue()) instanceof X86MemoryAddressInRegister)
+          resolveIrValue(copyInstruction.getValue()) instanceof X86MemoryAddressInRegister)
         x86Method.addLine(new X64BinaryInstruction(
             X64BinaryInstructionType.movq,
             resolveIrValue(copyInstruction.getValue()),
@@ -767,14 +760,18 @@ public class X86AsmWriter implements AsmWriter {
   }
 
   @Override
-  public void emitInstruction(@NotNull GetAddress getAddress) {
-    x86Method.addLine(X86MetaData.blockComment(String.format("&(%s)", getAddress.getSource().getSourceCode())));
+  public void emitInstruction(GetAddress getAddress) {
+    x86Method.addLine(X86MetaData.blockComment(String.format("&(%s)",
+                                                             getAddress.getSource()
+                                                                       .getSourceCode()
+    )));
     x86ValueResolver.processGetAddress(getAddress);
   }
 
   @Override
-  public void emitInstruction(@NotNull BinaryInstruction binaryInstruction) {
-    x86Method.addLine(X86MetaData.blockComment(binaryInstruction.getSource().getSourceCode()));
+  public void emitInstruction(BinaryInstruction binaryInstruction) {
+    x86Method.addLine(X86MetaData.blockComment(binaryInstruction.getSource()
+                                                                .getSourceCode()));
     switch (binaryInstruction.operator) {
       case Operators.PLUS, Operators.MINUS, Operators.MULTIPLY, Operators.CONDITIONAL_OR, Operators.CONDITIONAL_AND ->
           x86Method.addLine(new X64BinaryInstruction(

@@ -1,10 +1,13 @@
 package decaf.codegen.names;
 
+
 import java.util.function.Predicate;
 
 public class IrValuePredicates {
-  public static Predicate<IrValue> isRegisterAllocatable() {return irValue -> (irValue instanceof IrRegisterAllocatable);
+  public static Predicate<IrValue> isRegisterAllocatable() {
+    return irValue -> (irValue instanceof IrRegisterAllocatable);
   }
+
   public static Predicate<IrValue> isSsaRegister() {
     return irValue -> (irValue instanceof IrSsaRegister);
   }

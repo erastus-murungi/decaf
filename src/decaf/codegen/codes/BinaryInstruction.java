@@ -1,15 +1,16 @@
 package decaf.codegen.codes;
 
+
 import java.util.List;
 import java.util.Optional;
 
 import decaf.asm.AsmWriter;
-import decaf.codegen.names.IrAssignable;
-import decaf.codegen.names.IrSsaRegister;
-import decaf.codegen.names.IrMemoryAddress;
-import decaf.common.Operators;
 import decaf.ast.AST;
+import decaf.codegen.names.IrAssignable;
+import decaf.codegen.names.IrMemoryAddress;
+import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.names.IrValue;
+import decaf.common.Operators;
 import decaf.dataflow.operand.BinaryOperand;
 import decaf.dataflow.operand.Operand;
 
@@ -20,80 +21,161 @@ import decaf.dataflow.operand.Operand;
  */
 
 public class BinaryInstruction extends StoreInstruction {
-    public IrValue fstOperand;
-    public String operator;
-    public IrValue sndOperand;
+  public IrValue fstOperand;
+  public String operator;
+  public IrValue sndOperand;
 
 
-    public BinaryInstruction(IrAssignable result, IrValue fstOperand, String operator, IrValue sndOperand, String comment, AST source) {
-        super(result, source, comment);
-        this.fstOperand = fstOperand;
-        this.operator = operator;
-        this.sndOperand = sndOperand;
+  public BinaryInstruction(
+      IrAssignable result,
+      IrValue fstOperand,
+      String operator,
+      IrValue sndOperand,
+      String comment,
+      AST source
+  ) {
+    super(
+        result,
+        source,
+        comment
+    );
+    this.fstOperand = fstOperand;
+    this.operator = operator;
+    this.sndOperand = sndOperand;
+  }
+
+  public BinaryInstruction(
+      IrSsaRegister result,
+      IrValue fstOperand,
+      String operator,
+      IrValue sndOperand
+  ) {
+    this(
+        result,
+        fstOperand,
+        operator,
+        sndOperand,
+        String.format("%s = %s %s %s",
+                      result,
+                      fstOperand,
+                      operator,
+                      sndOperand
+        ),
+        null
+    );
+  }
+
+  @Override
+  public void accept(AsmWriter asmWriter) {
+    asmWriter.emitInstruction(this);
+  }
+
+  @Override
+  public List<IrValue> genIrValuesSurface() {
+    return List.of(
+        getDestination(),
+        fstOperand,
+        sndOperand
+    );
+  }
+
+  @Override
+  public Instruction copy() {
+    return new BinaryInstruction(getDestination(),
+                                 fstOperand,
+                                 operator,
+                                 sndOperand,
+                                 getComment().orElse(null),
+                                 getSource()
+    );
+  }
+
+  @Override
+  public Optional<Operand> getOperandNoArray() {
+    if (getDestination() instanceof IrMemoryAddress || fstOperand instanceof IrMemoryAddress ||
+        sndOperand instanceof IrMemoryAddress)
+      return Optional.empty();
+    return Optional.of(new BinaryOperand(this));
+  }
+
+  public boolean replaceValue(
+      IrValue oldVariable,
+      IrValue replacer
+  ) {
+    var replaced = false;
+    if (fstOperand.equals(oldVariable)) {
+      fstOperand = replacer;
+      replaced = true;
     }
-
-    public BinaryInstruction(IrSsaRegister result, IrValue fstOperand, String operator, IrValue sndOperand) {
-        this(result, fstOperand, operator, sndOperand, String.format("%s = %s %s %s", result, fstOperand, operator, sndOperand), null);
+    if (sndOperand.equals(oldVariable)) {
+      sndOperand = replacer;
+      replaced = true;
     }
+    return replaced;
+  }
 
-    @Override
-    public void accept(AsmWriter asmWriter) {
-        asmWriter.emitInstruction(this);
-    }
+  @Override
+  public Operand getOperand() {
+    return new BinaryOperand(this);
+  }
 
-    @Override
-    public List<IrValue> genIrValuesSurface() {
-        return List.of(getDestination(), fstOperand, sndOperand);
-    }
+  @Override
+  public List<IrValue> genOperandIrValuesSurface() {
+    return List.of(
+        fstOperand,
+        sndOperand
+    );
+  }
 
-    @Override
-    public Instruction copy() {
-        return new BinaryInstruction(getDestination(), fstOperand, operator, sndOperand, getComment().orElse(null),
-                                     getSource()
-        );
-    }
+  @Override
+  public String toString() {
+    if (getComment().isPresent())
+      return String.format(
+          "%s%s = %s %s %s%s%s",
+          DOUBLE_INDENT,
+          getDestination(),
+          fstOperand,
+          operator,
+          sndOperand,
+          DOUBLE_INDENT,
+          " # " + getComment().get()
+      );
+    return String.format(
+        "%s%s = %s %s %s",
+        DOUBLE_INDENT,
+        getDestination(),
+        fstOperand,
+        operator,
+        sndOperand
+    );
+  }
 
-    @Override
-    public Optional<Operand> getOperandNoArray() {
-        if (getDestination() instanceof IrMemoryAddress || fstOperand instanceof IrMemoryAddress || sndOperand instanceof IrMemoryAddress)
-            return Optional.empty();
-        return Optional.of(new BinaryOperand(this));
-    }
-
-    public boolean replaceValue(IrValue oldVariable, IrValue replacer) {
-        var replaced = false;
-        if (fstOperand.equals(oldVariable)) {
-            fstOperand = replacer;
-            replaced = true;
-        }
-        if (sndOperand.equals(oldVariable)) {
-            sndOperand = replacer;
-            replaced = true;
-        }
-        return replaced;
-    }
-
-    @Override
-    public Operand getOperand() {
-        return new BinaryOperand(this);
-    }
-
-    @Override
-    public List<IrValue> genOperandIrValuesSurface() {
-        return List.of(fstOperand, sndOperand);
-    }
-
-    @Override
-    public String toString() {
-        if (getComment().isPresent())
-            return String.format("%s%s = %s %s %s%s%s", DOUBLE_INDENT, getDestination(), fstOperand, operator, sndOperand, DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s = %s %s %s", DOUBLE_INDENT, getDestination(), fstOperand, operator, sndOperand);
-    }
-
-    public String syntaxHighlightedToString() {
-        if (getComment().isPresent())
-            return String.format("%s%s %s: %s = %s %s, %s %s%s", DOUBLE_INDENT, getPrefixSyntaxHighlighted(), getDestination(), getDestination().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand, sndOperand, DOUBLE_INDENT, " # " + getComment().get());
-        return String.format("%s%s %s: %s = %s %s, %s", DOUBLE_INDENT, getDestination(), getPrefixSyntaxHighlighted(), getDestination().getType().getColoredSourceCode(), Operators.getColoredOperatorName(operator), fstOperand, sndOperand);
-    }
+  public String syntaxHighlightedToString() {
+    if (getComment().isPresent())
+      return String.format(
+          "%s%s %s: %s = %s %s, %s %s%s",
+          DOUBLE_INDENT,
+          getPrefixSyntaxHighlighted(),
+          getDestination(),
+          getDestination().getType()
+                          .getColoredSourceCode(),
+          Operators.getColoredOperatorName(operator),
+          fstOperand,
+          sndOperand,
+          DOUBLE_INDENT,
+          " # " + getComment().get()
+      );
+    return String.format(
+        "%s%s %s: %s = %s %s, %s",
+        DOUBLE_INDENT,
+        getDestination(),
+        getPrefixSyntaxHighlighted(),
+        getDestination().getType()
+                        .getColoredSourceCode(),
+        Operators.getColoredOperatorName(operator),
+        fstOperand,
+        sndOperand
+    );
+  }
 
 }

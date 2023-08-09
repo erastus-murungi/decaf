@@ -6,17 +6,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import decaf.ssa.SSA;
 import decaf.cfg.BasicBlock;
 import decaf.codegen.codes.CopyInstruction;
 import decaf.codegen.codes.HasOperand;
 import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.Method;
 import decaf.codegen.codes.StoreInstruction;
-import decaf.codegen.names.IrValue;
 import decaf.codegen.names.IrSsaRegister;
+import decaf.codegen.names.IrValue;
 import decaf.dataflow.OptimizationContext;
 import decaf.dataflow.dominator.DominatorTree;
+import decaf.ssa.SSA;
 
 public class CopyPropagationSsaPass extends SsaOptimizationPass {
   List<SSACopyOptResult> resultList = new ArrayList<>();

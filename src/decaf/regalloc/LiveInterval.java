@@ -1,13 +1,13 @@
 package decaf.regalloc;
 
+
 import decaf.codegen.InstructionList;
 import decaf.codegen.codes.Instruction;
-import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.codes.Method;
 import decaf.codegen.names.IrValue;
 
 /**
- * @param irSsaRegister        The irAssignableValue this {@link LiveInterval} belongs to
+ * @param irSsaRegister   The irAssignableValue this {@link LiveInterval} belongs to
  * @param startPoint      The start index of the {@link Instruction} in the given {@link InstructionList}
  * @param endPoint        The end index of the instruction in the given {@link InstructionList}
  * @param instructionList The {@link InstructionList} this {@link LiveInterval} belongs to
@@ -27,19 +27,27 @@ import decaf.codegen.names.IrValue;
  *                        </ul>
  *                        </li>
  */
-public record LiveInterval(IrValue irSsaRegister, int startPoint, int endPoint, InstructionList instructionList, Method method) {
-    public LiveInterval updateEndpoint(int endPoint) {
-        return new LiveInterval(irSsaRegister, startPoint, endPoint, instructionList, method);
-    }
-    public int compareStartPoint(LiveInterval other) {
-        if (startPoint == other.startPoint)
-            return 0;
-        return startPoint < other.startPoint ? -1 : 1;
-    }
+public record LiveInterval(IrValue irSsaRegister, int startPoint, int endPoint, InstructionList instructionList,
+                           Method method) {
+  public LiveInterval updateEndpoint(int endPoint) {
+    return new LiveInterval(
+        irSsaRegister,
+        startPoint,
+        endPoint,
+        instructionList,
+        method
+    );
+  }
 
-    public int compareEndpoint(LiveInterval other) {
-        if (endPoint == other.endPoint)
-            return 0;
-        return endPoint < other.endPoint ? -1 : 1;
-    }
+  public int compareStartPoint(LiveInterval other) {
+    if (startPoint == other.startPoint)
+      return 0;
+    return startPoint < other.startPoint ? -1: 1;
+  }
+
+  public int compareEndpoint(LiveInterval other) {
+    if (endPoint == other.endPoint)
+      return 0;
+    return endPoint < other.endPoint ? -1: 1;
+  }
 }

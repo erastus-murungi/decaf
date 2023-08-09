@@ -6,24 +6,25 @@ import decaf.ast.MethodCall;
 import decaf.codegen.names.IrValue;
 
 public interface FunctionCall {
-    MethodCall getMethod();
+  MethodCall getMethod();
 
-    Stack<IrValue> getArguments();
+  Stack<IrValue> getArguments();
 
-    default boolean isImported() {
-        return getMethod().isImported;
-    }
+  default boolean isImported() {
+    return getMethod().isImported;
+  }
 
-    default String getMethodName() {
-        return getMethod().nameId.getLabel();
-    }
+  default String getMethodName() {
+    return getMethod().nameId.getLabel();
+  }
 
-    default String getMethodReturnType() {
-        return getMethod().getType().getSourceCode();
-    }
+  default String getMethodReturnType() {
+    return getMethod().getType()
+                      .getSourceCode();
+  }
 
-    default int getNumArguments() {
-        return getArguments().size();
-    }
+  default int getNumArguments() {
+    return getArguments().size();
+  }
 }
 

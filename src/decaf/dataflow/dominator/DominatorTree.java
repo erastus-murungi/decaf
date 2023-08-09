@@ -1,6 +1,5 @@
 package decaf.dataflow.dominator;
 
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -20,13 +19,13 @@ public class DominatorTree extends HashMap<BasicBlock, BasicBlock> {
   /**
    * A map of a basic block to the set of nodes which dominate it
    */
-  @NotNull
+
   private final Map<BasicBlock, List<BasicBlock>> dominators;
-  @NotNull
+
   private final NOP entry;
-  @NotNull
+
   private final Map<BasicBlock, Set<BasicBlock>> basicBlockToChildrenMap;
-  @NotNull
+
   private final Map<BasicBlock, Set<BasicBlock>> basicBlockToDominanceFrontierMap;
 
   public DominatorTree(BasicBlock basicBlock) {
@@ -37,7 +36,7 @@ public class DominatorTree extends HashMap<BasicBlock, BasicBlock> {
     basicBlockToDominanceFrontierMap = computeDominanceFrontier();
   }
 
-  private static List<BasicBlock> reversePostOrder(@NotNull BasicBlock entryBlock) {
+  private static List<BasicBlock> reversePostOrder(BasicBlock entryBlock) {
     var order = new ArrayList<BasicBlock>();
     postOrder(
         entryBlock,
@@ -49,9 +48,9 @@ public class DominatorTree extends HashMap<BasicBlock, BasicBlock> {
   }
 
   private static void postOrder(
-      @NotNull BasicBlock start,
-      @NotNull Set<BasicBlock> visited,
-      @NotNull List<BasicBlock> out
+      BasicBlock start,
+      Set<BasicBlock> visited,
+      List<BasicBlock> out
   ) {
     if (visited.contains(start)) return;
 
@@ -77,16 +76,16 @@ public class DominatorTree extends HashMap<BasicBlock, BasicBlock> {
     return order;
   }
 
-  @NotNull
-  public Set<BasicBlock> getChildren(@NotNull BasicBlock basicBlock) {
+
+  public Set<BasicBlock> getChildren(BasicBlock basicBlock) {
     return basicBlockToChildrenMap.getOrDefault(
         basicBlock,
         Collections.emptySet()
     );
   }
 
-  @NotNull
-  private NOP preprocess(@NotNull BasicBlock entryBlock) {
+
+  private NOP preprocess(BasicBlock entryBlock) {
     NOP entry = new NOP(
         "dom",
         NOP.NOPType.METHOD_ENTRY
@@ -96,20 +95,20 @@ public class DominatorTree extends HashMap<BasicBlock, BasicBlock> {
     return entry;
   }
 
-  @NotNull
-  public List<BasicBlock> getDominators(@NotNull BasicBlock basicBlock) {
+
+  public List<BasicBlock> getDominators(BasicBlock basicBlock) {
     return dominators.get(basicBlock);
   }
 
-  @NotNull
-  public Set<BasicBlock> getDominanceFrontier(@NotNull BasicBlock basicBlock) {
+
+  public Set<BasicBlock> getDominanceFrontier(BasicBlock basicBlock) {
     return basicBlockToDominanceFrontierMap.getOrDefault(
         basicBlock,
         Collections.emptySet()
     );
   }
 
-  private void immediateDominatorsImpl(@NotNull BasicBlock entryBlock) {
+  private void immediateDominatorsImpl(BasicBlock entryBlock) {
     // compute reverse post-order traversal
     var rpo = reversePostOrder(entryBlock);
 
@@ -173,7 +172,7 @@ public class DominatorTree extends HashMap<BasicBlock, BasicBlock> {
     }
   }
 
-  @NotNull
+
   public Map<BasicBlock, List<BasicBlock>> computeBlockToDoms() {
     var dominatorTree = new HashMap<BasicBlock, List<BasicBlock>>();
     for (var edge : entrySet()) {
@@ -208,8 +207,8 @@ public class DominatorTree extends HashMap<BasicBlock, BasicBlock> {
    * @throws IllegalArgumentException if either m or n is not the dominator tree
    */
   public boolean dom(
-      @NotNull BasicBlock m,
-      @NotNull BasicBlock n
+      BasicBlock m,
+      BasicBlock n
   ) {
     if (!containsKey(m)) throw new IllegalArgumentException(m + " not found in tree");
     if (!containsKey(n)) throw new IllegalArgumentException(n + " not found in tree");
@@ -242,7 +241,7 @@ public class DominatorTree extends HashMap<BasicBlock, BasicBlock> {
     return get(m).equals(n);
   }
 
-  @NotNull
+
   private Map<BasicBlock, Set<BasicBlock>> computeChildren() {
     var basicBlockToChildrenMap = new HashMap<BasicBlock, Set<BasicBlock>>();
     for (BasicBlock B : keySet()) {
@@ -257,7 +256,7 @@ public class DominatorTree extends HashMap<BasicBlock, BasicBlock> {
     return basicBlockToChildrenMap;
   }
 
-  @NotNull
+
   public Map<BasicBlock, Set<BasicBlock>> computeDominanceFrontier() {
     var dominanceFrontier = new HashMap<BasicBlock, Set<BasicBlock>>();
     computeDominanceFrontier(
@@ -275,8 +274,8 @@ public class DominatorTree extends HashMap<BasicBlock, BasicBlock> {
    * @param basicBlockToDominanceFrontierMap a map of a basic block to its dominance frontier
    */
   public void computeDominanceFrontier(
-      @NotNull BasicBlock basicBlock,
-      @NotNull Map<BasicBlock, Set<BasicBlock>> basicBlockToDominanceFrontierMap
+      BasicBlock basicBlock,
+      Map<BasicBlock, Set<BasicBlock>> basicBlockToDominanceFrontierMap
   ) {
     var dominanceFrontier = new HashSet<BasicBlock>();
     for (var successor : basicBlock.getSuccessors()) {

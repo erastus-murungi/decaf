@@ -1,5 +1,6 @@
 package decaf.ast;
 
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,87 +11,144 @@ import decaf.ir.AstVisitor;
 import decaf.symboltable.SymbolTable;
 
 public class Program extends AST {
-    public final List<ImportDeclaration> importDeclarationList;
-    public final List<FieldDeclaration> fieldDeclarationList;
-    public final List<MethodDefinition> methodDefinitionList;
+  private final List<ImportDeclaration> importDeclarationList;
+  private final List<FieldDeclaration> fieldDeclarationList;
+  private final List<MethodDefinition> methodDefinitionList;
 
-    public Program() {
-        this.importDeclarationList = new ArrayList<>();
-        this.fieldDeclarationList = new ArrayList<>();
-        this.methodDefinitionList = new ArrayList<>();
+  public Program() {
+    this.importDeclarationList = new ArrayList<>();
+    this.fieldDeclarationList = new ArrayList<>();
+    this.methodDefinitionList = new ArrayList<>();
+  }
+
+  @Override
+  public Type getType() {
+    return Type.Undefined;
+  }
+
+  @Override
+  public List<Pair<String, AST>> getChildren() {
+    ArrayList<Pair<String, AST>> nodeList = new ArrayList<>();
+    for (ImportDeclaration importDeclaration : getImportDeclarationList())
+      nodeList.add(new Pair<>(
+          "import",
+          importDeclaration
+      ));
+    for (FieldDeclaration fieldDeclaration : getFieldDeclarationList())
+      nodeList.add(new Pair<>(
+          "field",
+          fieldDeclaration
+      ));
+    for (MethodDefinition methodDefinition : getMethodDefinitionList())
+      nodeList.add(new Pair<>(
+          "method",
+          methodDefinition
+      ));
+    return nodeList;
+  }
+
+  @Override
+  public boolean isTerminal() {
+    return false;
+  }
+
+  @Override
+  public String toString() {
+    return "Program{"
+        + "importDeclarationList="
+        + getImportDeclarationList()
+        + ", fieldDeclarationList="
+        + getFieldDeclarationList()
+        + ", methodDefinitionList="
+        + getMethodDefinitionList()
+        + '}';
+  }
+
+  @Override
+  public String getSourceCode() {
+    List<String> stringList = new ArrayList<>();
+    for (ImportDeclaration importDeclaration : getImportDeclarationList()) {
+      String sourceCode = importDeclaration.getSourceCode();
+      stringList.add(sourceCode);
     }
+    String imports = String.join(
+        ";\n",
+        stringList
+    );
 
-    @Override
-    public Type getType() {
-        return Type.Undefined;
+    List<String> list = new ArrayList<>();
+    for (FieldDeclaration fieldDeclaration : getFieldDeclarationList()) {
+      String sourceCode = fieldDeclaration.getSourceCode();
+      list.add(sourceCode);
     }
-
-    @Override
-    public List<Pair<String, AST>> getChildren() {
-        ArrayList<Pair<String, AST>> nodeList = new ArrayList<>();
-        for (ImportDeclaration importDeclaration : importDeclarationList)
-            nodeList.add(new Pair<>("import", importDeclaration));
-        for (FieldDeclaration fieldDeclaration : fieldDeclarationList)
-            nodeList.add(new Pair<>("field", fieldDeclaration));
-        for (MethodDefinition methodDefinition : methodDefinitionList)
-            nodeList.add(new Pair<>("method", methodDefinition));
-        return nodeList;
+    String fieldDeclarations = String.join(
+        ";\n",
+        list
+    );
+    List<String> result = new ArrayList<>();
+    for (MethodDefinition methodDefinition : getMethodDefinitionList()) {
+      String sourceCode = methodDefinition.getSourceCode();
+      result.add(sourceCode);
     }
-
-    @Override
-    public boolean isTerminal() {
-        return false;
+    String methodDefinitions = String.join(
+        ";\n\n",
+        result
+    );
+    if (imports.isBlank() && fieldDeclarations.isBlank()) {
+      return methodDefinitions;
+    } else if (imports.isBlank()) {
+      return String.join(
+          ";\n\n\n",
+          List.of(
+              fieldDeclarations,
+              methodDefinitions
+          )
+      );
+    } else if (fieldDeclarations.isBlank()) {
+      return String.join(
+          ";\n\n\n",
+          List.of(
+              imports,
+              methodDefinitions
+          )
+      );
     }
+    return String.join(
+        ";\n\n\n",
+        List.of(imports,
+                fieldDeclarations,
+                methodDefinitions
+        )
+    );
+  }
 
-    @Override
-    public String toString() {
-        return "Program{"
-                + "importDeclarationList="
-                + importDeclarationList
-                + ", fieldDeclarationList="
-                + fieldDeclarationList
-                + ", methodDefinitionList="
-                + methodDefinitionList
-                + '}';
-    }
+  @Override
+  public <T> T accept(
+      AstVisitor<T> ASTVisitor,
+      SymbolTable curSymbolTable
+  ) {
+    return ASTVisitor.visit(
+        this,
+        curSymbolTable
+    );
+  }
 
-    @Override
-    public String getSourceCode() {
-        List<String> stringList = new ArrayList<>();
-        for (ImportDeclaration importDeclaration : importDeclarationList) {
-            String sourceCode = importDeclaration.getSourceCode();
-            stringList.add(sourceCode);
-        }
-        String imports = String.join(";\n", stringList);
+  public <T> T accept(
+      CodegenAstVisitor<T> codegenAstVisitor,
+      IrAssignable resultLocation
+  ) {
+    return null;
+  }
 
-        List<String> list = new ArrayList<>();
-        for (FieldDeclaration fieldDeclaration : fieldDeclarationList) {
-            String sourceCode = fieldDeclaration.getSourceCode();
-            list.add(sourceCode);
-        }
-        String fieldDeclarations = String.join(";\n", list);
-        List<String> result = new ArrayList<>();
-        for (MethodDefinition methodDefinition : methodDefinitionList) {
-            String sourceCode = methodDefinition.getSourceCode();
-            result.add(sourceCode);
-        }
-        String methodDefinitions = String.join(";\n\n", result);
-        if (imports.isBlank() && fieldDeclarations.isBlank()) {
-            return methodDefinitions;
-        } else if (imports.isBlank()) {
-            return String.join(";\n\n\n", List.of(fieldDeclarations, methodDefinitions));
-        } else if (fieldDeclarations.isBlank()) {
-            return String.join(";\n\n\n", List.of(imports, methodDefinitions));
-        }
-        return String.join(";\n\n\n", List.of(imports, fieldDeclarations, methodDefinitions));
-    }
+  public List<ImportDeclaration> getImportDeclarationList() {
+    return importDeclarationList;
+  }
 
-    @Override
-    public <T> T accept(AstVisitor<T> ASTVisitor, SymbolTable curSymbolTable) {
-        return ASTVisitor.visit(this, curSymbolTable);
-    }
+  public List<FieldDeclaration> getFieldDeclarationList() {
+    return fieldDeclarationList;
+  }
 
-    public <T> T accept(CodegenAstVisitor<T> codegenAstVisitor, IrAssignable resultLocation) {
-        return null;
-    }
+  public List<MethodDefinition> getMethodDefinitionList() {
+    return methodDefinitionList;
+  }
 }

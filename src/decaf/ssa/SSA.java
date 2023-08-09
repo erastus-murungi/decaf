@@ -7,8 +7,6 @@ import static decaf.common.Utils.genIrSsaRegistersIn;
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,25 +26,24 @@ import decaf.codegen.codes.HasOperand;
 import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.Method;
 import decaf.codegen.codes.StoreInstruction;
-import decaf.codegen.names.IrMemoryAddress;
 import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.names.IrValue;
-import decaf.dataflow.analyses.LiveVariableAnalysis;
-import decaf.dataflow.dominator.DominatorTree;
-import decaf.regalloc.InterferenceGraph;
-import decaf.regalloc.LiveIntervalsManager;
 import decaf.common.CompilationContext;
 import decaf.common.GraphVizManager;
 import decaf.common.Pair;
 import decaf.common.ProgramIr;
 import decaf.common.UnionFind;
 import decaf.common.Utils;
+import decaf.dataflow.analyses.LiveVariableAnalysis;
+import decaf.dataflow.dominator.DominatorTree;
+import decaf.regalloc.InterferenceGraph;
+import decaf.regalloc.LiveIntervalsManager;
 
 public class SSA {
   private SSA() {
   }
 
-  private static void buildCfgGuava(@NotNull List<BasicBlock> basicBlocks) {
+  private static void buildCfgGuava(List<BasicBlock> basicBlocks) {
     // Gr
     MutableGraph<BasicBlock> graph = GraphBuilder.directed()
                                                  .build();
@@ -63,7 +60,7 @@ public class SSA {
     });
   }
 
-  public static void construct(@NotNull Method method) {
+  public static void construct(Method method) {
     var entryBlock = method.getEntryBlock();
     var basicBlocks = getReversePostOrder(entryBlock);
 //    buildCfgGuava(basicBlocks);
@@ -93,15 +90,15 @@ public class SSA {
     );
   }
 
-  private static void renameMethodArgs(@NotNull Method method) {
+  private static void renameMethodArgs(Method method) {
     for (var V : method.getParameterNames()) {
       V.renameForSsa(0);
     }
   }
 
   public static void deconstruct(
-      @NotNull Method method,
-      @NotNull ProgramIr programIr
+      Method method,
+      ProgramIr programIr
   ) {
     if (CompilationContext.isDebugModeOn()) Utils.printSsaCfg(
         List.of(method),
@@ -128,8 +125,8 @@ public class SSA {
   }
 
   private static Set<BasicBlock> getBasicBlocksModifyingVariable(
-      @NotNull IrSsaRegister V,
-      @NotNull List<BasicBlock> basicBlocks
+      IrSsaRegister V,
+      List<BasicBlock> basicBlocks
   ) {
     return basicBlocks.stream()
                       .filter(basicBlock -> basicBlock.getStoreInstructions()
@@ -139,7 +136,7 @@ public class SSA {
                       .collect(Collectors.toUnmodifiableSet());
   }
 
-  private static Set<IrSsaRegister> getStoreLocations(@NotNull BasicBlock X) {
+  private static Set<IrSsaRegister> getStoreLocations(BasicBlock X) {
     return X.getStoreInstructions()
             .stream()
             .map(StoreInstruction::getDestination)
@@ -150,9 +147,9 @@ public class SSA {
   }
 
   private static void initialize(
-      @NotNull Collection<IrSsaRegister> allVariables,
-      @NotNull Map<IrSsaRegister, Stack<Integer>> stacks,
-      @NotNull Map<IrSsaRegister, Integer> counters
+      Collection<IrSsaRegister> allVariables,
+      Map<IrSsaRegister, Stack<Integer>> stacks,
+      Map<IrSsaRegister, Integer> counters
   ) {
     allVariables.stream()
                 .map(IrSsaRegister::copy)
@@ -268,8 +265,8 @@ public class SSA {
   }
 
   private static int getNCopiesOfV(
-      @NotNull BasicBlock X,
-      @NotNull Collection<BasicBlock> basicBlocksModifyingV
+      BasicBlock X,
+      Collection<BasicBlock> basicBlocksModifyingV
   ) {
     int nCopiesOfV = (int) X.getPredecessors()
                             .stream()
@@ -279,8 +276,8 @@ public class SSA {
   }
 
   private static int genNCopiesOfV(
-      @NotNull BasicBlock X,
-      @NotNull Collection<BasicBlock> basicBlocksModifyingV
+      BasicBlock X,
+      Collection<BasicBlock> basicBlocksModifyingV
   ) {
     // we find the number of predecessors of V which can be reached by all the blocks modifying V
     return (int) X.getPredecessors()
@@ -294,9 +291,9 @@ public class SSA {
   }
 
   private static void addPhiNodeForVatY(
-      @NotNull IrSsaRegister V,
-      @NotNull BasicBlock X,
-      @NotNull Collection<BasicBlock> basicBlocksModifyingV
+      IrSsaRegister V,
+      BasicBlock X,
+      Collection<BasicBlock> basicBlocksModifyingV
   ) {
     var copiesOfV = genNCopiesOfV(
         X,
@@ -327,9 +324,9 @@ public class SSA {
    * @param entryBlock the first basic block of the function
    */
   private static void placePhiFunctions(
-      @NotNull BasicBlock entryBlock,
-      @NotNull List<BasicBlock> basicBlocks,
-      @NotNull DominatorTree dominatorTree
+      BasicBlock entryBlock,
+      List<BasicBlock> basicBlocks,
+      DominatorTree dominatorTree
   ) {
     var liveVariableAnalysis = new LiveVariableAnalysis(entryBlock);
 
@@ -371,9 +368,9 @@ public class SSA {
   }
 
   private static void renameVariables(
-      @NotNull Method method,
-      @NotNull DominatorTree dominatorTree,
-      @NotNull List<BasicBlock> basicBlocks
+      Method method,
+      DominatorTree dominatorTree,
+      List<BasicBlock> basicBlocks
   ) {
     var stacks = new HashMap<IrSsaRegister, Stack<Integer>>();
     var counters = new HashMap<IrSsaRegister, Integer>();
@@ -392,7 +389,7 @@ public class SSA {
     renameMethodArgs(method);
   }
 
-  private static void verifySsa(@NotNull List<BasicBlock> basicBlocks) {
+  private static void verifySsa(List<BasicBlock> basicBlocks) {
     var seen = new HashSet<IrSsaRegister>();
     for (var B : basicBlocks) {
       for (var instruction : B.getInstructionList()) {
@@ -425,15 +422,15 @@ public class SSA {
     }
   }
 
-  public static void verifySsa(@NotNull Method method) {
+  public static void verifySsa(Method method) {
     var basicBlocks = getReversePostOrder(method.getEntryBlock());
     SSA.verifySsa(basicBlocks);
   }
 
   private static void deconstructSsa(
-      @NotNull BasicBlock entryBlock,
-      @NotNull List<BasicBlock> basicBlocks,
-      @NotNull DominatorTree dominatorTree
+      BasicBlock entryBlock,
+      List<BasicBlock> basicBlocks,
+      DominatorTree dominatorTree
   ) {
     var stacks = new HashMap<IrSsaRegister, Stack<IrSsaRegister>>();
     initializeForSsaDestruction(
@@ -449,7 +446,7 @@ public class SSA {
     removePhiNodes(basicBlocks);
   }
 
-  private static void removePhiNodes(@NotNull List<BasicBlock> basicBlocks) {
+  private static void removePhiNodes(List<BasicBlock> basicBlocks) {
     for (BasicBlock basicBlock : basicBlocks) {
       basicBlock.getInstructionList()
                 .reset(basicBlock.getInstructionList()
@@ -460,10 +457,10 @@ public class SSA {
   }
 
   private static void insertCopies(
-      @NotNull BasicBlock basicBlock,
-      @NotNull DominatorTree dominatorTree,
-      @NotNull LiveVariableAnalysis liveVariableAnalysis,
-      @NotNull Map<IrSsaRegister, Stack<IrSsaRegister>> stacks
+      BasicBlock basicBlock,
+      DominatorTree dominatorTree,
+      LiveVariableAnalysis liveVariableAnalysis,
+      Map<IrSsaRegister, Stack<IrSsaRegister>> stacks
   ) {
     var pushed = new ArrayList<IrSsaRegister>();
 
@@ -507,10 +504,10 @@ public class SSA {
 
 
   private static void scheduleCopies(
-      @NotNull BasicBlock basicBlock,
-      @NotNull Set<IrValue> liveOut,
-      @NotNull Map<IrSsaRegister, Stack<IrSsaRegister>> stacks,
-      @NotNull ArrayList<IrSsaRegister> pushed
+      BasicBlock basicBlock,
+      Set<IrValue> liveOut,
+      Map<IrSsaRegister, Stack<IrSsaRegister>> stacks,
+      ArrayList<IrSsaRegister> pushed
   ) {
     /* Pass One: Initialize the data structures */
     Stack<Pair<IrValue, IrSsaRegister>> copySet = new Stack<>();

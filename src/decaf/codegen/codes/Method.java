@@ -1,16 +1,17 @@
 package decaf.codegen.codes;
 
+
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import decaf.asm.AsmWriter;
 import decaf.ast.MethodDefinition;
+import decaf.cfg.BasicBlock;
 import decaf.codegen.InstructionList;
 import decaf.codegen.names.IrSsaRegister;
-import decaf.common.Utils;
-import decaf.cfg.BasicBlock;
 import decaf.codegen.names.IrValue;
+import decaf.common.Utils;
 
 public class Method extends Instruction {
   private final MethodDefinition methodDefinition;
@@ -23,12 +24,13 @@ public class Method extends Instruction {
   public Method(MethodDefinition methodDefinition) {
     super(methodDefinition);
     this.methodDefinition = methodDefinition;
-    parameterNames = methodDefinition.parameterList.stream()
-                                                   .map(methodDefinitionParameter -> new IrSsaRegister(
-                                                       methodDefinitionParameter.getName(),
-                                                       methodDefinitionParameter.getType()
-                                                   ))
-                                                   .collect(Collectors.toList());
+    parameterNames = methodDefinition.getParameterList()
+                                     .stream()
+                                     .map(methodDefinitionParameter -> new IrSsaRegister(
+                                         methodDefinitionParameter.getName(),
+                                         methodDefinitionParameter.getType()
+                                     ))
+                                     .collect(Collectors.toList());
   }
 
   public List<IrSsaRegister> getParameterNames() {
@@ -40,12 +42,14 @@ public class Method extends Instruction {
   }
 
   public boolean isMain() {
-    return getMethodDefinition().methodName.getLabel()
-                                           .equals("main");
+    return getMethodDefinition().getMethodName()
+                                .getLabel()
+                                .equals("main");
   }
 
   public String methodName() {
-    return getMethodDefinition().methodName.getLabel();
+    return getMethodDefinition().getMethodName()
+                                .getLabel();
   }
 
   @Override
@@ -65,15 +69,18 @@ public class Method extends Instruction {
 
   @Override
   public String toString() {
-    return String.format("%s @%s(%s) -> %s {%s",
-                         "define",
-                         getMethodDefinition().methodName.getLabel(),
-                         getParameterNames().stream()
-                                            .map(parameterName -> parameterName.getType()
-                                                                               .getSourceCode() + " " + parameterName)
-                                            .collect(Collectors.joining(", ")),
-                         getMethodDefinition().returnType.getSourceCode(),
-                         DOUBLE_INDENT
+    return String.format(
+        "%s @%s(%s) -> %s {%s",
+        "define",
+        getMethodDefinition().getMethodName()
+                             .getLabel(),
+        getParameterNames().stream()
+                           .map(parameterName -> parameterName.getType()
+                                                              .getSourceCode() + " " + parameterName)
+                           .collect(Collectors.joining(", ")),
+        getMethodDefinition().getReturnType()
+                             .getSourceCode(),
+        DOUBLE_INDENT
     );
   }
 
@@ -83,16 +90,19 @@ public class Method extends Instruction {
         "define",
         Utils.ANSIColorConstants.ANSI_GREEN_BOLD
     );
-    return String.format("%s @%s(%s) -> %s {%s",
-                         defineString,
-                         getMethodDefinition().methodName.getLabel(),
-                         getParameterNames().stream()
-                                            .map(parameterName -> parameterName.getType()
-                                                                               .getColoredSourceCode() + " " +
-                                                parameterName)
-                                            .collect(Collectors.joining(", ")),
-                         getMethodDefinition().returnType.getSourceCode(),
-                         DOUBLE_INDENT
+    return String.format(
+        "%s @%s(%s) -> %s {%s",
+        defineString,
+        getMethodDefinition().getMethodName()
+                             .getLabel(),
+        getParameterNames().stream()
+                           .map(parameterName -> parameterName.getType()
+                                                              .getColoredSourceCode() + " " +
+                               parameterName)
+                           .collect(Collectors.joining(", ")),
+        getMethodDefinition().getReturnType()
+                             .getSourceCode(),
+        DOUBLE_INDENT
     );
   }
 

@@ -1,9 +1,13 @@
 package decaf.dataflow;
 
+
 import java.util.ArrayList;
 import java.util.List;
 
 import decaf.codegen.codes.Method;
+import decaf.common.CompilationContext;
+import decaf.common.ProgramIr;
+import decaf.common.Utils;
 import decaf.dataflow.passes.BranchSimplificationPass;
 import decaf.dataflow.passes.CommonSubExpressionEliminationPass;
 import decaf.dataflow.passes.ConstantPropagationPass;
@@ -19,9 +23,6 @@ import decaf.dataflow.ssapasses.DeadStoreEliminationSsaPass;
 import decaf.dataflow.ssapasses.LoopAnalysisPass;
 import decaf.dataflow.ssapasses.RedundantPhiEliminationPass;
 import decaf.dataflow.ssapasses.SccpSsaPass;
-import decaf.common.CompilationContext;
-import decaf.common.ProgramIr;
-import decaf.common.Utils;
 
 public class DataflowOptimizer {
   private static final int MAX_RUNS = 20;

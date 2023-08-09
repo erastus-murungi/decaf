@@ -1,15 +1,16 @@
 package decaf.dataflow.ssapasses;
 
+
 import java.util.ArrayList;
 
-import decaf.codegen.codes.Instruction;
-import decaf.common.SSAEdgesUtil;
-import decaf.ssa.SSA;
 import decaf.codegen.codes.CopyInstruction;
+import decaf.codegen.codes.Instruction;
 import decaf.codegen.codes.Method;
 import decaf.codegen.names.IrSsaRegister;
+import decaf.common.SSAEdgesUtil;
 import decaf.dataflow.OptimizationContext;
 import decaf.ssa.Phi;
+import decaf.ssa.SSA;
 
 
 /**

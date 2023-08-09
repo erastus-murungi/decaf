@@ -24,12 +24,12 @@ for instruction_list in method.instruction_list:
  ```
 
 Commands to debug with:
+
 ```
 erastusmurungi@C02F257ZMD6M compiler % as -o test.o test.s -g
 erastusmurungi@C02F257ZMD6M compiler % gcc -o main test.o -g 
 erastusmurungi@C02F257ZMD6M compiler % gdb main
 ```
-
 
 ### Notes on LLDB debugging:
 
@@ -46,17 +46,17 @@ erastusmurungi@C02F257ZMD6M compiler % gdb main
 - Step into a function
   `thread step-in`
 
-
-
 # Notes
+
 If you decide to callee save and restore an odd number of registers, make sure to check the register alignment
 Generating assembly:
-  `clang -S -mllvm --x86-asm-syntax=att scratch.c -o scratch.s -fno-asynchronous-unwind-tables`
-
+`clang -S -mllvm --x86-asm-syntax=att scratch.c -o scratch.s -fno-asynchronous-unwind-tables`
 
 # TO FIX
+
 - Correctly generating spills and reloads
-- Currently, the code has a bug, where previous uses of a spilled variable are reference, and they continue using the old register.
+- Currently, the code has a bug, where previous uses of a spilled variable are reference, and they continue using the
+  old register.
 - This is especially seen when we have:
 
    ```python

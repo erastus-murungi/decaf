@@ -2,8 +2,6 @@ package decaf.common;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayDeque;
@@ -133,7 +131,7 @@ public class Utils {
   }
 
   public static long symbolicallyEvaluateUnaryInstruction(
-      @NotNull String operator,
+      String operator,
       long value
   ) {
     if (operator.equals(Operators.NOT)) {
@@ -190,11 +188,11 @@ public class Utils {
 
   public static Set<IrSsaRegister> genIrSsaRegistersIn(List<BasicBlock> basicBlocks) {
     return basicBlocks.stream()
-                       .flatMap(basicBlock -> basicBlock.getInstructionList()
-                                                        .stream())
-                       .flatMap(instruction -> instruction.genIrValuesFiltered(IrSsaRegister.class)
-                                                          .stream())
-                       .collect(Collectors.toUnmodifiableSet());
+                      .flatMap(basicBlock -> basicBlock.getInstructionList()
+                                                       .stream())
+                      .flatMap(instruction -> instruction.genIrValuesFiltered(IrSsaRegister.class)
+                                                         .stream())
+                      .collect(Collectors.toUnmodifiableSet());
   }
 
   public static Expression rotateBinaryOpExpression(Expression expr) {
@@ -237,8 +235,8 @@ public class Utils {
   }
 
   public static boolean isReachable(
-      @NotNull BasicBlock source,
-      @NotNull BasicBlock destination
+      BasicBlock source,
+      BasicBlock destination
   ) {
     var workList = new ArrayDeque<BasicBlock>();
     workList.offer(source);

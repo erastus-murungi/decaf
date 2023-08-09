@@ -1,17 +1,16 @@
 package decaf.codegen.codes;
 
-import org.jetbrains.annotations.NotNull;
 
 import decaf.cfg.BasicBlock;
 
 public interface WithTarget {
-    @NotNull BasicBlock getTarget();
+  BasicBlock getTarget();
 
-    void setTargetWithTributary(@NotNull BasicBlock newTarget);
+  void setTargetWithTributary(BasicBlock newTarget);
 
-    default void replaceTarget(BasicBlock newTarget) {
-        var oldTarget = getTarget();
-        setTargetWithTributary(newTarget);
-        oldTarget.removeTributary(this);
-    }
+  default void replaceTarget(BasicBlock newTarget) {
+    var oldTarget = getTarget();
+    setTargetWithTributary(newTarget);
+    oldTarget.removeTributary(this);
+  }
 }

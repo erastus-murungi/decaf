@@ -1,29 +1,28 @@
 package decaf.common;
 
-import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import decaf.codegen.codes.HasOperand;
-import decaf.codegen.codes.StoreInstruction;
-import decaf.dataflow.ssapasses.worklistitems.SsaEdge;
 import decaf.cfg.BasicBlock;
+import decaf.codegen.codes.HasOperand;
 import decaf.codegen.codes.Method;
+import decaf.codegen.codes.StoreInstruction;
 import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.names.IrValue;
 import decaf.dataflow.dominator.DominatorTree;
+import decaf.dataflow.ssapasses.worklistitems.SsaEdge;
 
 public class SSAEdgesUtil {
   private final Set<SsaEdge> ssaEdges;
 
-  public SSAEdgesUtil(@NotNull Method method) {
+  public SSAEdgesUtil(Method method) {
     this.ssaEdges = computeSsaEdges(method);
   }
 
-  private static Set<SsaEdge> computeSsaEdges(@NotNull Method method) {
+  private static Set<SsaEdge> computeSsaEdges(Method method) {
     var dominatorTree = new DominatorTree(method.getEntryBlock());
     var ssaEdges = new HashSet<SsaEdge>();
     var lValueToDefMapping = new HashMap<IrSsaRegister, StoreInstruction>();
@@ -53,7 +52,8 @@ public class SSAEdgesUtil {
               ));
             } else if (!method.getParameterNames()
                               .contains(irSsaRegister)) {
-              throw new IllegalStateException(instruction.toString() + "\n" + irSsaRegister + " not found\n" + basicBlock.getInstructionList());
+              throw new IllegalStateException(
+                  instruction + "\n" + irSsaRegister + " not found\n" + basicBlock.getInstructionList());
             }
           }
         }
@@ -66,7 +66,7 @@ public class SSAEdgesUtil {
     return ssaEdges;
   }
 
-  public Set<HasOperand> getUses(@NotNull IrSsaRegister irSsaRegister) {
+  public Set<HasOperand> getUses(IrSsaRegister irSsaRegister) {
     return getSsaEdges().stream()
                         .filter(ssaEdge -> ssaEdge.getValue()
                                                   .equals(irSsaRegister))
@@ -75,7 +75,7 @@ public class SSAEdgesUtil {
   }
 
   public void copyPropagate(
-      @NotNull IrSsaRegister toBeReplaced,
+      IrSsaRegister toBeReplaced,
       IrValue replacer
   ) {
     var uses = getUses(toBeReplaced);

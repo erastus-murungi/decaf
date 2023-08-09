@@ -1,16 +1,10 @@
 package decaf.ir;
 
+
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
 
-import decaf.ast.For;
-import decaf.ast.If;
-import decaf.ast.IntLiteral;
-import decaf.ast.Len;
-import decaf.ast.Statement;
-import decaf.ast.Type;
-import decaf.grammar.DecafScanner;
 import decaf.ast.ArithmeticOperator;
 import decaf.ast.Array;
 import decaf.ast.AssignOpExpr;
@@ -28,10 +22,14 @@ import decaf.ast.Decrement;
 import decaf.ast.EqualityOperator;
 import decaf.ast.ExpressionParameter;
 import decaf.ast.FieldDeclaration;
+import decaf.ast.For;
 import decaf.ast.HexLiteral;
+import decaf.ast.If;
 import decaf.ast.ImportDeclaration;
 import decaf.ast.Increment;
 import decaf.ast.Initialization;
+import decaf.ast.IntLiteral;
+import decaf.ast.Len;
 import decaf.ast.LocationArray;
 import decaf.ast.LocationAssignExpr;
 import decaf.ast.LocationVariable;
@@ -45,13 +43,16 @@ import decaf.ast.ParenthesizedExpression;
 import decaf.ast.Program;
 import decaf.ast.RelationalOperator;
 import decaf.ast.Return;
+import decaf.ast.Statement;
 import decaf.ast.StringLiteral;
+import decaf.ast.Type;
 import decaf.ast.UnaryOpExpression;
 import decaf.ast.While;
 import decaf.descriptors.ArrayDescriptor;
 import decaf.descriptors.Descriptor;
 import decaf.descriptors.MethodDescriptor;
 import decaf.exceptions.DecafSemanticException;
+import decaf.grammar.DecafScanner;
 import decaf.symboltable.SymbolTable;
 
 public class TypeResolver implements AstVisitor<Type> {
@@ -131,34 +132,38 @@ public class TypeResolver implements AstVisitor<Type> {
       SymbolTable symbolTable
   ) {
     setReturnTypeSeen(Type.Undefined);
-    methodDefinition.block.accept(
-        this,
-        methodDefinition.block.blockSymbolTable
-    );
-    if (getMethods().getDescriptorFromCurrentScope(methodDefinition.methodName.getLabel())
+    methodDefinition.getBlock()
+                    .accept(
+                        this,
+                        methodDefinition.getBlock().blockSymbolTable
+                    );
+    if (getMethods().getDescriptorFromCurrentScope(methodDefinition.getMethodName()
+                                                                   .getLabel())
                     .isPresent()) {
-      SymbolTable parameterSymbolTable = ((MethodDescriptor) getMethods().getDescriptorFromCurrentScope(methodDefinition.methodName.getLabel())
+      SymbolTable parameterSymbolTable = ((MethodDescriptor) getMethods().getDescriptorFromCurrentScope(methodDefinition.getMethodName()
+                                                                                                                        .getLabel())
                                                                          .get()).parameterSymbolTable;
-      for (MethodDefinitionParameter methodDefinitionParameter : methodDefinition.parameterList)
+      for (MethodDefinitionParameter methodDefinitionParameter : methodDefinition.getParameterList())
         methodDefinitionParameter.accept(
             this,
             parameterSymbolTable
         );
-      if (getReturnTypeSeen() != Type.Undefined && methodDefinition.returnType != getReturnTypeSeen()) {
+      if (getReturnTypeSeen() != Type.Undefined && methodDefinition.getReturnType() != getReturnTypeSeen()) {
         exceptions.add(new DecafSemanticException(
-            methodDefinition.tokenPosition,
-            methodDefinition.methodName.getLabel() + " does not have a declared type " + methodDefinition.returnType +
+            methodDefinition.getTokenPosition(),
+            methodDefinition.getMethodName()
+                            .getLabel() + " does not have a declared type " + methodDefinition.getReturnType() +
                 " instead it returns type " + getReturnTypeSeen()
         ));
       }
       setReturnTypeSeen(Type.Undefined);
     } else {
       exceptions.add(new DecafSemanticException(
-          methodDefinition.tokenPosition,
+          methodDefinition.getTokenPosition(),
           "method definition not found"
       ));
     }
-    return methodDefinition.returnType;
+    return methodDefinition.getReturnType();
   }
 
   @Override
@@ -276,13 +281,13 @@ public class TypeResolver implements AstVisitor<Type> {
       Program program,
       SymbolTable symbolTable
   ) {
-    for (FieldDeclaration fieldDeclaration : program.fieldDeclarationList) {
+    for (FieldDeclaration fieldDeclaration : program.getFieldDeclarationList()) {
       fieldDeclaration.accept(
           this,
           symbolTable
       );
     }
-    for (MethodDefinition methodDefinition : program.methodDefinitionList) {
+    for (MethodDefinition methodDefinition : program.getMethodDefinitionList()) {
       methodDefinition.accept(
           this,
           getMethods()
@@ -541,7 +546,8 @@ public class TypeResolver implements AstVisitor<Type> {
       MethodDefinition methodDefinition,
       MethodCall methodCall
   ) {
-    if (methodCall.methodCallParameterList.size() != methodDefinition.parameterList.size()) {
+    if (methodCall.methodCallParameterList.size() != methodDefinition.getParameterList()
+                                                                     .size()) {
       exceptions.add(new DecafSemanticException(
           methodCall.tokenPosition,
           "unequal number of args"
@@ -549,7 +555,8 @@ public class TypeResolver implements AstVisitor<Type> {
       return;
     }
     for (int i = 0; i < methodCall.methodCallParameterList.size(); i++) {
-      final MethodDefinitionParameter methodDefinitionParameter = methodDefinition.parameterList.get(i);
+      final MethodDefinitionParameter methodDefinitionParameter = methodDefinition.getParameterList()
+                                                                                  .get(i);
       final MethodCallParameter methodCallParameter = methodCall.methodCallParameterList.get(i);
       if (methodCallParameter.type != methodDefinitionParameter.getType()) {
         exceptions.add(new DecafSemanticException(

@@ -1,5 +1,6 @@
 package decaf.codegen.names;
 
+
 import java.util.Objects;
 
 import decaf.ast.Type;
@@ -12,18 +13,29 @@ public class IrStackArray extends IrValue {
       String label,
       long numElements
   ) {
-    super(type, label);
+    super(
+        type,
+        label
+    );
     this.numElements = numElements;
   }
 
   @Override
   public IrStackArray copy() {
-    return new IrStackArray(type, label, numElements);
+    return new IrStackArray(
+        type,
+        label,
+        numElements
+    );
   }
 
   @Override
   public String toString() {
-    return String.format("%s[%d]", label, numElements);
+    return String.format(
+        "%s[%d]",
+        label,
+        numElements
+    );
   }
 
   public long getNumElements() {
@@ -40,6 +52,9 @@ public class IrStackArray extends IrValue {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getNumElements(), getLabel());
+    return Objects.hash(
+        getNumElements(),
+        getLabel()
+    );
   }
 }

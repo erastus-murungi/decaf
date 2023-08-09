@@ -1,7 +1,8 @@
 package decaf.descriptors;
 
-import decaf.symboltable.SymbolTable;
+
 import decaf.ast.MethodDefinition;
+import decaf.symboltable.SymbolTable;
 
 /**
  * A method descriptor contains:
@@ -15,14 +16,22 @@ import decaf.ast.MethodDefinition;
  * </ul>
  */
 public class MethodDescriptor extends Descriptor {
-    public MethodDefinition methodDefinition;
-    public SymbolTable parameterSymbolTable;
-    public SymbolTable localSymbolTable;
+  public MethodDefinition methodDefinition;
+  public SymbolTable parameterSymbolTable;
+  public SymbolTable localSymbolTable;
 
-    public MethodDescriptor(MethodDefinition methodDefinition, SymbolTable parameterSymbolTable, SymbolTable localSymbolTable) {
-        super(methodDefinition.returnType, methodDefinition.methodName.getLabel());
-        this.methodDefinition = methodDefinition;
-        this.parameterSymbolTable = parameterSymbolTable;
-        this.localSymbolTable = localSymbolTable;
-    }
+  public MethodDescriptor(
+      MethodDefinition methodDefinition,
+      SymbolTable parameterSymbolTable,
+      SymbolTable localSymbolTable
+  ) {
+    super(
+        methodDefinition.getReturnType(),
+        methodDefinition.getMethodName()
+                        .getLabel()
+    );
+    this.methodDefinition = methodDefinition;
+    this.parameterSymbolTable = parameterSymbolTable;
+    this.localSymbolTable = localSymbolTable;
+  }
 }

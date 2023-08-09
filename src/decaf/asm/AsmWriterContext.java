@@ -1,53 +1,55 @@
 package decaf.asm;
 
-import org.jetbrains.annotations.Nullable;
 
 import decaf.codegen.codes.FunctionCall;
 
 public class AsmWriterContext {
-    /**
-     * keeps track of whether the {@code .text} label has been added or not
-     */
-    private boolean textAdded = false;
+  /**
+   * keeps track of whether the {@code .text} label has been added or not
+   */
+  private boolean textAdded = false;
 
-    /**
-     * Keeps track of the last comparison operator used
-     * This is useful for evaluating conditionals
-     * {@code lastComparisonOperator} will always have a value if a conditional jump evaluates
-     * a irAssignableValue;
-     */
-    @Nullable
-    private String lastComparisonOperator = null;
+  /**
+   * Keeps track of the last comparison operator used
+   * This is useful for evaluating conditionals
+   * {@code lastComparisonOperator} will always have a value if a conditional jump evaluates
+   * a irAssignableValue;
+   */
 
-    private int locationOfSubqInst = 0;
+  private String lastComparisonOperator = null;
 
-    private int maxStackSpaceForArgs = 0;
+  private int locationOfSubqInst = 0;
 
-    public void setMaxStackSpaceForArgs(FunctionCall functionCall) {
-        this.maxStackSpaceForArgs = Math.max(maxStackSpaceForArgs, (functionCall.getNumArguments() - X86Register.N_ARG_REGISTERS) * 8);
-    }
+  private int maxStackSpaceForArgs = 0;
 
-    public boolean isTextLabelAdded() {
-        return textAdded;
-    }
+  public void setMaxStackSpaceForArgs(FunctionCall functionCall) {
+    this.maxStackSpaceForArgs = Math.max(
+        maxStackSpaceForArgs,
+        (functionCall.getNumArguments() - X86Register.N_ARG_REGISTERS) * 8
+    );
+  }
 
-    public void setTextLabelAdded() {
-        textAdded = true;
-    }
+  public boolean isTextLabelAdded() {
+    return textAdded;
+  }
 
-    @Nullable public String getLastComparisonOperator() {
-        return lastComparisonOperator;
-    }
+  public void setTextLabelAdded() {
+    textAdded = true;
+  }
 
-    public void setLastComparisonOperator(@Nullable String lastComparisonOperator) {
-        this.lastComparisonOperator = lastComparisonOperator;
-    }
+  public String getLastComparisonOperator() {
+    return lastComparisonOperator;
+  }
 
-    public int getLocationOfSubqInst() {
-        return locationOfSubqInst;
-    }
+  public void setLastComparisonOperator(String lastComparisonOperator) {
+    this.lastComparisonOperator = lastComparisonOperator;
+  }
 
-    public void setLocationOfSubqInst(int locationOfSubqInst) {
-        this.locationOfSubqInst = locationOfSubqInst;
-    }
+  public int getLocationOfSubqInst() {
+    return locationOfSubqInst;
+  }
+
+  public void setLocationOfSubqInst(int locationOfSubqInst) {
+    this.locationOfSubqInst = locationOfSubqInst;
+  }
 }

@@ -1,10 +1,6 @@
 package decaf.codegen.codes;
 
-import static com.google.common.base.Preconditions.checkArgument;
 
-import org.jetbrains.annotations.NotNull;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,9 +8,6 @@ import java.util.function.Predicate;
 
 import decaf.asm.AsmWriter;
 import decaf.ast.AST;
-import decaf.codegen.names.IrIntegerConstant;
-import decaf.codegen.names.IrMemoryAddress;
-import decaf.codegen.names.IrSsaRegister;
 import decaf.codegen.names.IrValue;
 
 public abstract class Instruction {

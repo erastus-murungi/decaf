@@ -1,5 +1,6 @@
 package decaf.common;
 
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -10,18 +11,18 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-import decaf.dataflow.DataflowOptimizer;
-import decaf.grammar.DecafParser;
-import decaf.ssa.SSA;
 import decaf.asm.X86AsmWriter;
 import decaf.ast.AST;
 import decaf.cfg.ControlFlowGraph;
 import decaf.codegen.BasicBlockToInstructionListConverter;
+import decaf.dataflow.DataflowOptimizer;
 import decaf.dataflow.passes.InstructionSimplifyIrPass;
+import decaf.grammar.DecafParser;
 import decaf.grammar.DecafScanner;
 import decaf.grammar.Token;
 import decaf.ir.SemanticCheckingManager;
 import decaf.regalloc.RegisterAllocator;
+import decaf.ssa.SSA;
 
 public class Compilation {
   private final static String osName = System.getProperty("os.name")
@@ -138,7 +139,7 @@ public class Compilation {
         var process = Runtime.getRuntime()
                              .exec("/Users/erastusmurungi/IdeaProjects/compiler/main");
         process.waitFor(
-            30,
+            60,
             TimeUnit.SECONDS
         );
         if (process.exitValue() == 0 || process.isAlive()) output =

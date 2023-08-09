@@ -5,10 +5,10 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.util.ArrayList;
 
-import decaf.cfg.NOP;
-import decaf.dataflow.OptimizationContext;
 import decaf.cfg.BasicBlock;
+import decaf.cfg.NOP;
 import decaf.codegen.codes.Method;
+import decaf.dataflow.OptimizationContext;
 
 public class PeepHoleOptimizationPass extends OptimizationPass {
   boolean changesHappened = false;
@@ -17,8 +17,10 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
       OptimizationContext optimizationContext,
       Method method
   ) {
-    super(optimizationContext,
-        method);
+    super(
+        optimizationContext,
+        method
+    );
   }
 
 
@@ -43,7 +45,10 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
             pred.setSuccessor(replacer);
           }
           replacer.addPredecessor(pred);
-          BasicBlock.correctTributaries(basicBlock, replacer);
+          BasicBlock.correctTributaries(
+              basicBlock,
+              replacer
+          );
           changesHappened = true;
         }
         if (replacer.phiPresent()) {
@@ -57,8 +62,10 @@ public class PeepHoleOptimizationPass extends OptimizationPass {
         basicBlock.clearPredecessors();
       }
     }
-    optimizationContext.setBasicBlocks(method,
-        getBasicBlocksList());
+    optimizationContext.setBasicBlocks(
+        method,
+        getBasicBlocksList()
+    );
   }
 
 
