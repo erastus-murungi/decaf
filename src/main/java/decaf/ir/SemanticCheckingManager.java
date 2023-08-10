@@ -4,7 +4,7 @@ package decaf.ir;
 import decaf.ast.AST;
 import decaf.ast.Program;
 import decaf.ast.Type;
-import decaf.common.DecafExceptionProcessor;
+import decaf.common.CompilationContext;
 import decaf.descriptors.GlobalDescriptor;
 import decaf.exceptions.DecafSemanticException;
 
@@ -19,7 +19,7 @@ public class SemanticCheckingManager {
     this.rootNode = rootNode;
   }
 
-  public void runChecks(DecafExceptionProcessor decafExceptionProcessor) {
+  public void runChecks(CompilationContext errorManager) {
     var semanticCheckerVisitor = new GenericSemanticChecker();
     rootNode.accept(
         semanticCheckerVisitor,
@@ -43,14 +43,14 @@ public class SemanticCheckingManager {
     ));
     hasError = AstVisitor.exceptions.size() > 0;
     if (trace) {
-      printAllExceptions(decafExceptionProcessor);
+      printAllExceptions(errorManager);
     }
   }
 
-  public void printAllExceptions(DecafExceptionProcessor decafExceptionProcessor) {
+  public void printAllExceptions(CompilationContext errorManager) {
     for (DecafSemanticException decafSemanticException : AstVisitor.exceptions) {
-      decafExceptionProcessor.processDecafSemanticException(decafSemanticException)
-                             .printStackTrace();
+      errorManager.processDecafSemanticException(decafSemanticException)
+                  .printStackTrace();
     }
   }
 

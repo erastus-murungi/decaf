@@ -71,6 +71,8 @@ public class X86AsmWriter implements AsmWriter {
 
   private final X86ValueResolver x86ValueResolver;
 
+  private final CompilationContext compilationContext;
+
   private X86Method x86Method = new X86Method();
 
   private Instruction currentInstruction;
@@ -78,17 +80,20 @@ public class X86AsmWriter implements AsmWriter {
   private Method currentMethod;
 
 
+
   public X86AsmWriter(
       ProgramIr programIr,
-      RegisterAllocator registerAllocator
+      RegisterAllocator registerAllocator,
+      CompilationContext compilationContext
   ) {
+    this.compilationContext = compilationContext;
     this.registerAllocator = registerAllocator;
     this.programIr = programIr;
     this.x86ValueResolver = new X86ValueResolver(
         programIr,
         registerAllocator
     );
-    if (CompilationContext.isDebugModeOn()) {
+    if (compilationContext.isDebugModeOn()) {
       System.out.println(registerAllocator.getVariableToRegisterMap());
     }
     emit();

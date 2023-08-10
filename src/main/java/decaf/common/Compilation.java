@@ -40,13 +40,13 @@ public class Compilation {
   private ControlFlowGraph cfg;
   private BasicBlockToInstructionListConverter basicBlockToInstructionListConverter;
   private ProgramIr programIr;
-  private DecafExceptionProcessor decafExceptionProcessor;
   private PrintStream outputStream;
   private CompilationState compilationState;
   private double nLinesOfCodeReductionFactor = 0.0D;
   private static final Logger logger = Logger.getLogger(
       Compilation.class.getName()
   );
+  private final CompilationContext compilationContext;
 
   public Compilation(
       String filenameOrSourceCode,
@@ -54,17 +54,16 @@ public class Compilation {
       boolean isFilename
   ) throws FileNotFoundException {
     if (isFilename) {
-      CompilationContext.setAsmOutputFilename(filenameOrSourceCode);
-      specificTestFileInitialize(new FileInputStream(filenameOrSourceCode));
+      compilationContext = specificTestFileInitialize(new FileInputStream(filenameOrSourceCode));
     } else {
-      this.sourceCode = filenameOrSourceCode;
+      compilationContext = new CompilationContext(filenameOrSourceCode);
     }
     initialize();
-    CompilationContext.setDebugModeOn(debug);
+    compilationContext.setDebugModeOn(debug);
   }
 
   public Compilation() throws FileNotFoundException {
-    defaultInitialize();
+    compilationContext = defaultInitialize();
     initialize();
   }
 
@@ -72,9 +71,9 @@ public class Compilation {
       InputStream inputStream,
       boolean debug
   ) throws FileNotFoundException {
-    specificTestFileInitialize(inputStream);
+    compilationContext = specificTestFileInitialize(inputStream);
     initialize();
-    CompilationContext.setDebugModeOn(debug);
+    compilationContext.setDebugModeOn(debug);
   }
 
   public Compilation(
@@ -89,7 +88,7 @@ public class Compilation {
   }
 
   public Compilation(InputStream inputStream) throws FileNotFoundException {
-    specificTestFileInitialize(inputStream);
+    compilationContext = specificTestFileInitialize(inputStream);
     initialize();
   }
 
@@ -129,7 +128,7 @@ public class Compilation {
                              .exec("clang " + "/Users/erastusmurungi/IdeaProjects/compiler/test.s" +
                                        " -mllvm --x86-asm-syntax=att -o main");
         process.waitFor();
-        if (CompilationContext.isDebugModeOn()) {
+        if (compilationContext.isDebugModeOn()) {
           System.out.println(Utils.getStringFromInputStream(process.getErrorStream(), logger));
           System.out.println(Utils.getStringFromInputStream(process.getInputStream(), logger));
         }
@@ -152,7 +151,7 @@ public class Compilation {
             Utils.getStringFromInputStream(process.getErrorStream(), logger) +
                 Utils.getStringFromInputStream(process.getInputStream(), logger);
         else output = "TIMEOUT";
-        if (CompilationContext.isDebugModeOn()) System.out.println(output);
+        if (compilationContext.isDebugModeOn()) System.out.println(output);
       } catch (IOException e) {
         logger.log(
             Level.SEVERE,
@@ -175,21 +174,23 @@ public class Compilation {
     }
   }
 
-  private void specificTestFileInitialize(InputStream inputStream) {
-    CompilationContext.setDebugModeOn(true);
+  private CompilationContext specificTestFileInitialize(InputStream inputStream) {
     sourceCode = Utils.getStringFromInputStream(inputStream, logger);
+    var compilationContext = new CompilationContext(sourceCode);
+    compilationContext.setDebugModeOn(true);
+    return compilationContext;
   }
 
-  private void defaultInitialize() throws FileNotFoundException {
-    InputStream inputStream = CompilationContext.getSourceFilename() ==
-        null ? System.in: new FileInputStream(CompilationContext.getSourceFilename());
+  private CompilationContext defaultInitialize() throws FileNotFoundException {
+    InputStream inputStream = compilationContext.getSourceFilename() ==
+        null ? System.in: new FileInputStream(compilationContext.getSourceFilename());
     sourceCode = Utils.getStringFromInputStream(inputStream, logger);
+    return new CompilationContext(sourceCode);
   }
 
   private void initialize() throws FileNotFoundException {
-    outputStream = CompilationContext.getAsmOutputFilename() ==
-        null ? System.out: new java.io.PrintStream(new FileOutputStream(CompilationContext.getAsmOutputFilename()));
-    decafExceptionProcessor = new DecafExceptionProcessor(sourceCode);
+    outputStream = compilationContext.getAsmOutputFilename() ==
+        null ? System.out: new java.io.PrintStream(new FileOutputStream(compilationContext.getAsmOutputFilename()));
     compilationState = CompilationState.INITIALIZED;
   }
 
@@ -197,16 +198,17 @@ public class Compilation {
     assert compilationState == CompilationState.INITIALIZED;
     scanner = new Scanner(
         sourceCode,
-        decafExceptionProcessor
+        compilationContext
     );
-    scanner.setTrace(CompilationContext.isDebugModeOn());
+    scanner.setTrace(compilationContext.isDebugModeOn());
     compilationState = CompilationState.SCANNED;
   }
 
   private void runParser() {
     assert compilationState == CompilationState.SCANNED;
-    parser = new Parser(scanner, decafExceptionProcessor, logger);
-    parser.setTrace(CompilationContext.isDebugModeOn());
+    parser = new Parser(scanner,
+                        compilationContext, logger);
+    parser.setTrace(compilationContext.isDebugModeOn());
     parser.program();
 
     if (parser.hasError()) {
@@ -214,15 +216,15 @@ public class Compilation {
       System.exit(1);
     }
     compilationState = CompilationState.PARSED;
-    if (CompilationContext.isDebugModeOn()) System.out.println(parser.getRoot()
+    if (compilationContext.isDebugModeOn()) System.out.println(parser.getRoot()
                                                                      .getSourceCode());
   }
 
   private void runSemanticsChecker() {
     assert compilationState == CompilationState.PARSED;
     semanticChecker = new SemanticCheckingManager(parser.getRoot());
-    semanticChecker.setTrace(CompilationContext.isDebugModeOn());
-    semanticChecker.runChecks(decafExceptionProcessor);
+    semanticChecker.setTrace(compilationContext.isDebugModeOn());
+    semanticChecker.runChecks(compilationContext);
     if (semanticChecker.hasError()) {
       System.exit(1);
     }
@@ -254,14 +256,14 @@ public class Compilation {
     assert compilationState == CompilationState.SEM_CHECKED;
     if (shouldOptimize()) {
 
-      if (CompilationContext.isDebugModeOn()) {
+      if (compilationContext.isDebugModeOn()) {
         System.out.println("before InstructionSimplifyPass");
         System.out.println(parser.getRoot()
                                  .getSourceCode());
       }
 
       InstructionSimplifyIrPass.run(parser.getRoot());
-      if (CompilationContext.isDebugModeOn()) {
+      if (compilationContext.isDebugModeOn()) {
         System.out.println("after InstructionSimplifyPass");
         System.out.println(parser.getRoot()
                                  .getSourceCode());
@@ -280,14 +282,14 @@ public class Compilation {
     assert compilationState == CompilationState.CFG_GENERATED;
     basicBlockToInstructionListConverter = new BasicBlockToInstructionListConverter(cfg);
     programIr = basicBlockToInstructionListConverter.getProgramIr();
-    if (CompilationContext.isDebugModeOn()) {
+    if (compilationContext.isDebugModeOn()) {
       generateSymbolTablePdfs();
     }
-    if (CompilationContext.isDebugModeOn()) {
+    if (compilationContext.isDebugModeOn()) {
       generateCFGVisualizationPdfs();
     }
     compilationState = CompilationState.IR_GENERATED;
-    if (CompilationContext.isDebugModeOn()) {
+    if (compilationContext.isDebugModeOn()) {
       System.out.println(programIr.mergeProgram());
     }
   }
@@ -310,12 +312,12 @@ public class Compilation {
     oldNLinesOfCode = countLinesOfCode();
 
     if (shouldOptimize()) {
-      if (CompilationContext.isDebugModeOn()) {
+      if (compilationContext.isDebugModeOn()) {
         System.out.println("Before optimization");
         System.out.println(programIr.mergeProgram());
       }
       programIr.setGlobals(basicBlockToInstructionListConverter.getGlobalNames());
-      var dataflowOptimizer = new DataflowOptimizer(programIr);
+      var dataflowOptimizer = new DataflowOptimizer(programIr, compilationContext);
       dataflowOptimizer.initialize();
       dataflowOptimizer.optimize();
       programIr.setMethods(dataflowOptimizer.getOptimizedMethods());
@@ -337,7 +339,7 @@ public class Compilation {
              ));
     programIr.renumberLabels();
 
-    if (CompilationContext.isDebugModeOn()) {
+    if (compilationContext.isDebugModeOn()) {
       System.out.println("After optimization");
       System.out.println(programIr.mergeProgram());
       System.out.format(
@@ -350,11 +352,12 @@ public class Compilation {
     programIr.findGlobals();
     var x64AsmWriter = new X86AsmWriter(
         programIr,
-        registerAllocator
+        registerAllocator,
+        compilationContext
     );
     var x86Program = x64AsmWriter.getX86Program();
     outputStream.println(x86Program);
-    if (CompilationContext.isDebugModeOn()) System.out.println(x86Program);
+    if (compilationContext.isDebugModeOn()) System.out.println(x86Program);
     compilationState = CompilationState.ASSEMBLED;
   }
 

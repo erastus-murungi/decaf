@@ -28,9 +28,11 @@ public class DataflowOptimizer {
   private static final int MAX_RUNS = 20;
   private final List<OptimizationPass> optimizationPassesList = new ArrayList<>();
   private final OptimizationContext optimizationContext;
+  private final CompilationContext compilationContext;
 
-  public DataflowOptimizer(ProgramIr programIr) {
+  public DataflowOptimizer(ProgramIr programIr, CompilationContext compilationContext) {
     this.optimizationContext = new OptimizationContext(programIr);
+    this.compilationContext = compilationContext;
   }
 
   public List<Method> getOptimizedMethods() {
@@ -53,7 +55,7 @@ public class DataflowOptimizer {
       for (var optimizationPass : optimizationPassesList) {
         var changesHappenedForOpt = optimizationPass.runFunctionPass();
         changesHappened = changesHappened | changesHappenedForOpt;
-        if (CompilationContext.isDebugModeOn()) {
+        if (compilationContext.isDebugModeOn()) {
           System.out.format(
               "%s<%s> run = %s :: ",
               optimizationPass.getClass()

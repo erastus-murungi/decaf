@@ -2,14 +2,16 @@ package decaf.grammar;
 
 import static decaf.common.Utils.escapeMetaCharacters;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 
-import decaf.common.DecafExceptionProcessor;
-import decaf.common.Utils;
+import decaf.common.CompilationContext;
 
-public class Scanner {
+public class Scanner implements Iterable<Token> {
   public static final String LEFT_CURLY = "{";
   public static final String RIGHT_CURLY = "}";
   public static final String LEFT_SQUARE_BRACKET = "[";
@@ -78,9 +80,10 @@ public class Scanner {
   public static final String RESERVED_BOOL = "bool";
   public static final String RESERVED_TRUE = "true";
   public static final String RESERVED_FALSE = "false";
-  private final DecafExceptionProcessor decafExceptionProcessor;
-  private final String inputString;
-  private final List<String> syntaxLines = new ArrayList<>();
+
+
+  private final CompilationContext context;
+  private final String sourceCode;
   private final List<ScannerError> errors = new ArrayList<>();
   private int column;
   private int line;
@@ -91,11 +94,11 @@ public class Scanner {
 
   public Scanner(
       String in,
-      DecafExceptionProcessor decafExceptionProcessor
+      CompilationContext context
   ) {
-    inputString = maybeAppendNewLineCharacter(in);
+    sourceCode = maybeAppendNewLineCharacter(in);
     stringIndex = 0;
-    this.decafExceptionProcessor = decafExceptionProcessor;
+    this.context = context;
   }
 
   private static boolean isValidIdFirstCodePoint(char c) {
@@ -103,7 +106,7 @@ public class Scanner {
   }
 
   public String getPrettyErrorOutput() {
-    return decafExceptionProcessor.processScannerErrorOutput(errors);
+    return context.processScannerErrorOutput(errors);
   }
 
   public boolean finished() {
@@ -123,7 +126,7 @@ public class Scanner {
   }
 
   private char getCurrentChar() {
-    return inputString.charAt(stringIndex);
+    return sourceCode.charAt(stringIndex);
   }
 
   private void consumeNewlineCharacter(String sc) {
@@ -155,7 +158,7 @@ public class Scanner {
       String c,
       String errorMessage
   ) {
-    if (inputString.charAt(stringIndex) != c.charAt(0)) {
+    if (sourceCode.charAt(stringIndex) != c.charAt(0)) {
       recordScannerError(
           ScannerError.ErrorType.INVALID_CHAR,
           errorMessage,
@@ -179,11 +182,11 @@ public class Scanner {
   }
 
   private void consumeCompoundCharacter(String compoundOp) {
-    if (!inputString.startsWith(
+    if (!sourceCode.startsWith(
         compoundOp,
         stringIndex
     )) {
-      throw new IllegalArgumentException("expected `" + compoundOp + "`received " + inputString.substring(
+      throw new IllegalArgumentException("expected `" + compoundOp + "`received " + sourceCode.substring(
           stringIndex,
           stringIndex + 2
       ));
@@ -196,7 +199,7 @@ public class Scanner {
       char c,
       Function<Character, Boolean> validator
   ) {
-    if (!validator.apply(inputString.charAt(stringIndex)))
+    if (!validator.apply(sourceCode.charAt(stringIndex)))
       throw new IllegalArgumentException("expected " + c + " to be accepted by validator" + validator);
     consumeCharacterNoCheck();
   }
@@ -206,36 +209,43 @@ public class Scanner {
         token.tokenType() == TokenType.BLOCK_COMMENT || token.tokenType() == TokenType.ERROR;
   }
 
-  /**
-   * might find this useful
-   **/
-  public Token nextToken() {
-    Token token;
-    do {
-      token = nextTokenHelper();
-      if (!isSkipAble(token))
-        prevToken = token;
-      updateHighlighter(token);
-      if (shouldTrace) {
-        System.out.println(token);
-      }
-    } while (isSkipAble(token));
-    decafExceptionProcessor.syntaxHighlightedSourceCode = String.join(
-        "",
-        syntaxLines
-    );
-    return token;
+  class TokensIterator implements Iterator<Token> {
+    private Token token = nextHelper();
+
+    private Token nextHelper() {
+      Token token;
+      do {
+        token = nextTokenHelper();
+        if (!isSkipAble(token))
+          prevToken = token;
+        if (shouldTrace) {
+          System.out.println(token);
+        }
+      } while (isSkipAble(token));
+      return token;
+    }
+
+    public Token next() {
+      final Token token = this.token;
+      this.token = nextHelper();
+      return token;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return token.tokenType != TokenType.EOF;
+    }
   }
 
   private boolean currentSubstringMatches(String s) {
-    return inputString.startsWith(
+    return sourceCode.startsWith(
         s,
         stringIndex
     );
   }
 
   private Token nextTokenHelper() {
-    if (stringIndex >= inputString.length()) {
+    if (stringIndex >= sourceCode.length()) {
       if (prevToken != null)
         return makeToken(
             prevToken.tokenPosition(),
@@ -253,7 +263,7 @@ public class Scanner {
             EOF
         );
     }
-    final char c = inputString.charAt(stringIndex);
+    final char c = sourceCode.charAt(stringIndex);
     final TokenPosition tokenPosition = new TokenPosition(
         line,
         column,
@@ -481,7 +491,7 @@ public class Scanner {
   private Token handleSingleLineComment(TokenPosition tokenPosition) {
     consumeCompoundCharacter(LINE_COMMENT_START);
 
-    final int posEndComment = inputString.indexOf(
+    final int posEndComment = sourceCode.indexOf(
         NEW_LINE,
         stringIndex
     );
@@ -493,7 +503,7 @@ public class Scanner {
     return makeToken(
         tokenPosition,
         TokenType.LINE_COMMENT,
-        inputString.substring(
+        sourceCode.substring(
             tokenPosition.offset(),
             stringIndex - 1
         )
@@ -510,8 +520,8 @@ public class Scanner {
     final int completed = 2;
 
     int state = waitingForStar;
-    while (i < inputString.length() && state != completed) {
-      final char c = inputString.charAt(i);
+    while (i < sourceCode.length() && state != completed) {
+      final char c = sourceCode.charAt(i);
 
       if (state == waitingForStar) {
         if (c == '*') {
@@ -533,10 +543,10 @@ public class Scanner {
     if (state != completed) {
       recordScannerError(
           ScannerError.ErrorType.INVALID_COMMENT,
-          "could not finish parsing the comment" + inputString.substring(
+          "could not finish parsing the comment" + sourceCode.substring(
               tokenPosition.offset(),
               Math.min(
-                  inputString.length(),
+                  sourceCode.length(),
                   tokenPosition.offset() + 10
               )
           ) + "...",
@@ -547,7 +557,7 @@ public class Scanner {
     return makeToken(
         tokenPosition,
         TokenType.BLOCK_COMMENT,
-        inputString.substring(
+        sourceCode.substring(
             tokenPosition.offset(),
             i
         )
@@ -556,7 +566,7 @@ public class Scanner {
 
   private boolean handleEscape(TokenPosition tokenPosition) {
     consumeCharacterNoCheck();
-    char c = inputString.charAt(stringIndex);
+    char c = sourceCode.charAt(stringIndex);
     switch (c) {
       case 'n', '"', 't', 'r', '\'', '\\' -> {
         consumeCharacterNoCheck();
@@ -587,7 +597,7 @@ public class Scanner {
   private Token handleCharLiteral(TokenPosition tokenPosition) {
     consumeCharacterNoCheck();
 
-    final char c = inputString.charAt(stringIndex);
+    final char c = sourceCode.charAt(stringIndex);
     if (c == '\\' || isValidChar(c)) {
       if (c == '\\') {
         if (handleEscape(tokenPosition)) {
@@ -595,7 +605,7 @@ public class Scanner {
               ScannerError.ErrorType.INVALID_ESCAPE_SEQUENCE,
               String.format(
                   "found invalid char literal `%s`",
-                  escapeMetaCharacters(String.valueOf(inputString.charAt(stringIndex)))
+                  escapeMetaCharacters(String.valueOf(sourceCode.charAt(stringIndex)))
               ),
               tokenPosition
           );
@@ -611,7 +621,7 @@ public class Scanner {
           SINGLE_QUOTES,
           String.format(
               "missing closing single quotes on `%s`",
-              escapeMetaCharacters(inputString.substring(
+              escapeMetaCharacters(sourceCode.substring(
                   tokenPosition.offset(),
                   stringIndex + 1
               ))
@@ -620,7 +630,7 @@ public class Scanner {
       return makeToken(
           tokenPosition,
           TokenType.CHAR_LITERAL,
-          inputString.substring(
+          sourceCode.substring(
               tokenPosition.offset(),
               stringIndex
           )
@@ -642,14 +652,14 @@ public class Scanner {
 
     char c;
     while (true) {
-      c = inputString.charAt(stringIndex);
+      c = sourceCode.charAt(stringIndex);
       if (c == '\\') {
         if (handleEscape(tokenPosition)) {
           return recordScannerError(
               ScannerError.ErrorType.INVALID_ESCAPE_SEQUENCE,
               String.format(
                   "found invalid string literal \\%s",
-                  inputString.charAt(stringIndex)
+                  sourceCode.charAt(stringIndex)
               ),
               tokenPosition
           );
@@ -674,7 +684,7 @@ public class Scanner {
     return makeToken(
         tokenPosition,
         TokenType.STRING_LITERAL,
-        inputString.substring(
+        sourceCode.substring(
             tokenPosition.offset(),
             stringIndex
         )
@@ -683,13 +693,13 @@ public class Scanner {
 
   private Token handleId(TokenPosition tokenPosition) {
     int i = stringIndex;
-    while (i < inputString.length()) {
-      final char alphaNum = inputString.charAt(i);
+    while (i < sourceCode.length()) {
+      final char alphaNum = sourceCode.charAt(i);
       if (!(Character.isLetterOrDigit(alphaNum) || alphaNum == '_'))
         break;
       ++i;
     }
-    String idLexeme = inputString.substring(
+    String idLexeme = sourceCode.substring(
         stringIndex,
         i
     );
@@ -726,10 +736,10 @@ public class Scanner {
   }
 
   private Token handleDecimalLiteral(TokenPosition tokenPosition) {
-    assert Character.isDigit(inputString.charAt(stringIndex));
+    assert Character.isDigit(sourceCode.charAt(stringIndex));
     int i = stringIndex + 1;
-    while (i < inputString.length()) {
-      if (!Character.isDigit(inputString.charAt(i)))
+    while (i < sourceCode.length()) {
+      if (!Character.isDigit(sourceCode.charAt(i)))
         break;
       ++i;
     }
@@ -737,7 +747,7 @@ public class Scanner {
     return makeToken(
         tokenPosition,
         TokenType.DECIMAL_LITERAL,
-        inputString.substring(
+        sourceCode.substring(
             tokenPosition.offset(),
             stringIndex
         )
@@ -753,8 +763,8 @@ public class Scanner {
     consumeCompoundCharacter(HEX_PREFIX_LOWERCASE);
 
     int i = stringIndex;
-    while (i < inputString.length()) {
-      final char hexDigit = inputString.charAt(i);
+    while (i < sourceCode.length()) {
+      final char hexDigit = sourceCode.charAt(i);
       if (!isValidHexDigit(hexDigit)) {
         break;
       }
@@ -766,7 +776,7 @@ public class Scanner {
     return makeToken(
         tokenPosition,
         TokenType.HEX_LITERAL,
-        inputString.substring(
+        sourceCode.substring(
             tokenPosition.offset(),
             i
         )
@@ -831,7 +841,7 @@ public class Scanner {
   }
 
   private Token handleWhiteSpace(TokenPosition tokenPosition) {
-    final char c = inputString.charAt(stringIndex);
+    final char c = sourceCode.charAt(stringIndex);
 
     switch (c) {
       case '\r', '\n' -> consumeNewlineCharacter(String.valueOf(c));
@@ -859,31 +869,9 @@ public class Scanner {
     this.shouldTrace = shouldTrace;
   }
 
-  private void updateHighlighter(Token token) {
-    switch (token.tokenType()) {
-      case EOF -> {
-      }
-      case ID -> syntaxLines.add(Utils.coloredPrint(
-          token.lexeme(),
-          Utils.ANSIColorConstants.ANSI_BLUE
-      ));
-      case CHAR_LITERAL, STRING_LITERAL, RESERVED_FALSE, RESERVED_TRUE, HEX_LITERAL, DECIMAL_LITERAL ->
-          syntaxLines.add(Utils.coloredPrint(
-              token.lexeme(),
-              Utils.ANSIColorConstants.ANSI_GREEN
-          ));
-      default -> {
-        if (token.tokenType()
-                 .toString()
-                 .startsWith("RESERVED")) {
-          syntaxLines.add(Utils.coloredPrint(
-              token.lexeme(),
-              Utils.ANSIColorConstants.ANSI_PURPLE
-          ));
-        } else {
-          syntaxLines.add(token.lexeme());
-        }
-      }
-    }
+  @NotNull
+  @Override
+  public Iterator<Token> iterator() {
+    return new TokensIterator();
   }
 }

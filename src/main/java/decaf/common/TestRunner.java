@@ -451,7 +451,7 @@ public class TestRunner {
         var expectedOutputBody = expectedOutput.substring(headerEndIndex + 1);
         var scanner = new Scanner(
             readFile(pair.first),
-            new DecafExceptionProcessor(readFile(pair.first))
+            new CompilationContext(readFile(pair.first))
         );
         var actualOutput = formatTokensToOutputFormat(scanner);
         if (scanner.finished()) {
@@ -513,8 +513,7 @@ public class TestRunner {
 
   private static String formatTokensToOutputFormat(@NotNull Scanner scanner) {
     var strings = new ArrayList<String>();
-    Token token;
-    for (token = scanner.nextToken(); token.isNotEOF(); token = scanner.nextToken()) {
+    for (var token : scanner) {
       String text;
       switch (token.tokenType()) {
         case ID -> text = "IDENTIFIER" + " " + token.lexeme();

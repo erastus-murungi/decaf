@@ -7,7 +7,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import decaf.cfg.NOP;
-import decaf.common.DecafExceptionProcessor;
 import decaf.common.StronglyConnectedComponentsTarjan;
 import decaf.grammar.Parser;
 import decaf.grammar.Scanner;
@@ -26,7 +25,7 @@ public class DataFlowAnalysisTest {
     @BeforeEach
     public void setUp() {
         final var simpleForLoop = "void main() {int i; int a; for (i = 0; i < 10; i++) {a += i;}}";
-        var decafExceptionProcessor = new DecafExceptionProcessor(simpleForLoop);
+        var decafExceptionProcessor = new ErrorManager(simpleForLoop);
         var scanner = new Scanner(simpleForLoop, decafExceptionProcessor);
         var parser = new Parser(scanner, decafExceptionProcessor, testingLogger);
         parser.program();

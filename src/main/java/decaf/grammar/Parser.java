@@ -45,6 +45,8 @@ import static decaf.grammar.TokenType.RIGHT_SQUARE_BRACKET;
 import static decaf.grammar.TokenType.SEMICOLON;
 import static decaf.grammar.TokenType.STRING_LITERAL;
 
+import com.google.common.collect.Lists;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -106,7 +108,7 @@ import decaf.ast.Type;
 import decaf.ast.UnaryOpExpression;
 import decaf.ast.UnaryOperator;
 import decaf.ast.While;
-import decaf.common.DecafExceptionProcessor;
+import decaf.common.CompilationContext;
 import decaf.common.Pair;
 import decaf.common.Utils;
 import decaf.exceptions.DecafException;
@@ -115,15 +117,15 @@ import decaf.exceptions.DecafParserException;
 public class Parser {
   @NotNull public final Scanner scanner;
   @NotNull public final List<DecafParserException> errors = new ArrayList<>();
-  @NotNull private final DecafExceptionProcessor decafExceptionProcessor;
+  @NotNull private final CompilationContext errorManager;
   private boolean showTrace = false;
   @NotNull private ArrayList<Token> tokens;
   private int currentTokenIndex;
   private Program root;
 
-  public Parser(@NotNull Scanner scanner, @NotNull DecafExceptionProcessor decafExceptionProcessor, @NotNull Logger logger) {
+  public Parser(@NotNull Scanner scanner, @NotNull CompilationContext errorManager, @NotNull Logger logger) {
     this.scanner = scanner;
-    this.decafExceptionProcessor = decafExceptionProcessor;
+    this.errorManager = errorManager;
     try {
       this.tokens = getAllTokens();
     } catch (DecafException e) {
@@ -233,13 +235,7 @@ public class Parser {
   }
 
   private ArrayList<Token> getAllTokens() throws DecafException {
-    ArrayList<Token> tokens = new ArrayList<>();
-    Token token;
-    do {
-      token = scanner.nextToken();
-      tokens.add(token);
-    } while (token.isNotEOF());
-    return tokens;
+    return Lists.newArrayList(scanner);
   }
 
   private Token consumeToken(
@@ -286,7 +282,7 @@ public class Parser {
   }
 
   public boolean hasError() {
-    return errors.size() > 0;
+    return !errors.isEmpty();
   }
 
   private Expression parseOrExpr() throws DecafParserException {
@@ -686,7 +682,7 @@ public class Parser {
   }
 
   private DecafParserException getContextualException(String errMessage) {
-    return decafExceptionProcessor.getContextualDecafParserException(
+    return errorManager.getContextualDecafParserException(
         getCurrentToken(),
         errMessage
     );
@@ -920,15 +916,13 @@ public class Parser {
 
   private AssignExpr parseAssignExpr() throws DecafParserException {
     switch (getCurrentToken().tokenType()) {
-      case DECREMENT:
-      case INCREMENT:
+      case DECREMENT, INCREMENT -> {
         return parseIncrement();
-      case ASSIGN:
-      case ADD_ASSIGN:
-      case MINUS_ASSIGN:
-      case MULTIPLY_ASSIGN:
+      }
+      case ASSIGN, ADD_ASSIGN, MINUS_ASSIGN, MULTIPLY_ASSIGN -> {
         return parseAssignOpExpr(getCurrentToken().tokenType());
-      default: {
+      }
+      default -> {
         if (tokens.get(currentTokenIndex - 1)
                   .tokenType() == ID) {
           throw getContextualException("invalid type " + "\"" + tokens.get(currentTokenIndex - 1)
@@ -978,28 +972,34 @@ public class Parser {
 
   private Expression parseExpr() throws DecafParserException {
     switch (getCurrentTokenType()) {
-      case NOT:
-      case MINUS: {
+      case NOT, MINUS -> {
         return parseUnaryOpExpr();
       }
-      case LEFT_PARENTHESIS:
+      case LEFT_PARENTHESIS -> {
         return parseParenthesizedExpression();
-      case RESERVED_LEN:
+      }
+      case RESERVED_LEN -> {
         return parseLen();
-      case DECIMAL_LITERAL:
+      }
+      case DECIMAL_LITERAL -> {
         return parseLiteral(DECIMAL_LITERAL);
-      case HEX_LITERAL:
+      }
+      case HEX_LITERAL -> {
         return parseLiteral(HEX_LITERAL);
-      case CHAR_LITERAL:
+      }
+      case CHAR_LITERAL -> {
         return parseLiteral(CHAR_LITERAL);
-      case RESERVED_FALSE:
+      }
+      case RESERVED_FALSE -> {
         return parseLiteral(RESERVED_FALSE);
-      case RESERVED_TRUE:
+      }
+      case RESERVED_TRUE -> {
         return parseLiteral(RESERVED_TRUE);
-      case ID:
+      }
+      case ID -> {
         return parseLocationOrMethodCall();
-      default:
-        throw new IllegalStateException();
+      }
+      default -> throw new IllegalStateException();
     }
   }
 
@@ -1193,19 +1193,25 @@ public class Parser {
 
   private Statement parseStatement() throws DecafParserException {
     switch (getCurrentTokenType()) {
-      case RESERVED_BREAK:
+      case RESERVED_BREAK -> {
         return parseBreak();
-      case RESERVED_CONTINUE:
+      }
+      case RESERVED_CONTINUE -> {
         return parseContinue();
-      case RESERVED_RETURN:
+      }
+      case RESERVED_RETURN -> {
         return parseReturnStatement();
-      case RESERVED_WHILE:
+      }
+      case RESERVED_WHILE -> {
         return parseWhileStatement();
-      case RESERVED_IF:
+      }
+      case RESERVED_IF -> {
         return parseIfStatement();
-      case RESERVED_FOR:
+      }
+      case RESERVED_FOR -> {
         return parseForStatement();
-      default: {
+      }
+      default -> {
         if (getCurrentTokenType() == ID) {
           return parseLocationAndAssignExprOrMethodCall();
         } else {
