@@ -1,15 +1,11 @@
 *.sw*
 .DS_Store
 
-/classes/
-/dist/
-
 !.idea
 .idea/*
 !.idea/runConfigurations
 src/.idea/
 
-out/
 *.iml
 build/
 dot/
@@ -19,7 +15,6 @@ dot/
 *cfg*.pdf
 tests/
 test.asm
-main
 symbolTables.pdf
 dotsource.dot
 ig.pdf
