@@ -1,0 +1,36 @@
+plugins {
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    implementation 'org.jetbrains:annotations:24.0.0'
+    implementation 'com.google.guava:guava:31.1-jre'
+    implementation 'com.ezylang:EvalEx:3.0.5'
+}
+
+application {
+    mainClass = 'decaf.Main'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+tasks.register('printSourceSetInformation') {
+    doLast {
+        sourceSets.each { srcSet ->
+            println "[" + srcSet.name + "]"
+            print "-->Source directories: " + srcSet.allJava.srcDirs + "\n"
+            print "-->Output directories: " + srcSet.output.classesDirs.files + "\n"
+            println ""
+        }
+    }
+}
