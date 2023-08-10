@@ -1,4 +1,10 @@
-package decaf.dataflow;
+package dataflow;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import decaf.cfg.NOP;
 import decaf.common.DecafExceptionProcessor;
@@ -9,22 +15,20 @@ import decaf.ir.SemanticCheckingManager;
 import decaf.cfg.BasicBlock;
 import decaf.cfg.ControlFlowGraph;
 
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 public class DataFlowAnalysisTest {
     List<BasicBlock> basicBlockList;
+    Logger testingLogger = Logger.getLogger("testingLogger");
 
-    @Before
+    @BeforeEach
     public void setUp() {
         final var simpleForLoop = "void main() {int i; int a; for (i = 0; i < 10; i++) {a += i;}}";
         var decafExceptionProcessor = new DecafExceptionProcessor(simpleForLoop);
         var scanner = new Scanner(simpleForLoop, decafExceptionProcessor);
-        var parser = new Parser(scanner);
+        var parser = new Parser(scanner, decafExceptionProcessor, testingLogger);
         parser.program();
 
         var semChecker = new SemanticCheckingManager(parser.getRoot());

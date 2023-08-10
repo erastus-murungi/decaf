@@ -1,10 +1,12 @@
-package decaf.dataflow;
+package dataflow;
 
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import junit.framework.TestCase;
-
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import decaf.ast.Type;
 import decaf.codegen.codes.UnaryInstruction;
@@ -13,7 +15,7 @@ import decaf.dataflow.analyses.AvailableExpressions;
 import decaf.grammar.Scanner;
 import decaf.codegen.codes.BinaryInstruction;
 
-public class AvailableExpressionsTest extends TestCase {
+public class AvailableExpressionsTest {
   private static final String[] allDecafOperators = {Scanner.PLUS, Scanner.MULTIPLY, Scanner.MINUS, Scanner.DIVIDE, Scanner.GEQ, Scanner.MOD, Scanner.GT, Scanner.LEQ, Scanner.LT};
   private static final String[] commutativeOperators = {Scanner.PLUS, Scanner.MULTIPLY,};
   private final IrSsaRegister a = new IrSsaRegister(
@@ -43,7 +45,7 @@ public class AvailableExpressionsTest extends TestCase {
   private UnaryInstruction aEqualsMinusB;
   private UnaryInstruction cEqualsMinusB;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     aEqualsBPlusC = new BinaryInstruction(
         a,
@@ -125,6 +127,7 @@ public class AvailableExpressionsTest extends TestCase {
     );
   }
 
+  @Test
   public void test_BinaryExpressionsAreIsomorphic_When_CommutativeExpressionsAreEqual() {
     // b + c == c + b
     assertTrue(AvailableExpressions.expressionsAreIsomorphic(
@@ -138,6 +141,7 @@ public class AvailableExpressionsTest extends TestCase {
     ));
   }
 
+  @Test
   public void test_BinaryExpressionsAreIsomorphic_When_NonCommutativeExpressionsAreEqual() {
     // b - c == b - c
     assertTrue(AvailableExpressions.expressionsAreIsomorphic(
@@ -151,6 +155,7 @@ public class AvailableExpressionsTest extends TestCase {
     ));
   }
 
+  @Test
   public void test_BinaryExpressionsAreNotIsomorphic_When_NonCommutativeExpressionsAreNotEqual() {
     // b - c != c - b
     assertFalse(AvailableExpressions.expressionsAreIsomorphic(
@@ -164,6 +169,7 @@ public class AvailableExpressionsTest extends TestCase {
     ));
   }
 
+  @Test
   public void test_IllegalArgumentExceptionThrown_When_FirstArgIsNull() {
     IllegalArgumentException illegalArgumentException = assertThrows(
         IllegalArgumentException.class,
@@ -176,6 +182,7 @@ public class AvailableExpressionsTest extends TestCase {
                                        .contains("first assignment is a null pointer"));
   }
 
+  @Test
   public void test_IllegalArgumentExceptionThrown_When_SecondArgIsNull() {
     IllegalArgumentException illegalArgumentException = assertThrows(
         IllegalArgumentException.class,
@@ -188,6 +195,7 @@ public class AvailableExpressionsTest extends TestCase {
                                        .contains("second assignment is a null pointer"));
   }
 
+  @Test
   public void test_UnaryExpressions_AreIsomorphic_When_Equal() {
     // -b == -b
     assertTrue(AvailableExpressions.expressionsAreIsomorphic(
@@ -196,6 +204,7 @@ public class AvailableExpressionsTest extends TestCase {
     ));
   }
 
+  @Test
   public void test_Only_MultiplyAndAdd_AreCommutative() {
     int numCommutative = 0;
     for (String operator : allDecafOperators)

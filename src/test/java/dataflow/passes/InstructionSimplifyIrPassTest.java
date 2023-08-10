@@ -1,8 +1,8 @@
-package decaf.dataflow.passes;
+package dataflow.passes;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -15,6 +15,7 @@ import decaf.common.Utils;
 import decaf.ast.AST;
 import decaf.ast.Expression;
 import decaf.ast.LocationVariable;
+import decaf.dataflow.passes.InstructionSimplifyIrPass;
 
 public class InstructionSimplifyIrPassTest {
     @Test
