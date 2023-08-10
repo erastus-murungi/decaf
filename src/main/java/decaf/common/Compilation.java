@@ -10,6 +10,7 @@ import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import decaf.asm.X86AsmWriter;
@@ -31,7 +32,6 @@ public class Compilation {
                                                  ""
                                              )
                                              .toLowerCase(Locale.ROOT);
-  private final int nLinesRemovedByAssemblyOptimizer = 0;
   String output = null;
   private String sourceCode;
   private Scanner scanner;
@@ -44,7 +44,7 @@ public class Compilation {
   private PrintStream outputStream;
   private CompilationState compilationState;
   private double nLinesOfCodeReductionFactor = 0.0D;
-  private static Logger logger = Logger.getLogger(
+  private static final Logger logger = Logger.getLogger(
       Compilation.class.getName()
   );
 
@@ -94,7 +94,7 @@ public class Compilation {
   }
 
   public int getNLinesRemovedByAssemblyOptimizer() {
-    return nLinesRemovedByAssemblyOptimizer;
+    return 0;
   }
 
   public double getNLinesOfCodeReductionFactor() {
@@ -130,11 +130,14 @@ public class Compilation {
                                        " -mllvm --x86-asm-syntax=att -o main");
         process.waitFor();
         if (CompilationContext.isDebugModeOn()) {
-          System.out.println(Utils.getStringFromInputStream(process.getErrorStream()));
-          System.out.println(Utils.getStringFromInputStream(process.getInputStream()));
+          System.out.println(Utils.getStringFromInputStream(process.getErrorStream(), logger));
+          System.out.println(Utils.getStringFromInputStream(process.getInputStream(), logger));
         }
       } catch (IOException e) {
-        e.printStackTrace();
+        logger.log(
+            Level.SEVERE,
+            "error compiling assembly due to IO error: %s",
+            e);
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
@@ -146,12 +149,16 @@ public class Compilation {
             TimeUnit.SECONDS
         );
         if (process.exitValue() == 0 || process.isAlive()) output =
-            Utils.getStringFromInputStream(process.getErrorStream()) +
-                Utils.getStringFromInputStream(process.getInputStream());
+            Utils.getStringFromInputStream(process.getErrorStream(), logger) +
+                Utils.getStringFromInputStream(process.getInputStream(), logger);
         else output = "TIMEOUT";
         if (CompilationContext.isDebugModeOn()) System.out.println(output);
       } catch (IOException e) {
-        e.printStackTrace();
+        logger.log(
+            Level.SEVERE,
+            "error running compiled assembly due to IO error: %s",
+            e
+        );
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
@@ -170,13 +177,13 @@ public class Compilation {
 
   private void specificTestFileInitialize(InputStream inputStream) {
     CompilationContext.setDebugModeOn(true);
-    sourceCode = Utils.getStringFromInputStream(inputStream);
+    sourceCode = Utils.getStringFromInputStream(inputStream, logger);
   }
 
   private void defaultInitialize() throws FileNotFoundException {
     InputStream inputStream = CompilationContext.getSourceFilename() ==
         null ? System.in: new FileInputStream(CompilationContext.getSourceFilename());
-    sourceCode = Utils.getStringFromInputStream(inputStream);
+    sourceCode = Utils.getStringFromInputStream(inputStream, logger);
   }
 
   private void initialize() throws FileNotFoundException {

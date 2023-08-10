@@ -1,5 +1,7 @@
 package decaf.grammar;
 
+import static decaf.common.Utils.escapeMetaCharacters;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -100,10 +102,6 @@ public class Scanner {
     return Character.isLetter(c) || c == '_';
   }
 
-  public List<ScannerError> getErrors() {
-    return errors;
-  }
-
   public String getPrettyErrorOutput() {
     return decafExceptionProcessor.processScannerErrorOutput(errors);
   }
@@ -134,7 +132,7 @@ public class Scanner {
       recordScannerError(
           ScannerError.ErrorType.INVALID_NEWLINE,
           String.format(
-              "expected a newline character, one of: %s received %s",
+              "expected a newline character, one of: `%s` received `%s`",
               String.valueOf(new char[]{'\r', '\n'}),
               c
           ),
@@ -155,18 +153,12 @@ public class Scanner {
   private void consumeCharacter(
       TokenPosition tokenPosition,
       String c,
-      String detail
+      String errorMessage
   ) {
     if (inputString.charAt(stringIndex) != c.charAt(0)) {
       recordScannerError(
           ScannerError.ErrorType.INVALID_CHAR,
-          String.format(
-              "expected %s received %s (%s)",
-              c,
-              inputString.charAt(stringIndex)
-              ,
-              detail
-          ),
+          errorMessage,
           tokenPosition
       );
     } else {
@@ -174,12 +166,24 @@ public class Scanner {
     }
   }
 
+  private void consumeCharacterSpecificError(
+      TokenPosition tokenPosition,
+      String c,
+      String errorMessage
+  ) {
+    consumeCharacter(
+        tokenPosition,
+        c,
+        errorMessage
+    );
+  }
+
   private void consumeCompoundCharacter(String compoundOp) {
     if (!inputString.startsWith(
         compoundOp,
         stringIndex
     )) {
-      throw new IllegalArgumentException("expected " + compoundOp + "received " + inputString.substring(
+      throw new IllegalArgumentException("expected `" + compoundOp + "`received " + inputString.substring(
           stringIndex,
           stringIndex + 2
       ));
@@ -461,8 +465,8 @@ public class Scanner {
               recordScannerError(
                   ScannerError.ErrorType.INVALID_CHAR,
                   String.format(
-                      "expected a valid character but received invalid character %s",
-                      c
+                      "expected a valid character but received `%s`",
+                      escapeMetaCharacters(String.valueOf(c))
                   ),
                   tokenPosition
               );
@@ -550,20 +554,24 @@ public class Scanner {
     );
   }
 
-  private void handleEscape(TokenPosition tokenPosition) {
+  private boolean handleEscape(TokenPosition tokenPosition) {
     consumeCharacterNoCheck();
     char c = inputString.charAt(stringIndex);
     switch (c) {
-      case 'n', '"', 't', 'r', '\'', '\\' -> consumeCharacterNoCheck();
+      case 'n', '"', 't', 'r', '\'', '\\' -> {
+        consumeCharacterNoCheck();
+        return false;
+      }
       default -> recordScannerError(
           ScannerError.ErrorType.INVALID_ESCAPE_SEQUENCE,
           String.format(
-              "found invalid escape sequence \\%s",
+              "found invalid escape sequence `\\%s`",
               c
           ),
           tokenPosition
       );
     }
+    return true;
   }
 
   private boolean isValidChar(char c) {
@@ -581,22 +589,32 @@ public class Scanner {
 
     final char c = inputString.charAt(stringIndex);
     if (c == '\\' || isValidChar(c)) {
-      if (c == '\\')
-        handleEscape(tokenPosition);
-      else if (isValidChar(c))
+      if (c == '\\') {
+        if (handleEscape(tokenPosition)) {
+          return recordScannerError(
+              ScannerError.ErrorType.INVALID_ESCAPE_SEQUENCE,
+              String.format(
+                  "found invalid char literal `%s`",
+                  escapeMetaCharacters(String.valueOf(inputString.charAt(stringIndex)))
+              ),
+              tokenPosition
+          );
+        }
+      } else if (isValidChar(c)) {
         consumeCharacter(
             c,
             this::isValidChar
         );
+      }
       consumeCharacter(
           tokenPosition,
           SINGLE_QUOTES,
-          decafExceptionProcessor.getContextualErrorMessage(
-              tokenPosition,
-              "missing closing single quotes " + "current char literal is " + inputString.substring(
+          String.format(
+              "missing closing single quotes on `%s`",
+              escapeMetaCharacters(inputString.substring(
                   tokenPosition.offset(),
                   stringIndex + 1
-              )
+              ))
           )
       );
       return makeToken(
@@ -611,8 +629,8 @@ public class Scanner {
       return recordScannerError(
           ScannerError.ErrorType.INVALID_CHAR_LITERAL,
           String.format(
-              "found invalid char literal %s",
-              c
+              "found invalid char literal `%s`",
+              escapeMetaCharacters(String.valueOf(c))
           ),
           tokenPosition
       );
@@ -625,22 +643,32 @@ public class Scanner {
     char c;
     while (true) {
       c = inputString.charAt(stringIndex);
-      if (c == '\\')
-        handleEscape(tokenPosition);
-      else if (isValidChar(c))
+      if (c == '\\') {
+        if (handleEscape(tokenPosition)) {
+          return recordScannerError(
+              ScannerError.ErrorType.INVALID_ESCAPE_SEQUENCE,
+              String.format(
+                  "found invalid string literal \\%s",
+                  inputString.charAt(stringIndex)
+              ),
+              tokenPosition
+          );
+        }
+      } else if (isValidChar(c)) {
         consumeCharacter(
             c,
             this::isValidChar
         );
-      else
+      } else
         break;
     }
-    consumeCharacter(
+    consumeCharacterSpecificError(
         tokenPosition,
         DOUBLE_QUOTES,
-        decafExceptionProcessor.getContextualErrorMessage(
-            tokenPosition,
-            "expected " + DOUBLE_QUOTES + " received " + inputString.charAt(stringIndex)
+        String.format(
+            "expected %s to close string literal, not `%s`",
+            DOUBLE_QUOTES,
+            escapeMetaCharacters(String.valueOf(c))
         )
     );
     return makeToken(

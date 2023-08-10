@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 import decaf.exceptions.DecafParserException;
-import decaf.exceptions.DecafScannerException;
 import decaf.exceptions.DecafSemanticException;
 import decaf.grammar.ScannerError;
 import decaf.grammar.Token;
@@ -62,36 +61,6 @@ public class DecafExceptionProcessor {
     );
   }
 
-  public DecafScannerException getContextualDecafScannerException(
-      Token prevToken,
-      char currentChar,
-      TokenPosition tokenPosition,
-      String errMessage
-  ) {
-    if (prevToken != null) {
-      switch (prevToken.tokenType()) {
-        case STRING_LITERAL: {
-          errMessage = "illegal string literal: " + prevToken.lexeme() + currentChar;
-          break;
-        }
-        case ID: {
-          errMessage = "illegal id: " + prevToken.lexeme() + currentChar;
-          break;
-        }
-        default: {
-          break;
-        }
-      }
-    }
-    return new DecafScannerException(
-        tokenPosition,
-        getContextualErrorMessage(
-            tokenPosition,
-            errMessage
-        )
-    );
-  }
-
   public DecafParserException getContextualDecafParserException(
       Token token,
       String errMessage
@@ -130,11 +99,15 @@ public class DecafExceptionProcessor {
     final String subIndent = Utils.DEFAULT_INDENT.repeat(2);
     // print header in sorta Rust style
     output.add(Utils.coloredPrint(
-        "error",
+        String.format(
+            "error[%s]",
+            scannerError.getErrorType()
+                        .toString()
+        ),
         Utils.ANSIColorConstants.ANSI_RED_BOLD
     ) + ": " + Utils.coloredPrint(
         scannerError.getErrorSummary(),
-        Utils.ANSIColorConstants.ANSI_BG_WHITE
+        Utils.ANSIColorConstants.ANSI_YELLOW
     ));
 
     // context before the problematic line
@@ -178,10 +151,21 @@ public class DecafExceptionProcessor {
         "^",
         Utils.ANSIColorConstants.ANSI_CYAN
     );
-    output.add(indent + underline);
+
+    var detail = Utils.coloredPrint(
+        String.format(
+            " %s",
+            scannerError.getDetail()
+        ),
+        Utils.ANSIColorConstants.ANSI_RED_BOLD
+    );
+    output.add(indent + underline + detail);
 
     // context after the problematic line
-    var numPostCursorLines = Math.min(3, sourceCodeLines.length - scannerError.tokenPosition.line() - 1);
+    var numPostCursorLines = Math.min(
+        3,
+        sourceCodeLines.length - scannerError.tokenPosition.line() - 1
+    );
 
     var postCursorLines = Arrays.copyOfRange(
         sourceCodeLines,

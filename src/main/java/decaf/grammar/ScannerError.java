@@ -3,6 +3,9 @@ package decaf.grammar;
 public class ScannerError extends Token {
   private final ErrorType errorType;
 
+  public ErrorType getErrorType() {
+    return errorType;
+  }
 
   public ScannerError(
       TokenPosition tokenPosition,
