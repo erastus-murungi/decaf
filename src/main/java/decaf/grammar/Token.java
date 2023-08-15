@@ -18,22 +18,6 @@ public class Token {
     this.lexeme = lexeme;
   }
 
-  public String lexeme() {
-    return lexeme;
-  }
-
-  public TokenType tokenType() {
-    return tokenType;
-  }
-
-  public TokenPosition tokenPosition() {
-    return tokenPosition;
-  }
-
-  public boolean isNotEOF() {
-    return tokenType != TokenType.EOF;
-  }
-
   @Override
   public String toString() {
     return "Token{" + "type=" + tokenType +
@@ -87,12 +71,8 @@ public class Token {
       case RESERVED_TRUE -> Scanner.RESERVED_TRUE;
       case RESERVED_VOID -> Scanner.RESERVED_VOID;
       case RESERVED_WHILE -> Scanner.RESERVED_WHILE;
-      case DECIMAL_LITERAL, STRING_LITERAL, CHAR_LITERAL, ID, HEX_LITERAL -> Scanner.IDENTIFIER;
-      case LINE_COMMENT -> Scanner.IDENTIFIER;
-      case BLOCK_COMMENT -> Scanner.IDENTIFIER;
+      case DECIMAL_LITERAL, STRING_LITERAL, CHAR_LITERAL, ID, HEX_LITERAL, LINE_COMMENT, BLOCK_COMMENT, WHITESPACE, ERROR -> Scanner.IDENTIFIER;
       case EOF -> Scanner.EOF;
-      case WHITESPACE -> Scanner.IDENTIFIER;
-      case ERROR -> Scanner.IDENTIFIER;
     };
   }
 }

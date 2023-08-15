@@ -24,7 +24,7 @@ public class CompilationContext {
   @NotNull private final Logger logger;
   @NotNull private Boolean isDebugModeOn;
 
-  CompilationContext(@NotNull String sourceCode) {
+  public CompilationContext(@NotNull String sourceCode) {
     this.sourceCode = sourceCode;
     this.logger = Logger.getLogger(CompilationContext.class.getName());
     this.isDebugModeOn = false;

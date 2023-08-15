@@ -205,8 +205,8 @@ public class Scanner implements Iterable<Token> {
   }
 
   private boolean isSkipAble(Token token) {
-    return token.tokenType() == TokenType.WHITESPACE || token.tokenType() == TokenType.LINE_COMMENT ||
-        token.tokenType() == TokenType.BLOCK_COMMENT || token.tokenType() == TokenType.ERROR;
+    return token.tokenType == TokenType.WHITESPACE || token.tokenType == TokenType.LINE_COMMENT ||
+        token.tokenType == TokenType.BLOCK_COMMENT || token.tokenType == TokenType.ERROR;
   }
 
   class TokensIterator implements Iterator<Token> {
@@ -229,7 +229,7 @@ public class Scanner implements Iterable<Token> {
       final Token token = this.token;
       if (token == null)
         throw new IllegalStateException("no more tokens");
-      else if (token.tokenType() == TokenType.EOF) {
+      else if (token.tokenType == TokenType.EOF) {
         this.token = null;
       } else {
         this.token = nextHelper();
@@ -254,7 +254,7 @@ public class Scanner implements Iterable<Token> {
     if (stringIndex >= sourceCode.length()) {
       if (prevToken != null)
         return makeToken(
-            prevToken.tokenPosition(),
+            prevToken.tokenPosition,
             TokenType.EOF,
             EOF
         );

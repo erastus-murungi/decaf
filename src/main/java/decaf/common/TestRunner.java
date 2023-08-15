@@ -423,10 +423,10 @@ public class TestRunner {
         strings.add(
             Utils.coloredPrint(
                 String.format(
-                    "%s: ✗ Passed %s out of %s tests in %s ms",
+                    "\t\t%s: ✗ Passed %s out of %s tests in %s ms",
+                    testName,
                     numPassed,
                     numTests,
-                    testName,
                     timeElapsed
                 ),
                 Utils.ANSIColorConstants.ANSI_RED
@@ -485,18 +485,18 @@ public class TestRunner {
   private static String formatTokensToOutputFormat(@NotNull Scanner scanner) {
     var strings = new ArrayList<String>();
     for (var token : scanner) {
-      var text = switch (token.tokenType()) {
-        case ID -> "IDENTIFIER" + " " + token.lexeme();
-        case STRING_LITERAL -> "STRINGLITERAL" + " " + token.lexeme();
-        case CHAR_LITERAL -> "CHARLITERAL" + " " + token.lexeme();
-        case HEX_LITERAL, DECIMAL_LITERAL -> "INTLITERAL" + " " + token.lexeme();
-        case RESERVED_FALSE, RESERVED_TRUE -> "BOOLEANLITERAL" + " " + token.lexeme();
+      var text = switch (token.tokenType) {
+        case ID -> "IDENTIFIER" + " " + token.lexeme;
+        case STRING_LITERAL -> "STRINGLITERAL" + " " + token.lexeme;
+        case CHAR_LITERAL -> "CHARLITERAL" + " " + token.lexeme;
+        case HEX_LITERAL, DECIMAL_LITERAL -> "INTLITERAL" + " " + token.lexeme;
+        case RESERVED_FALSE, RESERVED_TRUE -> "BOOLEANLITERAL" + " " + token.lexeme;
         case EOF -> "";
-        default -> token.lexeme();
+        default -> token.lexeme;
       };
       if (text.isBlank())
         continue;
-      strings.add(token.tokenPosition()
+      strings.add(token.tokenPosition
                        .line() + 1 + " " + text);
     }
     return String.join(

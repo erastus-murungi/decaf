@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import decaf.cfg.NOP;
+import decaf.common.CompilationContext;
 import decaf.common.StronglyConnectedComponentsTarjan;
 import decaf.grammar.Parser;
 import decaf.grammar.Scanner;
@@ -20,18 +21,17 @@ import java.util.logging.Logger;
 
 public class DataFlowAnalysisTest {
     List<BasicBlock> basicBlockList;
-    Logger testingLogger = Logger.getLogger("testingLogger");
 
     @BeforeEach
     public void setUp() {
         final var simpleForLoop = "void main() {int i; int a; for (i = 0; i < 10; i++) {a += i;}}";
-        var decafExceptionProcessor = new ErrorManager(simpleForLoop);
-        var scanner = new Scanner(simpleForLoop, decafExceptionProcessor);
-        var parser = new Parser(scanner, decafExceptionProcessor, testingLogger);
+        var context = new CompilationContext(simpleForLoop);
+        var scanner = new Scanner(simpleForLoop, context);
+        var parser = new Parser(scanner, context);
         parser.program();
 
         var semChecker = new SemanticCheckingManager(parser.getRoot());
-        semChecker.runChecks(decafExceptionProcessor);
+        semChecker.runChecks(context);
         ControlFlowGraph cfgGenerator = new ControlFlowGraph(parser.getRoot(),
                                                              semChecker.getGlobalDescriptor()
         );
