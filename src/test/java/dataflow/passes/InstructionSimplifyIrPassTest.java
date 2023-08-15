@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import decaf.ast.ExprContext;
 import decaf.common.Compilation;
 import decaf.common.Utils;
 import decaf.ast.AST;

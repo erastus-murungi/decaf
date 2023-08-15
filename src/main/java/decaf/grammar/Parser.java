@@ -52,9 +52,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import decaf.ast.AST;
 import decaf.ast.ArithmeticOperator;
@@ -75,7 +74,6 @@ import decaf.ast.Continue;
 import decaf.ast.DecimalLiteral;
 import decaf.ast.Decrement;
 import decaf.ast.EqualityOperator;
-import decaf.ast.ExprContext;
 import decaf.ast.Expression;
 import decaf.ast.ExpressionParameter;
 import decaf.ast.FieldDeclaration;
@@ -107,32 +105,34 @@ import decaf.ast.StringLiteral;
 import decaf.ast.Type;
 import decaf.ast.UnaryOpExpression;
 import decaf.ast.UnaryOperator;
+import decaf.ast.VoidExpression;
 import decaf.ast.While;
 import decaf.common.CompilationContext;
 import decaf.common.Pair;
 import decaf.common.Utils;
-import decaf.exceptions.DecafException;
-import decaf.exceptions.DecafParserException;
 
 public class Parser {
-  @NotNull public final Scanner scanner;
-  @NotNull public final List<DecafParserException> errors = new ArrayList<>();
-  @NotNull private final CompilationContext errorManager;
-  private boolean showTrace = false;
-  @NotNull private ArrayList<Token> tokens;
+  @NotNull
+  public final Scanner scanner;
+  @NotNull
+  private final CompilationContext context;
+  @NotNull
+  private final List<Token> tokens;
+  @NotNull
+  private final List<ParserError> errors;
+  private final Program root;
   private int currentTokenIndex;
-  private Program root;
 
-  public Parser(@NotNull Scanner scanner, @NotNull CompilationContext errorManager, @NotNull Logger logger) {
+  public Parser(
+      @NotNull Scanner scanner,
+      @NotNull CompilationContext context
+  ) {
     this.scanner = scanner;
-    this.errorManager = errorManager;
-    try {
-      this.tokens = getAllTokens();
-    } catch (DecafException e) {
-      logger.log(Level.SEVERE, String.format("%s", e.getMessage()));
-      this.tokens = new ArrayList<>();
-    }
+    this.context = context;
+    this.tokens = Lists.newArrayList(scanner);
+    this.errors = new ArrayList<>();
     this.currentTokenIndex = 0;
+    this.root = program();
   }
 
   private static void addTerminal(
@@ -208,22 +208,34 @@ public class Parser {
     }
   }
 
+  public @NotNull List<ParserError> getErrors() {
+    return errors;
+  }
+
+  public String getPrettyErrorOutput() {
+    return context.processParserErrorOutput(errors);
+  }
+
   public Program getRoot() {
     return root;
   }
 
-  public final void program() {
-    final Program program = new Program();
-    try {
-      processImportDeclarations(program.getImportDeclarationList());
-      processFieldOrMethod(program);
-    } catch (DecafParserException e) {
-      errors.add(e);
+  public final Program program() {
+    var program = new Program();
+    processImportDeclarations(program);
+    processFieldOrMethod(program);
+    if (getCurrentTokenType() != EOF) {
+      errors.add(
+          new ParserError(
+              ParserError.ErrorType.DID_NOT_FINISH_PARSING,
+              getCurrentToken(),
+              "stopped parsing here due to an implementation error"
+          )
+      );
     }
-    root = program;
-    if (showTrace) {
+    if (context.debugModeOn())
       printParseTree();
-    }
+    return program;
   }
 
   private Token getCurrentToken() {
@@ -234,290 +246,276 @@ public class Parser {
     return getCurrentToken().tokenType();
   }
 
-  private ArrayList<Token> getAllTokens() throws DecafException {
-    return Lists.newArrayList(scanner);
-  }
-
-  private Token consumeToken(
+  private @NotNull Optional<Token> consumeToken(
       TokenType expectedTokenType,
-      String expected
-  ) throws DecafParserException {
+      String errorMessage
+  ) {
     if (getCurrentToken().tokenType() != expectedTokenType) {
-      String s = getCurrentToken().lexeme();
-      if (getCurrentToken().tokenType()
-                           .toString()
-                           .startsWith("RESERVED"))
-        s = "reserved keyword " + "\"" + s + "\"";
-      throw getContextualException("expected " + "\"" + expected + "\"" + " received " + s);
+      errors.add(
+          new ParserError(
+              ParserError.ErrorType.UNEXPECTED_TOKEN,
+              getCurrentToken(),
+              errorMessage
+          )
+      );
     }
-    Token token = getCurrentToken();
+    var token = getCurrentToken();
     currentTokenIndex += 1;
-    return token;
+    return Optional.of(token);
   }
 
-  private Token consumeTokenNoCheck() {
-    Token token = getCurrentToken();
-    currentTokenIndex += 1;
-    return token;
-  }
-
-  private Token consumeToken(TokenType expectedTokenType) throws DecafParserException {
+  private @NotNull Optional<Token> consumeToken(
+      TokenType expectedTokenType
+  ) {
+    String s = getCurrentToken().lexeme();
+    if (getCurrentToken().tokenType()
+                         .toString()
+                         .startsWith("RESERVED")) {
+      s = "reserved keyword " + "\"" + s + "\"";
+    }
+    var errMessage = "expected " + "\"" + Token.getScannerSourceCode(expectedTokenType) + "\"" + " received " + s;
     return consumeToken(
         expectedTokenType,
-        expectedTokenType.toString()
+        errMessage
     );
   }
 
-  private Token consumeToken(
-      TokenType expectedTokenType,
-      Function<Token, String> getErrMessage
-  ) throws DecafParserException {
-    if (getCurrentTokenType() != expectedTokenType) {
-      final String errMessage = getErrMessage.apply(getCurrentToken());
-      throw getContextualException(errMessage);
-    }
-    Token token = getCurrentToken();
+  private Token consumeTokenNoCheck() {
+    var token = getCurrentToken();
     currentTokenIndex += 1;
     return token;
+  }
+
+  private Optional<Token> consumeToken(
+      TokenType expectedTokenType,
+      Function<Token, String> getErrMessage
+  ) {
+    if (getCurrentTokenType() != expectedTokenType) {
+      final String errMessage = getErrMessage.apply(getCurrentToken());
+      errors.add(
+          new ParserError(
+              ParserError.ErrorType.UNEXPECTED_TOKEN,
+              getCurrentToken(),
+              errMessage
+          )
+      );
+      return Optional.empty();
+    }
+    var token = getCurrentToken();
+    currentTokenIndex += 1;
+    return Optional.of(token);
   }
 
   public boolean hasError() {
     return !errors.isEmpty();
   }
 
-  private Expression parseOrExpr() throws DecafParserException {
-    final Expression lhs = parseAndExpr();
-    if (getCurrentTokenType() == CONDITIONAL_OR) {
-      TokenPosition tokenPosition = consumeTokenNoCheck().tokenPosition();
-      Expression rhs = parseOrExpr();
-      return BinaryOpExpression.of(
-          lhs,
-          new ConditionalOperator(
-              tokenPosition,
-              Scanner.CONDITIONAL_OR
-          ),
-          rhs
-      );
-    }
-    return lhs;
+  private Optional<Expression> parseOrExpr() {
+    return parseAndExpr().flatMap(
+        andExpr -> {
+          if (getCurrentTokenType() == CONDITIONAL_OR) {
+            var tokenPosition = consumeTokenNoCheck().tokenPosition();
+            return parseOrExpr().map(orExpr -> BinaryOpExpression.of(
+                andExpr,
+                new ConditionalOperator(
+                    tokenPosition,
+                    Scanner.CONDITIONAL_OR
+                ),
+                orExpr
+            ));
+          }
+          return Optional.of(andExpr);
+        }
+    );
   }
 
-  private Expression parseAndExpr() throws DecafParserException {
-    final Expression lhs = parseEqualityExpr();
-    if (getCurrentTokenType() == CONDITIONAL_AND) {
-      TokenPosition tokenPosition = consumeTokenNoCheck().tokenPosition();
-      Expression rhs = parseAndExpr();
-      return BinaryOpExpression.of(
-          lhs,
-          new ConditionalOperator(
-              tokenPosition,
-              Scanner.CONDITIONAL_AND
-          ),
-          rhs
-      );
-    }
-    return lhs;
+  private Optional<Expression> parseAndExpr() {
+    return parseEqualityExpr().flatMap(
+        equalityExpr -> {
+          if (getCurrentTokenType() == CONDITIONAL_AND) {
+            var tokenPosition = consumeTokenNoCheck().tokenPosition();
+            return parseAndExpr().map(andExpr -> BinaryOpExpression.of(
+                equalityExpr,
+                new ConditionalOperator(
+                    tokenPosition,
+                    Scanner.CONDITIONAL_AND
+                ),
+                andExpr
+            ));
+          }
+          return Optional.of(equalityExpr);
+        }
+    );
   }
 
-  private Expression parseEqualityExpr() throws DecafParserException {
-    final Expression lhs = parseRelationalExpr();
-    if (getCurrentTokenType() == EQ || getCurrentTokenType() == NEQ) {
-      Token token = consumeTokenNoCheck();
-      Expression rhs = parseEqualityExpr();
-      if (token.tokenType() == EQ) {
-        return BinaryOpExpression.of(
-            lhs,
-            new EqualityOperator(
-                token.tokenPosition(),
-                Scanner.EQ
-            ),
-            rhs
-        );
-      } else {
-        return BinaryOpExpression.of(
-            lhs,
-            new EqualityOperator(
-                token.tokenPosition(),
-                Scanner.NEQ
-            ),
-            rhs
-        );
-      }
-    }
-    return lhs;
+  private Optional<Expression> parseEqualityExpr() {
+    return parseRelationalExpr().flatMap(
+        relationalExpr -> {
+          if (getCurrentTokenType() == EQ || getCurrentTokenType() == NEQ) {
+            var tokenPosition = consumeTokenNoCheck().tokenPosition();
+            return parseEqualityExpr().map(equalityExpr -> BinaryOpExpression.of(
+                relationalExpr,
+                new EqualityOperator(
+                    tokenPosition,
+                    (getCurrentTokenType() == EQ) ? Scanner.EQ: Scanner.NEQ
+                ),
+                equalityExpr
+            ));
+          }
+          return Optional.of(relationalExpr);
+        }
+    );
   }
 
-  private Expression parseRelationalExpr() throws DecafParserException {
-    final Expression lhs = parseAddSubExpr();
-    if (getCurrentTokenType() == GT
-        || getCurrentTokenType() == LT
-        || getCurrentTokenType() == GEQ
-        || getCurrentTokenType() == LEQ
-    ) {
-      Token token = consumeTokenNoCheck();
-      Expression rhs = parseRelationalExpr();
-      return switch (token.tokenType()) {
-        case GT -> BinaryOpExpression.of(
-            lhs,
-            new RelationalOperator(
-                token.tokenPosition(),
-                Scanner.GT
-            ),
-            rhs
-        );
-        case LT -> BinaryOpExpression.of(
-            lhs,
-            new RelationalOperator(
-                token.tokenPosition(),
-                Scanner.LT
-            ),
-            rhs
-        );
-        case LEQ -> BinaryOpExpression.of(
-            lhs,
-            new RelationalOperator(
-                token.tokenPosition(),
-                Scanner.LEQ
-            ),
-            rhs
-        );
-        default -> BinaryOpExpression.of(
-            lhs,
-            new RelationalOperator(
-                token.tokenPosition(),
-                Scanner.GEQ
-            ),
-            rhs
-        );
-      };
-    }
-    return lhs;
+  private Optional<Expression> parseRelationalExpr() {
+    return parseAddSubExpr().flatMap(
+        addSubExpr -> {
+          if (getCurrentTokenType() == GT
+              || getCurrentTokenType() == LT
+              || getCurrentTokenType() == GEQ
+              || getCurrentTokenType() == LEQ
+          ) {
+            var token = consumeTokenNoCheck();
+            return parseRelationalExpr().map(relationalExpr -> switch (token.tokenType()) {
+              case GT -> BinaryOpExpression.of(
+                  addSubExpr,
+                  new RelationalOperator(
+                      token.tokenPosition(),
+                      Scanner.GT
+                  ),
+                  relationalExpr
+              );
+              case LT -> BinaryOpExpression.of(
+                  addSubExpr,
+                  new RelationalOperator(
+                      token.tokenPosition(),
+                      Scanner.LT
+                  ),
+                  relationalExpr
+              );
+              case LEQ -> BinaryOpExpression.of(
+                  addSubExpr,
+                  new RelationalOperator(
+                      token.tokenPosition(),
+                      Scanner.LEQ
+                  ),
+                  relationalExpr
+              );
+              default -> BinaryOpExpression.of(
+                  addSubExpr,
+                  new RelationalOperator(
+                      token.tokenPosition(),
+                      Scanner.GEQ
+                  ),
+                  relationalExpr
+              );
+            });
+          }
+          return Optional.of(addSubExpr);
+        }
+    );
   }
 
-  private Expression parseAddSubExpr() throws DecafParserException {
-    final Expression lhs = parseMulDivRemExpr();
-    if (getCurrentTokenType() == PLUS || getCurrentTokenType() == MINUS) {
-      Token token = consumeTokenNoCheck();
-      Expression rhs = parseEqualityExpr();
-      if (token.tokenType() == PLUS) {
-        return BinaryOpExpression.of(
-            lhs,
-            new ArithmeticOperator(
-                token.tokenPosition(),
-                Scanner.PLUS
-            ),
-            rhs
-        );
-      } else {
-        return BinaryOpExpression.of(
-            lhs,
-            new ArithmeticOperator(
-                token.tokenPosition(),
-                Scanner.MINUS
-            ),
-            rhs
-        );
-      }
-    }
-    return lhs;
+  private Optional<Expression> parseAddSubExpr() {
+    return parseMulDivRemExpr().flatMap(
+        mulDivRemExpr -> {
+          if (getCurrentTokenType() == PLUS || getCurrentTokenType() == MINUS) {
+            var tokenPosition = consumeTokenNoCheck().tokenPosition();
+            return parseAddSubExpr().map(addSubExpr -> BinaryOpExpression.of(
+                mulDivRemExpr,
+                new ArithmeticOperator(
+                    tokenPosition,
+                    (getCurrentTokenType() == PLUS) ? Scanner.PLUS: Scanner.MINUS
+                ),
+                addSubExpr
+            ));
+          }
+          return Optional.of(mulDivRemExpr);
+        }
+    );
   }
 
-  private Expression parseMulDivRemExpr() throws DecafParserException {
-    final Expression lhs = parseExpr();
-    if (getCurrentTokenType() == MOD
-        || getCurrentTokenType() == MULTIPLY
-        || getCurrentTokenType() == DIVIDE
-    ) {
-      Token token = consumeTokenNoCheck();
-      Expression rhs = parseMulDivRemExpr();
-      return switch (token.tokenType()) {
-        case MOD -> BinaryOpExpression.of(
-            lhs,
-            new ArithmeticOperator(
-                token.tokenPosition(),
-                Scanner.MOD
-            ),
-            rhs
-        );
-        case MULTIPLY -> BinaryOpExpression.of(
-            lhs,
-            new ArithmeticOperator(
-                token.tokenPosition(),
-                Scanner.MULTIPLY
-            ),
-            rhs
-        );
-        default -> BinaryOpExpression.of(
-            lhs,
-            new ArithmeticOperator(
-                token.tokenPosition(),
-                Scanner.DIVIDE
-            ),
-            rhs
-        );
-      };
-    }
-    return lhs;
+  private Optional<Expression> parseMulDivRemExpr() {
+    return parseExpr().flatMap(
+        expression -> {
+          if (getCurrentTokenType() == MULTIPLY
+              || getCurrentTokenType() == DIVIDE
+              || getCurrentTokenType() == MOD
+          ) {
+            var tokenPosition = consumeTokenNoCheck().tokenPosition();
+            return parseMulDivRemExpr().map(mulDivRemExpr -> BinaryOpExpression.of(
+                expression,
+                new ArithmeticOperator(
+                    tokenPosition,
+                    (getCurrentTokenType() == MULTIPLY) ? Scanner.MULTIPLY: (getCurrentTokenType() == DIVIDE) ? Scanner.DIVIDE: Scanner.MOD
+                ),
+                mulDivRemExpr
+            ));
+          }
+          return Optional.of(expression);
+        }
+    );
   }
 
-  private Expression parseUnaryOpExpr() throws DecafParserException {
+  private Optional<Expression> parseUnaryOpExpr() {
     final Token unaryOpToken = consumeTokenNoCheck();
-    return new UnaryOpExpression(
+    return parseExpr().map(expression -> new UnaryOpExpression(
         new UnaryOperator(
             unaryOpToken.tokenPosition(),
             unaryOpToken.lexeme()
         ),
-        parseExpr()
+        expression
+    ));
+  }
+
+  private Optional<ParenthesizedExpression> parseParenthesizedExpression() {
+    return consumeToken(
+        LEFT_PARENTHESIS,
+        "expected a left parenthesis to open a parenthesized expression"
+    ).flatMap(tk -> parseOrExpr().flatMap(
+        expr -> consumeToken(
+            RIGHT_PARENTHESIS,
+            "expected a right parenthesis to close a parenthesized expression"
+        ).map(tk1 -> new ParenthesizedExpression(
+            tk.tokenPosition,
+            expr
+        ))));
+  }
+
+  private Optional<? extends Expression> parseLocationOrMethodCall() {
+    return parseName("expected a valid identifier").flatMap(
+        name -> {
+          if (getCurrentTokenType() == LEFT_SQUARE_BRACKET) {
+            return parseLocationArray(name);
+          } else if (getCurrentTokenType() == LEFT_PARENTHESIS) {
+            return parseMethodCall(name);
+          } else {
+            return Optional.of(new LocationVariable(name));
+          }
+        }
     );
   }
 
-  private Expression parseParenthesizedExpression() throws DecafParserException {
-    Token token = consumeTokenNoCheck();
-    Expression expr = parseOrExpr();
-    consumeToken(
-        RIGHT_PARENTHESIS,
-        Scanner.RIGHT_PARENTHESIS
-    );
-    return new ParenthesizedExpression(
-        token.tokenPosition(),
-        expr
-    );
-  }
-
-  private Expression parseLocationOrMethodCall() throws DecafParserException {
-    Token token = consumeToken(ID);
-    Name nameId = new Name(
-        token.lexeme(),
-        token.tokenPosition(),
-        ExprContext.LOAD
-    );
-    if (getCurrentTokenType() == LEFT_SQUARE_BRACKET) {
-      consumeTokenNoCheck();
-      Expression expr = parseOrExpr();
-      consumeToken(RIGHT_SQUARE_BRACKET);
-      return new LocationArray(
-          nameId,
-          expr
+  private void processImportDeclarations(Program program) {
+    while (getCurrentTokenType() == RESERVED_IMPORT) {
+      program.getImportDeclarationList()
+             .add(parseImportDeclaration());
+      consumeToken(
+          SEMICOLON,
+          "expected a semicolon to terminate an import declaration"
       );
-    } else if (getCurrentTokenType() == LEFT_PARENTHESIS) {
-      return parseMethodCall(token);
-    } else {
-      return new LocationVariable(nameId);
     }
   }
 
-  private void processImportDeclarations(List<ImportDeclaration> importDeclarationList) throws DecafParserException {
-    if (getCurrentToken().tokenType() == RESERVED_IMPORT)
-      importDeclarationList.add(parseImportDeclaration());
-    if (getCurrentToken().tokenType() == RESERVED_IMPORT) {
-      processImportDeclarations(importDeclarationList);
-    }
-  }
-
-  private void parseFieldDeclarations(List<FieldDeclaration> fieldDeclarationList) throws DecafParserException {
+  private void parseFieldDeclarations(List<FieldDeclaration> fieldDeclarationList) {
     if (getCurrentToken().tokenType() == RESERVED_BOOL || getCurrentToken().tokenType() == RESERVED_INT) {
       do {
-        fieldDeclarationList.add(parseFieldDeclaration());
+        var fieldDeclaration = parseFieldDeclaration();
+        if (fieldDeclaration.isPresent()) {
+          fieldDeclarationList.add(fieldDeclaration.get());
+        } else {
+          break;
+        }
       } while ((getCurrentToken().tokenType() == RESERVED_BOOL || getCurrentToken().tokenType() == RESERVED_INT));
       consumeToken(
           SEMICOLON,
@@ -542,57 +540,72 @@ public class Parser {
       List<Name> variables,
       List<Array> arrays,
       Name nameId
-  ) throws DecafParserException {
+  ) {
     if (getCurrentToken().tokenType() == LEFT_SQUARE_BRACKET) {
-      consumeToken(
+
+      if (consumeToken(
           LEFT_SQUARE_BRACKET,
           Scanner.LEFT_SQUARE_BRACKET
-      );
-      final IntLiteral intLiteral = parseIntLiteral();
-      consumeToken(
-          RIGHT_SQUARE_BRACKET,
-          Scanner.RIGHT_SQUARE_BRACKET
-      );
-      arrays.add(new Array(
-          intLiteral,
-          nameId
-      ));
+      ).isPresent()) {
+        var intLiteral = parseIntLiteral();
+        if (intLiteral.isPresent()) {
+          if (consumeToken(
+              RIGHT_SQUARE_BRACKET,
+              Scanner.RIGHT_SQUARE_BRACKET
+          ).isPresent()) {
+            arrays.add(new Array(
+                intLiteral.get(),
+                nameId
+            ));
+          }
+        }
+      }
     } else {
       variables.add(nameId);
     }
   }
 
-  private IntLiteral parseIntLiteral() throws DecafParserException {
+  private Optional<IntLiteral> parseIntLiteral() {
     Token intLiteralToken;
     if (getCurrentToken().tokenType() == DECIMAL_LITERAL) {
       intLiteralToken = consumeTokenNoCheck();
-      return new DecimalLiteral(
+      return Optional.of(new DecimalLiteral(
           intLiteralToken.tokenPosition(),
           intLiteralToken.lexeme()
-      );
+      ));
     } else if (getCurrentToken().tokenType() == HEX_LITERAL) {
       intLiteralToken = consumeTokenNoCheck();
-      return new HexLiteral(
+      return Optional.of(new HexLiteral(
           intLiteralToken.tokenPosition(),
           intLiteralToken.lexeme()
-      );
+      ));
     } else {
-      if (getCurrentTokenType() == RIGHT_SQUARE_BRACKET)
-        throw getContextualException("missing array size");
-      else
-        throw getContextualException("invalid int literal");
+      if (getCurrentTokenType() == RIGHT_SQUARE_BRACKET) {
+        errors.add(new ParserError(
+            ParserError.ErrorType.MISSING_ARRAY_SIZE,
+            getCurrentToken(),
+            "missing array size"
+        ));
+      } else {
+        errors.add(new ParserError(
+            ParserError.ErrorType.UNEXPECTED_TOKEN,
+            getCurrentToken(),
+            "expected a valid int literal"
+        ));
+      }
+      return Optional.empty();
     }
   }
 
   private void parseFieldDeclarationGroup(
-      Program program,
-      Name nameId,
-      Type type,
-      TokenPosition tokenPosition
-  ) throws DecafParserException {
+      @NotNull Program program,
+      @NotNull Name nameId,
+      @NotNull Type type,
+      @NotNull TokenPosition tokenPosition
+  ) {
     // dealing with fieldDeclarations
-    List<Name> variables = new ArrayList<>();
-    List<Array> arrays = new ArrayList<>();
+    var variables = new ArrayList<Name>();
+    var arrays = new ArrayList<Array>();
     parseFieldDeclarationGroup(
         variables,
         arrays,
@@ -600,137 +613,189 @@ public class Parser {
     );
     while (getCurrentToken().tokenType() == COMMA) {
       consumeToken(COMMA);
-      nameId = parseName(
-          Scanner.IDENTIFIER,
-          ExprContext.DECLARE
-      );
-      parseFieldDeclarationGroup(
-          variables,
-          arrays,
-          nameId
-      );
+      parseName(
+          Scanner.IDENTIFIER
+      ).map(
+           nameId1 -> {
+             parseFieldDeclarationGroup(
+                 variables,
+                 arrays,
+                 nameId1
+             );
+             return nameId1;
+           }
+       )
+       .orElseGet(
+           () -> {
+             errors.add(
+                 new ParserError(
+                     ParserError.ErrorType.MISSING_NAME,
+                     getCurrentToken(),
+                     String.format(
+                         "expected a valid name but found %s",
+                         getCurrentToken().lexeme()
+                     )
+                 )
+             );
+             return Name.dummyName;
+           }
+       );
     }
     consumeToken(
         SEMICOLON,
-        Scanner.SEMICOLON
+        "expected a semicolon to terminate a field declaration"
+    ).map(
+        token -> program.getFieldDeclarationList()
+                        .add(new FieldDeclaration(
+                            tokenPosition,
+                            type,
+                            variables,
+                            arrays
+                        ))
     );
-    program.getFieldDeclarationList()
-           .add(new FieldDeclaration(
-               tokenPosition,
-               type,
-               variables,
-               arrays
-           ));
     processFieldOrMethod(program);
   }
 
   private void parseMethodDeclaration(
       List<MethodDefinition> methodDefinitionList,
-      Name id,
+      Name nameId,
       Type type
-  ) throws DecafParserException {
-    List<MethodDefinitionParameter> methodDefinitionParameterList = parseMethodArguments();
-    final Block block = parseBlock();
-    methodDefinitionList.add(new MethodDefinition(
-        id.tokenPosition,
-        type,
-        methodDefinitionParameterList,
-        id,
-        block
-    ));
+  ) {
+    var methodDefinitionParameterList = parseMethodArguments();
+    parseBlock().ifPresent(
+        block -> methodDefinitionList.add(new MethodDefinition(
+            nameId.tokenPosition,
+            type,
+            methodDefinitionParameterList,
+            nameId,
+            block
+        ))
+    );
     parseMethodDeclarations(methodDefinitionList);
   }
 
-  private void processFieldOrMethod(Program program) throws DecafParserException {
+  private void processFieldOrMethod(Program program) {
     if (getCurrentTokenType() == RESERVED_INT || getCurrentTokenType() == RESERVED_BOOL) {
       // could be an int or bool
       final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
-      final Type type = parseBuiltinFieldType();
-      final Name id = parseName(
-          Scanner.IDENTIFIER,
-          ExprContext.DECLARE
-      );
-      if (getCurrentTokenType() == LEFT_PARENTHESIS) {
-        // dealing with methodDeclarations
-        parseMethodDeclaration(
-            program.getMethodDefinitionList(),
-            id,
-            type
-        );
-      } else {
-        parseFieldDeclarationGroup(
-            program,
-            id,
-            type,
-            tokenPosition
-        );
-      }
+      parseBuiltinFieldType().map(
+          fieldType -> parseName(
+              Scanner.IDENTIFIER
+          ).map(
+               nameId -> {
+                 if (getCurrentTokenType() == LEFT_PARENTHESIS) {
+                   parseMethodDeclaration(
+                       program.getMethodDefinitionList(),
+                       nameId,
+                       fieldType
+                   );
+                 } else {
+                   parseFieldDeclarationGroup(
+                       program,
+                       nameId,
+                       fieldType,
+                       tokenPosition
+                   );
+                 }
+                 return fieldType;
+               })
+           .orElseThrow(() -> new IllegalStateException("implementation error: expected `int` or `bool`")));
     } else if (getCurrentTokenType() == RESERVED_VOID) {
       parseMethodDeclarations(program.getMethodDefinitionList());
     } else {
       if (getCurrentTokenType() == ID && currentTokenIndex + 1 < tokens.size() && tokens.get(currentTokenIndex + 1)
                                                                                         .tokenType() ==
           LEFT_PARENTHESIS) {
-        throw getContextualException("method \"" + getCurrentToken().lexeme() + "\" does not have a return type");
+        errors.add(
+            new ParserError(
+                ParserError.ErrorType.MISSING_RETURN_TYPE,
+                getCurrentToken(),
+                String.format(
+                    "method `%s` missing return type",
+                    getCurrentToken().lexeme()
+                )
+            )
+        );
       } else if (getCurrentTokenType() == ID) {
-        throw getContextualException("field \"" + getCurrentToken().lexeme() + "\" does not have a type");
+        errors.add(
+            new ParserError(
+                ParserError.ErrorType.MISSING_FIELD_TYPE,
+                getCurrentToken(),
+                String.format(
+                    "field `%s` missing type",
+                    getCurrentToken().lexeme()
+                )
+            )
+        );
       }
     }
     if (getCurrentTokenType() != EOF) {
-      throw getContextualException("extra token: \"" + getCurrentToken().lexeme() + "\" found after program end");
+      errors.add(
+          new ParserError(
+              ParserError.ErrorType.EXTRA_TOKENS_AFTER_PROGRAM_END,
+              getCurrentToken(),
+              String.format(
+                  "extra token: \"%s\" found after program end",
+                  getCurrentToken().lexeme()
+              )
+          )
+      );
     }
   }
 
-  private DecafParserException getContextualException(String errMessage) {
-    return errorManager.getContextualDecafParserException(
-        getCurrentToken(),
-        errMessage
-    );
-  }
-
-  private void parseMethodDeclarations(List<MethodDefinition> methodDefinitionList) throws DecafParserException {
+  private void parseMethodDeclarations(List<MethodDefinition> methodDefinitionList) {
     while (getCurrentTokenType() == RESERVED_BOOL || getCurrentTokenType() == RESERVED_INT ||
         getCurrentTokenType() == RESERVED_VOID) {
-      methodDefinitionList.add(parseMethodDeclaration());
+      parseMethodDeclaration().ifPresent(methodDefinitionList::add);
     }
   }
 
-  private Type parseMethodReturnType() throws DecafParserException {
+  private Type parseMethodReturnType() {
     final Token token = consumeTokenNoCheck();
     return switch (token.tokenType()) {
       case RESERVED_BOOL -> Type.Bool;
       case RESERVED_INT -> Type.Int;
       case RESERVED_VOID -> Type.Void;
-      default -> throw new DecafParserException(
-          getCurrentToken(),
-          "expected method return type"
-      );
+      default -> {
+        errors.add(
+            new ParserError(
+                ParserError.ErrorType.UNEXPECTED_TOKEN,
+                token,
+                "expected a valid return type, one of (int, bool, void) but found: " + token.lexeme()
+            )
+        );
+        yield Type.Undefined;
+      }
     };
   }
 
-  private MethodDefinitionParameter parseMethodArgument() throws DecafParserException {
-    final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
-    final Type type = parseBuiltinFieldType();
-    final Name nameId = parseName(
-        Scanner.IDENTIFIER,
-        ExprContext.DECLARE
-    );
-    return new MethodDefinitionParameter(
-        tokenPosition,
-        nameId.getLabel(),
-        type
+  private Optional<MethodDefinitionParameter> parseMethodArgument() {
+    final var tokenPosition = getCurrentToken().tokenPosition();
+    final var typeOpt = parseBuiltinFieldType();
+    return typeOpt.flatMap(type -> parseName(
+        Scanner.IDENTIFIER
+    ).map(
+        nameId -> new MethodDefinitionParameter(
+            tokenPosition,
+            nameId.getLabel(),
+            type
+        )
+    ));
+  }
+
+  private void parseMethodArguments(List<MethodDefinitionParameter> methodDefinitionParameterList) {
+    parseMethodArgument().ifPresent(
+        methodDefinitionParameter -> {
+          methodDefinitionParameterList.add(methodDefinitionParameter);
+          if (getCurrentTokenType() == COMMA) {
+            consumeTokenNoCheck();
+            parseMethodArguments(methodDefinitionParameterList);
+          }
+        }
     );
   }
 
-  private void parseMethodArguments(List<MethodDefinitionParameter> methodDefinitionParameterList) throws DecafParserException {
-    methodDefinitionParameterList.add(parseMethodArgument());
-    if (getCurrentTokenType() == COMMA) {
-      consumeTokenNoCheck();
-      parseMethodArguments(methodDefinitionParameterList);
-    }
-  }
-
-  private List<MethodDefinitionParameter> parseMethodArguments() throws DecafParserException {
+  private List<MethodDefinitionParameter> parseMethodArguments() {
     consumeToken(
         LEFT_PARENTHESIS,
         (Token token) -> {
@@ -744,42 +809,71 @@ public class Parser {
         }
     );
     if (getCurrentToken().tokenType() == RESERVED_INT || getCurrentToken().tokenType() == RESERVED_BOOL) {
-      List<MethodDefinitionParameter> methodDefinitionParameterList = new ArrayList<>();
+      var methodDefinitionParameterList = new ArrayList<MethodDefinitionParameter>();
       parseMethodArguments(methodDefinitionParameterList);
       consumeToken(RIGHT_PARENTHESIS);
       return methodDefinitionParameterList;
     } else if (getCurrentTokenType() != RIGHT_PARENTHESIS) {
-      if (getCurrentTokenType() == ID)
-        throw getContextualException(
-            "method parameter " + "`" + getCurrentToken().lexeme() + "`" + " does not have a type");
-      throw getContextualException("illegal method arg type: " + getCurrentToken().lexeme());
+      if (getCurrentTokenType() == ID) {
+        errors.add(
+            new ParserError(
+                ParserError.ErrorType.MISSING_METHOD_ARGUMENT_TYPE,
+                getCurrentToken(),
+                String.format(
+                    "method parameter `%s` missing type",
+                    getCurrentToken().lexeme()
+                )
+            )
+        );
+      } else {
+        errors.add(
+            new ParserError(
+                ParserError.ErrorType.ILLEGAL_ARGUMENT_TYPE,
+                getCurrentToken(),
+                String.format(
+                    "illegal method arg type: %s",
+                    getCurrentToken().lexeme()
+                )
+            )
+        );
+      }
     }
     consumeToken(RIGHT_PARENTHESIS);
     return Collections.emptyList();
   }
 
-  private MethodDefinition parseMethodDeclaration() throws DecafParserException {
-    final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
-    final Type methodReturnType = parseMethodReturnType();
-    final Name nameId = parseName(
-        "expected method to have an identifier",
-        ExprContext.DECLARE
-    );
-
-    List<MethodDefinitionParameter> methodDefinitionParameterList = parseMethodArguments();
-
-    Block block = parseBlock();
-
-    return new MethodDefinition(
-        tokenPosition,
-        methodReturnType,
-        methodDefinitionParameterList,
-        nameId,
-        block
+  private Optional<MethodDefinition> parseMethodDeclaration() {
+    final var tokenPosition = getCurrentToken().tokenPosition();
+    final var methodReturnType = parseMethodReturnType();
+    return parseName("expected method to have an identifier").map(
+        nameId -> {
+          var methodDefinitionParameterList = parseMethodArguments();
+          return parseBlock().map(
+                                 block -> new MethodDefinition(
+                                     tokenPosition,
+                                     methodReturnType,
+                                     methodDefinitionParameterList,
+                                     nameId,
+                                     block
+                                 )
+                             )
+                             .orElseGet(
+                                 () -> new MethodDefinition(
+                                     tokenPosition,
+                                     methodReturnType,
+                                     methodDefinitionParameterList,
+                                     nameId,
+                                     new Block(
+                                         Collections.emptyList(),
+                                         Collections.emptyList()
+                                     )
+                                 )
+                             );
+        }
     );
   }
 
-  private void parseMethodCallArguments(List<MethodCallParameter> methodCallParameterList) throws DecafParserException {
+  private void parseMethodCallArguments(List<MethodCallParameter> methodCallParameterList) {
     if (getCurrentTokenType() == STRING_LITERAL) {
       final Token token = consumeTokenNoCheck();
       methodCallParameterList.add(new StringLiteral(
@@ -787,7 +881,8 @@ public class Parser {
           token.lexeme()
       ));
     } else {
-      methodCallParameterList.add(new ExpressionParameter(parseOrExpr()));
+      var exprOpt = parseOrExpr();
+      exprOpt.ifPresent(expression -> methodCallParameterList.add(new ExpressionParameter(expression)));
     }
     if (getCurrentTokenType() == COMMA) {
       consumeToken(COMMA);
@@ -795,7 +890,7 @@ public class Parser {
     }
   }
 
-  private List<MethodCallParameter> parseMethodCallArguments() throws DecafParserException {
+  private List<MethodCallParameter> parseMethodCallArguments() {
     if (getCurrentTokenType() == RIGHT_PARENTHESIS)
       return Collections.emptyList();
     List<MethodCallParameter> methodCallParameterList = new ArrayList<>();
@@ -803,174 +898,292 @@ public class Parser {
     return methodCallParameterList;
   }
 
-  private MethodCall parseMethodCall(Token token) throws DecafParserException {
-    consumeToken(LEFT_PARENTHESIS);
-    List<MethodCallParameter> methodCallParameterList = parseMethodCallArguments();
-    consumeToken(RIGHT_PARENTHESIS);
-    return new MethodCall(
-        new Name(
-            token.lexeme(),
-            token.tokenPosition(),
-            ExprContext.LOAD
-        ),
-        methodCallParameterList
-    );
+  private Optional<MethodCall> parseMethodCall(@NotNull Token token) {
+    if (consumeToken(LEFT_PARENTHESIS).isPresent()) {
+      var methodCallParameterList = parseMethodCallArguments();
+      if (consumeToken(RIGHT_PARENTHESIS).isPresent()) {
+        return Optional.of(new MethodCall(
+            new Name(
+                token.lexeme(),
+                token.tokenPosition()
+            ),
+            methodCallParameterList
+        ));
+      }
+    }
+    return Optional.empty();
   }
 
-  private Statement parseLocationAndAssignExprOrMethodCall() throws DecafParserException {
-    final Token token = consumeToken(
+  private Optional<MethodCall> parseMethodCall(@NotNull Name name) {
+    if (consumeToken(LEFT_PARENTHESIS).isPresent()) {
+      var methodCallParameterList = parseMethodCallArguments();
+      if (consumeToken(RIGHT_PARENTHESIS).isPresent()) {
+        return Optional.of(new MethodCall(
+            name,
+            methodCallParameterList
+        ));
+      }
+    }
+    return Optional.empty();
+  }
+
+  private Optional<Statement> parseLocationAndAssignExprOrMethodCall() {
+    return consumeToken(
         ID,
-        Scanner.IDENTIFIER
+        "Expected x = `expr` or fn()"
+    ).flatMap(
+        token -> {
+          if (getCurrentTokenType() == LEFT_PARENTHESIS) {
+            return parseMethodCall(token).flatMap(
+                methodCall -> consumeToken(
+                    SEMICOLON,
+                    Scanner.SEMICOLON
+                ).map(
+                    tk -> new MethodCallStatement(
+                        token.tokenPosition,
+                        methodCall
+                    )
+                )
+            );
+          } else {
+            return parseLocationAndAssignExpr(token).flatMap(
+                locationAssignExpr -> consumeToken(
+                    SEMICOLON,
+                    Scanner.SEMICOLON
+                ).map(
+                    tk -> locationAssignExpr
+                )
+            );
+          }
+        }
     );
-    Statement statement;
-    if (getCurrentToken().tokenType() == LEFT_PARENTHESIS) {
-      statement = new MethodCallStatement(
-          token.tokenPosition(),
-          parseMethodCall(token)
-      );
-    } else {
-      statement = parseLocationAndAssignExpr(token);
+  }
+
+  private Optional<LocationAssignExpr> parseLocationAndAssignExpr(@NotNull Token token) {
+    var tokenPosition = getCurrentToken().tokenPosition();
+    var locationNodeOpt = parseLocation(token);
+    if (locationNodeOpt.isPresent()) {
+      var locationNode = locationNodeOpt.get();
+      var assignExprNodeOpt = parseAssignExpr();
+      if (assignExprNodeOpt.isPresent()) {
+        var assignExprNode = assignExprNodeOpt.get();
+        return Optional.of(new LocationAssignExpr(
+            tokenPosition,
+            locationNode,
+            assignExprNode
+        ));
+      }
     }
-    consumeToken(
-        SEMICOLON,
-        Scanner.SEMICOLON
-    );
-    return statement;
+    return Optional.empty();
   }
 
-  private LocationAssignExpr parseLocationAndAssignExpr(Token token) throws DecafParserException {
-    final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
-    Location locationNode = parseLocation(token);
-    AssignExpr assignExprNode = parseAssignExpr();
-    return new LocationAssignExpr(
-        tokenPosition,
-        locationNode,
-        assignExprNode
-    );
-  }
-
-  private AssignOperator parseAssignOp(TokenType tokenType) throws DecafParserException {
-    Token token = consumeToken(
+  private Optional<AssignOperator> parseAssignOp(TokenType tokenType) {
+    var tokenOpt = consumeToken(
         tokenType,
         tokenType.toString()
     );
-    return switch (tokenType) {
-      case ASSIGN, ADD_ASSIGN, MINUS_ASSIGN, MULTIPLY_ASSIGN -> new AssignOperator(
-          token.tokenPosition(),
-          token.lexeme()
-      );
-      default -> throw getContextualException("expected compound assignOp");
-    };
+    if (tokenOpt.isPresent()) {
+      var token = tokenOpt.get();
+      return switch (tokenType) {
+        case ASSIGN, ADD_ASSIGN, MINUS_ASSIGN, MULTIPLY_ASSIGN -> Optional.of(new AssignOperator(
+            token.tokenPosition(),
+            token.lexeme()
+        ));
+        default -> {
+          errors.add(
+              new ParserError(
+                  ParserError.ErrorType.UNEXPECTED_TOKEN,
+                  token,
+                  "expected assignOp"
+              )
+          );
+          yield Optional.empty();
+        }
+      };
+    }
+    return Optional.empty();
   }
 
-  private CompoundAssignOperator parseCompoundAssignOp(TokenType tokenType) throws DecafParserException {
-    Token token = consumeToken(
+  private Optional<CompoundAssignOperator> parseCompoundAssignOp(TokenType tokenType) {
+    var tokenOpt = consumeToken(
         tokenType,
         tokenType.toString()
     );
-    return switch (tokenType) {
-      case ADD_ASSIGN, MINUS_ASSIGN, MULTIPLY_ASSIGN -> new CompoundAssignOperator(
-          token.tokenPosition(),
-          token.lexeme()
-      );
-      default -> throw getContextualException("expected compound assignOp");
-    };
+    if (tokenOpt.isPresent()) {
+      var token = tokenOpt.get();
+      return switch (tokenType) {
+        case ADD_ASSIGN, MINUS_ASSIGN, MULTIPLY_ASSIGN -> Optional.of(new CompoundAssignOperator(
+            token.tokenPosition(),
+            token.lexeme()
+        ));
+        default -> {
+          errors.add(
+              new ParserError(
+                  ParserError.ErrorType.UNEXPECTED_TOKEN,
+                  token,
+                  "expected compound assignOp"
+              )
+          );
+          yield Optional.empty();
+        }
+      };
+    }
+    return Optional.empty();
   }
 
-  private AssignOpExpr parseAssignOpExpr(TokenType tokenType) throws DecafParserException {
-    final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
-    AssignOperator assignOp = parseAssignOp(tokenType);
-    Expression expression = parseOrExpr();
-    return new AssignOpExpr(
-        tokenPosition,
-        assignOp,
-        expression
-    );
+  private Optional<AssignOpExpr> parseAssignOpExpr(TokenType tokenType) {
+    final var tokenPosition = getCurrentToken().tokenPosition();
+    var assignOpOpt = parseAssignOp(tokenType);
+    if (assignOpOpt.isPresent()) {
+      var assignOp = assignOpOpt.get();
+      var expression = parseOrExpr();
+      if (expression.isPresent()) {
+        return Optional.of(new AssignOpExpr(
+            tokenPosition,
+            assignOp,
+            expression.get()
+        ));
+      }
+    }
+    return Optional.empty();
   }
 
-  private CompoundAssignOpExpr parseCompoundAssignOpExpr(TokenType tokenType) throws DecafParserException {
-    final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
-    CompoundAssignOperator assignOp = parseCompoundAssignOp(tokenType);
-    Expression expression = parseOrExpr();
-    return new CompoundAssignOpExpr(
-        tokenPosition,
-        assignOp,
-        expression
-    );
+  private Optional<CompoundAssignOpExpr> parseCompoundAssignOpExpr(TokenType tokenType) {
+    final var tokenPosition = getCurrentToken().tokenPosition();
+    var compoundAssignOpOpt = parseCompoundAssignOp(tokenType);
+    if (compoundAssignOpOpt.isPresent()) {
+      var compoundAssignOp = compoundAssignOpOpt.get();
+      var expression = parseOrExpr();
+      if (expression.isPresent()) {
+        return Optional.of(new CompoundAssignOpExpr(
+            tokenPosition,
+            compoundAssignOp,
+            expression.get()
+        ));
+      }
+    }
+    return Optional.empty();
   }
 
-  private AssignExpr parseIncrement() throws DecafParserException {
+  private Optional<AssignExpr> parseIncrement() {
     TokenType expectedTokenType = getCurrentToken().tokenType();
-    final Token token = consumeToken(expectedTokenType);
-    if (expectedTokenType == INCREMENT)
-      return new Increment(token.tokenPosition());
-    else if (expectedTokenType == DECREMENT) {
-      return new Decrement(token.tokenPosition());
-    } else {
-      throw new DecafParserException(
-          token,
-          "expected ++ or --, but received " + token.lexeme()
-      );
+    final var tokenOpt = consumeToken(expectedTokenType);
+    if (tokenOpt.isPresent()) {
+      var token = tokenOpt.get();
+      if (expectedTokenType == INCREMENT)
+        return Optional.of(new Increment(token.tokenPosition()));
+      else if (expectedTokenType == DECREMENT) {
+        return Optional.of(new Decrement(token.tokenPosition()));
+      } else {
+        errors.add(
+            new ParserError(
+                ParserError.ErrorType.UNEXPECTED_TOKEN,
+                token,
+                "expected ++ or --, but received " + token.lexeme()
+            )
+        );
+      }
     }
+    return Optional.empty();
   }
 
-  private AssignExpr parseAssignExpr() throws DecafParserException {
-    switch (getCurrentToken().tokenType()) {
-      case DECREMENT, INCREMENT -> {
-        return parseIncrement();
-      }
-      case ASSIGN, ADD_ASSIGN, MINUS_ASSIGN, MULTIPLY_ASSIGN -> {
-        return parseAssignOpExpr(getCurrentToken().tokenType());
-      }
+  private Optional<? extends AssignExpr> parseAssignExpr() {
+    return switch (getCurrentToken().tokenType()) {
+      case ASSIGN, ADD_ASSIGN, MINUS_ASSIGN, MULTIPLY_ASSIGN -> parseAssignOpExpr(getCurrentToken().tokenType());
+      case DECREMENT, INCREMENT -> parseIncrement();
       default -> {
         if (tokens.get(currentTokenIndex - 1)
                   .tokenType() == ID) {
-          throw getContextualException("invalid type " + "\"" + tokens.get(currentTokenIndex - 1)
-                                                                      .lexeme() + "\"");
+          errors.add(
+              new ParserError(
+                  ParserError.ErrorType.INVALID_TYPE,
+                  getCurrentToken(),
+                  "invalid type " + "\"" + tokens.get(currentTokenIndex - 1)
+                                                 .lexeme() + "\""
+              )
+          );
+        } else {
+          errors.add(
+              new ParserError(
+                  ParserError.ErrorType.UNEXPECTED_TOKEN,
+                  getCurrentToken(),
+                  "expected assign expr"
+              )
+          );
         }
-        throw getContextualException("invalid assign_expr");
+        yield Optional.empty();
       }
-    }
-  }
-
-  private AssignExpr parseCompoundAssignExpr() throws DecafParserException {
-    return switch (getCurrentToken().tokenType()) {
-      case DECREMENT, INCREMENT -> parseIncrement();
-      case ADD_ASSIGN, MINUS_ASSIGN, MULTIPLY_ASSIGN -> parseCompoundAssignOpExpr(getCurrentToken().tokenType());
-      default -> throw new DecafParserException(
-          getCurrentToken(),
-          "expected compound_assign_expr"
-      );
     };
   }
 
-  private LocationArray parseLocationArray(Token token) throws DecafParserException {
-    Expression expression = parseOrExpr();
-    final LocationArray locationArray = new LocationArray(
-        new Name(
-            token.lexeme(),
-            token.tokenPosition(),
-            ExprContext.STORE
-        ),
-        expression
-    );
-    consumeToken(RIGHT_SQUARE_BRACKET);
-    return locationArray;
+  private Optional<? extends AssignExpr> parseCompoundAssignExpr() {
+    return switch (getCurrentToken().tokenType()) {
+      case DECREMENT, INCREMENT -> parseIncrement();
+      case ADD_ASSIGN, MINUS_ASSIGN, MULTIPLY_ASSIGN -> parseCompoundAssignOpExpr(getCurrentToken().tokenType());
+      default -> {
+        errors.add(new ParserError(
+            ParserError.ErrorType.UNEXPECTED_TOKEN,
+            getCurrentToken(),
+            "expected compound assign expr"
+        ));
+        yield Optional.empty();
+      }
+    };
   }
 
-  private Location parseLocation(Token token) throws DecafParserException {
+  private Optional<LocationArray> parseLocationArray(@NotNull Name name) {
+    var expressionOpt = parseOrExpr();
+    if (expressionOpt.isPresent()) {
+      var expression = expressionOpt.get();
+      final LocationArray locationArray = new LocationArray(
+          name,
+          expression
+      );
+      if (consumeToken(
+          RIGHT_SQUARE_BRACKET,
+          Scanner.RIGHT_SQUARE_BRACKET
+      ).isPresent()) {
+        return Optional.of(locationArray);
+      } else {
+        errors.add(
+            new ParserError(
+                ParserError.ErrorType.MISSING_RIGHT_SQUARE_BRACKET,
+                getCurrentToken(),
+                "missing right square bracket, expected array[expr]"
+            )
+        );
+      }
+    }
+    return Optional.empty();
+  }
+
+  private Optional<? extends Location> parseLocation(@NotNull Token token) {
     if (getCurrentToken().tokenType() == LEFT_SQUARE_BRACKET) {
       consumeToken(LEFT_SQUARE_BRACKET);
-      return parseLocationArray(token);
+      return parseLocationArray(new Name(
+          token.lexeme(),
+          token.tokenPosition()
+      ));
     }
-    return new LocationVariable(new Name(
+    return Optional.of(new LocationVariable(new Name(
         token.lexeme(),
-        token.tokenPosition(),
-        ExprContext.STORE
-    ));
+        token.tokenPosition()
+    )));
   }
 
-  private Expression parseExpr() throws DecafParserException {
+  private Optional<? extends Location> parseLocation() {
+    return parseName("expected a valid identifier").flatMap(
+        name -> {
+          if (getCurrentTokenType() == LEFT_SQUARE_BRACKET) {
+            return parseLocationArray(name);
+          } else {
+            return Optional.of(new LocationVariable(name));
+          }
+        }
+    );
+  }
+
+  private Optional<? extends Expression> parseExpr() {
     switch (getCurrentTokenType()) {
       case NOT, MINUS -> {
         return parseUnaryOpExpr();
@@ -999,362 +1212,489 @@ public class Parser {
       case ID -> {
         return parseLocationOrMethodCall();
       }
-      default -> throw new IllegalStateException();
+      default -> {
+        errors.add(
+            new ParserError(
+                ParserError.ErrorType.UNEXPECTED_TOKEN,
+                getCurrentToken(),
+                "expected an expression"
+            )
+        );
+        return Optional.empty();
+      }
     }
   }
 
-  private Len parseLen() throws DecafParserException {
-    final TokenPosition tokenPosition = consumeToken(
+  private Optional<Len> parseLen() {
+    var lenTokenOpt = consumeToken(
         RESERVED_LEN,
         Scanner.RESERVED_LEN
-    ).tokenPosition();
-    consumeToken(
-        LEFT_PARENTHESIS,
-        "expected a ( after " + Scanner.RESERVED_LEN
     );
-    Name name = parseName((Token t) -> {
-      if (t.tokenType() == RIGHT_PARENTHESIS) {
-        return "cannot find len of nothing";
-      } else {
-        return "cannot find len of (..." + t.lexeme() + ")";
-      }
-    });
-    consumeToken(
-        RIGHT_PARENTHESIS,
-        Scanner.RIGHT_PARENTHESIS
-    );
-    return new Len(
-        tokenPosition,
-        name
-    );
-
-  }
-
-  private Literal parseLiteral(TokenType expectedLiteralType) throws DecafParserException {
-    final Token token = consumeToken(expectedLiteralType);
-    return switch (expectedLiteralType) {
-      case CHAR_LITERAL -> new CharLiteral(
-          token.tokenPosition(),
-          token.lexeme()
-      );
-      case RESERVED_FALSE -> new BooleanLiteral(
-          token.tokenPosition(),
-          Scanner.RESERVED_FALSE
-      );
-      case RESERVED_TRUE -> new BooleanLiteral(
-          token.tokenPosition(),
-          Scanner.RESERVED_TRUE
-      );
-      case HEX_LITERAL -> new HexLiteral(
-          token.tokenPosition(),
-          token.lexeme()
-      );
-      case DECIMAL_LITERAL -> new DecimalLiteral(
-          token.tokenPosition(),
-          token.lexeme()
-      );
-      default -> throw new DecafParserException(
-          getCurrentToken(),
-          "unexpected literal"
-      );
-    };
-  }
-
-  private Return parseReturnStatement() throws DecafParserException {
-    final TokenPosition tokenPosition = consumeToken(
-        RESERVED_RETURN,
-        Scanner.RESERVED_RETURN
-    ).tokenPosition();
-    Expression expression = null;
-    if (getCurrentTokenType() != SEMICOLON) {
-      expression = parseOrExpr();
-    }
-    consumeToken(
-        SEMICOLON,
-        Scanner.SEMICOLON
-    );
-    return new Return(
-        tokenPosition,
-        expression
-    );
-  }
-
-  private Statement parseWhileStatement() throws DecafParserException {
-    final TokenPosition tokenPosition = consumeToken(RESERVED_WHILE).tokenPosition();
-    consumeToken(LEFT_PARENTHESIS);
-    final Expression expression = parseOrExpr();
-    consumeToken(RIGHT_PARENTHESIS);
-    final Block block = parseBlock();
-    return new While(
-        tokenPosition,
-        expression,
-        block
-    );
-  }
-
-  private If parseIfStatement() throws DecafParserException {
-    final TokenPosition tokenPosition = consumeToken(
-        RESERVED_IF,
-        Scanner.RESERVED_IF
-    ).tokenPosition();
-    consumeToken(
-        LEFT_PARENTHESIS,
-        Scanner.LEFT_PARENTHESIS
-    );
-    Expression predicate;
-    try {
-      predicate = parseOrExpr();
-    } catch (DecafException e) {
-      if (getCurrentTokenType() == RIGHT_PARENTHESIS)
-        throw getContextualException("if statement lacks a condition");
-      throw e;
-    }
-    consumeToken(
-        RIGHT_PARENTHESIS,
-        Scanner.RIGHT_PARENTHESIS
-    );
-    Block ifBlock = parseBlock();
-    Block elseBlock = null;
-    if (getCurrentTokenType() == RESERVED_ELSE) {
-      consumeToken(RESERVED_ELSE);
-      elseBlock = parseBlock();
-    }
-    return new If(
-        tokenPosition,
-        predicate,
-        ifBlock,
-        elseBlock
-    );
-  }
-
-  private Statement parseForStatement() throws DecafParserException {
-    final TokenPosition tokenPosition = consumeToken(
-        RESERVED_FOR,
-        Scanner.RESERVED_FOR
-    ).tokenPosition();
-    consumeToken(
-        LEFT_PARENTHESIS,
-        Scanner.LEFT_PARENTHESIS
-    );
-
-    final Name initId = parseName(
-        Scanner.IDENTIFIER,
-        ExprContext.STORE
-    );
-
-    consumeToken(
-        ASSIGN,
-        Scanner.ASSIGN
-    );
-    final Expression initializationExpression = parseOrExpr();
-    final Initialization initialization = new Initialization(
-        initId,
-        initializationExpression
-    );
-
-    consumeToken(
-        SEMICOLON,
-        Scanner.SEMICOLON
-    );
-
-    final Expression terminatingCondition = parseOrExpr();
-
-    consumeToken(
-        SEMICOLON,
-        Scanner.SEMICOLON
-    );
-
-    final Location updateLocation = parseLocation(consumeToken(
-        ID,
-        Scanner.IDENTIFIER
-    ));
-    final AssignExpr updateAssignExpr = parseCompoundAssignExpr();
-    final Assignment update = new Assignment(
-        updateLocation,
-        updateAssignExpr,
-        updateAssignExpr.getOperator()
-    );
-
-    consumeToken(
-        RIGHT_PARENTHESIS,
-        Scanner.RIGHT_PARENTHESIS
-    );
-
-    final Block block = parseBlock();
-
-    return new For(
-        tokenPosition,
-        initialization,
-        terminatingCondition,
-        update,
-        block
-    );
-  }
-
-  private Statement parseStatement() throws DecafParserException {
-    switch (getCurrentTokenType()) {
-      case RESERVED_BREAK -> {
-        return parseBreak();
-      }
-      case RESERVED_CONTINUE -> {
-        return parseContinue();
-      }
-      case RESERVED_RETURN -> {
-        return parseReturnStatement();
-      }
-      case RESERVED_WHILE -> {
-        return parseWhileStatement();
-      }
-      case RESERVED_IF -> {
-        return parseIfStatement();
-      }
-      case RESERVED_FOR -> {
-        return parseForStatement();
-      }
-      default -> {
-        if (getCurrentTokenType() == ID) {
-          return parseLocationAndAssignExprOrMethodCall();
-        } else {
-          throw new IllegalStateException();
+    if (lenTokenOpt.isPresent()) {
+      if (
+          consumeToken(
+              LEFT_PARENTHESIS,
+              "expected a ( after " + Scanner.RESERVED_LEN
+          ).isPresent()) {
+        var nameOpt = parseName((Token t) -> {
+          if (t.tokenType() == RIGHT_PARENTHESIS) {
+            return "cannot find len of nothing";
+          } else {
+            return "cannot find len of (..." + t.lexeme() + ")";
+          }
+        });
+        if (nameOpt.isPresent()) {
+          if (consumeToken(
+              RIGHT_PARENTHESIS,
+              Scanner.RIGHT_PARENTHESIS
+          ).isPresent()) {
+            return Optional.of(new Len(
+                lenTokenOpt.get()
+                           .tokenPosition(),
+                nameOpt.get()
+            ));
+          }
         }
       }
     }
+    return Optional.empty();
+
   }
 
-  private Break parseBreak() throws DecafParserException {
-    final Break breakStatement = new Break(consumeToken(RESERVED_BREAK).tokenPosition());
-    consumeToken(
-        SEMICOLON,
-        Scanner.SEMICOLON
+  private Optional<Literal> parseLiteral(TokenType expectedLiteralType) {
+    return consumeToken(expectedLiteralType).map(
+        token -> switch (expectedLiteralType) {
+          case CHAR_LITERAL -> new CharLiteral(
+              token.tokenPosition(),
+              token.lexeme()
+          );
+          case RESERVED_FALSE -> new BooleanLiteral(
+              token.tokenPosition(),
+              Scanner.RESERVED_FALSE
+          );
+          case RESERVED_TRUE -> new BooleanLiteral(
+              token.tokenPosition(),
+              Scanner.RESERVED_TRUE
+          );
+          case HEX_LITERAL -> new HexLiteral(
+              token.tokenPosition(),
+              token.lexeme()
+          );
+          default -> new DecimalLiteral(
+              token.tokenPosition(),
+              token.lexeme()
+          );
+        });
+  }
+
+  private Optional<Return> parseReturnStatement() {
+    return consumeToken(
+        RESERVED_RETURN,
+        "was promised a return statement by implementation"
+    ).flatMap(
+        token -> {
+          if (getCurrentTokenType() == SEMICOLON) {
+            consumeToken(
+                SEMICOLON,
+                "was promised a semicolon by implementation"
+            );
+            return Optional.of(new Return(
+                token.tokenPosition(),
+                new VoidExpression(
+                    token.tokenPosition()
+                )
+            ));
+          } else {
+            return parseOrExpr().flatMap(
+                expression -> consumeToken(
+                    SEMICOLON,
+                    "was expecting semicolon after return statement"
+                ).flatMap(
+                    tk -> Optional.of(new Return(
+                        token.tokenPosition(),
+                        expression
+                    ))
+                )
+            );
+          }
+        }
     );
-    return breakStatement;
   }
 
-  private Continue parseContinue() throws DecafParserException {
-    final Continue continueStatement = new Continue(consumeToken(RESERVED_CONTINUE).tokenPosition());
-    consumeToken(
-        SEMICOLON,
-        Scanner.SEMICOLON
+  private Optional<Statement> parseWhileStatement() {
+    return consumeToken(
+        RESERVED_WHILE,
+        Scanner.RESERVED_WHILE
+    ).flatMap(
+        token -> consumeToken(
+            LEFT_PARENTHESIS,
+            Scanner.LEFT_PARENTHESIS
+        ).flatMap(
+            tk -> parseOrExpr().flatMap(
+                expression -> consumeToken(
+                    RIGHT_PARENTHESIS,
+                    Scanner.RIGHT_PARENTHESIS
+                ).flatMap(
+                    tk1 -> parseBlock().map(
+                        block -> new While(
+                            token.tokenPosition(),
+                            expression,
+                            block
+                        )
+                    )
+                )
+            )
+        )
     );
-    return continueStatement;
   }
 
-  @SuppressWarnings("InfiniteLoopStatement")
-  private void parseStatements(List<Statement> statementList) throws DecafParserException {
-    try {
-      while (true)
-        statementList.add(parseStatement());
-    } catch (IllegalStateException ignored) {
+  private Optional<If> parseIfStatement() {
+    return consumeToken(
+        RESERVED_IF,
+        "expected the reserved keyword `if` to denote beginning of if statement"
+    ).flatMap(
+        token -> consumeToken(
+            LEFT_PARENTHESIS,
+            "expected a `(` after " + Scanner.RESERVED_IF + " to denote beginning of if statement"
+        ).flatMap(
+            tk -> parseOrExpr().flatMap(
+                expression -> consumeToken(
+                    RIGHT_PARENTHESIS,
+                    "expected `)` to close out if statement condition"
+                ).flatMap(
+                    tk1 -> parseBlock().flatMap(
+                        block -> {
+                          if (getCurrentTokenType() == RESERVED_ELSE) {
+                            return consumeToken(
+                                RESERVED_ELSE,
+                                "implementation error: expected else statement"
+                            ).flatMap(
+                                tk2 -> parseBlock().map(
+                                    block1 -> new If(
+                                        token.tokenPosition(),
+                                        expression,
+                                        block,
+                                        block1
+                                    )
+                                )
+                            );
+                          } else {
+                            return Optional.of(new If(
+                                token.tokenPosition(),
+                                expression,
+                                block,
+                                null
+                            ));
+                          }
+                        }
+                    )
+                )
+            )
+        )
+    );
+  }
+
+  private Optional<Statement> parseForStatement() {
+    return consumeToken(
+        RESERVED_FOR,
+        "expected the reserved keyword `for` to denote beginning of for statement"
+    ).flatMap(
+        token -> consumeToken(
+            LEFT_PARENTHESIS,
+            "expected a `(` after " + Scanner.RESERVED_FOR + " to denote beginning of for statement"
+        ).flatMap(
+            tk -> parseName("expected initialization variable").flatMap(
+                initId -> consumeToken(
+                    SEMICOLON,
+                    "expected a `;` after for statement initializer"
+                ).flatMap(
+                    tk1 -> consumeToken(
+                        ASSIGN,
+                        "expected `=` to split initialization variable and expression"
+                    ).flatMap(
+                        tk2 -> parseOrExpr(
+                        ).flatMap(
+                            initExpr -> consumeToken(
+                                SEMICOLON,
+                                "expected a `;` after for statement initializer"
+                            ).flatMap(
+                                tk3 -> parseOrExpr().flatMap(
+                                    terminatingCondition -> consumeToken(
+                                        SEMICOLON,
+                                        "expected a `;` after for statement terminating condition"
+                                    ).flatMap(
+                                        tk4 -> parseLocation().flatMap(
+                                            updateLocation -> parseCompoundAssignExpr().flatMap(
+                                                updateAssignExpr ->
+                                                    consumeToken(
+                                                        RIGHT_PARENTHESIS,
+                                                        "expected a `)` to close out for statement"
+                                                    ).flatMap(
+                                                        tk5 -> parseBlock().map(
+                                                            block -> new For(
+                                                                token.tokenPosition(),
+                                                                new Initialization(
+                                                                    initId,
+                                                                    initExpr
+                                                                ),
+                                                                terminatingCondition,
+                                                                new Assignment(
+                                                                    updateLocation,
+                                                                    updateAssignExpr,
+                                                                    updateAssignExpr.getOperator()
+                                                                ),
+                                                                block
+                                                            )
+                                                        )
+                                                    )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    );
+  }
+
+  private Optional<Break> parseBreak() {
+    return consumeToken(
+        RESERVED_BREAK,
+        Scanner.RESERVED_BREAK
+    ).flatMap(
+        token -> consumeToken(
+            SEMICOLON,
+            Scanner.SEMICOLON
+        ).map(
+            tk -> new Break(
+                token.tokenPosition()
+            )
+        )
+    );
+  }
+
+  private Optional<Continue> parseContinue() {
+    return consumeToken(
+        RESERVED_CONTINUE,
+        Scanner.RESERVED_CONTINUE
+    ).flatMap(
+        token -> consumeToken(
+            SEMICOLON,
+            Scanner.SEMICOLON
+        ).map(
+            tk -> new Continue(
+                token.tokenPosition()
+            )
+        )
+    );
+  }
+
+  private void parseStatements(List<Statement> statementList) {
+    while (true) {
+      if (getCurrentTokenType() == RESERVED_RETURN) {
+        parseReturnStatement().ifPresent(statementList::add);
+      } else if (getCurrentTokenType() == RESERVED_BREAK) {
+        parseBreak().ifPresent(statementList::add);
+      } else if (getCurrentTokenType() == RESERVED_CONTINUE) {
+        parseContinue().ifPresent(statementList::add);
+      } else if (getCurrentTokenType() == RESERVED_WHILE) {
+        parseWhileStatement().ifPresent(statementList::add);
+      } else if (getCurrentTokenType() == RESERVED_IF) {
+        parseIfStatement().ifPresent(statementList::add);
+      } else if (getCurrentTokenType() == RESERVED_FOR) {
+        parseForStatement().ifPresent(statementList::add);
+      } else if (getCurrentTokenType() == ID) {
+        parseLocationAndAssignExprOrMethodCall().ifPresent(statementList::add);
+      } else {
+        break;
+      }
     }
   }
 
-  private Block parseBlock() throws DecafParserException {
-    consumeToken(
+  private Optional<Block> parseBlock() {
+    return consumeToken(
         LEFT_CURLY,
         Scanner.LEFT_CURLY
-    );
-    List<FieldDeclaration> fieldDeclarationList = new ArrayList<>();
-    List<Statement> statementList = new ArrayList<>();
-    parseFieldDeclarations(fieldDeclarationList);
-    parseStatements(statementList);
-    consumeToken(
-        RIGHT_CURLY,
-        Scanner.RIGHT_CURLY
-    );
-    return new Block(
-        fieldDeclarationList,
-        statementList
+    ).map(
+        token -> {
+          var fieldDeclarationList = new ArrayList<FieldDeclaration>();
+          var statementList = new ArrayList<Statement>();
+          parseFieldDeclarations(fieldDeclarationList);
+          parseStatements(statementList);
+          return consumeToken(
+              RIGHT_CURLY,
+              Scanner.RIGHT_CURLY
+          ).map(
+               rightCurlyToken -> new Block(
+                   fieldDeclarationList,
+                   statementList
+               )
+           )
+           .orElse(
+               new Block(
+                   Collections.emptyList(),
+                   Collections.emptyList()
+               )
+           );
+        }
     );
   }
 
-  private ImportDeclaration parseImportDeclaration() throws DecafParserException {
-    consumeToken(
+  private ImportDeclaration parseImportDeclaration() {
+    return (consumeToken(
         RESERVED_IMPORT,
         Scanner.RESERVED_IMPORT
-    );
-    Name importName = parseName(
-        Scanner.IDENTIFIER,
-        ExprContext.IMPORT
-    );
-    consumeToken(
-        SEMICOLON,
-        Scanner.SEMICOLON
-    );
-    return new ImportDeclaration(importName);
+    ).map(token -> new ImportDeclaration(
+         new Name(
+             consumeToken(
+                 ID,
+                 Scanner.IDENTIFIER
+             ).map(Token::lexeme)
+              .orElseGet(() -> {
+                errors.add(new ParserError(
+                    ParserError.ErrorType.MISSING_NAME,
+                    getCurrentToken(),
+                    "expected valid import name"
+                ));
+                return "`MISSING IMPORT NAME`"; // fill with lexically incorrect dummy name and continue
+              }),
+             token.tokenPosition()
+         )
+     ))
+     .orElseThrow(() -> new IllegalStateException("expected import declaration")));
   }
 
-  private FieldDeclaration parseFieldDeclaration() throws DecafParserException {
-    final TokenPosition tokenPosition = getCurrentToken().tokenPosition();
-    Type type = parseBuiltinFieldType();
-    List<Name> variables = new ArrayList<>();
-    List<Array> arrays = new ArrayList<>();
-    Name nameId = parseName(
-        Scanner.IDENTIFIER,
-        ExprContext.DECLARE
-    );
-    parseFieldDeclarationGroup(
-        variables,
-        arrays,
-        nameId
-    );
-
-    while (getCurrentToken().tokenType() == COMMA) {
-      consumeToken(
-          COMMA,
-          Scanner.COMMA
-      );
-      nameId = parseName(
-          Scanner.IDENTIFIER,
-          ExprContext.DECLARE
-      );
-      parseFieldDeclarationGroup(
-          variables,
-          arrays,
-          nameId
-      );
-    }
-    return new FieldDeclaration(
-        tokenPosition,
-        type,
-        variables,
-        arrays
-    );
+  private Optional<FieldDeclaration> parseFieldDeclaration() {
+    final var tokenPosition = getCurrentToken().tokenPosition();
+    return parseBuiltinFieldType().map(
+                                      type -> parseName(
+                                          Scanner.IDENTIFIER
+                                      ).map(
+                                          nameId -> {
+                                            var variables = new ArrayList<Name>();
+                                            var arrays = new ArrayList<Array>();
+                                            parseFieldDeclarationGroup(
+                                                variables,
+                                                arrays,
+                                                nameId
+                                            );
+                                            while (getCurrentTokenType() == COMMA) {
+                                              consumeToken(
+                                                  COMMA,
+                                                  Scanner.COMMA
+                                              );
+                                              nameId = parseName(
+                                                  Scanner.IDENTIFIER
+                                              ).orElseGet(
+                                                  () -> {
+                                                    errors.add(
+                                                        new ParserError(
+                                                            ParserError.ErrorType.MISSING_NAME,
+                                                            getCurrentToken(),
+                                                            "expected valid field name"
+                                                        )
+                                                    );
+                                                    return new Name(
+                                                        "`MISSING FIELD NAME`",
+                                                        getCurrentToken().tokenPosition()
+                                                    );
+                                                  }
+                                              );
+                                              parseFieldDeclarationGroup(
+                                                  variables,
+                                                  arrays,
+                                                  nameId
+                                              );
+                                            }
+                                            return new FieldDeclaration(
+                                                tokenPosition,
+                                                type,
+                                                variables,
+                                                arrays
+                                            );
+                                          }
+                                      )
+                                  )
+                                  .orElseGet(
+                                      () -> {
+                                        errors.add(
+                                            new ParserError(
+                                                ParserError.ErrorType.MISSING_FIELD_TYPE,
+                                                getCurrentToken(),
+                                                "expected valid field type"
+                                            )
+                                        );
+                                        return Optional.empty();
+                                      }
+                                  );
   }
 
-  private Name parseName(
-      String expected,
-      ExprContext context
-  ) throws DecafParserException {
-    final Token idToken = consumeToken(
+  private Optional<Name> parseName(
+      String expected
+  ) {
+    final var optionalToken = consumeToken(
         TokenType.ID,
         expected
     );
-    return new Name(
-        idToken.lexeme(),
-        idToken.tokenPosition(),
-        context
-    );
+    if (optionalToken.isPresent()) {
+      final Token token = optionalToken.get();
+      return Optional.of(new Name(
+          token.lexeme(),
+          token.tokenPosition()
+      ));
+    } else {
+      errors.add(
+          new ParserError(
+              ParserError.ErrorType.MISSING_NAME,
+              getCurrentToken(),
+              expected
+          )
+      );
+      return Optional.empty();
+    }
   }
 
-  private Name parseName(Function<Token, String> errMessageProvider) throws DecafParserException {
-    final Token token = consumeToken(
+  private Optional<Name> parseName(Function<Token, String> errMessageProvider) {
+    final var optionalToken = consumeToken(
         TokenType.ID,
         errMessageProvider
     );
-    return new Name(
-        token.lexeme(),
-        token.tokenPosition(),
-        ExprContext.LOAD
-    );
+    if (optionalToken.isPresent()) {
+      final Token token = optionalToken.get();
+      return Optional.of(new Name(
+          token.lexeme(),
+          token.tokenPosition()
+      ));
+    } else {
+      errors.add(
+          new ParserError(
+              ParserError.ErrorType.MISSING_NAME,
+              getCurrentToken(),
+              errMessageProvider.apply(getCurrentToken())
+          )
+      );
+      return Optional.empty();
+    }
   }
 
-  private Type parseBuiltinFieldType() throws DecafParserException {
+  private Optional<Type> parseBuiltinFieldType() {
     final Token token = consumeTokenNoCheck();
     return switch (token.tokenType()) {
-      case RESERVED_INT -> Type.Int;
-      case RESERVED_BOOL -> Type.Bool;
-      default -> throw getContextualException(
-          "expected " + "\"" + Scanner.RESERVED_INT + "\"" + " or " + "\"" + Scanner.RESERVED_BOOL + "\"");
+      case RESERVED_INT -> Optional.of(Type.Int);
+      case RESERVED_BOOL -> Optional.of(Type.Bool);
+      default -> {
+        errors.add(
+            new ParserError(
+                ParserError.ErrorType.INVALID_FIELD_TYPE,
+                token,
+                "expected a valid builtin field type, one of (int, bool) but found: " + token.lexeme()
+            )
+        );
+        yield Optional.empty();
+      }
     };
   }
 
@@ -1374,10 +1714,6 @@ public class Parser {
     for (String s : tree) {
       System.out.println(s);
     }
-  }
-
-  public void setTrace(boolean showTrace) {
-    this.showTrace = showTrace;
   }
 
   private static class PrintConstants {

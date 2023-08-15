@@ -6,6 +6,7 @@ import static decaf.common.Utils.DECAF_ASCII_ART;
 import com.google.common.base.Stopwatch;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -19,13 +20,14 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 
+import decaf.grammar.Parser;
 import decaf.grammar.Scanner;
-import decaf.grammar.Token;
 
 public class TestRunner {
   public static final String DEFAULT_DATAFLOW_TESTS_ROOT = "tests/optimizer/dcf";
@@ -202,28 +204,55 @@ public class TestRunner {
   private static Compilation compileTest(File testFile) throws IOException {
     var compilation = new Compilation(
         readFile(testFile),
-        CompilationContext.isDebugModeOn()
+        true
     );
     compilation.run();
     return compilation;
   }
 
-  private static @NotNull List<Pair<File, File>> getTestPairs(@NotNull String filepath) {
-    try (var files = Files.list(Paths.get(filepath + "/input"))) {
-      return files.map(Path::toFile)
-                  .filter(File::isFile)
-                  .sorted(Comparator.comparing(File::getName))
-                  .map(file -> new Pair<>(
-                      file,
-                      Paths.get(filepath + "/output/" + file.getName()
-                                                            .substring(
-                                                                0,
-                                                                file.getName()
-                                                                    .length() - 4
-                                                            ) + ".out")
-                           .toFile()
-                  ))
-                  .toList();
+  private static @NotNull List<Pair<File, File>> getTestPairs(
+      @NotNull String filepathPrefix,
+      boolean expectedToPas
+  ) {
+    return getTestPairs(
+        filepathPrefix,
+        expectedToPas,
+        true
+    );
+  }
+
+  private static @NotNull List<Pair<File, File>> getTestPairs(
+      @NotNull String filepathPrefix,
+      boolean expectedToPass,
+      boolean outputExists
+  ) {
+    var filepath = filepathPrefix + "/input/" + (expectedToPass ? "/legal": "/illegal");
+    try (var files = Files.list(Paths.get(filepath))) {
+      if (outputExists) {
+        return files.map(Path::toFile)
+                    .filter(File::isFile)
+                    .sorted(Comparator.comparing(File::getName))
+                    .map(file -> new Pair<>(
+                        file,
+                        Paths.get(filepathPrefix + "/output/" + file.getName()
+                                                                    .substring(
+                                                                        0,
+                                                                        file.getName()
+                                                                            .length() - 4
+                                                                    ) + ".out")
+                             .toFile()
+                    ))
+                    .toList();
+      } else {
+        return files.map(Path::toFile)
+                    .filter(File::isFile)
+                    .sorted(Comparator.comparing(File::getName))
+                    .map(file -> new Pair<>(
+                        file,
+                        file
+                    ))
+                    .toList();
+      }
     } catch (IOException e) {
       logger.log(
           SEVERE,
@@ -238,8 +267,8 @@ public class TestRunner {
       int pairIndex,
       int numTests,
       String filePath,
-      String reason,
-      long runTimeMs
+      long runTimeMs,
+      String reason
   ) {
     System.out.format(
         "%s %s ........... (%s ms)\n%s\n",
@@ -359,15 +388,56 @@ public class TestRunner {
 
   private static String getTestingEpilogue(
       Type type,
-      int numTests,
       String filePath,
-      int numPassed,
-      long timeElapsed
+      long totalTimeElapsed,
+      List<Quadruple<String, Integer, Integer, Long>> testSuiteResults
   ) {
     var strings = new ArrayList<String>();
+    strings.add(
+        "Test Suites Summary"
+    );
+    var allTestsNumPassed = 0;
+    var allTestsNumTests = 0;
+    for (var testSuiteResult : testSuiteResults) {
+      var testName = testSuiteResult.first();
+      var numPassed = testSuiteResult.second();
+      var numTests = testSuiteResult.third();
+      var timeElapsed = testSuiteResult.fourth();
+      allTestsNumPassed += numPassed;
+      allTestsNumTests += numTests;
+      if (numPassed.equals(numTests)) {
+        strings.add(
+            String.format(
+                "\t\t%s: %s",
+                testName,
+                Utils.coloredPrint(
+                    String.format(
+                        "✓ Passed all %s tests in %s ms",
+                        numTests,
+                        timeElapsed
+                    ),
+                    Utils.ANSIColorConstants.ANSI_GREEN_BOLD
+                )
+            ));
+      } else {
+        strings.add(
+            Utils.coloredPrint(
+                String.format(
+                    "%s: ✗ Passed %s out of %s tests in %s ms",
+                    numPassed,
+                    numTests,
+                    testName,
+                    timeElapsed
+                ),
+                Utils.ANSIColorConstants.ANSI_RED
+            )
+        );
+      }
+
+    }
     strings.add(String.format(
         "%s %s",
-        (numPassed == numTests) ? Utils.coloredPrint(
+        (allTestsNumPassed == allTestsNumTests) ? Utils.coloredPrint(
             "PASS",
             Utils.ANSIColorConstants.ANSI_BG_GREEN
         ): Utils.coloredPrint(
@@ -382,13 +452,13 @@ public class TestRunner {
             Utils.ANSIColorConstants.ANSI_WHITE
         )
     ));
-    if (numTests == numPassed) {
+    if (allTestsNumPassed == allTestsNumTests) {
       strings.add(
           Utils.coloredPrint(
               String.format(
                   "✓ Passed all %s tests in %s ms",
-                  numTests,
-                  timeElapsed
+                  allTestsNumTests,
+                  totalTimeElapsed
               ),
               Utils.ANSIColorConstants.ANSI_GREEN_BOLD
           )
@@ -398,9 +468,9 @@ public class TestRunner {
           Utils.coloredPrint(
               String.format(
                   "✗ Passed %s out of %s tests in %s ms",
-                  numPassed,
-                  numTests,
-                  timeElapsed
+                  allTestsNumPassed,
+                  allTestsNumTests,
+                  totalTimeElapsed
               ),
               Utils.ANSIColorConstants.ANSI_RED
           )
@@ -412,117 +482,20 @@ public class TestRunner {
     );
   }
 
-
-  public static void testScanner(@NotNull String filename) {
-    final String filepath = "tests/scanner";
-    var input = Paths.get(filepath + "/input/" + filename + ".dcf");
-    var output = Paths.get(filepath + "/output/" + filename + ".out");
-    var testPairs = List.of(
-        new Pair<>(
-            input.toFile(),
-            output.toFile()
-        )
-    );
-    testScanner(testPairs);
-  }
-
-  public static void testScanner() {
-    final String filepath = "tests/scanner";
-    var testPairs = getTestPairs(filepath);
-    testScanner(testPairs);
-  }
-
-  public static void testScanner(List<Pair<File, File>> testPairs) {
-    System.out.println(getTestingPrologue(Type.SCANNER));
-    final int numTests = testPairs.size();
-    int numPassed = 0;
-    var startTime = Stopwatch.createStarted();
-    for (var pairIndex = 0; pairIndex < testPairs.size(); pairIndex++) {
-      Stopwatch stopwatch = Stopwatch.createStarted();
-      var pair = testPairs.get(pairIndex);
-      var sourceFile = pair.first;
-      try {
-        var expectedOutput = readFile(pair.second);
-        int headerEndIndex = expectedOutput.indexOf("\n");
-        var header = expectedOutput.substring(
-            0,
-            headerEndIndex
-        );
-        var expectedOutputBody = expectedOutput.substring(headerEndIndex + 1);
-        var scanner = new Scanner(
-            readFile(pair.first),
-            new CompilationContext(readFile(pair.first))
-        );
-        var actualOutput = formatTokensToOutputFormat(scanner);
-        if (scanner.finished()) {
-          if (!actualOutput.equals(expectedOutputBody)) {
-            printFailError(
-                pairIndex,
-                numTests,
-                sourceFile.getAbsolutePath(),
-                actualOutput,
-                stopwatch.elapsed(TimeUnit.MILLISECONDS)
-            );
-          } else {
-            printSuccessError(
-                pairIndex,
-                numTests,
-                sourceFile.getAbsolutePath(),
-                stopwatch.elapsed(TimeUnit.MILLISECONDS)
-            );
-            numPassed += 1;
-          }
-        } else {
-          if (header.equals("PASS")) {
-            printFailError(
-                pairIndex,
-                numTests,
-                sourceFile.getAbsolutePath(),
-                scanner.getPrettyErrorOutput(),
-                stopwatch.elapsed(TimeUnit.MILLISECONDS)
-            );
-          } else {
-            printFailedSuccessfully(
-                pairIndex,
-                numTests,
-                sourceFile.getAbsolutePath(),
-                stopwatch.elapsed(TimeUnit.MILLISECONDS),
-                scanner.getPrettyErrorOutput()
-            );
-            numPassed += 1;
-          }
-        }
-      } catch (IOException e) {
-        printFailError(
-            pairIndex,
-            numTests,
-            sourceFile.getAbsolutePath(),
-            e.getMessage(),
-            stopwatch.elapsed(TimeUnit.MILLISECONDS)
-        );
-      }
-    }
-    System.out.println(getTestingEpilogue(
-        Type.SCANNER,
-        numTests,
-        "tests/scanner",
-        numPassed,
-        startTime.elapsed(TimeUnit.MILLISECONDS)
-    ));
-  }
-
   private static String formatTokensToOutputFormat(@NotNull Scanner scanner) {
     var strings = new ArrayList<String>();
     for (var token : scanner) {
-      String text;
-      switch (token.tokenType()) {
-        case ID -> text = "IDENTIFIER" + " " + token.lexeme();
-        case STRING_LITERAL -> text = "STRINGLITERAL" + " " + token.lexeme();
-        case CHAR_LITERAL -> text = "CHARLITERAL" + " " + token.lexeme();
-        case HEX_LITERAL, DECIMAL_LITERAL -> text = "INTLITERAL" + " " + token.lexeme();
-        case RESERVED_FALSE, RESERVED_TRUE -> text = "BOOLEANLITERAL" + " " + token.lexeme();
-        default -> text = token.lexeme();
-      }
+      var text = switch (token.tokenType()) {
+        case ID -> "IDENTIFIER" + " " + token.lexeme();
+        case STRING_LITERAL -> "STRINGLITERAL" + " " + token.lexeme();
+        case CHAR_LITERAL -> "CHARLITERAL" + " " + token.lexeme();
+        case HEX_LITERAL, DECIMAL_LITERAL -> "INTLITERAL" + " " + token.lexeme();
+        case RESERVED_FALSE, RESERVED_TRUE -> "BOOLEANLITERAL" + " " + token.lexeme();
+        case EOF -> "";
+        default -> token.lexeme();
+      };
+      if (text.isBlank())
+        continue;
       strings.add(token.tokenPosition()
                        .line() + 1 + " " + text);
     }
@@ -530,6 +503,285 @@ public class TestRunner {
         "\n",
         strings
     );
+  }
+
+  public static void testScanner(
+      @NotNull String filename,
+      boolean expectedToPass
+  ) {
+    final String filepath = "tests/scanner";
+    var input = Paths.get(filepath + "/input/" + (expectedToPass ? "legal/": "illegal/") + filename + ".dcf");
+    var output = Paths.get(filepath + "/output/" + filename + ".out");
+    var testPairs = List.of(
+        new Pair<>(
+            input.toFile(),
+            output.toFile()
+        )
+    );
+    testScanner(
+        testPairs,
+        true
+    );
+  }
+
+  public static void testParser(
+      @NotNull String filename,
+      boolean expectedToPass
+  ) {
+    final String filepath = "tests/parser";
+    var input = Paths.get(filepath + "/input/" + (expectedToPass ? "legal/": "illegal/") + filename + ".dcf")
+                     .toFile();
+    var testPairs = List.of(
+        new Pair<>(
+            input,
+            input
+        )
+    );
+    testParser(
+        testPairs,
+        true
+    );
+  }
+
+  public static void testScanner() {
+    final String filepath = "tests/scanner";
+
+    System.out.println(getTestingPrologue(Type.SCANNER));
+
+    var startTime = Stopwatch.createStarted();
+    var expectedToPassTestPairs = getTestPairs(
+        filepath,
+        true
+    );
+    var expectedToPassResults = testScanner(
+        expectedToPassTestPairs,
+        true
+    );
+
+    var expectedToFailTestPairs = getTestPairs(
+        filepath,
+        false
+    );
+    var expectedToFailResults = testScanner(
+        expectedToFailTestPairs,
+        false
+    );
+
+    System.out.println(getTestingEpilogue(
+        Type.SCANNER,
+        "tests/scanner",
+        startTime.elapsed(TimeUnit.MILLISECONDS),
+        List.of(
+            new Quadruple<>(
+                "legal",
+                expectedToPassResults.first(),
+                expectedToPassTestPairs.size(),
+                expectedToPassResults.second()
+            ),
+            new Quadruple<>(
+                "illegal",
+                expectedToFailResults.first(),
+                expectedToFailTestPairs.size(),
+                expectedToFailResults.second()
+            )
+        )
+    ));
+  }
+
+  public static Pair<Integer, Long> testSuite(
+      List<Pair<File, File>> testPairs,
+      boolean expectedToPass,
+      BiFunction<String, String, Pair<Boolean, String>> fn
+  ) {
+    final int numTests = testPairs.size();
+    int numPassed = 0;
+    Stopwatch testSuiteTestTime = Stopwatch.createStarted();
+    for (var pairIndex = 0; pairIndex < testPairs.size(); pairIndex++) {
+      Stopwatch stopwatch = Stopwatch.createStarted();
+      var pair = testPairs.get(pairIndex);
+      var sourceFile = pair.first;
+      try {
+        var sourceCode = readFile(pair.first);
+        var expectedOutput = readFile(pair.second);
+        numPassed += testOne(
+            fn,
+            sourceCode,
+            expectedOutput,
+            pairIndex,
+            numTests,
+            sourceFile.getAbsolutePath(),
+            expectedToPass
+        ) ? 1: 0;
+      } catch (IOException e) {
+        printFailError(
+            pairIndex,
+            numTests,
+            sourceFile.getAbsolutePath(),
+            stopwatch.elapsed(TimeUnit.MILLISECONDS),
+            e.getMessage()
+        );
+      }
+    }
+    return new Pair<>(
+        numPassed,
+        testSuiteTestTime.elapsed(TimeUnit.MILLISECONDS)
+    );
+  }
+
+  public static Pair<Integer, Long> testScanner(
+      List<Pair<File, File>> testPairs,
+      boolean expectedToPass
+  ) {
+    BiFunction<String, String, Pair<Boolean, String>> fn = (String input, String output) -> {
+      var scanner = new Scanner(
+          input,
+          new CompilationContext(input)
+      );
+      var actualOutput = formatTokensToOutputFormat(scanner);
+      if (scanner.finished() && actualOutput.equals(output)) {
+        return new Pair<>(
+            true,
+            actualOutput
+        );
+      } else {
+        return new Pair<>(
+            false,
+            scanner.getPrettyErrorOutput()
+        );
+      }
+    };
+    return testSuite(
+        testPairs,
+        expectedToPass,
+        fn
+    );
+  }
+
+  public static Pair<Integer, Long> testParser(
+      List<Pair<File, File>> testPairs,
+      boolean expectedToPass
+  ) {
+    BiFunction<String, String, Pair<Boolean, String>> fn = (String input, String output) -> {
+      var scanner = new Scanner(
+          input,
+          new CompilationContext(input)
+      );
+      var parser = new Parser(
+          scanner,
+          new CompilationContext(input)
+      );
+      var actualOutput = parser.getErrors()
+                               .toString();
+      if (parser.getErrors()
+                .isEmpty()) {
+        return new Pair<>(
+            true,
+            actualOutput
+        );
+      } else {
+        return new Pair<>(
+            false,
+            parser.getPrettyErrorOutput()
+        );
+      }
+    };
+    return testSuite(
+        testPairs,
+        expectedToPass,
+        fn
+    );
+  }
+
+  public static void testParser() {
+    final String filepath = "tests/parser";
+
+    System.out.println(getTestingPrologue(Type.PARSER));
+    var startTime = Stopwatch.createStarted();
+    var expectedToPassTestPairs = getTestPairs(
+        filepath,
+        true,
+        false
+    );
+    var expectedToPassResults = testParser(
+        expectedToPassTestPairs,
+        true
+    );
+
+    var expectedToFailTestPairs = getTestPairs(
+        filepath,
+        false,
+        false
+    );
+    var expectedToFailResults = testParser(
+        expectedToFailTestPairs,
+        false
+    );
+
+    System.out.println(getTestingEpilogue(
+        Type.SCANNER,
+        "tests/scanner",
+        startTime.elapsed(TimeUnit.MILLISECONDS),
+        List.of(
+            new Quadruple<>(
+                "legal",
+                expectedToPassResults.first(),
+                expectedToPassTestPairs.size(),
+                expectedToPassResults.second()
+            ),
+            new Quadruple<>(
+                "illegal",
+                expectedToFailResults.first(),
+                expectedToFailTestPairs.size(),
+                expectedToFailResults.second()
+            )
+        )
+    ));
+  }
+
+  private static <InputType, OutputType> boolean testOne(
+      @NotNull BiFunction<InputType, OutputType, Pair<Boolean, String>> fn,
+      @NotNull InputType input,
+      @Nullable OutputType expectedOutput,
+      int pairIndex,
+      int numTests,
+      @Nullable String sourceFilePath,
+      boolean expectedToPass
+  ) {
+    var stopwatch = Stopwatch.createStarted();
+    var ret = fn.apply(
+        input,
+        expectedOutput
+    );
+    var timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+    var hasPassed = ret.first;
+    var failureOutput = ret.second;
+    if (!expectedToPass && !hasPassed) {
+      printFailedSuccessfully(
+          pairIndex,
+          numTests,
+          sourceFilePath,
+          timeElapsed,
+          failureOutput
+      );
+      return true;
+    } else if (expectedToPass && hasPassed) {
+      printSuccessError(
+          pairIndex,
+          numTests,
+          sourceFilePath,
+          timeElapsed
+      );
+      return true;
+    } else {
+      printFailError(
+          pairIndex,
+          numTests,
+          sourceFilePath,
+          timeElapsed,
+          failureOutput
+      );
+      return false;
+    }
   }
 
   public enum Type {

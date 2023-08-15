@@ -39,8 +39,7 @@ public class MethodDefinitionParameter extends Declaration {
     return List.of(new Pair<>(
         "type",
         new Name(type.toString(),
-                 tokenPosition,
-                 ExprContext.DECLARE
+                 tokenPosition
         )
     ));
   }

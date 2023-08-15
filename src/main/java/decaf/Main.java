@@ -7,6 +7,7 @@ import decaf.common.TestRunner;
 
 class Main {
   public static void main(String[] args) throws IOException {
-    TestRunner.testScanner();
+    TestRunner.testParser("legal-04", true);
+//    TestRunner.testScanner();
   }
 }

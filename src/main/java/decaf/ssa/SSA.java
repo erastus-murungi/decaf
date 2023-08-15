@@ -65,14 +65,6 @@ public class SSA {
     var basicBlocks = getReversePostOrder(entryBlock);
 //    buildCfgGuava(basicBlocks);
     var dominatorTree = new DominatorTree(entryBlock);
-    if (CompilationContext.isDebugModeOn()) GraphVizManager.printDominatorTree(
-        dominatorTree,
-        "dom_" + method.methodName()
-    );
-    if (CompilationContext.isDebugModeOn()) Utils.printSsaCfg(
-        List.of(method),
-        "cfg_norm" + method.methodName()
-    );
     placePhiFunctions(
         entryBlock,
         basicBlocks,
@@ -84,10 +76,6 @@ public class SSA {
         basicBlocks
     );
     verifySsa(basicBlocks);
-    if (CompilationContext.isDebugModeOn()) Utils.printSsaCfg(
-        List.of(method),
-        "ssa_before_" + method.methodName()
-    );
   }
 
   private static void renameMethodArgs(Method method) {
@@ -100,10 +88,6 @@ public class SSA {
       Method method,
       ProgramIr programIr
   ) {
-    if (CompilationContext.isDebugModeOn()) Utils.printSsaCfg(
-        List.of(method),
-        "ssa_after_opt_" + method.methodName()
-    );
 
     var entryBlock = method.getEntryBlock();
     var basicBlocks = getReversePostOrder(entryBlock);
@@ -117,10 +101,6 @@ public class SSA {
     coalesce(
         method,
         programIr
-    );
-    if (CompilationContext.isDebugModeOn()) Utils.printSsaCfg(
-        List.of(method),
-        "ssa_after_" + method.methodName()
     );
   }
 
@@ -640,7 +620,6 @@ public class SSA {
           method,
           programIr
       );
-      if (CompilationContext.isDebugModeOn()) liveIntervalsUtil.prettyPrintLiveIntervals(method);
       var interferenceGraph = new InterferenceGraph(
           liveIntervalsUtil,
           method
@@ -672,10 +651,6 @@ public class SSA {
       }
       if (!changesHappened) break;
     }
-    if (CompilationContext.isDebugModeOn()) new LiveIntervalsManager(
-        method,
-        programIr
-    ).prettyPrintLiveIntervals(method);
   }
 
   private static boolean renameAllUses(

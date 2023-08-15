@@ -35,8 +35,7 @@ public class FieldDeclaration extends Declaration {
     pairArrayList.add(new Pair<>(
         "type",
         new Name(type.toString(),
-                 tokenPosition,
-                 ExprContext.DECLARE
+                 tokenPosition
         )
     ));
     for (Name name : names)

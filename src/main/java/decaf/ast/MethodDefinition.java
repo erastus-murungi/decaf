@@ -43,8 +43,7 @@ public class MethodDefinition extends AST {
     nodes.add(new Pair<>(
         "returnType",
         new Name(getReturnType().toString(),
-                 getTokenPosition(),
-                 ExprContext.DECLARE
+                 getTokenPosition()
         )
     ));
     nodes.add(new Pair<>(

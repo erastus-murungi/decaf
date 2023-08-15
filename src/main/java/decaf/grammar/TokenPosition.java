@@ -7,4 +7,8 @@ public record TokenPosition(int line, int column, int offset) {
   public String toString() {
     return String.format("%d:%d", line + 1, column);
   }
+
+  public static TokenPosition dummyTokenPosition() {
+    return new TokenPosition(-1, -1, -1);
+  }
 }

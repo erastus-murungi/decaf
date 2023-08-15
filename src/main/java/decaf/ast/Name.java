@@ -15,17 +15,18 @@ import decaf.symboltable.SymbolTable;
 /* A irAssignableValue name. id holds the name as a string, and ctx is one of the following types. (Load, Store) */
 public class Name extends AST {
   public final TokenPosition tokenPosition;
-  public final ExprContext context;
   private String label;
+
+  public static final Name dummyName = new Name(
+      "INVALID NAME", TokenPosition.dummyTokenPosition()
+  );
 
   public Name(
       String label,
-      TokenPosition tokenPosition,
-      ExprContext context
+      TokenPosition tokenPosition
   ) {
     this.label = label;
     this.tokenPosition = tokenPosition;
-    this.context = context;
   }
 
   public String getLabel() {
@@ -38,7 +39,7 @@ public class Name extends AST {
 
   @Override
   public String toString() {
-    return "Name{" + "label='" + label + '\'' + ", context=" + context + '}';
+    return "Name{" + "label='" + label + '\'' +'}';
   }
 
   @Override

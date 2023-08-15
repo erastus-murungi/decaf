@@ -55,7 +55,7 @@ public class DataflowOptimizer {
       for (var optimizationPass : optimizationPassesList) {
         var changesHappenedForOpt = optimizationPass.runFunctionPass();
         changesHappened = changesHappened | changesHappenedForOpt;
-        if (compilationContext.isDebugModeOn()) {
+        if (compilationContext.debugModeOn()) {
           System.out.format(
               "%s<%s> run = %s :: ",
               optimizationPass.getClass()

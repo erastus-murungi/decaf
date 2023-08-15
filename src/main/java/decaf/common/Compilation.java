@@ -32,6 +32,10 @@ public class Compilation {
                                                  ""
                                              )
                                              .toLowerCase(Locale.ROOT);
+  private static final Logger logger = Logger.getLogger(
+      Compilation.class.getName()
+  );
+  private final CompilationContext compilationContext;
   String output = null;
   private String sourceCode;
   private Scanner scanner;
@@ -43,10 +47,6 @@ public class Compilation {
   private PrintStream outputStream;
   private CompilationState compilationState;
   private double nLinesOfCodeReductionFactor = 0.0D;
-  private static final Logger logger = Logger.getLogger(
-      Compilation.class.getName()
-  );
-  private final CompilationContext compilationContext;
 
   public Compilation(
       String filenameOrSourceCode,
@@ -59,7 +59,7 @@ public class Compilation {
       compilationContext = new CompilationContext(filenameOrSourceCode);
     }
     initialize();
-    compilationContext.setDebugModeOn(debug);
+    compilationContext.setDebugMode(debug);
   }
 
   public Compilation() throws FileNotFoundException {
@@ -73,7 +73,7 @@ public class Compilation {
   ) throws FileNotFoundException {
     compilationContext = specificTestFileInitialize(inputStream);
     initialize();
-    compilationContext.setDebugModeOn(debug);
+    compilationContext.setDebugMode(debug);
   }
 
   public Compilation(
@@ -128,15 +128,22 @@ public class Compilation {
                              .exec("clang " + "/Users/erastusmurungi/IdeaProjects/compiler/test.s" +
                                        " -mllvm --x86-asm-syntax=att -o main");
         process.waitFor();
-        if (compilationContext.isDebugModeOn()) {
-          System.out.println(Utils.getStringFromInputStream(process.getErrorStream(), logger));
-          System.out.println(Utils.getStringFromInputStream(process.getInputStream(), logger));
+        if (compilationContext.debugModeOn()) {
+          System.out.println(Utils.getStringFromInputStream(
+              process.getErrorStream(),
+              logger
+          ));
+          System.out.println(Utils.getStringFromInputStream(
+              process.getInputStream(),
+              logger
+          ));
         }
       } catch (IOException e) {
         logger.log(
             Level.SEVERE,
             "error compiling assembly due to IO error: %s",
-            e);
+            e
+        );
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
@@ -148,10 +155,16 @@ public class Compilation {
             TimeUnit.SECONDS
         );
         if (process.exitValue() == 0 || process.isAlive()) output =
-            Utils.getStringFromInputStream(process.getErrorStream(), logger) +
-                Utils.getStringFromInputStream(process.getInputStream(), logger);
+            Utils.getStringFromInputStream(
+                process.getErrorStream(),
+                logger
+            ) +
+                Utils.getStringFromInputStream(
+                    process.getInputStream(),
+                    logger
+                );
         else output = "TIMEOUT";
-        if (compilationContext.isDebugModeOn()) System.out.println(output);
+        if (compilationContext.debugModeOn()) System.out.println(output);
       } catch (IOException e) {
         logger.log(
             Level.SEVERE,
@@ -175,16 +188,22 @@ public class Compilation {
   }
 
   private CompilationContext specificTestFileInitialize(InputStream inputStream) {
-    sourceCode = Utils.getStringFromInputStream(inputStream, logger);
+    sourceCode = Utils.getStringFromInputStream(
+        inputStream,
+        logger
+    );
     var compilationContext = new CompilationContext(sourceCode);
-    compilationContext.setDebugModeOn(true);
+    compilationContext.setDebugMode(true);
     return compilationContext;
   }
 
   private CompilationContext defaultInitialize() throws FileNotFoundException {
     InputStream inputStream = compilationContext.getSourceFilename() ==
         null ? System.in: new FileInputStream(compilationContext.getSourceFilename());
-    sourceCode = Utils.getStringFromInputStream(inputStream, logger);
+    sourceCode = Utils.getStringFromInputStream(
+        inputStream,
+        logger
+    );
     return new CompilationContext(sourceCode);
   }
 
@@ -200,30 +219,30 @@ public class Compilation {
         sourceCode,
         compilationContext
     );
-    scanner.setTrace(compilationContext.isDebugModeOn());
+    scanner.setTrace(compilationContext.debugModeOn());
     compilationState = CompilationState.SCANNED;
   }
 
   private void runParser() {
     assert compilationState == CompilationState.SCANNED;
-    parser = new Parser(scanner,
-                        compilationContext, logger);
-    parser.setTrace(compilationContext.isDebugModeOn());
-    parser.program();
+    parser = new Parser(
+        scanner,
+        compilationContext
+    );
 
     if (parser.hasError()) {
-      parser.errors.forEach(Throwable::printStackTrace);
+      System.out.println(parser.getPrettyErrorOutput());
       System.exit(1);
     }
     compilationState = CompilationState.PARSED;
-    if (compilationContext.isDebugModeOn()) System.out.println(parser.getRoot()
+    if (compilationContext.debugModeOn()) System.out.println(parser.getRoot()
                                                                      .getSourceCode());
   }
 
   private void runSemanticsChecker() {
     assert compilationState == CompilationState.PARSED;
     semanticChecker = new SemanticCheckingManager(parser.getRoot());
-    semanticChecker.setTrace(compilationContext.isDebugModeOn());
+    semanticChecker.setTrace(compilationContext.debugModeOn());
     semanticChecker.runChecks(compilationContext);
     if (semanticChecker.hasError()) {
       System.exit(1);
@@ -256,14 +275,14 @@ public class Compilation {
     assert compilationState == CompilationState.SEM_CHECKED;
     if (shouldOptimize()) {
 
-      if (compilationContext.isDebugModeOn()) {
+      if (compilationContext.debugModeOn()) {
         System.out.println("before InstructionSimplifyPass");
         System.out.println(parser.getRoot()
                                  .getSourceCode());
       }
 
       InstructionSimplifyIrPass.run(parser.getRoot());
-      if (compilationContext.isDebugModeOn()) {
+      if (compilationContext.debugModeOn()) {
         System.out.println("after InstructionSimplifyPass");
         System.out.println(parser.getRoot()
                                  .getSourceCode());
@@ -282,14 +301,14 @@ public class Compilation {
     assert compilationState == CompilationState.CFG_GENERATED;
     basicBlockToInstructionListConverter = new BasicBlockToInstructionListConverter(cfg);
     programIr = basicBlockToInstructionListConverter.getProgramIr();
-    if (compilationContext.isDebugModeOn()) {
+    if (compilationContext.debugModeOn()) {
       generateSymbolTablePdfs();
     }
-    if (compilationContext.isDebugModeOn()) {
+    if (compilationContext.debugModeOn()) {
       generateCFGVisualizationPdfs();
     }
     compilationState = CompilationState.IR_GENERATED;
-    if (compilationContext.isDebugModeOn()) {
+    if (compilationContext.debugModeOn()) {
       System.out.println(programIr.mergeProgram());
     }
   }
@@ -312,12 +331,15 @@ public class Compilation {
     oldNLinesOfCode = countLinesOfCode();
 
     if (shouldOptimize()) {
-      if (compilationContext.isDebugModeOn()) {
+      if (compilationContext.debugModeOn()) {
         System.out.println("Before optimization");
         System.out.println(programIr.mergeProgram());
       }
       programIr.setGlobals(basicBlockToInstructionListConverter.getGlobalNames());
-      var dataflowOptimizer = new DataflowOptimizer(programIr, compilationContext);
+      var dataflowOptimizer = new DataflowOptimizer(
+          programIr,
+          compilationContext
+      );
       dataflowOptimizer.initialize();
       dataflowOptimizer.optimize();
       programIr.setMethods(dataflowOptimizer.getOptimizedMethods());
@@ -339,7 +361,7 @@ public class Compilation {
              ));
     programIr.renumberLabels();
 
-    if (compilationContext.isDebugModeOn()) {
+    if (compilationContext.debugModeOn()) {
       System.out.println("After optimization");
       System.out.println(programIr.mergeProgram());
       System.out.format(
@@ -357,7 +379,7 @@ public class Compilation {
     );
     var x86Program = x64AsmWriter.getX86Program();
     outputStream.println(x86Program);
-    if (compilationContext.isDebugModeOn()) System.out.println(x86Program);
+    if (compilationContext.debugModeOn()) System.out.println(x86Program);
     compilationState = CompilationState.ASSEMBLED;
   }
 

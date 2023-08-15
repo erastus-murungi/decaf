@@ -3,6 +3,7 @@ package decaf.grammar;
 import static decaf.common.Utils.escapeMetaCharacters;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -169,14 +170,13 @@ public class Scanner implements Iterable<Token> {
     }
   }
 
-  private void consumeCharacterSpecificError(
+  private void consumeCharacterSpecificDoubleQuotesError(
       TokenPosition tokenPosition,
-      String c,
       String errorMessage
   ) {
     consumeCharacter(
         tokenPosition,
-        c,
+        Scanner.DOUBLE_QUOTES,
         errorMessage
     );
   }
@@ -210,7 +210,7 @@ public class Scanner implements Iterable<Token> {
   }
 
   class TokensIterator implements Iterator<Token> {
-    private Token token = nextHelper();
+    private @Nullable Token token = nextHelper();
 
     private Token nextHelper() {
       Token token;
@@ -227,13 +227,19 @@ public class Scanner implements Iterable<Token> {
 
     public Token next() {
       final Token token = this.token;
-      this.token = nextHelper();
+      if (token == null)
+        throw new IllegalStateException("no more tokens");
+      else if (token.tokenType() == TokenType.EOF) {
+        this.token = null;
+      } else {
+        this.token = nextHelper();
+      }
       return token;
     }
 
     @Override
     public boolean hasNext() {
-      return token.tokenType != TokenType.EOF;
+      return token != null;
     }
   }
 
@@ -672,9 +678,8 @@ public class Scanner implements Iterable<Token> {
       } else
         break;
     }
-    consumeCharacterSpecificError(
+    consumeCharacterSpecificDoubleQuotesError(
         tokenPosition,
-        DOUBLE_QUOTES,
         String.format(
             "expected %s to close string literal, not `%s`",
             DOUBLE_QUOTES,

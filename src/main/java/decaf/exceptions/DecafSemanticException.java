@@ -3,7 +3,7 @@ package decaf.exceptions;
 
 import decaf.grammar.TokenPosition;
 
-public class DecafSemanticException extends DecafScannerException {
+public class DecafSemanticException extends DecafException {
   public DecafSemanticException(
       TokenPosition tokenPosition,
       String errMessage

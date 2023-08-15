@@ -93,7 +93,7 @@ public class X86AsmWriter implements AsmWriter {
         programIr,
         registerAllocator
     );
-    if (compilationContext.isDebugModeOn()) {
+    if (compilationContext.debugModeOn()) {
       System.out.println(registerAllocator.getVariableToRegisterMap());
     }
     emit();
