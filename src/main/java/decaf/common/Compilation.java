@@ -1,6 +1,15 @@
 package decaf.common;
 
-
+import decaf.asm.X86AsmWriter;
+import decaf.cfg.ControlFlowGraph;
+import decaf.codegen.BasicBlockToInstructionListConverter;
+import decaf.dataflow.DataflowOptimizer;
+import decaf.dataflow.passes.InstructionSimplifyIrPass;
+import decaf.grammar.Parser;
+import decaf.grammar.Scanner;
+import decaf.ir.SemanticChecker;
+import decaf.regalloc.RegisterAllocator;
+import decaf.ssa.SSA;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -12,27 +21,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import decaf.asm.X86AsmWriter;
-import decaf.cfg.ControlFlowGraph;
-import decaf.codegen.BasicBlockToInstructionListConverter;
-import decaf.dataflow.DataflowOptimizer;
-import decaf.dataflow.passes.InstructionSimplifyIrPass;
-import decaf.grammar.Parser;
-import decaf.grammar.Scanner;
-import decaf.ir.SemanticChecker;
-import decaf.regalloc.RegisterAllocator;
-import decaf.ssa.SSA;
-
 public class Compilation {
-  private final static String osName = System.getProperty("os.name")
-                                             .replaceAll(
-                                                 "\\s",
-                                                 ""
-                                             )
-                                             .toLowerCase(Locale.ROOT);
-  private static final Logger logger = Logger.getLogger(
-      Compilation.class.getName()
-  );
+  private final static String osName =
+      System.getProperty("os.name").replaceAll("\\s", "").toLowerCase(
+          Locale.ROOT);
+  private static final Logger logger =
+      Logger.getLogger(Compilation.class.getName());
   private final CompilationContext compilationContext;
   String output = null;
   private String sourceCode;
@@ -40,19 +34,18 @@ public class Compilation {
   private Parser parser;
   private SemanticChecker semanticChecker;
   private ControlFlowGraph cfg;
-  private BasicBlockToInstructionListConverter basicBlockToInstructionListConverter;
+  private BasicBlockToInstructionListConverter
+      basicBlockToInstructionListConverter;
   private ProgramIr programIr;
   private PrintStream outputStream;
   private CompilationState compilationState;
   private double nLinesOfCodeReductionFactor = 0.0D;
 
-  public Compilation(
-      String filenameOrSourceCode,
-      boolean debug,
-      boolean isFilename
-  ) throws FileNotFoundException {
+  public Compilation(String filenameOrSourceCode, boolean debug,
+                     boolean isFilename) throws FileNotFoundException {
     if (isFilename) {
-      compilationContext = specificTestFileInitialize(new FileInputStream(filenameOrSourceCode));
+      compilationContext =
+          specificTestFileInitialize(new FileInputStream(filenameOrSourceCode));
     } else {
       compilationContext = new CompilationContext(filenameOrSourceCode);
     }
@@ -60,20 +53,12 @@ public class Compilation {
     compilationContext.setDebugMode(debug);
   }
 
-  public Compilation(
-      String filename,
-      boolean debug
-  ) throws FileNotFoundException {
-    this(
-        filename,
-        debug,
-        false
-    );
+  public Compilation(String filename, boolean debug)
+      throws FileNotFoundException {
+    this(filename, debug, false);
   }
 
-  public int getNLinesRemovedByAssemblyOptimizer() {
-    return 0;
-  }
+  public int getNLinesRemovedByAssemblyOptimizer() { return 0; }
 
   public double getNLinesOfCodeReductionFactor() {
     return nLinesOfCodeReductionFactor;

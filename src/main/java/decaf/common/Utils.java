@@ -241,7 +241,7 @@ public class Utils {
       int startingLineNumber,
       int numDigits
   ) {
-    assert numDigits >= Math.log10(lines.length) + 1;
+    assert numDigits >= (int) (Math.log10(lines.length) + 1);
 
     return IntStream.range(
                         startingLineNumber,
