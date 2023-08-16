@@ -2,7 +2,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-import decaf.common.TestRunner;
+import decaf.shared.TestRunner;
 
 public class MainTest {
   @Test

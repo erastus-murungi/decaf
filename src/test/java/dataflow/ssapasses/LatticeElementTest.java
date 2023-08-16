@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import decaf.dataflow.ssapasses.LatticeElement;
+import decaf.ir.dataflow.ssapasses.LatticeElement;
 
 
 public class LatticeElementTest {

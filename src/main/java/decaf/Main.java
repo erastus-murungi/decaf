@@ -1,6 +1,6 @@
 package decaf;
 
-import decaf.common.TestRunner;
+import decaf.shared.TestRunner;
 
 class Main {
   public static void main(String[] args) {
