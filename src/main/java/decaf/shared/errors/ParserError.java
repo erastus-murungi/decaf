@@ -41,7 +41,7 @@ public class ParserError implements Error<ParserError.ErrorType> {
   }
 
   @Override
-  public String getDetail() {
+  public String detail() {
     return detail;
   }
 

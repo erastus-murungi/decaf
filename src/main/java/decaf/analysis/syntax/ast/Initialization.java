@@ -3,18 +3,18 @@ package decaf.analysis.syntax.ast;
 
 import java.util.List;
 
+import decaf.analysis.semantic.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
-import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 public class Initialization extends Statement implements HasExpression {
-  public final Name initLocation;
+  public final RValue initLocation;
   public Expression initExpression;
 
   public Initialization(
-      Name initLocation,
+      RValue initLocation,
       Expression initExpression
   ) {
     super(initLocation.tokenPosition);
@@ -44,11 +44,11 @@ public class Initialization extends Statement implements HasExpression {
   @Override
   public <T> T accept(
       AstVisitor<T> ASTVisitor,
-      SymbolTable currentSymbolTable
+      Scope currentScope
   ) {
     return ASTVisitor.visit(
         this,
-        currentSymbolTable
+        currentScope
     );
   }
 

@@ -16,8 +16,8 @@ import decaf.analysis.syntax.ast.LocationVariable;
 import decaf.analysis.syntax.ast.MethodCall;
 import decaf.analysis.syntax.ast.MethodCallStatement;
 import decaf.analysis.syntax.ast.MethodDefinitionParameter;
-import decaf.analysis.syntax.ast.Name;
 import decaf.analysis.syntax.ast.ParenthesizedExpression;
+import decaf.analysis.syntax.ast.RValue;
 import decaf.analysis.syntax.ast.Return;
 import decaf.analysis.syntax.ast.StringLiteral;
 import decaf.analysis.syntax.ast.UnaryOpExpression;
@@ -95,7 +95,7 @@ public interface CodegenAstVisitor<T> {
   );
 
   T visit(
-      Name name,
+      RValue RValue,
       IrAssignable resultLocation
   );
 

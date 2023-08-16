@@ -4,9 +4,9 @@ package decaf.ir.codes;
 import java.util.Collections;
 import java.util.List;
 
-import decaf.synthesis.asm.AsmWriter;
 import decaf.analysis.syntax.ast.MethodDefinition;
 import decaf.ir.names.IrValue;
+import decaf.synthesis.asm.AsmWriter;
 
 public class MethodEnd extends Instruction {
   public MethodEnd(MethodDefinition methodDefinition) {

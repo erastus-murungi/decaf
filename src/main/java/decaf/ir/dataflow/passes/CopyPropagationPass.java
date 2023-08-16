@@ -9,13 +9,13 @@ import decaf.ir.codes.HasOperand;
 import decaf.ir.codes.Instruction;
 import decaf.ir.codes.Method;
 import decaf.ir.codes.StoreInstruction;
+import decaf.ir.dataflow.OptimizationContext;
 import decaf.ir.dataflow.analyses.AvailableCopies;
+import decaf.ir.dataflow.operand.Operand;
+import decaf.ir.dataflow.operand.UnmodifiedOperand;
 import decaf.ir.names.IrMemoryAddress;
 import decaf.ir.names.IrSsaRegister;
 import decaf.ir.names.IrValue;
-import decaf.ir.dataflow.OptimizationContext;
-import decaf.ir.dataflow.operand.Operand;
-import decaf.ir.dataflow.operand.UnmodifiedOperand;
 
 public class CopyPropagationPass extends OptimizationPass {
   public CopyPropagationPass(

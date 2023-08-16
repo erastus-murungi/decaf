@@ -10,10 +10,10 @@ import decaf.ir.cfg.BasicBlock;
 import decaf.ir.codes.HasOperand;
 import decaf.ir.codes.Method;
 import decaf.ir.codes.StoreInstruction;
-import decaf.ir.names.IrSsaRegister;
-import decaf.ir.names.IrValue;
 import decaf.ir.dataflow.dominator.DominatorTree;
 import decaf.ir.dataflow.ssapasses.worklistitems.SsaEdge;
+import decaf.ir.names.IrSsaRegister;
+import decaf.ir.names.IrValue;
 
 public class SSAEdgesUtil {
   private final Set<SsaEdge> ssaEdges;

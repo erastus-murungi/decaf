@@ -3,13 +3,13 @@ package decaf.ir.codes;
 
 import java.util.List;
 
-import decaf.synthesis.asm.AsmWriter;
 import decaf.analysis.syntax.ast.AST;
 import decaf.ir.cfg.BasicBlock;
-import decaf.ir.names.IrValue;
-import decaf.shared.Utils;
 import decaf.ir.dataflow.operand.Operand;
 import decaf.ir.dataflow.operand.UnmodifiedOperand;
+import decaf.ir.names.IrValue;
+import decaf.shared.Utils;
+import decaf.synthesis.asm.AsmWriter;
 
 public class ConditionalBranch extends HasOperand implements WithTarget {
 
@@ -87,10 +87,11 @@ public class ConditionalBranch extends HasOperand implements WithTarget {
 
   @Override
   public Instruction copy() {
-    return new ConditionalBranch(condition,
-                                 getTarget(),
-                                 getSource(),
-                                 getComment().orElse(null)
+    return new ConditionalBranch(
+        condition,
+        getTarget(),
+        getSource(),
+        getComment().orElse(null)
     );
   }
 

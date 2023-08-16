@@ -4,13 +4,13 @@ package decaf.ir.codes;
 import java.util.List;
 import java.util.Optional;
 
-import decaf.synthesis.asm.AsmWriter;
 import decaf.analysis.syntax.ast.AST;
+import decaf.ir.dataflow.operand.Operand;
+import decaf.ir.dataflow.operand.UnmodifiedOperand;
 import decaf.ir.names.IrAssignable;
 import decaf.ir.names.IrMemoryAddress;
 import decaf.ir.names.IrValue;
-import decaf.ir.dataflow.operand.Operand;
-import decaf.ir.dataflow.operand.UnmodifiedOperand;
+import decaf.synthesis.asm.AsmWriter;
 
 public class CopyInstruction extends StoreInstruction implements Cloneable {
   private IrValue irValue;
@@ -37,9 +37,10 @@ public class CopyInstruction extends StoreInstruction implements Cloneable {
         dst,
         operand,
         null,
-        String.format("%s = %s",
-                      dst,
-                      operand
+        String.format(
+            "%s = %s",
+            dst,
+            operand
         )
     );
   }
@@ -75,10 +76,11 @@ public class CopyInstruction extends StoreInstruction implements Cloneable {
 
   @Override
   public Instruction copy() {
-    return new CopyInstruction(getDestination(),
-                               irValue,
-                               getSource(),
-                               getComment().orElse(null)
+    return new CopyInstruction(
+        getDestination(),
+        irValue,
+        getSource(),
+        getComment().orElse(null)
     );
   }
 

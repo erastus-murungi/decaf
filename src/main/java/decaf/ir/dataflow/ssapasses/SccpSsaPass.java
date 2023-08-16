@@ -13,11 +13,11 @@ import decaf.ir.codes.Instruction;
 import decaf.ir.codes.Method;
 import decaf.ir.codes.StoreInstruction;
 import decaf.ir.codes.UnaryInstruction;
+import decaf.ir.dataflow.OptimizationContext;
 import decaf.ir.names.IrIntegerConstant;
 import decaf.ir.names.IrSsaRegister;
-import decaf.shared.StronglyConnectedComponentsTarjan;
-import decaf.ir.dataflow.OptimizationContext;
 import decaf.ir.ssa.SSA;
+import decaf.shared.StronglyConnectedComponentsTarjan;
 
 public class SccpSsaPass extends SsaOptimizationPass {
   boolean changesHappened = false;

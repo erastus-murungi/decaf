@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
 
+import decaf.analysis.lexical.Scanner;
 import decaf.analysis.syntax.ast.ArithmeticOperator;
 import decaf.analysis.syntax.ast.Array;
 import decaf.analysis.syntax.ast.AssignOpExpr;
@@ -38,9 +39,9 @@ import decaf.analysis.syntax.ast.MethodCallParameter;
 import decaf.analysis.syntax.ast.MethodCallStatement;
 import decaf.analysis.syntax.ast.MethodDefinition;
 import decaf.analysis.syntax.ast.MethodDefinitionParameter;
-import decaf.analysis.syntax.ast.Name;
 import decaf.analysis.syntax.ast.ParenthesizedExpression;
 import decaf.analysis.syntax.ast.Program;
+import decaf.analysis.syntax.ast.RValue;
 import decaf.analysis.syntax.ast.RelationalOperator;
 import decaf.analysis.syntax.ast.Return;
 import decaf.analysis.syntax.ast.Statement;
@@ -52,23 +53,22 @@ import decaf.analysis.syntax.ast.While;
 import decaf.shared.descriptors.ArrayDescriptor;
 import decaf.shared.descriptors.Descriptor;
 import decaf.shared.descriptors.MethodDescriptor;
+import decaf.shared.env.Scope;
 import decaf.shared.errors.SemanticError;
-import decaf.analysis.lexical.Scanner;
-import decaf.shared.symboltable.SymbolTable;
 
-public class TypeResolver implements AstVisitor<Type> {
+public class TypeChecker implements AstVisitor<Type> {
+  private final List<SemanticError> errors;
   IntLiteral intLiteral = null;
   boolean negInt = false;
-  private SymbolTable methods;
-  private SymbolTable globalFields;
+  private Scope methods;
+  private Scope globalFields;
   private TreeSet<String> imports;
   private Type returnTypeSeen;
-  private final List<SemanticError> errors;
 
-  public TypeResolver(
+  public TypeChecker(
       Program root,
-      SymbolTable methods,
-      SymbolTable globalFields,
+      Scope methods,
+      Scope globalFields,
       TreeSet<String> imports,
       List<SemanticError> errors
   ) {
@@ -85,7 +85,7 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       IntLiteral intLiteral,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     this.intLiteral = intLiteral;
     return Type.Int;
@@ -94,7 +94,7 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       BooleanLiteral booleanLiteral,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     return Type.Bool;
   }
@@ -102,7 +102,7 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       DecimalLiteral decimalLiteral,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     intLiteral = decimalLiteral;
     return Type.Int;
@@ -111,7 +111,7 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       HexLiteral hexLiteral,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     intLiteral = hexLiteral;
     return Type.Int;
@@ -120,12 +120,12 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       FieldDeclaration fieldDeclaration,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     for (Array array : fieldDeclaration.arrays)
       array.accept(
           this,
-          symbolTable
+          scope
       );
     return fieldDeclaration.getType();
   }
@@ -133,30 +133,31 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       MethodDefinition methodDefinition,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     setReturnTypeSeen(Type.Undefined);
     methodDefinition.getBlock()
                     .accept(
                         this,
-                        methodDefinition.getBlock().blockSymbolTable
+                        methodDefinition.getBlock().blockScope
                     );
-    if (getMethods().getDescriptorFromCurrentScope(methodDefinition.getMethodName()
-                                                                   .getLabel())
+    if (getMethods().lookup(methodDefinition.getMethodName()
+                                            .getLabel())
                     .isPresent()) {
-      SymbolTable parameterSymbolTable = ((MethodDescriptor) getMethods().getDescriptorFromCurrentScope(methodDefinition.getMethodName()
-                                                                                                                        .getLabel())
-                                                                         .get()).parameterSymbolTable;
+      Scope parameterScope = ((MethodDescriptor) getMethods().lookup(methodDefinition.getMethodName()
+                                                                                     .getLabel())
+                                                             .get()).parameterScope;
       for (MethodDefinitionParameter methodDefinitionParameter : methodDefinition.getParameterList())
         methodDefinitionParameter.accept(
             this,
-            parameterSymbolTable
+            parameterScope
         );
       if (getReturnTypeSeen() != Type.Undefined && methodDefinition.getReturnType() != getReturnTypeSeen()) {
         errors.add(new SemanticError(
             methodDefinition.getMethodName().tokenPosition,
             SemanticError.SemanticErrorType.SHOULD_RETURN_VOID,
-            String.format("method `%s` must not return a value of type `%s` in a void method",
+            String.format(
+                "method `%s` must not return a value of type `%s` in a void method",
                 methodDefinition.getMethodName()
                                 .getLabel(),
                 getReturnTypeSeen()
@@ -177,7 +178,7 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       ImportDeclaration importDeclaration,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     return Type.Undefined;
   }
@@ -185,17 +186,16 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       For forStatement,
-      SymbolTable symbolTable
+      Scope scope
   ) {
-    Optional<Descriptor> optionalDescriptor = symbolTable.getDescriptorFromValidScopes(forStatement.initialization.initLocation.getLabel());
+    Optional<Descriptor> optionalDescriptor = scope.lookup(forStatement.initialization.initLocation.getLabel());
     if (optionalDescriptor.isEmpty()) {
       errors.add(new SemanticError(
           forStatement.initialization.initLocation.tokenPosition,
           SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
           forStatement.initialization.initLocation + " must be declared in scope"
       ));
-    }
-    else {
+    } else {
       Descriptor initDescriptor = optionalDescriptor.get();
       if (initDescriptor.type != Type.Int) {
         errors.add(new SemanticError(
@@ -207,7 +207,7 @@ public class TypeResolver implements AstVisitor<Type> {
 
       Type type = forStatement.initialization.initExpression.accept(
           this,
-          symbolTable
+          scope
       );
       if (type != Type.Int) {
         errors.add(new SemanticError(
@@ -219,7 +219,7 @@ public class TypeResolver implements AstVisitor<Type> {
 
       Type testType = forStatement.terminatingCondition.accept(
           this,
-          symbolTable
+          scope
       );
       if (testType != Type.Bool) {
         errors.add(new SemanticError(
@@ -230,17 +230,16 @@ public class TypeResolver implements AstVisitor<Type> {
       }
       forStatement.block.accept(
           this,
-          symbolTable
+          scope
       );
-      optionalDescriptor = symbolTable.getDescriptorFromValidScopes(forStatement.update.getLocation().name.getLabel());
+      optionalDescriptor = scope.lookup(forStatement.update.getLocation().RValue.getLabel());
       if (optionalDescriptor.isEmpty()) {
         errors.add(new SemanticError(
             forStatement.update.getLocation().tokenPosition,
             SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-            forStatement.update.getLocation().name + " must be declared in scope"
+            forStatement.update.getLocation().RValue + " must be declared in scope"
         ));
-      }
-      else {
+      } else {
         Descriptor updatingDescriptor = optionalDescriptor.get();
         if (updatingDescriptor.type != Type.Int) {
           errors.add(new SemanticError(
@@ -251,7 +250,7 @@ public class TypeResolver implements AstVisitor<Type> {
         }
         var updateExprType = forStatement.update.assignExpr.accept(
             this,
-            symbolTable
+            scope
         );
         if (forStatement.update.assignExpr instanceof CompoundAssignOpExpr)
           updateExprType = forStatement.update.assignExpr.expression.getType();
@@ -259,12 +258,13 @@ public class TypeResolver implements AstVisitor<Type> {
           errors.add(new SemanticError(
               forStatement.update.assignExpr.tokenPosition,
               SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-              String.format("The location and the expression in an incrementing/decrementing assignment must be of type `int`, " +
-                                "currently the location `%s` is of type `%s` and the expression `%s` is of type `%s`",
-                            updatingDescriptor.id,
-                            updatingDescriptor.type,
-                            forStatement.update.assignExpr.getSourceCode(),
-                            updateExprType
+              String.format(
+                  "The location and the expression in an incrementing/decrementing assignment must be of type `int`, " +
+                      "currently the location `%s` is of type `%s` and the expression `%s` is of type `%s`",
+                  updatingDescriptor.id,
+                  updatingDescriptor.type,
+                  forStatement.update.assignExpr.getSourceCode(),
+                  updateExprType
               )
           ));
         }
@@ -276,7 +276,7 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       Break breakStatement,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     return Type.Undefined;
   }
@@ -284,7 +284,7 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       Continue continueStatement,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     return Type.Undefined;
   }
@@ -292,11 +292,11 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       While whileStatement,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     Type type = whileStatement.test.accept(
         this,
-        symbolTable
+        scope
     );
     if (type != Type.Bool) {
       errors.add(new SemanticError(
@@ -307,7 +307,7 @@ public class TypeResolver implements AstVisitor<Type> {
     }
     whileStatement.body.accept(
         this,
-        symbolTable
+        scope
     );
     return Type.Undefined;
   }
@@ -315,12 +315,12 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       Program program,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     for (FieldDeclaration fieldDeclaration : program.getFieldDeclarationList()) {
       fieldDeclaration.accept(
           this,
-          symbolTable
+          scope
       );
     }
     for (MethodDefinition methodDefinition : program.getMethodDefinitionList()) {
@@ -335,11 +335,11 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       UnaryOpExpression unaryOpExpression,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     Type operandType = unaryOpExpression.operand.accept(
         this,
-        symbolTable
+        scope
     );
     if (operandType != Type.Bool && operandType != Type.Int) {
       errors.add(new SemanticError(
@@ -372,16 +372,16 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       BinaryOpExpression binaryOpExpression,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     Type leftType = binaryOpExpression.lhs.accept(
         this,
-        symbolTable
+        scope
     );
     checkIntBounds();
     Type rightType = binaryOpExpression.rhs.accept(
         this,
-        symbolTable
+        scope
     );
     checkIntBounds();
 
@@ -425,7 +425,8 @@ public class TypeResolver implements AstVisitor<Type> {
         else errors.add(new SemanticError(
             binaryOpExpression.tokenPosition,
             SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-            "operands of " + binaryOpExpression.op.getSourceCode() + " must have same type, either both bool or both int, not `" +
+            "operands of " + binaryOpExpression.op.getSourceCode() +
+                " must have same type, either both bool or both int, not `" +
                 leftType + "` and `" + rightType
         ));
       } else if (binaryOpExpression.op instanceof RelationalOperator) {
@@ -453,17 +454,17 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       Block block,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     for (FieldDeclaration fieldDeclaration : block.fieldDeclarationList)
       fieldDeclaration.accept(
           this,
-          block.blockSymbolTable
+          block.blockScope
       );
     for (Statement statement : block.statementList)
       statement.accept(
           this,
-          block.blockSymbolTable
+          block.blockScope
       );
     return Type.Undefined;
   }
@@ -471,11 +472,11 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       ParenthesizedExpression parenthesizedExpression,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     Type type = parenthesizedExpression.expression.accept(
         this,
-        symbolTable
+        scope
     );
     checkIntBounds();
     return type;
@@ -484,11 +485,11 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       LocationArray locationArray,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     if (locationArray.expression.accept(
         this,
-        symbolTable
+        scope
     ) != Type.Int) {
       errors.add(new SemanticError(
           locationArray.tokenPosition,
@@ -497,7 +498,7 @@ public class TypeResolver implements AstVisitor<Type> {
       ));
     }
     Type type = Type.Undefined;
-    Optional<Descriptor> descriptor = symbolTable.getDescriptorFromValidScopes(locationArray.name.getLabel());
+    Optional<Descriptor> descriptor = scope.lookup(locationArray.RValue.getLabel());
     if (descriptor.isPresent()) {
       if ((descriptor.get() instanceof ArrayDescriptor)) {
         switch (descriptor.get().type) {
@@ -506,7 +507,7 @@ public class TypeResolver implements AstVisitor<Type> {
           default -> errors.add(new SemanticError(
               locationArray.tokenPosition,
               SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-              locationArray.name.getLabel() + " must be an array"
+              locationArray.RValue.getLabel() + " must be an array"
           ));
         }
       }
@@ -518,11 +519,11 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       ExpressionParameter expressionParameter,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     Type type = expressionParameter.expression.accept(
         this,
-        symbolTable
+        scope
     );
     expressionParameter.type = type;
     checkIntBounds();
@@ -532,11 +533,11 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       If ifStatement,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     Type type = ifStatement.test.accept(
         this,
-        symbolTable
+        scope
     );
     if (type != Type.Bool) {
       errors.add(new SemanticError(
@@ -547,12 +548,12 @@ public class TypeResolver implements AstVisitor<Type> {
     }
     ifStatement.ifBlock.accept(
         this,
-        symbolTable
+        scope
     );
     if (ifStatement.elseBlock != null) {
       ifStatement.elseBlock.accept(
           this,
-          symbolTable
+          scope
       );
     }
     return Type.Undefined;
@@ -561,11 +562,12 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       Return returnStatement,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     Type type = returnStatement.retExpression.accept(
-          this,
-          symbolTable);
+        this,
+        scope
+    );
     checkIntBounds();
     setReturnTypeSeen(type);
     return Type.Void;
@@ -574,7 +576,7 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       Array array,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     if (array.getSize()
              .convertToLong() <= 0) {
@@ -597,8 +599,9 @@ public class TypeResolver implements AstVisitor<Type> {
       errors.add(new SemanticError(
           methodCall.tokenPosition,
           SemanticError.SemanticErrorType.MISMATCHING_NUMBER_OR_ARGUMENTS,
-          String.format("method %s expects %d arguments but %d were passed in",
-              methodCall.nameId.getLabel(),
+          String.format(
+              "method %s expects %d arguments but %d were passed in",
+              methodCall.RValueId.getLabel(),
               methodDefinition.getParameterList()
                               .size(),
               methodCall.methodCallParameterList.size()
@@ -623,12 +626,12 @@ public class TypeResolver implements AstVisitor<Type> {
 
   private void visitMethodCallParameters(
       List<MethodCallParameter> methodCallParameterList,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     for (MethodCallParameter methodCallParameter : methodCallParameterList) {
       methodCallParameter.accept(
           this,
-          symbolTable
+          scope
       );
     }
   }
@@ -636,25 +639,25 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       MethodCall methodCall,
-      SymbolTable symbolTable
+      Scope scope
   ) {
 
-    final Optional<Descriptor> optionalMethodDescriptor = getMethods().getDescriptorFromCurrentScope(methodCall.nameId.getLabel());
+    final Optional<Descriptor> optionalMethodDescriptor = getMethods().lookup(methodCall.RValueId.getLabel());
     final Descriptor descriptor;
-    if (symbolTable.containsEntry(methodCall.nameId.getLabel())) {
+    if (scope.containsKey(methodCall.RValueId.getLabel())) {
       errors.add(new SemanticError(
           methodCall.tokenPosition,
           SemanticError.SemanticErrorType.METHOD_CALL_CONFLICTS_WITH_LOCALLY_DEFINED_IDENTIFIER,
-          methodCall.nameId.getLabel() + " refers to locally defined identifier"
+          methodCall.RValueId.getLabel() + " refers to locally defined identifier"
       ));
       return Type.Undefined;
     }
-    if (getImports().contains(methodCall.nameId.getLabel())) {
+    if (getImports().contains(methodCall.RValueId.getLabel())) {
       // All external functions are treated as if they return int
       methodCall.setType(Type.Int);
       visitMethodCallParameters(
           methodCall.methodCallParameterList,
-          symbolTable
+          scope
       );
       methodCall.isImported = true;
       return Type.Int;
@@ -665,13 +668,13 @@ public class TypeResolver implements AstVisitor<Type> {
       errors.add(new SemanticError(
           methodCall.tokenPosition,
           SemanticError.SemanticErrorType.METHOD_DEFINITION_NOT_FOUND,
-          "method " + methodCall.nameId.getLabel() + " not found"
+          "method " + methodCall.RValueId.getLabel() + " not found"
       ));
       return Type.Undefined;
     }
     visitMethodCallParameters(
         methodCall.methodCallParameterList,
-        symbolTable
+        scope
     );
     checkNumberOfArgumentsAndTypesMatch(
         ((MethodDescriptor) descriptor).methodDefinition,
@@ -685,20 +688,20 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       MethodCallStatement methodCallStatement,
-      SymbolTable symbolTable
+      Scope scope
   ) {
-    if (!getImports().contains(methodCallStatement.methodCall.nameId.getLabel()) &&
-        !getMethods().containsEntry(methodCallStatement.methodCall.nameId.getLabel())) {
+    if (!getImports().contains(methodCallStatement.methodCall.RValueId.getLabel()) &&
+        !getMethods().containsKey(methodCallStatement.methodCall.RValueId.getLabel())) {
       errors.add(new SemanticError(
           methodCallStatement.tokenPosition,
           SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
-          "identifier `" + methodCallStatement.methodCall.nameId.getLabel() +
+          "identifier `" + methodCallStatement.methodCall.RValueId.getLabel() +
               "` in a method statement must be a declared method or import."
       ));
     }
     methodCallStatement.methodCall.accept(
         this,
-        symbolTable
+        scope
     );
     return Type.Undefined;
   }
@@ -706,33 +709,33 @@ public class TypeResolver implements AstVisitor<Type> {
   @Override
   public Type visit(
       LocationAssignExpr locationAssignExpr,
-      SymbolTable symbolTable
+      Scope scope
   ) {
-    Optional<Descriptor> optionalDescriptor = symbolTable.getDescriptorFromValidScopes(locationAssignExpr.location.name.getLabel());
+    Optional<Descriptor> optionalDescriptor = scope.lookup(locationAssignExpr.location.RValue.getLabel());
     if (optionalDescriptor.isEmpty() || (locationAssignExpr.location instanceof LocationVariable &&
         optionalDescriptor.get() instanceof ArrayDescriptor)) {
       if (optionalDescriptor.isEmpty()) {
         errors.add(new SemanticError(
             locationAssignExpr.tokenPosition,
             SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
-            "id `" + locationAssignExpr.location.name.getLabel() +
+            "id `" + locationAssignExpr.location.RValue.getLabel() +
                 "` being assigned to must be a declared local/global irAssignableValue or formal parameter."
         ));
       } else {
-errors.add(new SemanticError(
+        errors.add(new SemanticError(
             locationAssignExpr.tokenPosition,
             SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-            String.format("`%s` is an array and cannot be modified directly like a variable",
-                locationAssignExpr.location.name.getLabel()
+            String.format(
+                "`%s` is an array and cannot be modified directly like a variable",
+                locationAssignExpr.location.RValue.getLabel()
             )
         ));
       }
-    }
-    else {
+    } else {
       if (locationAssignExpr.location instanceof final LocationArray locationArray) {
         locationArray.expression.setType(locationArray.expression.accept(
             this,
-            symbolTable
+            scope
         ));
         if (locationArray.expression.getType() != Type.Int) {
           errors.add(new SemanticError(
@@ -744,7 +747,7 @@ errors.add(new SemanticError(
       }
       final Type expressionType = locationAssignExpr.assignExpr.accept(
           this,
-          symbolTable
+          scope
       );
       final Descriptor locationDescriptor = optionalDescriptor.get();
 
@@ -784,8 +787,9 @@ errors.add(new SemanticError(
           errors.add(new SemanticError(
               locationAssignExpr.tokenPosition,
               SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-              String.format("The location and the expression in an incrementing/decrementing assignment must be of type `int`, " +
-                                "currently the location `%s` is of type `%s` and the expression `%s` is of type `%s`",
+              String.format(
+                  "The location and the expression in an incrementing/decrementing assignment must be of type `int`, " +
+                      "currently the location `%s` is of type `%s` and the expression `%s` is of type `%s`",
                   locationDescriptor.id,
                   locationDescriptor.type,
                   locationAssignExpr.assignExpr.getSourceCode(),
@@ -811,11 +815,11 @@ errors.add(new SemanticError(
   @Override
   public Type visit(
       AssignOpExpr assignOpExpr,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     Type type = assignOpExpr.expression.accept(
         this,
-        symbolTable
+        scope
     );
     checkIntBounds();
     return type;
@@ -824,15 +828,15 @@ errors.add(new SemanticError(
   @Override
   public Type visit(
       MethodDefinitionParameter methodDefinitionParameter,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     return methodDefinitionParameter.getType();
   }
 
   @Override
   public Type visit(
-      Name name,
-      SymbolTable symbolTable
+      RValue RValue,
+      Scope scope
   ) {
     return null;
   }
@@ -840,9 +844,9 @@ errors.add(new SemanticError(
   @Override
   public Type visit(
       LocationVariable locationVariable,
-      SymbolTable symbolTable
+      Scope scope
   ) {
-    Optional<Descriptor> descriptorOptional = symbolTable.getDescriptorFromValidScopes(locationVariable.name.getLabel());
+    Optional<Descriptor> descriptorOptional = scope.lookup(locationVariable.RValue.getLabel());
     if (descriptorOptional.isPresent()) {
       locationVariable.setType(descriptorOptional.get().type);
       return descriptorOptional.get().type;
@@ -850,7 +854,7 @@ errors.add(new SemanticError(
       errors.add(new SemanticError(
           locationVariable.tokenPosition,
           SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
-          "No identifier can be used before it is declared: " + locationVariable.name.getLabel() + " not in scope"
+          "No identifier can be used before it is declared: " + locationVariable.RValue.getLabel() + " not in scope"
       ));
       return Type.Undefined;
     }
@@ -859,7 +863,7 @@ errors.add(new SemanticError(
   @Override
   public Type visit(
       Len len,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     return Type.Int;
   }
@@ -867,7 +871,7 @@ errors.add(new SemanticError(
   @Override
   public Type visit(
       Increment increment,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     return Type.Int;
   }
@@ -875,7 +879,7 @@ errors.add(new SemanticError(
   @Override
   public Type visit(
       Decrement decrement,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     return Type.Int;
   }
@@ -883,7 +887,7 @@ errors.add(new SemanticError(
   @Override
   public Type visit(
       CharLiteral charLiteral,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     charLiteral.setType(Type.Int);
     return Type.Int;
@@ -892,7 +896,7 @@ errors.add(new SemanticError(
   @Override
   public Type visit(
       StringLiteral stringLiteral,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     stringLiteral.type = Type.String;
     return Type.String;
@@ -901,11 +905,11 @@ errors.add(new SemanticError(
   @Override
   public Type visit(
       CompoundAssignOpExpr compoundAssignOpExpr,
-      SymbolTable curSymbolTable
+      Scope curScope
   ) {
     compoundAssignOpExpr.expression.setType(compoundAssignOpExpr.expression.accept(
         this,
-        curSymbolTable
+        curScope
     ));
     return Type.Undefined;
   }
@@ -913,7 +917,7 @@ errors.add(new SemanticError(
   @Override
   public Type visit(
       Initialization initialization,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     return null;
   }
@@ -921,7 +925,7 @@ errors.add(new SemanticError(
   @Override
   public Type visit(
       Assignment assignment,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     return null;
   }
@@ -929,7 +933,7 @@ errors.add(new SemanticError(
   @Override
   public Type visit(
       VoidExpression voidExpression,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     return Type.Void;
   }
@@ -965,19 +969,19 @@ errors.add(new SemanticError(
     negInt = false;
   }
 
-  public SymbolTable getMethods() {
+  public Scope getMethods() {
     return methods;
   }
 
-  public void setMethods(SymbolTable methods) {
+  public void setMethods(Scope methods) {
     this.methods = methods;
   }
 
-  public SymbolTable getGlobalFields() {
+  public Scope getGlobalFields() {
     return globalFields;
   }
 
-  public void setGlobalFields(SymbolTable globalFields) {
+  public void setGlobalFields(Scope globalFields) {
     this.globalFields = globalFields;
   }
 

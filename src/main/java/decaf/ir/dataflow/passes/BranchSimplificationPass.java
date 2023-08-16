@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import decaf.ir.cfg.BasicBlock;
 import decaf.ir.InstructionList;
+import decaf.ir.cfg.BasicBlock;
 import decaf.ir.codes.ConditionalBranch;
 import decaf.ir.codes.Method;
 import decaf.ir.dataflow.OptimizationContext;

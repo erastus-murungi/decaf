@@ -4,9 +4,9 @@ package decaf.synthesis.asm.operands;
 import java.util.Collections;
 import java.util.List;
 
-import decaf.synthesis.asm.X86Register;
 import decaf.ir.names.IrGlobalArray;
 import decaf.ir.names.IrValue;
+import decaf.synthesis.asm.X86Register;
 
 public class X86GlobalValue extends X86Value {
   public X86GlobalValue(IrValue irGlobal) {

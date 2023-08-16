@@ -13,9 +13,9 @@ import decaf.ir.codes.Instruction;
 import decaf.ir.codes.Method;
 import decaf.ir.codes.StoreInstruction;
 import decaf.ir.codes.UnaryInstruction;
+import decaf.ir.dataflow.OptimizationContext;
 import decaf.ir.names.IrSsaRegister;
 import decaf.ir.names.IrValue;
-import decaf.ir.dataflow.OptimizationContext;
 
 public class DeadStoreEliminationSsaPass extends SsaOptimizationPass {
   public DeadStoreEliminationSsaPass(

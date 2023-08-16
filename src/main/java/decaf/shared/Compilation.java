@@ -1,15 +1,5 @@
 package decaf.shared;
 
-import decaf.synthesis.asm.X86AsmWriter;
-import decaf.ir.cfg.ControlFlowGraph;
-import decaf.ir.BasicBlockToInstructionListConverter;
-import decaf.ir.dataflow.DataflowOptimizer;
-import decaf.ir.dataflow.passes.InstructionSimplifyIrPass;
-import decaf.analysis.syntax.Parser;
-import decaf.analysis.lexical.Scanner;
-import decaf.analysis.semantic.SemanticChecker;
-import decaf.synthesis.regalloc.RegisterAllocator;
-import decaf.ir.ssa.SSA;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -21,10 +11,26 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import decaf.analysis.lexical.Scanner;
+import decaf.analysis.semantic.SemanticChecker;
+import decaf.analysis.syntax.Parser;
+import decaf.ir.BasicBlockToInstructionListConverter;
+import decaf.ir.cfg.ControlFlowGraph;
+import decaf.ir.dataflow.DataflowOptimizer;
+import decaf.ir.dataflow.passes.InstructionSimplifyIrPass;
+import decaf.ir.ssa.SSA;
+import decaf.synthesis.asm.X86AsmWriter;
+import decaf.synthesis.regalloc.RegisterAllocator;
+
 public class Compilation {
   private final static String osName =
-      System.getProperty("os.name").replaceAll("\\s", "").toLowerCase(
-          Locale.ROOT);
+      System.getProperty("os.name")
+            .replaceAll(
+                "\\s",
+                ""
+            )
+            .toLowerCase(
+                Locale.ROOT);
   private static final Logger logger =
       Logger.getLogger(Compilation.class.getName());
   private final CompilationContext compilationContext;
@@ -41,8 +47,10 @@ public class Compilation {
   private CompilationState compilationState;
   private double nLinesOfCodeReductionFactor = 0.0D;
 
-  public Compilation(String filenameOrSourceCode, boolean debug,
-                     boolean isFilename) throws FileNotFoundException {
+  public Compilation(
+      String filenameOrSourceCode, boolean debug,
+      boolean isFilename
+  ) throws FileNotFoundException {
     if (isFilename) {
       compilationContext =
           specificTestFileInitialize(new FileInputStream(filenameOrSourceCode));
@@ -55,10 +63,16 @@ public class Compilation {
 
   public Compilation(String filename, boolean debug)
       throws FileNotFoundException {
-    this(filename, debug, false);
+    this(
+        filename,
+        debug,
+        false
+    );
   }
 
-  public int getNLinesRemovedByAssemblyOptimizer() { return 0; }
+  public int getNLinesRemovedByAssemblyOptimizer() {
+    return 0;
+  }
 
   public double getNLinesOfCodeReductionFactor() {
     return nLinesOfCodeReductionFactor;
@@ -185,12 +199,15 @@ public class Compilation {
     }
     compilationState = CompilationState.PARSED;
     if (compilationContext.debugModeOn()) System.out.println(parser.getRoot()
-                                                                     .getSourceCode());
+                                                                   .getSourceCode());
   }
 
   private void runSemanticsChecker() {
     assert compilationState == CompilationState.PARSED;
-    semanticChecker = new SemanticChecker(parser.getRoot(), compilationContext);
+    semanticChecker = new SemanticChecker(
+        parser.getRoot(),
+        compilationContext
+    );
     if (semanticChecker.hasErrors()) {
       System.exit(1);
     }

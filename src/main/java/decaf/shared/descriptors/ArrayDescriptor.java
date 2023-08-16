@@ -1,6 +1,5 @@
 package decaf.shared.descriptors;
 
-import decaf.analysis.syntax.ast.Array;
 import decaf.analysis.syntax.ast.Type;
 
 /**
@@ -8,19 +7,16 @@ import decaf.analysis.syntax.ast.Type;
  */
 public class ArrayDescriptor extends Descriptor {
   public final Long size;
-  public final Array array;
 
   public ArrayDescriptor(
       String id,
       Long size,
-      Type type,
-      Array array
+      Type type
   ) {
     super(
         type,
         id
     );
     this.size = size;
-    this.array = array;
   }
 }

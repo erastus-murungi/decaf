@@ -5,11 +5,11 @@ import static decaf.shared.Utils.WORD_SIZE;
 import java.util.Collections;
 import java.util.List;
 
-import decaf.synthesis.asm.AsmWriter;
 import decaf.analysis.syntax.ast.AST;
 import decaf.ir.names.IrGlobal;
 import decaf.ir.names.IrValue;
 import decaf.shared.Utils;
+import decaf.synthesis.asm.AsmWriter;
 
 public class GlobalAllocation extends Instruction {
   public static final int DEFAULT_ALIGNMENT = 8;
@@ -60,9 +60,10 @@ public class GlobalAllocation extends Instruction {
 
   @Override
   public Instruction copy() {
-    return new GlobalAllocation(value,
-                                getSource(),
-                                getComment().orElse(null)
+    return new GlobalAllocation(
+        value,
+        getSource(),
+        getComment().orElse(null)
     );
   }
 

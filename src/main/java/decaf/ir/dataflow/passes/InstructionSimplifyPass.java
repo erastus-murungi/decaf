@@ -3,6 +3,7 @@ package decaf.ir.dataflow.passes;
 
 import java.util.ArrayList;
 
+import decaf.analysis.lexical.Scanner;
 import decaf.analysis.syntax.ast.Type;
 import decaf.ir.cfg.BasicBlock;
 import decaf.ir.codes.BinaryInstruction;
@@ -10,11 +11,10 @@ import decaf.ir.codes.CopyInstruction;
 import decaf.ir.codes.Instruction;
 import decaf.ir.codes.Method;
 import decaf.ir.codes.UnaryInstruction;
+import decaf.ir.dataflow.OptimizationContext;
 import decaf.ir.names.IrIntegerConstant;
 import decaf.ir.names.IrValue;
 import decaf.shared.Utils;
-import decaf.ir.dataflow.OptimizationContext;
-import decaf.analysis.lexical.Scanner;
 
 public class InstructionSimplifyPass extends OptimizationPass {
   static final IrIntegerConstant mZero = new IrIntegerConstant(

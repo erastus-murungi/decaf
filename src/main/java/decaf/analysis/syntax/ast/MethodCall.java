@@ -4,24 +4,24 @@ package decaf.analysis.syntax.ast;
 import java.util.ArrayList;
 import java.util.List;
 
+import decaf.analysis.semantic.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
-import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 public class MethodCall extends Expression {
-  final public Name nameId;
+  final public RValue RValueId;
   final public List<MethodCallParameter> methodCallParameterList;
 
   public boolean isImported = false;
 
   public MethodCall(
-      Name nameId,
+      RValue RValueId,
       List<MethodCallParameter> methodCallParameterList
   ) {
-    super(nameId.tokenPosition);
-    this.nameId = nameId;
+    super(RValueId.tokenPosition);
+    this.RValueId = RValueId;
     this.methodCallParameterList = methodCallParameterList;
   }
 
@@ -30,7 +30,7 @@ public class MethodCall extends Expression {
     ArrayList<Pair<String, AST>> nodeArrayList = new ArrayList<>();
     nodeArrayList.add(new Pair<>(
         "methodName",
-        nameId
+        RValueId
     ));
     for (MethodCallParameter methodCallParameter : methodCallParameterList)
       nodeArrayList.add(new Pair<>(
@@ -47,7 +47,7 @@ public class MethodCall extends Expression {
 
   @Override
   public String toString() {
-    return "MethodCall{" + "nameId=" + nameId + ", methodCallParameterList=" + methodCallParameterList + '}';
+    return "MethodCall{" + "nameId=" + RValueId + ", methodCallParameterList=" + methodCallParameterList + '}';
   }
 
   @Override
@@ -59,7 +59,7 @@ public class MethodCall extends Expression {
     }
     return String.format(
         "%s(%s)",
-        nameId.getSourceCode(),
+        RValueId.getSourceCode(),
         String.join(
             ", ",
             stringList
@@ -70,11 +70,11 @@ public class MethodCall extends Expression {
   @Override
   public <T> T accept(
       AstVisitor<T> ASTVisitor,
-      SymbolTable curSymbolTable
+      Scope curScope
   ) {
     return ASTVisitor.visit(
         this,
-        curSymbolTable
+        curScope
     );
   }
 

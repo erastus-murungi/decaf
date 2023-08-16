@@ -4,20 +4,9 @@ import org.jetbrains.annotations.NotNull;
 
 import decaf.analysis.TokenPosition;
 
-public class SemanticError implements Error<SemanticError.SemanticErrorType> {
-  private final TokenPosition tokenPosition;
-  @NotNull private final SemanticErrorType errorType;
-  private final String detail;
-
-  public SemanticError(
-      TokenPosition tokenPosition,
-      @NotNull SemanticErrorType errorType,
-      String detail
-  ) {
-    this.tokenPosition = tokenPosition;
-    this.errorType = errorType;
-    this.detail = detail;
-  }
+public record SemanticError(TokenPosition tokenPosition,
+                            @NotNull SemanticErrorType errorType,
+                            String detail) implements Error<SemanticError.SemanticErrorType> {
 
   @Override
   public String getErrorSummary() {
@@ -29,10 +18,11 @@ public class SemanticError implements Error<SemanticError.SemanticErrorType> {
       case INT_LITERAL_TOO_BIG -> "int literal too big";
       case UNSUPPORTED_TYPE -> "unsupported type";
       case INVALID_ARRAY_INDEX -> "invalid array index";
-      case METHOD_CALL_CONFLICTS_WITH_LOCALLY_DEFINED_IDENTIFIER -> "method call conflicts with locally defined identifier";
+      case METHOD_CALL_CONFLICTS_WITH_LOCALLY_DEFINED_IDENTIFIER ->
+          "method call conflicts with locally defined identifier";
       case MISMATCHING_NUMBER_OR_ARGUMENTS -> "mismatching number of arguments";
       case INCORRECT_ARG_TYPE -> "incorrect argument type";
-      case SHADOWING_PARAMETER -> "shadowing parameter";
+      case SHADOWING_FORMAL_ARGUMENT -> "shadowing parameter";
       case INVALID_MAIN_METHOD -> "invalid main method";
       case MISSING_MAIN_METHOD -> "missing main method";
       case METHOD_ALREADY_DEFINED -> "method already defined";
@@ -42,17 +32,8 @@ public class SemanticError implements Error<SemanticError.SemanticErrorType> {
       case INVALID_ARGUMENT_TYPE -> "invalid argument type";
       case MISMATCHING_RETURN_TYPE -> "mismatching return type";
       case MISSING_RETURN_STATEMENT -> "missing return statement";
+      case SHADOWING_IMPORT -> "shadowing import";
     };
-  }
-
-  @Override
-  public String getDetail() {
-    return detail;
-  }
-
-  @Override
-  public TokenPosition tokenPosition() {
-    return tokenPosition;
   }
 
   @Override
@@ -71,7 +52,8 @@ public class SemanticError implements Error<SemanticError.SemanticErrorType> {
     METHOD_CALL_CONFLICTS_WITH_LOCALLY_DEFINED_IDENTIFIER,
     MISMATCHING_NUMBER_OR_ARGUMENTS,
     INCORRECT_ARG_TYPE,
-    SHADOWING_PARAMETER,
+    SHADOWING_FORMAL_ARGUMENT,
+    SHADOWING_IMPORT,
     INVALID_MAIN_METHOD,
     MISSING_MAIN_METHOD,
     METHOD_ALREADY_DEFINED,

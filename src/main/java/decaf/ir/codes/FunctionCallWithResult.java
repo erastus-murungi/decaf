@@ -7,14 +7,14 @@ import java.util.Optional;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
-import decaf.synthesis.asm.AsmWriter;
 import decaf.analysis.syntax.ast.MethodCall;
+import decaf.ir.dataflow.operand.MethodCallOperand;
+import decaf.ir.dataflow.operand.Operand;
 import decaf.ir.names.IrAssignable;
 import decaf.ir.names.IrMemoryAddress;
 import decaf.ir.names.IrValue;
 import decaf.shared.Utils;
-import decaf.ir.dataflow.operand.MethodCallOperand;
-import decaf.ir.dataflow.operand.Operand;
+import decaf.synthesis.asm.AsmWriter;
 
 public class FunctionCallWithResult extends StoreInstruction implements FunctionCall {
   private final Stack<IrValue> arguments;

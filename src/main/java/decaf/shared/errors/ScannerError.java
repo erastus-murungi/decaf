@@ -5,12 +5,17 @@ import decaf.analysis.TokenPosition;
 
 public class ScannerError extends Token implements Error<ScannerError.ErrorType> {
   private final ErrorType errorType;
+
   public ScannerError(
       TokenPosition tokenPosition,
       ErrorType errorType,
       String detail
   ) {
-    super(tokenPosition, Type.ERROR, detail);
+    super(
+        tokenPosition,
+        Type.ERROR,
+        detail
+    );
     this.errorType = errorType;
   }
 
@@ -26,7 +31,7 @@ public class ScannerError extends Token implements Error<ScannerError.ErrorType>
   }
 
 
-  public String getDetail() {
+  public String detail() {
     return lexeme;
   }
 

@@ -4,10 +4,10 @@ package decaf.synthesis.asm.operands;
 import java.util.Collections;
 import java.util.List;
 
-import decaf.synthesis.asm.X86Register;
 import decaf.ir.names.IrConstant;
 import decaf.ir.names.IrIntegerConstant;
 import decaf.ir.names.IrStringConstant;
+import decaf.synthesis.asm.X86Register;
 
 public class X86ConstantValue extends X86Value {
   public X86ConstantValue(IrConstant irConstant) {

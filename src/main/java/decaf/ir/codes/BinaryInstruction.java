@@ -4,15 +4,15 @@ package decaf.ir.codes;
 import java.util.List;
 import java.util.Optional;
 
-import decaf.synthesis.asm.AsmWriter;
 import decaf.analysis.syntax.ast.AST;
+import decaf.ir.dataflow.operand.BinaryOperand;
+import decaf.ir.dataflow.operand.Operand;
 import decaf.ir.names.IrAssignable;
 import decaf.ir.names.IrMemoryAddress;
 import decaf.ir.names.IrSsaRegister;
 import decaf.ir.names.IrValue;
 import decaf.shared.Operators;
-import decaf.ir.dataflow.operand.BinaryOperand;
-import decaf.ir.dataflow.operand.Operand;
+import decaf.synthesis.asm.AsmWriter;
 
 /**
  * A quad has four fields which we call op arg1, arg2, and result.
@@ -55,11 +55,12 @@ public class BinaryInstruction extends StoreInstruction {
         fstOperand,
         operator,
         sndOperand,
-        String.format("%s = %s %s %s",
-                      result,
-                      fstOperand,
-                      operator,
-                      sndOperand
+        String.format(
+            "%s = %s %s %s",
+            result,
+            fstOperand,
+            operator,
+            sndOperand
         ),
         null
     );
@@ -81,12 +82,13 @@ public class BinaryInstruction extends StoreInstruction {
 
   @Override
   public Instruction copy() {
-    return new BinaryInstruction(getDestination(),
-                                 fstOperand,
-                                 operator,
-                                 sndOperand,
-                                 getComment().orElse(null),
-                                 getSource()
+    return new BinaryInstruction(
+        getDestination(),
+        fstOperand,
+        operator,
+        sndOperand,
+        getComment().orElse(null),
+        getSource()
     );
   }
 

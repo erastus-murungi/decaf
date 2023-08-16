@@ -4,13 +4,13 @@ import java.util.Collections;
 import java.util.List;
 
 import decaf.analysis.TokenPosition;
+import decaf.analysis.semantic.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
-import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
-public class VoidExpression  extends Expression {
+public class VoidExpression extends Expression {
   public VoidExpression(TokenPosition tokenPosition) {
     super(tokenPosition);
   }
@@ -28,11 +28,11 @@ public class VoidExpression  extends Expression {
   @Override
   public <T> T accept(
       AstVisitor<T> astVisitor,
-      SymbolTable currentSymbolTable
+      Scope currentScope
   ) {
     return astVisitor.visit(
         this,
-        currentSymbolTable
+        currentScope
     );
   }
 

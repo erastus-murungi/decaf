@@ -3,16 +3,16 @@ package decaf.analysis.syntax.ast;
 
 import java.util.List;
 
+import decaf.analysis.semantic.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
-import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 public class Assignment extends AST {
   private final String operator;
-  public AssignExpr assignExpr;
   private final Location location;
+  public AssignExpr assignExpr;
 
   public Assignment(
       Location location,
@@ -59,11 +59,11 @@ public class Assignment extends AST {
   @Override
   public <T> T accept(
       AstVisitor<T> ASTVisitor,
-      SymbolTable currentSymbolTable
+      Scope currentScope
   ) {
     return ASTVisitor.visit(
         this,
-        currentSymbolTable
+        currentScope
     );
   }
 

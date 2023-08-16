@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import decaf.analysis.syntax.ast.AST;
-import decaf.ir.names.IrValue;
 import decaf.ir.dataflow.operand.Operand;
+import decaf.ir.names.IrValue;
 
 public abstract class HasOperand extends Instruction {
   public HasOperand(

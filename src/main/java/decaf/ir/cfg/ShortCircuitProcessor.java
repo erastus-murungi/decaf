@@ -1,6 +1,7 @@
 package decaf.ir.cfg;
 
 
+import decaf.analysis.lexical.Scanner;
 import decaf.analysis.syntax.ast.BinaryOpExpression;
 import decaf.analysis.syntax.ast.ConditionalOperator;
 import decaf.analysis.syntax.ast.Expression;
@@ -8,7 +9,6 @@ import decaf.analysis.syntax.ast.ParenthesizedExpression;
 import decaf.analysis.syntax.ast.UnaryOpExpression;
 import decaf.analysis.syntax.ast.UnaryOperator;
 import decaf.shared.Utils;
-import decaf.analysis.lexical.Scanner;
 
 public class ShortCircuitProcessor {
   // to prevent object creation

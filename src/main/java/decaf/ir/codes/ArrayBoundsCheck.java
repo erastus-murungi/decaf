@@ -3,16 +3,16 @@ package decaf.ir.codes;
 
 import java.util.List;
 
-import decaf.synthesis.asm.AsmWriter;
+import decaf.ir.dataflow.operand.Operand;
 import decaf.ir.names.IrMemoryAddress;
 import decaf.ir.names.IrValue;
 import decaf.shared.Utils;
-import decaf.ir.dataflow.operand.Operand;
+import decaf.synthesis.asm.AsmWriter;
 
 public class ArrayBoundsCheck extends HasOperand {
+  private final IrMemoryAddress destination;
   public GetAddress getAddress;
   public Integer boundsIndex;
-  private final IrMemoryAddress destination;
   private IrValue index;
   private IrValue baseAddress;
 

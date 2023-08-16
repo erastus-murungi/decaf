@@ -3,32 +3,32 @@ package decaf.analysis.syntax.ast;
 
 import java.util.List;
 
-import decaf.analysis.lexical.Scanner;
 import decaf.analysis.TokenPosition;
+import decaf.analysis.lexical.Scanner;
+import decaf.analysis.semantic.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
-import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 public class Len extends Expression {
-  final public Name nameId;
+  final public RValue RValueId;
   final public Type type = Type.Int;
 
   public Len(
       TokenPosition tokenPosition,
-      Name nameId
+      RValue RValueId
   ) {
     super(tokenPosition);
     this.tokenPosition = tokenPosition;
-    this.nameId = nameId;
+    this.RValueId = RValueId;
   }
 
   @Override
   public List<Pair<String, AST>> getChildren() {
     return List.of(new Pair<>(
         "id",
-        nameId
+        RValueId
     ));
   }
 
@@ -39,7 +39,7 @@ public class Len extends Expression {
 
   @Override
   public String toString() {
-    return "Len{" + "nameId=" + nameId + '}';
+    return "Len{" + "nameId=" + RValueId + '}';
   }
 
   @Override
@@ -47,18 +47,18 @@ public class Len extends Expression {
     return String.format(
         "%s (%s)",
         Scanner.RESERVED_LEN,
-        nameId.getLabel()
+        RValueId.getLabel()
     );
   }
 
   @Override
   public <T> T accept(
       AstVisitor<T> ASTVisitor,
-      SymbolTable curSymbolTable
+      Scope curScope
   ) {
     return ASTVisitor.visit(
         this,
-        curSymbolTable
+        curScope
     );
   }
 

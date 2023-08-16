@@ -4,11 +4,11 @@ package decaf.analysis.syntax.ast;
 import java.util.List;
 
 import decaf.analysis.TokenPosition;
+import decaf.analysis.semantic.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
-import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 public class CompoundAssignOpExpr extends AssignExpr implements HasExpression {
   public final CompoundAssignOperator compoundAssignOp;
@@ -62,11 +62,11 @@ public class CompoundAssignOpExpr extends AssignExpr implements HasExpression {
   @Override
   public <T> T accept(
       AstVisitor<T> ASTVisitor,
-      SymbolTable curSymbolTable
+      Scope curScope
   ) {
     return ASTVisitor.visit(
         this,
-        curSymbolTable
+        curScope
     );
   }
 

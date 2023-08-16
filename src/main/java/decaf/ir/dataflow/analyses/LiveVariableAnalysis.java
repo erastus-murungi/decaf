@@ -13,12 +13,12 @@ import decaf.ir.codes.GetAddress;
 import decaf.ir.codes.HasOperand;
 import decaf.ir.codes.Instruction;
 import decaf.ir.codes.StoreInstruction;
+import decaf.ir.dataflow.Direction;
 import decaf.ir.dataflow.usedef.Def;
 import decaf.ir.dataflow.usedef.Use;
 import decaf.ir.dataflow.usedef.UseDef;
 import decaf.ir.names.IrValue;
 import decaf.ir.names.IrValuePredicates;
-import decaf.ir.dataflow.Direction;
 
 public class LiveVariableAnalysis extends DataFlowAnalysis<UseDef> {
   public LiveVariableAnalysis(BasicBlock basicBlock) {

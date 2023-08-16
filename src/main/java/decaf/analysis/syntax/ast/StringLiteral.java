@@ -5,11 +5,11 @@ import java.util.Collections;
 import java.util.List;
 
 import decaf.analysis.TokenPosition;
+import decaf.analysis.semantic.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
-import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 public class StringLiteral extends MethodCallParameter {
   final public String literal;
@@ -51,11 +51,11 @@ public class StringLiteral extends MethodCallParameter {
   @Override
   public <T> T accept(
       AstVisitor<T> ASTVisitor,
-      SymbolTable curSymbolTable
+      Scope curScope
   ) {
     return ASTVisitor.visit(
         this,
-        curSymbolTable
+        curScope
     );
   }
 

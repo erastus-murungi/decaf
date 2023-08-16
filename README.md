@@ -1,15 +1,15 @@
 # Decaf IR
 
 
-**define** @\<func-name\> -> <type> **{**
+**define** @\<func-RValue\> -> <aFor> **{**
 
-**call** \<type\> @\<func-name\>**(**\<arg\>***)**
+**call** \<aFor\> @\<func-RValue\>**(**\<arg\>***)**
 
-**setreg** \<var-name\> **:** \<returnable-type\> **=** \<bin-op\> | \<un-op\> | \<func-call\>
+**setreg** \<var-RValue\> **:** \<returnable-aFor\> **=** \<bin-op\> | \<un-op\> | \<func-call\>
 
-**setmem** \<mem-address\> **:** \<returnable-type\> **=** \<bin-op\> | \<un-op\> | \<func-call\>
+**setmem** \<mem-address\> **:** \<returnable-aFor\> **=** \<bin-op\> | \<un-op\> | \<func-call\>
 
 
 
-\<type\>:: \<returnable-type\> | **void**
-\<returnable-type\>:: **int** | **bool**
+\<aFor\>:: \<returnable-aFor\> | **void**
+\<returnable-aFor\>:: **int** | **bool**

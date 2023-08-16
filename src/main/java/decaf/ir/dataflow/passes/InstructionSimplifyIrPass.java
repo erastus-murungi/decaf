@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
 
+import decaf.analysis.TokenPosition;
+import decaf.analysis.lexical.Scanner;
 import decaf.analysis.syntax.ast.AST;
 import decaf.analysis.syntax.ast.BinaryOpExpression;
 import decaf.analysis.syntax.ast.BooleanLiteral;
@@ -16,8 +18,6 @@ import decaf.analysis.syntax.ast.Literal;
 import decaf.analysis.syntax.ast.LocationArray;
 import decaf.analysis.syntax.ast.UnaryOpExpression;
 import decaf.shared.Utils;
-import decaf.analysis.lexical.Scanner;
-import decaf.analysis.TokenPosition;
 
 // This file implements routines for folding instructions into simpler forms
 // that do not require creating new instructions.  This does constant folding

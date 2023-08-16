@@ -6,12 +6,12 @@ import java.util.List;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
-import decaf.synthesis.asm.AsmWriter;
 import decaf.analysis.syntax.ast.MethodCall;
-import decaf.ir.names.IrValue;
-import decaf.shared.Utils;
 import decaf.ir.dataflow.operand.MethodCallOperand;
 import decaf.ir.dataflow.operand.Operand;
+import decaf.ir.names.IrValue;
+import decaf.shared.Utils;
+import decaf.synthesis.asm.AsmWriter;
 
 public class FunctionCallNoResult extends HasOperand implements FunctionCall {
   private final Stack<IrValue> arguments;

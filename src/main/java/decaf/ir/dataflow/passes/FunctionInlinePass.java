@@ -8,9 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import decaf.ir.cfg.BasicBlock;
 import decaf.ir.InstructionList;
 import decaf.ir.TraceScheduler;
+import decaf.ir.cfg.BasicBlock;
 import decaf.ir.codes.ArrayBoundsCheck;
 import decaf.ir.codes.CopyInstruction;
 import decaf.ir.codes.FunctionCall;
@@ -21,9 +21,9 @@ import decaf.ir.codes.Method;
 import decaf.ir.codes.MethodEnd;
 import decaf.ir.codes.ReturnInstruction;
 import decaf.ir.codes.UnconditionalBranch;
+import decaf.ir.dataflow.OptimizationContext;
 import decaf.ir.names.IrValue;
 import decaf.shared.StronglyConnectedComponentsTarjan;
-import decaf.ir.dataflow.OptimizationContext;
 
 
 public class FunctionInlinePass extends OptimizationPass {

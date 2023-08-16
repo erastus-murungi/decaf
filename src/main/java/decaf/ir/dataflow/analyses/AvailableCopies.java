@@ -10,12 +10,12 @@ import java.util.Set;
 
 import decaf.ir.cfg.BasicBlock;
 import decaf.ir.codes.StoreInstruction;
-import decaf.ir.names.IrMemoryAddress;
-import decaf.ir.names.IrSsaRegister;
-import decaf.ir.names.IrValue;
 import decaf.ir.dataflow.Direction;
 import decaf.ir.dataflow.copy.CopyQuadruple;
 import decaf.ir.dataflow.operand.UnmodifiedOperand;
+import decaf.ir.names.IrMemoryAddress;
+import decaf.ir.names.IrSsaRegister;
+import decaf.ir.names.IrValue;
 
 public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
   // each basicBlock maps to another map of (u -> v) pairs
@@ -146,12 +146,13 @@ public class AvailableCopies extends DataFlowAnalysis<CopyQuadruple> {
       var computation = storeInstruction.getOperand();
       if (computation instanceof UnmodifiedOperand) {
         IrValue name = ((UnmodifiedOperand) computation).irValue;
-        copyQuadruples.add(new CopyQuadruple((IrSsaRegister) storeInstruction.getDestination(),
-                                             name,
-                                             basicBlock
-                                                 .getCopyOfInstructionList()
-                                                 .indexOf(storeInstruction),
-                                             basicBlock
+        copyQuadruples.add(new CopyQuadruple(
+            (IrSsaRegister) storeInstruction.getDestination(),
+            name,
+            basicBlock
+                .getCopyOfInstructionList()
+                .indexOf(storeInstruction),
+            basicBlock
         ));
       }
 

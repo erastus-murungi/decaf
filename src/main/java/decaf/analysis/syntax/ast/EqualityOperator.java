@@ -1,12 +1,12 @@
 package decaf.analysis.syntax.ast;
 
 
-import decaf.analysis.lexical.Scanner;
 import decaf.analysis.TokenPosition;
+import decaf.analysis.lexical.Scanner;
+import decaf.analysis.semantic.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
-import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 public class EqualityOperator extends BinOperator {
 
@@ -35,7 +35,7 @@ public class EqualityOperator extends BinOperator {
   @Override
   public <T> T accept(
       AstVisitor<T> ASTVisitor,
-      SymbolTable curSymbolTable
+      Scope curScope
   ) {
     return null;
   }

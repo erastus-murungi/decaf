@@ -43,9 +43,10 @@ public class PhiOperand extends Operand {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     PhiOperand that = (PhiOperand) o;
-    return Objects.equals(getPhi().genOperandIrValuesSurface(),
-                          that.getPhi()
-                              .genOperandIrValuesSurface()
+    return Objects.equals(
+        getPhi().genOperandIrValuesSurface(),
+        that.getPhi()
+            .genOperandIrValuesSurface()
     );
   }
 

@@ -4,17 +4,17 @@ package decaf.analysis.syntax.ast;
 import java.util.ArrayList;
 import java.util.List;
 
+import decaf.analysis.TokenPosition;
+import decaf.analysis.semantic.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
-import decaf.analysis.TokenPosition;
-import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 public class MethodDefinition extends AST {
   private final TokenPosition tokenPosition;
   private final Type returnType;
-  private final Name methodName;
+  private final RValue methodRValue;
   private final List<MethodDefinitionParameter> parameterList;
   private final Block block;
 
@@ -22,13 +22,13 @@ public class MethodDefinition extends AST {
       TokenPosition tokenPosition,
       Type returnType,
       List<MethodDefinitionParameter> parameterList,
-      Name methodName,
+      RValue methodRValue,
       Block block
   ) {
     this.tokenPosition = tokenPosition;
     this.returnType = returnType;
     this.parameterList = parameterList;
-    this.methodName = methodName;
+    this.methodRValue = methodRValue;
     this.block = block;
   }
 
@@ -42,8 +42,9 @@ public class MethodDefinition extends AST {
     List<Pair<String, AST>> nodes = new ArrayList<>();
     nodes.add(new Pair<>(
         "returnType",
-        new Name(getReturnType().toString(),
-                 getTokenPosition()
+        new RValue(
+            getReturnType().toString(),
+            getTokenPosition()
         )
     ));
     nodes.add(new Pair<>(
@@ -104,11 +105,11 @@ public class MethodDefinition extends AST {
   @Override
   public <T> T accept(
       AstVisitor<T> ASTVisitor,
-      SymbolTable curSymbolTable
+      Scope curScope
   ) {
     return ASTVisitor.visit(
         this,
-        curSymbolTable
+        curScope
     );
   }
 
@@ -127,8 +128,8 @@ public class MethodDefinition extends AST {
     return returnType;
   }
 
-  public Name getMethodName() {
-    return methodName;
+  public RValue getMethodName() {
+    return methodRValue;
   }
 
   public List<MethodDefinitionParameter> getParameterList() {

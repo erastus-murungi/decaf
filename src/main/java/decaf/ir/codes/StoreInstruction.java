@@ -5,11 +5,11 @@ import java.util.Optional;
 import java.util.Set;
 
 import decaf.analysis.syntax.ast.AST;
+import decaf.ir.dataflow.operand.Operand;
 import decaf.ir.names.IrAssignable;
 import decaf.ir.names.IrMemoryAddress;
 import decaf.ir.names.IrValue;
 import decaf.shared.Utils;
-import decaf.ir.dataflow.operand.Operand;
 
 public abstract class StoreInstruction extends HasOperand implements Cloneable {
   protected IrAssignable destination;

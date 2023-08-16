@@ -14,6 +14,7 @@ public class MainTest {
   public void testParser() {
     assertTrue(TestRunner.testParser(false));
   }
+
   @Test
   public void testSemantics() {
     assertTrue(TestRunner.testSemantics(false));

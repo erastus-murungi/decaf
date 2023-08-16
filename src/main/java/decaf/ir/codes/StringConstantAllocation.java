@@ -4,9 +4,9 @@ package decaf.ir.codes;
 import java.util.Collections;
 import java.util.List;
 
-import decaf.synthesis.asm.AsmWriter;
 import decaf.ir.names.IrStringConstant;
 import decaf.ir.names.IrValue;
+import decaf.synthesis.asm.AsmWriter;
 
 public class StringConstantAllocation extends Instruction {
   private final IrStringConstant stringConstant;

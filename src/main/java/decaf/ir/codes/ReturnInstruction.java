@@ -5,12 +5,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import decaf.synthesis.asm.AsmWriter;
 import decaf.analysis.syntax.ast.AST;
-import decaf.ir.names.IrValue;
-import decaf.shared.Utils;
 import decaf.ir.dataflow.operand.Operand;
 import decaf.ir.dataflow.operand.UnmodifiedOperand;
+import decaf.ir.names.IrValue;
+import decaf.shared.Utils;
+import decaf.synthesis.asm.AsmWriter;
 
 public class ReturnInstruction extends HasOperand {
   private IrValue returnAddress;

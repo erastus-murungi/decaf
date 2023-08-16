@@ -2,7 +2,7 @@ package decaf.shared.descriptors;
 
 
 import decaf.analysis.syntax.ast.MethodDefinition;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 /**
  * A method descriptor contains:
@@ -17,13 +17,13 @@ import decaf.shared.symboltable.SymbolTable;
  */
 public class MethodDescriptor extends Descriptor {
   public MethodDefinition methodDefinition;
-  public SymbolTable parameterSymbolTable;
-  public SymbolTable localSymbolTable;
+  public Scope parameterScope;
+  public Scope localScope;
 
   public MethodDescriptor(
       MethodDefinition methodDefinition,
-      SymbolTable parameterSymbolTable,
-      SymbolTable localSymbolTable
+      Scope parameterScope,
+      Scope localScope
   ) {
     super(
         methodDefinition.getReturnType(),
@@ -31,7 +31,7 @@ public class MethodDescriptor extends Descriptor {
                         .getLabel()
     );
     this.methodDefinition = methodDefinition;
-    this.parameterSymbolTable = parameterSymbolTable;
-    this.localSymbolTable = localSymbolTable;
+    this.parameterScope = parameterScope;
+    this.localScope = localScope;
   }
 }

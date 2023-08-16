@@ -9,11 +9,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import decaf.synthesis.asm.X86Register;
 import decaf.ir.codes.Instruction;
 import decaf.ir.codes.Method;
 import decaf.ir.names.IrValue;
 import decaf.shared.ProgramIr;
+import decaf.synthesis.asm.X86Register;
 
 public class RegisterAllocator {
   public final Map<Method, Map<IrValue, X86Register>> variableToRegisterMap = new HashMap<>();
@@ -54,10 +54,11 @@ public class RegisterAllocator {
                .forEach(indexOfInstruction ->
                             instructionToLiveRegistersMap.put(
                                 instructionList.get(indexOfInstruction),
-                                getLiveRegistersAtPoint(programIr,
-                                                        liveIntervals,
-                                                        indexOfInstruction,
-                                                        registerMap
+                                getLiveRegistersAtPoint(
+                                    programIr,
+                                    liveIntervals,
+                                    indexOfInstruction,
+                                    registerMap
                                 )
                             ));
     }
@@ -119,9 +120,10 @@ public class RegisterAllocator {
     methodToLiveIntervalsMap.forEach(((methodBegin, liveIntervals) ->
         methodToLiveRegistersInfo.put(
             methodBegin,
-            computeInstructionToLiveRegistersMap(programIr,
-                                                 liveIntervals,
-                                                 variableToRegisterMap.get(methodBegin)
+            computeInstructionToLiveRegistersMap(
+                programIr,
+                liveIntervals,
+                variableToRegisterMap.get(methodBegin)
             )
         )));
     methodToLiveIntervalsMap.forEach(((methodBegin, liveIntervals) ->

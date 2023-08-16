@@ -26,8 +26,8 @@ import decaf.analysis.syntax.ast.MethodCall;
 import decaf.analysis.syntax.ast.MethodCallParameter;
 import decaf.analysis.syntax.ast.MethodCallStatement;
 import decaf.analysis.syntax.ast.MethodDefinitionParameter;
-import decaf.analysis.syntax.ast.Name;
 import decaf.analysis.syntax.ast.ParenthesizedExpression;
+import decaf.analysis.syntax.ast.RValue;
 import decaf.analysis.syntax.ast.Return;
 import decaf.analysis.syntax.ast.StringLiteral;
 import decaf.analysis.syntax.ast.Type;
@@ -49,19 +49,19 @@ import decaf.ir.names.IrStringConstant;
 import decaf.ir.names.IrValue;
 import decaf.shared.Operators;
 import decaf.shared.descriptors.ArrayDescriptor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList> {
-  private final SymbolTable symbolTable;
+  private final Scope scope;
   private final HashMap<String, IrStringConstant> stringLiteralMapping;
   private final Map<String, IrValue> cachedAddresses = new HashMap<>();
 
   public AstToInstructionListConverter(
-      SymbolTable symbolTable,
+      Scope scope,
       HashMap<String, IrStringConstant> stringLiteralMapping,
       Set<IrValue> irGlobals
   ) {
-    this.symbolTable = symbolTable;
+    this.scope = scope;
     this.stringLiteralMapping = stringLiteralMapping;
     for (var global : irGlobals) {
       cachedAddresses.put(
@@ -95,11 +95,11 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
     final var locationArrayInstructionList = new InstructionList();
     locationArrayInstructionList.addAll(indexInstructionList);
 
-    final var maybeArrayDescriptorFromValidScopes = symbolTable.getDescriptorFromValidScopes(locationArray.name.getLabel());
+    final var maybeArrayDescriptorFromValidScopes = scope.lookup(locationArray.RValue.getLabel());
     final var arrayDescriptor = (ArrayDescriptor) maybeArrayDescriptorFromValidScopes.orElseThrow(() -> new IllegalStateException(
-        "expected to find array " + locationArray.name.getLabel() + " in scope"));
+        "expected to find array " + locationArray.RValue.getLabel() + " in scope"));
     var base = newIrLocation(
-        locationArray.name.getLabel(),
+        locationArray.RValue.getLabel(),
         arrayDescriptor.type
     );
     final var getAddressInstruction = new GetAddress(
@@ -234,13 +234,13 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
 
   @Override
   public InstructionList visit(
-      Name name,
+      RValue RValue,
       IrAssignable resultLocation
   ) {
-    Type type = symbolTable.getDescriptorFromValidScopes(name.getLabel())
-                           .orElseThrow().type;
+    Type type = scope.lookup(RValue.getLabel())
+                     .orElseThrow().type;
     return new InstructionList(newIrLocation(
-        name.getLabel(),
+        RValue.getLabel(),
         type
     ));
   }
@@ -250,20 +250,20 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
       LocationVariable locationVariable,
       IrAssignable resultLocation
   ) {
-    Type type = symbolTable.getDescriptorFromValidScopes(locationVariable.name.getLabel())
-                           .orElseThrow().type;
+    Type type = scope.lookup(locationVariable.RValue.getLabel())
+                     .orElseThrow().type;
     return new InstructionList(newIrLocation(
-        locationVariable.name.getLabel(),
+        locationVariable.RValue.getLabel(),
         type
     ));
   }
 
   @Override
   public InstructionList visit(Len len) {
-    final ArrayDescriptor arrayDescriptor = (ArrayDescriptor) symbolTable.getDescriptorFromValidScopes(len.nameId.getLabel())
-                                                                         .orElseThrow(() -> new IllegalStateException(
-                                                                             len.nameId.getLabel() +
-                                                                                 " should be present"));
+    final ArrayDescriptor arrayDescriptor = (ArrayDescriptor) scope.lookup(len.RValueId.getLabel())
+                                                                   .orElseThrow(() -> new IllegalStateException(
+                                                                       len.RValueId.getLabel() +
+                                                                           " should be present"));
     return new InstructionList(new IrIntegerConstant(
         arrayDescriptor.size,
         Type.Int
@@ -462,13 +462,11 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
                         .convertToLong();
       var label = new IrStackArray(
           fieldDeclaration.getType(),
-          array.getId()
-               .getLabel(),
+          array.getLabel(),
           length
       );
       cachedAddresses.put(
-          array.getId()
-               .getLabel(),
+          array.getLabel(),
           label
       );
       for (long i = 0; i < length; i++) {
@@ -597,7 +595,7 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
     if (expressionParameter.expression instanceof LocationVariable) {
       // no need for temporaries
       expressionParameterInstructionList.setPlace(newIrLocation(
-          ((Location) expressionParameter.expression).name.getLabel(),
+          ((Location) expressionParameter.expression).RValue.getLabel(),
           expressionParameter.expression.getType()
       ));
     } else if (expressionParameter.expression instanceof IntLiteral) {

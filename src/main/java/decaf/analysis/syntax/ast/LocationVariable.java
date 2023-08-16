@@ -4,33 +4,33 @@ package decaf.analysis.syntax.ast;
 import java.util.Collections;
 import java.util.List;
 
+import decaf.analysis.semantic.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
-import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 public class LocationVariable extends Location {
-  public LocationVariable(Name name) {
-    super(name);
+  public LocationVariable(RValue RValue) {
+    super(RValue);
   }
 
   @Override
   public List<Pair<String, AST>> getChildren() {
     return Collections.singletonList(new Pair<>(
         "name",
-        name
+        RValue
     ));
   }
 
   @Override
   public <T> T accept(
       AstVisitor<T> ASTVisitor,
-      SymbolTable curSymbolTable
+      Scope curScope
   ) {
     return ASTVisitor.visit(
         this,
-        curSymbolTable
+        curScope
     );
   }
 
@@ -51,11 +51,11 @@ public class LocationVariable extends Location {
 
   @Override
   public String toString() {
-    return "LocationVariable{" + "name=" + name + '}';
+    return "LocationVariable{" + "name=" + RValue + '}';
   }
 
   @Override
   public String getSourceCode() {
-    return name.getSourceCode();
+    return RValue.getSourceCode();
   }
 }

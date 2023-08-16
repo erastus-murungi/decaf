@@ -3,9 +3,7 @@ package decaf.shared.descriptors;
 
 import java.util.TreeSet;
 
-import decaf.analysis.syntax.ast.Type;
-import decaf.shared.symboltable.SymbolTable;
-import decaf.shared.symboltable.SymbolTableType;
+import decaf.shared.env.Scope;
 
 
 /**
@@ -17,35 +15,37 @@ import decaf.shared.symboltable.SymbolTableType;
  */
 
 public class GlobalDescriptor extends Descriptor {
-  public SymbolTable globalVariablesSymbolTable;
-  public SymbolTable methodsSymbolTable;
+  public Scope globalVariablesScope;
+  public Scope methodsScope;
   public TreeSet<String> imports = new TreeSet<>();
 
   public GlobalDescriptor(
-      Type type,
-      SymbolTable globalVariablesSymbolTable,
-      SymbolTable methodsSymbolTable,
+      decaf.analysis.syntax.ast.Type type,
+      Scope globalVariablesScope,
+      Scope methodsScope,
       TreeSet<String> importDeclarations
   ) {
     super(
         type,
         "<program>"
     );
-    this.globalVariablesSymbolTable = globalVariablesSymbolTable;
-    this.methodsSymbolTable = methodsSymbolTable;
+    this.globalVariablesScope = globalVariablesScope;
+    this.methodsScope = methodsScope;
     this.imports.addAll(importDeclarations);
   }
 
   public GlobalDescriptor() {
     this(
-        Type.Undefined,
-        new SymbolTable(null,
-                        SymbolTableType.Field,
-                        null
+        decaf.analysis.syntax.ast.Type.Undefined,
+        new Scope(
+            null,
+            Scope.For.Field,
+            null
         ),
-        new SymbolTable(null,
-                        SymbolTableType.Method,
-                        null
+        new Scope(
+            null,
+            Scope.For.Method,
+            null
         ),
         new TreeSet<>()
     );

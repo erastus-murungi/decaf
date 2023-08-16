@@ -5,13 +5,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import decaf.synthesis.asm.AsmWriter;
 import decaf.analysis.syntax.ast.AST;
+import decaf.ir.dataflow.operand.GetAddressOperand;
+import decaf.ir.dataflow.operand.Operand;
 import decaf.ir.names.IrMemoryAddress;
 import decaf.ir.names.IrValue;
 import decaf.shared.Utils;
-import decaf.ir.dataflow.operand.GetAddressOperand;
-import decaf.ir.dataflow.operand.Operand;
+import decaf.synthesis.asm.AsmWriter;
 
 
 public class GetAddress extends StoreInstruction {
@@ -101,11 +101,12 @@ public class GetAddress extends StoreInstruction {
 
   @Override
   public Instruction copy() {
-    return new GetAddress(baseAddress,
-                          index,
-                          getDestination(),
-                          length,
-                          getSource()
+    return new GetAddress(
+        baseAddress,
+        index,
+        getDestination(),
+        length,
+        getSource()
     );
   }
 

@@ -38,8 +38,10 @@ public class IrStringConstant extends IrConstant {
 
   @Override
   public String toString() {
-    return String.format("@.%s",
-                         getLabel());
+    return String.format(
+        "@.%s",
+        getLabel()
+    );
   }
 
   @Override

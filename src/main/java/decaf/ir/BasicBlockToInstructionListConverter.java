@@ -33,12 +33,12 @@ import decaf.ir.names.IrValue;
 import decaf.ir.names.IrValuePredicates;
 import decaf.shared.Pair;
 import decaf.shared.ProgramIr;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 public class BasicBlockToInstructionListConverter {
   private final Set<IrValue> globalNames = new HashSet<>();
   private final Set<BasicBlock> visitedBasicBlocks = new HashSet<>();
-  private final HashMap<String, SymbolTable> perMethodSymbolTables;
+  private final HashMap<String, Scope> perMethodSymbolTables;
   private final ProgramIr programIr;
   private final HashMap<String, IrStringConstant> stringConstantsMap = new HashMap<>();
 
@@ -73,7 +73,7 @@ public class BasicBlockToInstructionListConverter {
     this.programIr.renumberLabels();
   }
 
-  public HashMap<String, SymbolTable> getPerMethodSymbolTables() {
+  public HashMap<String, Scope> getPerMethodSymbolTables() {
     return perMethodSymbolTables;
   }
 
@@ -84,10 +84,10 @@ public class BasicBlockToInstructionListConverter {
   private Method generateMethodInstructionList(
       MethodDefinition methodDefinition,
       BasicBlock methodStart,
-      SymbolTable currentSymbolTable
+      Scope currentScope
   ) {
     currentAstToInstructionListConverter = new AstToInstructionListConverter(
-        currentSymbolTable,
+        currentScope,
         stringConstantsMap,
         globalNames
     );
@@ -136,7 +136,7 @@ public class BasicBlockToInstructionListConverter {
   private InstructionList genPrologue(Program program) {
     var prologue = new InstructionList();
     for (var fieldDeclaration : program.getFieldDeclarationList()) {
-      for (var name : fieldDeclaration.names) {
+      for (var name : fieldDeclaration.vars) {
         prologue.add(new GlobalAllocation(
             new IrGlobalScalar(
                 name.getLabel(),
@@ -152,8 +152,7 @@ public class BasicBlockToInstructionListConverter {
                                                            .convertToLong());
         prologue.add(new GlobalAllocation(
             new IrGlobalArray(
-                array.getId()
-                     .getLabel(),
+                array.getLabel(),
                 fieldDeclaration.getType(),
                 size
             ),

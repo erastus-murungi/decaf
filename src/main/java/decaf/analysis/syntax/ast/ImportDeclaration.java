@@ -4,17 +4,17 @@ package decaf.analysis.syntax.ast;
 import java.util.List;
 
 import decaf.analysis.lexical.Scanner;
+import decaf.analysis.semantic.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
-import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 public class ImportDeclaration extends Declaration {
-  public final Name nameId;
+  public final RValue RValueId;
 
-  public ImportDeclaration(Name nameId) {
-    this.nameId = nameId;
+  public ImportDeclaration(RValue RValueId) {
+    this.RValueId = RValueId;
   }
 
   @Override
@@ -26,7 +26,7 @@ public class ImportDeclaration extends Declaration {
   public List<Pair<String, AST>> getChildren() {
     return List.of(new Pair<>(
         "name",
-        nameId
+        RValueId
     ));
   }
 
@@ -37,7 +37,7 @@ public class ImportDeclaration extends Declaration {
 
   @Override
   public String toString() {
-    return "ImportDeclaration{" + "nameId=" + nameId + '}';
+    return "ImportDeclaration{" + "nameId=" + RValueId + '}';
   }
 
   @Override
@@ -45,18 +45,18 @@ public class ImportDeclaration extends Declaration {
     return String.format(
         "%s %s",
         Scanner.RESERVED_IMPORT,
-        nameId.getSourceCode()
+        RValueId.getSourceCode()
     );
   }
 
   @Override
   public <T> T accept(
       AstVisitor<T> ASTVisitor,
-      SymbolTable curSymbolTable
+      Scope curScope
   ) {
     return ASTVisitor.visit(
         this,
-        curSymbolTable
+        curScope
     );
   }
 

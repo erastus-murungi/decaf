@@ -8,25 +8,24 @@ import java.util.TreeSet;
 
 import decaf.analysis.syntax.ast.AST;
 import decaf.analysis.syntax.ast.Block;
-import decaf.analysis.syntax.ast.Name;
+import decaf.analysis.syntax.ast.RValue;
 import decaf.shared.Pair;
 import decaf.shared.descriptors.Descriptor;
 import decaf.shared.descriptors.GlobalDescriptor;
 import decaf.shared.descriptors.MethodDescriptor;
-import decaf.shared.symboltable.SymbolTable;
-import decaf.shared.symboltable.SymbolTableType;
+import decaf.shared.env.Scope;
 
 public class SymbolTableFlattener {
-  private final SymbolTable fields;
-  private final SymbolTable methods;
+  private final Scope fields;
+  private final Scope methods;
   private final TreeSet<String> imports;
 
-  private final HashMap<String, SymbolTable> cfgMethods = new HashMap<>();
+  private final HashMap<String, Scope> cfgMethods = new HashMap<>();
   private int uniqueIndex;
 
   public SymbolTableFlattener(GlobalDescriptor globalDescriptor) {
-    this.fields = globalDescriptor.globalVariablesSymbolTable;
-    this.methods = globalDescriptor.methodsSymbolTable;
+    this.fields = globalDescriptor.globalVariablesScope;
+    this.methods = globalDescriptor.methodsScope;
     this.imports = globalDescriptor.imports;
   }
 
@@ -43,10 +42,10 @@ public class SymbolTableFlattener {
       AST ast = toExplore.remove();
       for (Pair<String, AST> astPair : ast.getChildren()) {
         AST child = astPair.second();
-        if (child instanceof Name name) {
-          if (name.getLabel()
-                  .equals(oldLabel)) {
-            name.setLabel(newLabel);
+        if (child instanceof RValue RValue) {
+          if (RValue.getLabel()
+                    .equals(oldLabel)) {
+            RValue.setLabel(newLabel);
           }
         }
         if (!(child instanceof Block))
@@ -66,10 +65,10 @@ public class SymbolTableFlattener {
       AST ast = toExplore.remove();
       for (Pair<String, AST> astPair : ast.getChildren()) {
         AST child = astPair.second();
-        if (child instanceof Name name) {
-          if (name.getLabel()
-                  .equals(oldLabel)) {
-            name.setLabel(newLabel);
+        if (child instanceof RValue RValue) {
+          if (RValue.getLabel()
+                    .equals(oldLabel)) {
+            RValue.setLabel(newLabel);
           }
         }
         toExplore.add(child);
@@ -77,13 +76,14 @@ public class SymbolTableFlattener {
     }
   }
 
-  public HashMap<String, SymbolTable> createCFGSymbolTables() {
-    for (HashMap.Entry<String, Descriptor> methodEntry : methods.entries.entrySet()) {
+  public HashMap<String, Scope> createCFGSymbolTables() {
+    for (HashMap.Entry<String, Descriptor> methodEntry : methods.entrySet()) {
       // is this check necessary? does a method table only contain one entry of type MethodDescriptor?
       if (methodEntry.getValue() instanceof MethodDescriptor methodDesc) {
-        SymbolTable methodVars = new SymbolTable(null,
-                                                 SymbolTableType.Method,
-                                                 methodDesc.methodDefinition.getBlock()
+        Scope methodVars = new Scope(
+            null,
+            Scope.For.Method,
+            methodDesc.methodDefinition.getBlock()
         );
         cfgMethods.put(
             methodEntry.getKey(),
@@ -99,14 +99,14 @@ public class SymbolTableFlattener {
 //                    methodVars.entries.put(newParamName, paramEntry.getValue());
 //                    rename(methodDesc.methodDefinition.block, paramName, newParamName);
 //                }
-        methodVars.entries.putAll(methodDesc.parameterSymbolTable.entries);
-        methodVars.entries.putAll(this.fields.entries);
+        methodVars.putAll(methodDesc.parameterScope);
+        methodVars.putAll(this.fields);
         // iterate through all children of children blocks
         addChildrenVars(
             methodVars,
-            methodDesc.methodDefinition.getBlock().blockSymbolTable
+            methodDesc.methodDefinition.getBlock().blockScope
         );
-        this.fields.entries.forEach(methodVars.entries::remove);
+        this.fields.forEach(methodVars::remove);
         methodVars.parent = this.fields;
       }
     }
@@ -115,24 +115,24 @@ public class SymbolTableFlattener {
   }
 
   public void addChildrenVars(
-      SymbolTable methodTable,
-      SymbolTable currTable
+      Scope methodTable,
+      Scope currTable
   ) {
-    for (HashMap.Entry<String, Descriptor> variable : currTable.entries.entrySet()) {
+    for (HashMap.Entry<String, Descriptor> variable : currTable.entrySet()) {
       // uniquely name each valid irAssignableValue in method scope
       String varName = variable.getKey();
       String newVarName = varName;
-      if (methodTable.containsEntry(varName)) {
+      if (methodTable.containsKey(varName)) {
         newVarName += uniqueIndex++;
       }
-      methodTable.entries.put(
+      methodTable.put(
           newVarName,
           variable.getValue()
       );
 
       if (!varName.equals(newVarName)) {
-        currTable.entries.remove(varName);
-        currTable.entries.put(
+        currTable.remove(varName);
+        currTable.put(
             newVarName,
             variable.getValue()
         );
@@ -144,7 +144,7 @@ public class SymbolTableFlattener {
       }
     }
 
-    for (SymbolTable child : currTable.children)
+    for (Scope child : currTable.children)
       addChildrenVars(
           methodTable,
           child

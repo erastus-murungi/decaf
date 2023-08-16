@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
+import decaf.analysis.lexical.Scanner;
 import decaf.analysis.syntax.ast.AST;
 import decaf.analysis.syntax.ast.AssignOpExpr;
 import decaf.analysis.syntax.ast.Assignment;
@@ -35,13 +36,12 @@ import decaf.analysis.syntax.ast.Return;
 import decaf.analysis.syntax.ast.Statement;
 import decaf.analysis.syntax.ast.Type;
 import decaf.analysis.syntax.ast.While;
-import decaf.shared.Utils;
 import decaf.ir.dataflow.passes.BranchFoldingPass;
+import decaf.shared.Utils;
 import decaf.shared.descriptors.GlobalDescriptor;
 import decaf.shared.descriptors.MethodDescriptor;
+import decaf.shared.env.Scope;
 import decaf.shared.errors.SemanticError;
-import decaf.analysis.lexical.Scanner;
-import decaf.shared.symboltable.SymbolTable;
 
 public class ControlFlowGraph {
   private final Program program;
@@ -102,12 +102,11 @@ public class ControlFlowGraph {
 
 
   /**
-   *
    * @param basicBlockBranchLess The branch-less basic block to visit
-   * @param seen the set of basic blocks that have been seen
-   *               (to prevent infinite recursion)
-   * @param methodExitNop the NOP that represents the end of the method
-   *               (not used by this method, but used by others)
+   * @param seen                 the set of basic blocks that have been seen
+   *                             (to prevent infinite recursion)
+   * @param methodExitNop        the NOP that represents the end of the method
+   *                             (not used by this method, but used by others)
    */
 
   public static void visitBasicBlockBranchLess(
@@ -194,6 +193,22 @@ public class ControlFlowGraph {
     }
   }
 
+  private static String getOpString(LocationAssignExpr locationAssignExpr) {
+    String op;
+    if (locationAssignExpr.assignExpr instanceof final AssignOpExpr assignOpExpr) {
+      op = assignOpExpr.assignOp.label;
+    } else if (locationAssignExpr.assignExpr instanceof final CompoundAssignOpExpr assignOpExpr) {
+      op = assignOpExpr.compoundAssignOp.label;
+    } else if (locationAssignExpr.assignExpr instanceof Decrement) {
+      op = Scanner.DECREMENT;
+    } else if (locationAssignExpr.assignExpr instanceof Increment) {
+      op = Scanner.INCREMENT;
+    } else {
+      throw new IllegalStateException("unrecognized AST node " + locationAssignExpr.assignExpr);
+    }
+    return op;
+  }
+
   public HashMap<String, BasicBlock> getMethodNameToEntryBlockMapping() {
     return methodNameToEntryBlock;
   }
@@ -274,7 +289,7 @@ public class ControlFlowGraph {
 
     visitProgram(
         program,
-        globalDescriptor.globalVariablesSymbolTable
+        globalDescriptor.globalVariablesScope
     );
 
 
@@ -287,8 +302,8 @@ public class ControlFlowGraph {
       maximalVisitor.setExitNOP(methodNameToExitNop.get(k));
       checkNotNull(v.getSuccessor());
       maximalVisitor.visit(v.getSuccessor());
-      catchFalloutError((MethodDescriptor) globalDescriptor.methodsSymbolTable.getDescriptorFromValidScopes(k)
-                                                                              .orElseThrow());
+      catchFalloutError((MethodDescriptor) globalDescriptor.methodsScope.lookup(k)
+                                                                        .orElseThrow());
     });
     removeNOPs(
         prologue,
@@ -318,12 +333,12 @@ public class ControlFlowGraph {
 
   private BasicBlocksPair dispatch(
       AST ast,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     if (ast instanceof MethodDefinition methodDefinition) {
       return visitMethodDefinition(
           methodDefinition,
-          symbolTable
+          scope
       );
     } else if (ast instanceof FieldDeclaration fieldDeclaration) {
       return visitFieldDeclaration(fieldDeclaration);
@@ -332,26 +347,26 @@ public class ControlFlowGraph {
     } else if (ast instanceof For forStatement) {
       return visitFor(
           forStatement,
-          symbolTable
+          scope
       );
     } else if (ast instanceof While whileLoop) {
       return visitWhile(
           whileLoop,
-          symbolTable
+          scope
       );
     } else if (ast instanceof MethodDefinitionParameter methodDefinitionParameter) {
       return visitMethodDefinitionParameter(methodDefinitionParameter);
     } else if (ast instanceof Block block) {
       return visitBlock(
           block,
-          symbolTable
+          scope
       );
     } else if (ast instanceof Return returnStatement) {
       return visitReturn(returnStatement);
     } else if (ast instanceof If ifStatement) {
       return visitIf(
           ifStatement,
-          symbolTable
+          scope
       );
     } else if (ast instanceof MethodCallStatement methodCallStatement) {
       return visitMethodCallStatement(methodCallStatement);
@@ -376,7 +391,7 @@ public class ControlFlowGraph {
 
   public BasicBlocksPair visitMethodDefinition(
       MethodDefinition methodDefinition,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     var methodEntryNop = new NOP(
         methodDefinition.getMethodName()
@@ -392,7 +407,7 @@ public class ControlFlowGraph {
     for (var param : methodDefinition.getParameterList()) {
       var placeholder = dispatch(
           param,
-          symbolTable
+          scope
       );
       currentPair.endBlock.setSuccessor(placeholder.startBlock);
       placeholder.startBlock.addPredecessor(currentPair.endBlock);
@@ -400,7 +415,7 @@ public class ControlFlowGraph {
     }
     var methodBody = dispatch(
         methodDefinition.getBlock(),
-        symbolTable
+        scope
     );
     currentPair.endBlock.setSuccessor(methodBody.startBlock);
     methodBody.startBlock.addPredecessor(currentPair.endBlock);
@@ -421,7 +436,7 @@ public class ControlFlowGraph {
 
   public BasicBlocksPair visitFor(
       For forStatement,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     loopToBreak.push(new ArrayList<>());
     // If false, end with NOP, also end of for_statement
@@ -456,7 +471,7 @@ public class ControlFlowGraph {
     // If true, run the block.
     BasicBlocksPair truePair = dispatch(
         forStatement.block,
-        symbolTable
+        scope
     );
 
     evaluateBlock.setFalseTargetUnchecked(falseBlock);
@@ -507,7 +522,7 @@ public class ControlFlowGraph {
 
   public BasicBlocksPair visitWhile(
       While whileStatement,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     loopToBreak.push(new ArrayList<>());
     // If false, end with NOP, also end of while
@@ -528,7 +543,7 @@ public class ControlFlowGraph {
     // If true, run the block.
     var truePair = dispatch(
         whileStatement.body,
-        symbolTable
+        scope
     );
 
     conditionExpr.setTrueTarget(truePair.startBlock);
@@ -548,7 +563,7 @@ public class ControlFlowGraph {
 
   public void visitProgram(
       Program program,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     var curPair = new BasicBlocksPair(
         prologue,
@@ -561,7 +576,7 @@ public class ControlFlowGraph {
     for (var import_ : program.getImportDeclarationList()) {
       BasicBlocksPair placeholder = dispatch(
           import_,
-          symbolTable
+          scope
       );
       curPair.endBlock.setSuccessor(placeholder.startBlock);
       placeholder.startBlock.addPredecessor(curPair.endBlock);
@@ -570,7 +585,7 @@ public class ControlFlowGraph {
     for (var field : program.getFieldDeclarationList()) {
       BasicBlocksPair placeholder = dispatch(
           field,
-          symbolTable
+          scope
       );
       curPair.endBlock.setSuccessor(placeholder.startBlock);
       placeholder.startBlock.addPredecessor(curPair.endBlock);
@@ -587,7 +602,7 @@ public class ControlFlowGraph {
                 .getLabel(),
           dispatch(
               method,
-              symbolTable
+              scope
           ).startBlock
       );
       methodNameToExitNop.put(
@@ -600,7 +615,7 @@ public class ControlFlowGraph {
 
   public BasicBlocksPair visitBlock(
       Block block,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     NOP initial = new NOP();
     NOP exit = new NOP();
@@ -613,7 +628,7 @@ public class ControlFlowGraph {
     for (FieldDeclaration field : block.fieldDeclarationList) {
       BasicBlocksPair placeholder = dispatch(
           field,
-          symbolTable
+          scope
       );
       curPair.endBlock.setSuccessor(placeholder.startBlock);
       placeholder.startBlock.addPredecessor(curPair.endBlock);
@@ -653,7 +668,7 @@ public class ControlFlowGraph {
       if (statement instanceof Return returnStatement) {
         BasicBlocksPair returnPair = dispatch(
             returnStatement,
-            symbolTable
+            scope
         );
         curPair.endBlock.setSuccessor(returnPair.startBlock);
         returnPair.startBlock.addPredecessor(curPair.endBlock);
@@ -667,7 +682,7 @@ public class ControlFlowGraph {
       else {
         BasicBlocksPair placeholder = dispatch(
             statement,
-            symbolTable
+            scope
         );
         curPair.endBlock.setSuccessor(placeholder.startBlock);
         placeholder.startBlock.addPredecessor(curPair.endBlock);
@@ -685,7 +700,7 @@ public class ControlFlowGraph {
 
   public BasicBlocksPair visitIf(
       If ifStatement,
-      SymbolTable symbolTable
+      Scope scope
   ) {
     // always end with nop
     final NOP exit = new NOP();
@@ -693,7 +708,7 @@ public class ControlFlowGraph {
     // If true, run the block.
     BasicBlocksPair truePair = dispatch(
         ifStatement.ifBlock,
-        symbolTable
+        scope
     );
     if (truePair.endBlock.getSuccessor() == null) {
       // handling the cases when we have a "Continue" statement
@@ -708,7 +723,7 @@ public class ControlFlowGraph {
     if (ifStatement.elseBlock != null) {
       BasicBlocksPair falsePair = dispatch(
           ifStatement.elseBlock,
-          symbolTable
+          scope
       );
       if (falsePair.endBlock.getSuccessor() == null) {
         // handling the cases when we have a "Continue" statement
@@ -782,22 +797,6 @@ public class ControlFlowGraph {
         assignment,
         assignment
     );
-  }
-
-  private static String getOpString(LocationAssignExpr locationAssignExpr) {
-    String op;
-    if (locationAssignExpr.assignExpr instanceof final AssignOpExpr assignOpExpr) {
-      op = assignOpExpr.assignOp.label;
-    } else if (locationAssignExpr.assignExpr instanceof final CompoundAssignOpExpr assignOpExpr) {
-      op = assignOpExpr.compoundAssignOp.label;
-    } else if (locationAssignExpr.assignExpr instanceof Decrement) {
-      op = Scanner.DECREMENT;
-    } else if (locationAssignExpr.assignExpr instanceof Increment) {
-      op = Scanner.INCREMENT;
-    } else {
-      throw new IllegalStateException("unrecognized AST node " + locationAssignExpr.assignExpr);
-    }
-    return op;
   }
 
   public BasicBlocksPair visitMethodDefinitionParameter(MethodDefinitionParameter methodDefinitionParameter) {

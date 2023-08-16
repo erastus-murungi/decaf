@@ -5,8 +5,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import java.util.List;
 import java.util.Objects;
 
-import decaf.synthesis.asm.X86Register;
 import decaf.ir.names.IrValue;
+import decaf.synthesis.asm.X86Register;
 
 public class X86RegisterMappedValue extends X86MappedValue {
   X86Register x86Register;

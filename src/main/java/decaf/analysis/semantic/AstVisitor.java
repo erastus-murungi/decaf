@@ -29,90 +29,94 @@ import decaf.analysis.syntax.ast.MethodCall;
 import decaf.analysis.syntax.ast.MethodCallStatement;
 import decaf.analysis.syntax.ast.MethodDefinition;
 import decaf.analysis.syntax.ast.MethodDefinitionParameter;
-import decaf.analysis.syntax.ast.Name;
 import decaf.analysis.syntax.ast.ParenthesizedExpression;
 import decaf.analysis.syntax.ast.Program;
+import decaf.analysis.syntax.ast.RValue;
 import decaf.analysis.syntax.ast.Return;
 import decaf.analysis.syntax.ast.StringLiteral;
 import decaf.analysis.syntax.ast.UnaryOpExpression;
 import decaf.analysis.syntax.ast.VoidExpression;
 import decaf.analysis.syntax.ast.While;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 public interface AstVisitor<T> {
-  T visit(IntLiteral intLiteral, SymbolTable symbolTable);
+  T visit(IntLiteral intLiteral, Scope scope);
 
-  T visit(BooleanLiteral booleanLiteral, SymbolTable symbolTable);
+  T visit(BooleanLiteral booleanLiteral, Scope scope);
 
-  T visit(DecimalLiteral decimalLiteral, SymbolTable symbolTable);
+  T visit(DecimalLiteral decimalLiteral, Scope scope);
 
-  T visit(HexLiteral hexLiteral, SymbolTable symbolTable);
+  T visit(HexLiteral hexLiteral, Scope scope);
 
-  T visit(FieldDeclaration fieldDeclaration, SymbolTable symbolTable);
+  T visit(FieldDeclaration fieldDeclaration, Scope scope);
 
-  T visit(MethodDefinition methodDefinition, SymbolTable symbolTable);
+  T visit(MethodDefinition methodDefinition, Scope scope);
 
-  T visit(ImportDeclaration importDeclaration, SymbolTable symbolTable);
+  T visit(ImportDeclaration importDeclaration, Scope scope);
 
-  T visit(For forStatement, SymbolTable symbolTable);
+  T visit(For forStatement, Scope scope);
 
-  T visit(Break breakStatement, SymbolTable symbolTable);
+  T visit(Break breakStatement, Scope scope);
 
-  T visit(Continue continueStatement, SymbolTable symbolTable);
+  T visit(Continue continueStatement, Scope scope);
 
-  T visit(While whileStatement, SymbolTable symbolTable);
+  T visit(While whileStatement, Scope scope);
 
-  T visit(Program program, SymbolTable symbolTable);
+  T visit(Program program, Scope scope);
 
-  T visit(UnaryOpExpression unaryOpExpression, SymbolTable symbolTable);
+  T visit(UnaryOpExpression unaryOpExpression, Scope scope);
 
-  T visit(BinaryOpExpression binaryOpExpression, SymbolTable symbolTable);
+  T visit(BinaryOpExpression binaryOpExpression, Scope scope);
 
-  T visit(Block block, SymbolTable symbolTable);
+  T visit(Block block, Scope scope);
 
-  T visit(ParenthesizedExpression parenthesizedExpression,
-          SymbolTable symbolTable);
+  T visit(
+      ParenthesizedExpression parenthesizedExpression,
+      Scope scope
+  );
 
-  T visit(LocationArray locationArray, SymbolTable symbolTable);
+  T visit(LocationArray locationArray, Scope scope);
 
-  T visit(ExpressionParameter expressionParameter, SymbolTable symbolTable);
+  T visit(ExpressionParameter expressionParameter, Scope scope);
 
-  T visit(If ifStatement, SymbolTable symbolTable);
+  T visit(If ifStatement, Scope scope);
 
-  T visit(Return returnStatement, SymbolTable symbolTable);
+  T visit(Return returnStatement, Scope scope);
 
-  T visit(Array array, SymbolTable symbolTable);
+  T visit(Array array, Scope scope);
 
-  T visit(MethodCall methodCall, SymbolTable symbolTable);
+  T visit(MethodCall methodCall, Scope scope);
 
-  T visit(MethodCallStatement methodCallStatement, SymbolTable symbolTable);
+  T visit(MethodCallStatement methodCallStatement, Scope scope);
 
-  T visit(LocationAssignExpr locationAssignExpr, SymbolTable symbolTable);
+  T visit(LocationAssignExpr locationAssignExpr, Scope scope);
 
-  T visit(AssignOpExpr assignOpExpr, SymbolTable symbolTable);
+  T visit(AssignOpExpr assignOpExpr, Scope scope);
 
-  T visit(MethodDefinitionParameter methodDefinitionParameter,
-          SymbolTable symbolTable);
+  T visit(
+      MethodDefinitionParameter methodDefinitionParameter,
+      Scope scope
+  );
 
-  T visit(Name name, SymbolTable symbolTable);
+  T visit(RValue RValue, Scope scope);
 
-  T visit(LocationVariable locationVariable, SymbolTable symbolTable);
+  T visit(LocationVariable locationVariable, Scope scope);
 
-  T visit(Len len, SymbolTable symbolTable);
+  T visit(Len len, Scope scope);
 
-  T visit(Increment increment, SymbolTable symbolTable);
+  T visit(Increment increment, Scope scope);
 
-  T visit(Decrement decrement, SymbolTable symbolTable);
+  T visit(Decrement decrement, Scope scope);
 
-  T visit(CharLiteral charLiteral, SymbolTable symbolTable);
+  T visit(CharLiteral charLiteral, Scope scope);
 
-  T visit(StringLiteral stringLiteral, SymbolTable symbolTable);
+  T visit(StringLiteral stringLiteral, Scope scope);
 
-  T visit(CompoundAssignOpExpr compoundAssignOpExpr, SymbolTable symbolTable);
+  T visit(CompoundAssignOpExpr compoundAssignOpExpr, Scope scope);
 
-  T visit(Initialization initialization, SymbolTable symbolTable);
+  T visit(Initialization initialization, Scope scope);
 
-  T visit(Assignment assignment, SymbolTable symbolTable);
+  T visit(Assignment assignment, Scope scope);
 
-  T visit(VoidExpression voidExpression, SymbolTable symbolTable);
+  T visit(VoidExpression voidExpression, Scope scope);
 }

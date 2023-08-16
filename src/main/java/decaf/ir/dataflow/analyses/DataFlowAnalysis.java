@@ -10,12 +10,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import decaf.ir.InstructionList;
 import decaf.ir.cfg.BasicBlock;
 import decaf.ir.cfg.NOP;
-import decaf.ir.InstructionList;
 import decaf.ir.codes.Instruction;
-import decaf.shared.StronglyConnectedComponentsTarjan;
 import decaf.ir.dataflow.Direction;
+import decaf.shared.StronglyConnectedComponentsTarjan;
 
 public abstract class DataFlowAnalysis<T> {
   public Map<BasicBlock, Set<T>> out;

@@ -3,18 +3,18 @@ package decaf.ir.dataflow.ssapasses;
 
 import java.util.HashMap;
 
-import decaf.ir.cfg.BasicBlock;
 import decaf.ir.InstructionList;
+import decaf.ir.cfg.BasicBlock;
 import decaf.ir.codes.BinaryInstruction;
 import decaf.ir.codes.CopyInstruction;
 import decaf.ir.codes.Instruction;
 import decaf.ir.codes.Method;
 import decaf.ir.codes.StoreInstruction;
 import decaf.ir.codes.UnaryInstruction;
-import decaf.ir.names.IrSsaRegister;
 import decaf.ir.dataflow.OptimizationContext;
 import decaf.ir.dataflow.dominator.DominatorTree;
 import decaf.ir.dataflow.operand.Operand;
+import decaf.ir.names.IrSsaRegister;
 
 public class CommonSubExpressionEliminationSsaPass extends SsaOptimizationPass {
 

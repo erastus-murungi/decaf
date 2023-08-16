@@ -46,6 +46,15 @@ import static decaf.analysis.Token.Type.SEMICOLON;
 import static decaf.analysis.Token.Type.STRING_LITERAL;
 
 import com.google.common.collect.Lists;
+
+import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+
 import decaf.analysis.Token;
 import decaf.analysis.TokenPosition;
 import decaf.analysis.lexical.Scanner;
@@ -89,9 +98,9 @@ import decaf.analysis.syntax.ast.MethodCallParameter;
 import decaf.analysis.syntax.ast.MethodCallStatement;
 import decaf.analysis.syntax.ast.MethodDefinition;
 import decaf.analysis.syntax.ast.MethodDefinitionParameter;
-import decaf.analysis.syntax.ast.Name;
 import decaf.analysis.syntax.ast.ParenthesizedExpression;
 import decaf.analysis.syntax.ast.Program;
+import decaf.analysis.syntax.ast.RValue;
 import decaf.analysis.syntax.ast.RelationalOperator;
 import decaf.analysis.syntax.ast.Return;
 import decaf.analysis.syntax.ast.Statement;
@@ -105,18 +114,16 @@ import decaf.shared.CompilationContext;
 import decaf.shared.Pair;
 import decaf.shared.Utils;
 import decaf.shared.errors.ParserError;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-import org.jetbrains.annotations.NotNull;
 
 public class Parser {
-  @NotNull public final Scanner scanner;
-  @NotNull private final CompilationContext context;
-  @NotNull private final List<Token> tokens;
-  @NotNull private final List<ParserError> errors;
+  @NotNull
+  public final Scanner scanner;
+  @NotNull
+  private final CompilationContext context;
+  @NotNull
+  private final List<Token> tokens;
+  @NotNull
+  private final List<ParserError> errors;
   private final Program root;
   private int currentTokenIndex;
 
@@ -129,74 +136,120 @@ public class Parser {
     this.root = program();
   }
 
-  private static void addTerminal(Pair<String, AST> labelAndNode, String prefix,
-                                  String connector, List<String> tree) {
-    if (!labelAndNode.second().isTerminal())
+  private static void addTerminal(
+      Pair<String, AST> labelAndNode, String prefix,
+      String connector, List<String> tree
+  ) {
+    if (!labelAndNode.second()
+                     .isTerminal())
       throw new IllegalArgumentException();
     tree.add(prefix + connector + " " +
-             Utils.coloredPrint(labelAndNode.first(),
-                                Utils.ANSIColorConstants.ANSI_BLUE) +
-             " = " + labelAndNode.second());
+                 Utils.coloredPrint(
+                     labelAndNode.first(),
+                     Utils.ANSIColorConstants.ANSI_BLUE
+                 ) +
+                 " = " + labelAndNode.second());
   }
 
-  private static void addNonTerminal(Pair<String, AST> labelAndNode, int index,
-                                     int numChildren, String prefix,
-                                     String connector, List<String> tree) {
+  private static void addNonTerminal(
+      Pair<String, AST> labelAndNode, int index,
+      int numChildren, String prefix,
+      String connector, List<String> tree
+  ) {
     tree.add(String.format(
-        "%s%s %s = [%s]", prefix, connector, labelAndNode.first(),
-        Utils.coloredPrint(labelAndNode.second().getSourceCode(),
-                           Utils.ANSIColorConstants.ANSI_PURPLE)));
+        "%s%s %s = [%s]",
+        prefix,
+        connector,
+        labelAndNode.first(),
+        Utils.coloredPrint(
+            labelAndNode.second()
+                        .getSourceCode(),
+            Utils.ANSIColorConstants.ANSI_PURPLE
+        )
+    ));
     prefix += (index != numChildren - 1) ? PrintConstants.PIPE_PREFIX
-                                         : PrintConstants.SPACE_PREFIX;
-    treeBody(labelAndNode, tree, prefix);
+        : PrintConstants.SPACE_PREFIX;
+    treeBody(
+        labelAndNode,
+        tree,
+        prefix
+    );
   }
 
-  private static void treeBody(Pair<String, AST> parentNode, List<String> tree,
-                               String prefix) {
-    List<Pair<String, AST>> nodeList = parentNode.second().getChildren();
+  private static void treeBody(
+      Pair<String, AST> parentNode, List<String> tree,
+      String prefix
+  ) {
+    List<Pair<String, AST>> nodeList = parentNode.second()
+                                                 .getChildren();
     for (int i = 0; i < nodeList.size(); i++) {
       final String connector = (i == nodeList.size() - 1) ? PrintConstants.ELBOW
-                                                          : PrintConstants.TEE;
+          : PrintConstants.TEE;
       final Pair<String, AST> labelAndNode = nodeList.get(i);
-      if (labelAndNode.second().isTerminal())
-        addTerminal(labelAndNode, prefix, connector, tree);
+      if (labelAndNode.second()
+                      .isTerminal())
+        addTerminal(
+            labelAndNode,
+            prefix,
+            connector,
+            tree
+        );
       else
-        addNonTerminal(labelAndNode, i, nodeList.size(), prefix, connector,
-                       tree);
+        addNonTerminal(labelAndNode,
+                       i,
+                       nodeList.size(),
+                       prefix,
+                       connector,
+                       tree
+        );
     }
   }
 
-  public @NotNull List<ParserError> getErrors() { return errors; }
+  public @NotNull List<ParserError> getErrors() {
+    return errors;
+  }
 
   public String getPrettyErrorOutput() {
     return context.stringifyErrors(errors);
   }
 
-  public Program getRoot() { return root; }
+  public Program getRoot() {
+    return root;
+  }
 
   public final Program program() {
     var program = new Program();
     processImportDeclarations(program);
     processFieldOrMethod(program);
     if (getCurrentTokenType() != EOF && !hasError()) {
-      errors.add(new ParserError(ParserError.ErrorType.DID_NOT_FINISH_PARSING,
-                                 getCurrentToken(),
-                                 "did not finish parsing the program"));
+      errors.add(new ParserError(
+          ParserError.ErrorType.DID_NOT_FINISH_PARSING,
+          getCurrentToken(),
+          "did not finish parsing the program"
+      ));
     }
     if (context.debugModeOn())
       printParseTree();
     return program;
   }
 
-  private Token getCurrentToken() { return tokens.get(currentTokenIndex); }
+  private Token getCurrentToken() {
+    return tokens.get(currentTokenIndex);
+  }
 
-  private Token.Type getCurrentTokenType() { return getCurrentToken().type; }
+  private Token.Type getCurrentTokenType() {
+    return getCurrentToken().type;
+  }
 
-  private @NotNull Optional<Token> consumeToken(Token.Type expectedType,
-                                                String errorMessage) {
+  private @NotNull Optional<Token> consumeToken(
+      Token.Type expectedType,
+      String errorMessage
+  ) {
     if (getCurrentTokenType() != expectedType) {
       errors.add(new ParserError(ParserError.ErrorType.UNEXPECTED_TOKEN,
-                                 getCurrentToken(), errorMessage));
+                                 getCurrentToken(),
+                                 errorMessage
+      ));
       return Optional.empty();
     } else {
       var token = getCurrentToken();
@@ -207,14 +260,18 @@ public class Parser {
 
   private @NotNull Optional<Token> consumeToken(Token.Type expectedType) {
     String s = getCurrentToken().lexeme;
-    if (getCurrentToken().type.toString().startsWith("RESERVED")) {
+    if (getCurrentToken().type.toString()
+                              .startsWith("RESERVED")) {
       s = "reserved keyword "
           + "\"" + s + "\"";
     }
     var errMessage = "expected "
-                     + "\"" + Token.getScannerSourceCode(expectedType) + "\""
-                     + " received " + s;
-    return consumeToken(expectedType, errMessage);
+        + "\"" + Token.getScannerSourceCode(expectedType) + "\""
+        + " received " + s;
+    return consumeToken(
+        expectedType,
+        errMessage
+    );
   }
 
   private Token consumeTokenNoCheck() {
@@ -223,12 +280,16 @@ public class Parser {
     return token;
   }
 
-  private Optional<Token> consumeToken(Token.Type expectedType,
-                                       Function<Token, String> getErrMessage) {
+  private Optional<Token> consumeToken(
+      Token.Type expectedType,
+      Function<Token, String> getErrMessage
+  ) {
     if (getCurrentTokenType() != expectedType) {
       final String errMessage = getErrMessage.apply(getCurrentToken());
       errors.add(new ParserError(ParserError.ErrorType.UNEXPECTED_TOKEN,
-                                 getCurrentToken(), errMessage));
+                                 getCurrentToken(),
+                                 errMessage
+      ));
       return Optional.empty();
     }
     var token = getCurrentToken();
@@ -236,7 +297,9 @@ public class Parser {
     return Optional.of(token);
   }
 
-  public boolean hasError() { return !errors.isEmpty(); }
+  public boolean hasError() {
+    return !errors.isEmpty();
+  }
 
   private Optional<Expression> parseOrExpr() {
     return parseAndExpr().flatMap(andExpr -> {
@@ -244,10 +307,14 @@ public class Parser {
         var tokenPosition = consumeTokenNoCheck().tokenPosition;
         return parseOrExpr().map(
             orExpr
-            -> BinaryOpExpression.of(
+                -> BinaryOpExpression.of(
                 andExpr,
-                new ConditionalOperator(tokenPosition, Scanner.CONDITIONAL_OR),
-                orExpr));
+                new ConditionalOperator(
+                    tokenPosition,
+                    Scanner.CONDITIONAL_OR
+                ),
+                orExpr
+            ));
       }
       return Optional.of(andExpr);
     });
@@ -257,16 +324,20 @@ public class Parser {
     return parseEqualityExpr().flatMap(equalityExpr -> {
       if (getCurrentTokenType() == CONDITIONAL_AND) {
         return consumeToken(
-                   CONDITIONAL_AND,
-                   "was promised conditional and ('&&') by implementation")
+            CONDITIONAL_AND,
+            "was promised conditional and ('&&') by implementation"
+        )
             .flatMap(token
-                     -> parseAndExpr().map(
-                         andExpr
-                         -> BinaryOpExpression.of(
-                             equalityExpr,
-                             new ConditionalOperator(token.tokenPosition,
-                                                     Scanner.CONDITIONAL_AND),
-                             andExpr)));
+                         -> parseAndExpr().map(
+                andExpr
+                    -> BinaryOpExpression.of(
+                    equalityExpr,
+                    new ConditionalOperator(
+                        token.tokenPosition,
+                        Scanner.CONDITIONAL_AND
+                    ),
+                    andExpr
+                )));
       }
       return Optional.of(equalityExpr);
     });
@@ -277,14 +348,16 @@ public class Parser {
       if (getCurrentTokenType() == EQ || getCurrentTokenType() == NEQ) {
         return consumeToken(getCurrentTokenType())
             .flatMap(token
-                     -> parseEqualityExpr().map(
-                         equalityExpr
-                         -> BinaryOpExpression.of(
-                             relationalExpr,
-                             new EqualityOperator(
-                                 token.tokenPosition,
-                                 (token.type == EQ) ? Scanner.EQ : Scanner.NEQ),
-                             equalityExpr)));
+                         -> parseEqualityExpr().map(
+                equalityExpr
+                    -> BinaryOpExpression.of(
+                    relationalExpr,
+                    new EqualityOperator(
+                        token.tokenPosition,
+                        (token.type == EQ) ? Scanner.EQ: Scanner.NEQ
+                    ),
+                    equalityExpr
+                )));
       }
       return Optional.of(relationalExpr);
     });
@@ -293,8 +366,8 @@ public class Parser {
   private Optional<Expression> parseRelationalExpr() {
     return parseAddSubExpr().flatMap(
         addSubExpr -> {
-      if (getCurrentTokenType() == GT || getCurrentTokenType() == LT ||
-          getCurrentTokenType() == GEQ || getCurrentTokenType() == LEQ) {
+          if (getCurrentTokenType() == GT || getCurrentTokenType() == LT ||
+              getCurrentTokenType() == GEQ || getCurrentTokenType() == LEQ) {
             return consumeToken(getCurrentTokenType()).flatMap(
                 token -> parseRelationalExpr().map(
                     relationalExpr -> switch (token.type) {
@@ -352,249 +425,312 @@ public class Parser {
                 )));
           }
           return Optional.of(mulDivRemExpr);
-      }
+        }
     );
   }
 
   private Optional<Expression> parseMulDivRemExpr() {
-      return parseExpr().flatMap(expression -> {
-        if (getCurrentTokenType() == MULTIPLY ||
-            getCurrentTokenType() == DIVIDE || getCurrentTokenType() == MOD) {
-          return consumeToken(getCurrentTokenType())
-              .flatMap(token
-                       -> parseMulDivRemExpr().map(
-                           mulDivRemExpr
-                           -> BinaryOpExpression.of(
-                               expression,
-                               new ArithmeticOperator(
-                                   token.tokenPosition,
-                                   (token.type == MULTIPLY) ? Scanner.MULTIPLY
-                                   : (token.type == DIVIDE) ? Scanner.DIVIDE
-                                                            : Scanner.MOD),
-                               mulDivRemExpr)));
-        }
-        return Optional.of(expression);
-      });
+    return parseExpr().flatMap(expression -> {
+      if (getCurrentTokenType() == MULTIPLY ||
+          getCurrentTokenType() == DIVIDE || getCurrentTokenType() == MOD) {
+        return consumeToken(getCurrentTokenType())
+            .flatMap(token
+                         -> parseMulDivRemExpr().map(
+                mulDivRemExpr
+                    -> BinaryOpExpression.of(
+                    expression,
+                    new ArithmeticOperator(
+                        token.tokenPosition,
+                        (token.type == MULTIPLY) ? Scanner.MULTIPLY
+                            : (token.type == DIVIDE) ? Scanner.DIVIDE
+                            : Scanner.MOD
+                    ),
+                    mulDivRemExpr
+                )));
+      }
+      return Optional.of(expression);
+    });
   }
 
   private Optional<Expression> parseUnaryOpExpr() {
-      return consumeToken(getCurrentTokenType())
-          .flatMap(
-              unaryOp
-              -> parseExpr().map(
-                  expression
-                  -> new UnaryOpExpression(
-                      new UnaryOperator(unaryOp.tokenPosition, unaryOp.lexeme),
-                      expression)));
+    return consumeToken(getCurrentTokenType())
+        .flatMap(
+            unaryOp
+                -> parseExpr().map(
+                expression
+                    -> new UnaryOpExpression(
+                    new UnaryOperator(
+                        unaryOp.tokenPosition,
+                        unaryOp.lexeme
+                    ),
+                    expression
+                )));
   }
 
   private Optional<ParenthesizedExpression> parseParenthesizedExpression() {
-      return consumeToken(
-                 LEFT_PARENTHESIS,
-                 "expected a left parenthesis to open a parenthesized expression")
-          .flatMap(
-              tk
-              -> parseOrExpr().flatMap(
-                  expr
-                  -> consumeToken(
-                         RIGHT_PARENTHESIS,
-                         "expected a right parenthesis to close a parenthesized expression")
-                         .map(tk1
-                              -> new ParenthesizedExpression(tk.tokenPosition,
-                                                             expr))));
+    return consumeToken(
+        LEFT_PARENTHESIS,
+        "expected a left parenthesis to open a parenthesized expression"
+    )
+        .flatMap(
+            tk
+                -> parseOrExpr().flatMap(
+                expr
+                    -> consumeToken(
+                    RIGHT_PARENTHESIS,
+                    "expected a right parenthesis to close a parenthesized expression"
+                )
+                    .map(tk1
+                             -> new ParenthesizedExpression(
+                        tk.tokenPosition,
+                        expr
+                    ))));
   }
 
   private Optional<? extends Expression> parseLocationOrMethodCall() {
-      return parseName("expected a valid identifier").flatMap(name -> {
-        if (getCurrentTokenType() == LEFT_SQUARE_BRACKET) {
-          return parseLocationArray(name);
-        } else if (getCurrentTokenType() == LEFT_PARENTHESIS) {
-          return parseMethodCall(name);
-        } else {
-          return Optional.of(new LocationVariable(name));
-        }
-      });
+    return parseName("expected a valid identifier").flatMap(name -> {
+      if (getCurrentTokenType() == LEFT_SQUARE_BRACKET) {
+        return parseLocationArray(name);
+      } else if (getCurrentTokenType() == LEFT_PARENTHESIS) {
+        return parseMethodCall(name);
+      } else {
+        return Optional.of(new LocationVariable(name));
+      }
+    });
   }
 
   private void processImportDeclarations(Program program) {
-      while (getCurrentTokenType() == RESERVED_IMPORT) {
-        parseImportDeclaration().ifPresent(
-            program.getImportDeclarationList()::add);
-      }
+    while (getCurrentTokenType() == RESERVED_IMPORT) {
+      parseImportDeclaration().ifPresent(
+          program.getImportDeclarationList()::add);
+    }
   }
 
   private void parseFieldDeclarations(List<FieldDeclaration> fieldDeclarationList) {
-      if (getCurrentToken().type == RESERVED_BOOL ||
-          getCurrentToken().type == RESERVED_INT) {
-        do {
-          var fieldDeclaration = parseFieldDeclaration();
-          if (fieldDeclaration.isPresent()) {
-            fieldDeclarationList.add(fieldDeclaration.get());
-          } else {
-            break;
-          }
-        } while ((getCurrentToken().type == RESERVED_BOOL ||
-                  getCurrentToken().type == RESERVED_INT));
-        consumeToken(SEMICOLON, (Token t) -> {
-          if (t.type == ASSIGN) {
-            return "initializers not allowed here";
-          } else if (t.type == ID) {
-            return "expected \";\" but found " + Scanner.IDENTIFIER +
-                " : maybe missing a comma between variables in field decl?";
-          } else {
-            return "expected " + Scanner.SEMICOLON + " received " +
-                getCurrentTokenType().toString();
-          }
-        });
-        if ((getCurrentToken().type == RESERVED_BOOL ||
-             getCurrentToken().type == RESERVED_INT)) {
-          parseFieldDeclarations(fieldDeclarationList);
+    if (getCurrentToken().type == RESERVED_BOOL ||
+        getCurrentToken().type == RESERVED_INT) {
+      do {
+        var fieldDeclaration = parseFieldDeclaration();
+        if (fieldDeclaration.isPresent()) {
+          fieldDeclarationList.add(fieldDeclaration.get());
+        } else {
+          break;
         }
+      } while ((getCurrentToken().type == RESERVED_BOOL ||
+          getCurrentToken().type == RESERVED_INT));
+      consumeToken(
+          SEMICOLON,
+          (Token t) -> {
+            if (t.type == ASSIGN) {
+              return "initializers not allowed here";
+            } else if (t.type == ID) {
+              return "expected \";\" but found " + Scanner.IDENTIFIER +
+                  " : maybe missing a comma between variables in field decl?";
+            } else {
+              return "expected " + Scanner.SEMICOLON + " received " +
+                  getCurrentTokenType().toString();
+            }
+          }
+      );
+      if ((getCurrentToken().type == RESERVED_BOOL ||
+          getCurrentToken().type == RESERVED_INT)) {
+        parseFieldDeclarations(fieldDeclarationList);
       }
+    }
   }
 
   private void parseFieldDeclarationGroup(
-      List<Name> variables,
+      List<RValue> variables,
       List<Array> arrays,
-      Name nameId
+      RValue RValueId
   ) {
-      if (getCurrentToken().type == LEFT_SQUARE_BRACKET) {
-        consumeToken(LEFT_SQUARE_BRACKET,
-                     "was promised a left square bracket by the implementation")
-            .flatMap(
-                tk
-                -> parseIntLiteral().flatMap(
-                    intLiteral
-                    -> consumeToken(
-                           RIGHT_SQUARE_BRACKET,
-                           "expected a right square bracket to close an array declaration")
-                           .map(tk1
-                                -> arrays.add(new Array(intLiteral, nameId)))));
-      } else {
-        variables.add(nameId);
-      }
+    if (getCurrentToken().type == LEFT_SQUARE_BRACKET) {
+      consumeToken(
+          LEFT_SQUARE_BRACKET,
+          "was promised a left square bracket by the implementation"
+      )
+          .flatMap(
+              tk
+                  -> parseIntLiteral().flatMap(
+                  intLiteral
+                      -> consumeToken(
+                      RIGHT_SQUARE_BRACKET,
+                      "expected a right square bracket to close an array declaration"
+                  )
+                      .map(tk1
+                               -> arrays.add(new Array(
+                          RValueId.tokenPosition,
+                          intLiteral,
+                          RValueId.getLabel()
+                      )))));
+    } else {
+      variables.add(RValueId);
+    }
   }
 
   private Optional<IntLiteral> parseIntLiteral() {
-      Token intLiteralToken;
-      if (getCurrentToken().type == DECIMAL_LITERAL) {
-        intLiteralToken = consumeTokenNoCheck();
-        return Optional.of(new DecimalLiteral(intLiteralToken.tokenPosition,
-                                              intLiteralToken.lexeme));
-      } else if (getCurrentToken().type == HEX_LITERAL) {
-        intLiteralToken = consumeTokenNoCheck();
-        return Optional.of(new HexLiteral(intLiteralToken.tokenPosition,
-                                          intLiteralToken.lexeme));
+    Token intLiteralToken;
+    if (getCurrentToken().type == DECIMAL_LITERAL) {
+      intLiteralToken = consumeTokenNoCheck();
+      return Optional.of(new DecimalLiteral(
+          intLiteralToken.tokenPosition,
+          intLiteralToken.lexeme
+      ));
+    } else if (getCurrentToken().type == HEX_LITERAL) {
+      intLiteralToken = consumeTokenNoCheck();
+      return Optional.of(new HexLiteral(
+          intLiteralToken.tokenPosition,
+          intLiteralToken.lexeme
+      ));
+    } else {
+      if (getCurrentTokenType() == RIGHT_SQUARE_BRACKET) {
+        errors.add(new ParserError(ParserError.ErrorType.MISSING_ARRAY_SIZE,
+                                   getCurrentToken(),
+                                   "missing array size"
+        ));
+        consumeTokenNoCheck();
       } else {
-        if (getCurrentTokenType() == RIGHT_SQUARE_BRACKET) {
-          errors.add(new ParserError(ParserError.ErrorType.MISSING_ARRAY_SIZE,
-                                     getCurrentToken(), "missing array size"));
-          consumeTokenNoCheck();
-        } else {
-          errors.add(new ParserError(ParserError.ErrorType.UNEXPECTED_TOKEN,
-                                     getCurrentToken(),
-                                     "expected a valid int literal"));
-        }
-        return Optional.empty();
+        errors.add(new ParserError(
+            ParserError.ErrorType.UNEXPECTED_TOKEN,
+            getCurrentToken(),
+            "expected a valid int literal"
+        ));
       }
+      return Optional.empty();
+    }
   }
 
   private void parseFieldDeclarationGroup(
       @NotNull Program program,
-      @NotNull Name nameId,
+      @NotNull RValue RValueId,
       @NotNull Type type,
       @NotNull TokenPosition tokenPosition
   ) {
-      // dealing with fieldDeclarations
-      var variables = new ArrayList<Name>();
-      var arrays = new ArrayList<Array>();
-      parseFieldDeclarationGroup(variables, arrays, nameId);
-      while (getCurrentToken().type == COMMA) {
-        consumeToken(COMMA);
-        parseName("expected a valid name but found " + getCurrentToken().lexeme)
-            .map(nameId1 -> {
-              parseFieldDeclarationGroup(variables, arrays, nameId1);
-              return nameId1;
-            })
-            .orElseGet(() -> {
-              errors.add(new ParserError(
-                  ParserError.ErrorType.MISSING_NAME, getCurrentToken(),
-                  String.format("expected a valid name but found %s",
-                                getCurrentToken().lexeme)));
-              return Name.dummyName;
-            });
-      }
-      consumeToken(SEMICOLON,
-                   "expected a semicolon to terminate a field declaration")
-          .map(token
-               -> program.getFieldDeclarationList().add(new FieldDeclaration(
-                   tokenPosition, type, variables, arrays)));
-      processFieldOrMethod(program);
+    // dealing with fieldDeclarations
+    var variables = new ArrayList<RValue>();
+    var arrays = new ArrayList<Array>();
+    parseFieldDeclarationGroup(variables,
+                               arrays,
+                               RValueId
+    );
+    while (getCurrentToken().type == COMMA) {
+      consumeToken(COMMA);
+      parseName("expected a valid name but found " + getCurrentToken().lexeme)
+          .map(nameId1 -> {
+            parseFieldDeclarationGroup(
+                variables,
+                arrays,
+                nameId1
+            );
+            return nameId1;
+          })
+          .orElseGet(() -> {
+            errors.add(new ParserError(
+                ParserError.ErrorType.MISSING_NAME,
+                getCurrentToken(),
+                String.format(
+                    "expected a valid name but found %s",
+                    getCurrentToken().lexeme
+                )
+            ));
+            return RValue.DUMMY_R_VALUE;
+          });
+    }
+    consumeToken(
+        SEMICOLON,
+        "expected a semicolon to terminate a field declaration"
+    )
+        .map(token
+                 -> program.getFieldDeclarationList()
+                           .add(new FieldDeclaration(
+                               tokenPosition,
+                               type,
+                               variables,
+                               arrays
+                           )));
+    processFieldOrMethod(program);
   }
 
   private void parseMethodDeclaration(
       List<MethodDefinition> methodDefinitionList,
-      Name nameId,
+      RValue RValueId,
       Type type
   ) {
-      var methodDefinitionParameterList = parseMethodArguments();
-      parseBlock().ifPresent(
-          block
-          -> methodDefinitionList.add(new MethodDefinition(
-              nameId.tokenPosition, type, methodDefinitionParameterList, nameId,
-              block)));
-      parseMethodDeclarations(methodDefinitionList);
+    var methodDefinitionParameterList = parseMethodArguments();
+    parseBlock().ifPresent(
+        block
+            -> methodDefinitionList.add(new MethodDefinition(
+            RValueId.tokenPosition,
+            type,
+            methodDefinitionParameterList,
+            RValueId,
+            block
+        )));
+    parseMethodDeclarations(methodDefinitionList);
   }
 
   private void processFieldOrMethod(Program program) {
-      if (getCurrentTokenType() == RESERVED_INT ||
-          getCurrentTokenType() == RESERVED_BOOL) {
-        // could be an int or bool
-        var position = getCurrentToken().tokenPosition;
-        parseType().map(
-            fieldType
-            -> parseName("expected a valid name but found " +
-                         getCurrentToken().lexeme)
-                   .map(nameId -> {
-                     if (getCurrentTokenType() == LEFT_PARENTHESIS) {
-                       parseMethodDeclaration(program.getMethodDefinitionList(),
-                                              nameId, fieldType);
-                     } else {
-                       parseFieldDeclarationGroup(program, nameId, fieldType,
-                                                  position);
-                     }
-                     return fieldType;
-                   }));
-      } else if (getCurrentTokenType() == RESERVED_VOID) {
-        parseMethodDeclarations(program.getMethodDefinitionList());
-      } else {
-        if (getCurrentTokenType() == ID &&
-            currentTokenIndex + 1 < tokens.size() &&
-            tokens.get(currentTokenIndex + 1).type == LEFT_PARENTHESIS) {
-          errors.add(new ParserError(
-              ParserError.ErrorType.MISSING_RETURN_TYPE, getCurrentToken(),
-              String.format("method `%s` missing return type",
-                            getCurrentToken().lexeme)));
-        } else if (getCurrentTokenType() == ID) {
-          errors.add(new ParserError(ParserError.ErrorType.MISSING_FIELD_TYPE,
-                                     getCurrentToken(),
-                                     String.format("field `%s` missing type",
-                                                   getCurrentToken().lexeme)));
-        }
+    if (getCurrentTokenType() == RESERVED_INT ||
+        getCurrentTokenType() == RESERVED_BOOL) {
+      // could be an int or bool
+      var position = getCurrentToken().tokenPosition;
+      parseType().map(
+          fieldType
+              -> parseName("expected a valid name but found " +
+                               getCurrentToken().lexeme)
+              .map(nameId -> {
+                if (getCurrentTokenType() == LEFT_PARENTHESIS) {
+                  parseMethodDeclaration(program.getMethodDefinitionList(),
+                                         nameId,
+                                         fieldType
+                  );
+                } else {
+                  parseFieldDeclarationGroup(program,
+                                             nameId,
+                                             fieldType,
+                                             position
+                  );
+                }
+                return fieldType;
+              }));
+    } else if (getCurrentTokenType() == RESERVED_VOID) {
+      parseMethodDeclarations(program.getMethodDefinitionList());
+    } else {
+      if (getCurrentTokenType() == ID &&
+          currentTokenIndex + 1 < tokens.size() &&
+          tokens.get(currentTokenIndex + 1).type == LEFT_PARENTHESIS) {
+        errors.add(new ParserError(
+            ParserError.ErrorType.MISSING_RETURN_TYPE,
+            getCurrentToken(),
+            String.format(
+                "method `%s` missing return type",
+                getCurrentToken().lexeme
+            )
+        ));
+      } else if (getCurrentTokenType() == ID) {
+        errors.add(new ParserError(
+            ParserError.ErrorType.MISSING_FIELD_TYPE,
+            getCurrentToken(),
+            String.format(
+                "field `%s` missing type",
+                getCurrentToken().lexeme
+            )
+        ));
       }
+    }
   }
 
   private void parseMethodDeclarations(List<MethodDefinition> methodDefinitionList) {
-      while (getCurrentTokenType() == RESERVED_BOOL ||
-             getCurrentTokenType() == RESERVED_INT ||
-             getCurrentTokenType() == RESERVED_VOID) {
-        parseMethodDeclaration().ifPresent(methodDefinitionList::add);
-      }
+    while (getCurrentTokenType() == RESERVED_BOOL ||
+        getCurrentTokenType() == RESERVED_INT ||
+        getCurrentTokenType() == RESERVED_VOID) {
+      parseMethodDeclaration().ifPresent(methodDefinitionList::add);
+    }
   }
 
   private Type parseMethodReturnType() {
-      final Token token = consumeTokenNoCheck();
-      return switch (token.type) {
+    final Token token = consumeTokenNoCheck();
+    return switch (token.type) {
       case RESERVED_BOOL -> decaf.analysis.syntax.ast.Type.Bool;
       case RESERVED_INT -> decaf.analysis.syntax.ast.Type.Int;
       case RESERVED_VOID -> decaf.analysis.syntax.ast.Type.Void;
@@ -752,7 +888,7 @@ public class Parser {
               "was expecting a method call to end with a right parenthesis"
           ).map(
               tk1 -> new MethodCall(
-                  new Name(
+                  new RValue(
                       token.lexeme,
                       token.tokenPosition
                   ),
@@ -763,7 +899,7 @@ public class Parser {
     );
   }
 
-  private Optional<MethodCall> parseMethodCall(@NotNull Name name) {
+  private Optional<MethodCall> parseMethodCall(@NotNull RValue RValue) {
     return consumeToken(
         LEFT_PARENTHESIS,
         "was expecting a method call to start with a left parenthesis: `(`"
@@ -775,7 +911,7 @@ public class Parser {
               "was expecting a method call to end with a right parenthesis"
           ).map(
               tk1 -> new MethodCall(
-                  name,
+                  RValue,
                   methodCallParameterList
               )
           );
@@ -957,7 +1093,7 @@ public class Parser {
     };
   }
 
-  private Optional<LocationArray> parseLocationArray(@NotNull Name name) {
+  private Optional<LocationArray> parseLocationArray(@NotNull RValue RValue) {
     return consumeToken(
         LEFT_SQUARE_BRACKET,
         "expected a left square bracket (`[`) to open array[expr]"
@@ -968,7 +1104,7 @@ public class Parser {
                 "expected a right square bracket (`]`) to close array[expr]"
             ).map(
                 tk1 -> new LocationArray(
-                    name,
+                    RValue,
                     expression
                 )
             )
@@ -977,12 +1113,12 @@ public class Parser {
 
   private Optional<? extends Location> parseLocation(@NotNull Token token) {
     if (getCurrentToken().type == LEFT_SQUARE_BRACKET) {
-      return parseLocationArray(new Name(
+      return parseLocationArray(new RValue(
           token.lexeme,
           token.tokenPosition
       ));
     }
-    return Optional.of(new LocationVariable(new Name(
+    return Optional.of(new LocationVariable(new RValue(
         token.lexeme,
         token.tokenPosition
     )));
@@ -1374,7 +1510,7 @@ public class Parser {
                               Scanner.IDENTIFIER
                           ).map(
                               nameId -> {
-                                var variables = new ArrayList<Name>();
+                                var variables = new ArrayList<RValue>();
                                 var arrays = new ArrayList<Array>();
                                 parseFieldDeclarationGroup(
                                     variables,
@@ -1397,7 +1533,7 @@ public class Parser {
                                                 "expected valid field name"
                                             )
                                         );
-                                        return new Name(
+                                        return new RValue(
                                             "`MISSING FIELD NAME`",
                                             getCurrentToken().tokenPosition
                                         );
@@ -1432,28 +1568,28 @@ public class Parser {
                       );
   }
 
-  private Optional<Name> parseName(
+  private Optional<RValue> parseName(
       String expected
   ) {
     return consumeToken(
         ID,
         expected
     ).map(
-        token -> new Name(
+        token -> new RValue(
             token.lexeme,
             token.tokenPosition
         )
     );
   }
 
-  private Optional<Name> parseName(Function<Token, String> errMessageProvider) {
+  private Optional<RValue> parseName(Function<Token, String> errMessageProvider) {
     final var optionalToken = consumeToken(
         ID,
         errMessageProvider
     );
     if (optionalToken.isPresent()) {
       final Token token = optionalToken.get();
-      return Optional.of(new Name(
+      return Optional.of(new RValue(
           token.lexeme,
           token.tokenPosition
       ));
@@ -1503,12 +1639,12 @@ public class Parser {
     for (String s : tree) {
       System.out.println(s);
     }
-      }
+  }
 
-      private static class PrintConstants {
-        public static final String ELBOW = "└──";
-        public static final String TEE = "├──";
-        public static final String PIPE_PREFIX = "│   ";
-        public static final String SPACE_PREFIX = "    ";
-      }
+  private static class PrintConstants {
+    public static final String ELBOW = "└──";
+    public static final String TEE = "├──";
+    public static final String PIPE_PREFIX = "│   ";
+    public static final String SPACE_PREFIX = "    ";
+  }
 }

@@ -13,8 +13,10 @@ import decaf.shared.errors.Error;
 public class CompilationContext {
   public static final String NEW_LINE = "\n";
   private final String sourceCode;
-  @NotNull private final Logger logger;
-  @NotNull private Boolean isDebugModeOn;
+  @NotNull
+  private final Logger logger;
+  @NotNull
+  private Boolean isDebugModeOn;
 
   public CompilationContext(@NotNull String sourceCode) {
     this.sourceCode = sourceCode;
@@ -41,7 +43,9 @@ public class CompilationContext {
   }
 
   public <ErrType extends Enum<ErrType>> String stringifyErrors(@NotNull Collection<? extends Error<ErrType>> errors) {
-    return errors.stream().map(this::stringifyError).collect(Collectors.joining(NEW_LINE.repeat(2)));
+    return errors.stream()
+                 .map(this::stringifyError)
+                 .collect(Collectors.joining(NEW_LINE.repeat(2)));
   }
 
   <ErrType extends Enum<ErrType>> String stringifyError(@NotNull Error<ErrType> error) {
@@ -53,8 +57,12 @@ public class CompilationContext {
     output.add(Utils.coloredPrint(
         String.format(
             "%s[%s]",
-            error.errorType().getClass().getEnclosingClass().getSimpleName(),
-            error.errorType().name()
+            error.errorType()
+                 .getClass()
+                 .getEnclosingClass()
+                 .getSimpleName(),
+            error.errorType()
+                 .name()
         ),
         Utils.ANSIColorConstants.ANSI_RED_BOLD
     ) + ": " + Utils.coloredPrint(
@@ -72,8 +80,10 @@ public class CompilationContext {
     );
     var precursorLines = Arrays.copyOfRange(
         sourceCodeLines,
-        error.tokenPosition().line() - numPrecursorLines,
-        error.tokenPosition().line()
+        error.tokenPosition()
+             .line() - numPrecursorLines,
+        error.tokenPosition()
+             .line()
     );
 
     var numDigits = (int) Math.log10(sourceCodeLines.length) + 1;
@@ -81,23 +91,27 @@ public class CompilationContext {
         Utils.identBlockWithNumbering(
             precursorLines,
             indent,
-            error.tokenPosition().line() - numPrecursorLines + 1,
+            error.tokenPosition()
+                 .line() - numPrecursorLines + 1,
             numDigits
         )
     );
 
     // context of the problematic line
-    var problematicLine = sourceCodeLines[error.tokenPosition().line()];
+    var problematicLine = sourceCodeLines[error.tokenPosition()
+                                               .line()];
     output.add(Utils.identPointNumberOneLine(
         problematicLine,
         subIndent,
-        error.tokenPosition().line() + 1,
+        error.tokenPosition()
+             .line() + 1,
         numDigits
     ));
 
     // underline column of the problematic line
     var underline = Utils.coloredPrint(
-        Utils.SPACE.repeat(error.tokenPosition().column() + numDigits + 3),
+        Utils.SPACE.repeat(error.tokenPosition()
+                                .column() + numDigits + 3),
         Utils.ANSIColorConstants.ANSI_GREEN_BOLD
     );
     underline += Utils.coloredPrint(
@@ -108,7 +122,7 @@ public class CompilationContext {
     var detail = Utils.coloredPrint(
         String.format(
             " %s",
-            error.getDetail()
+            error.detail()
         ),
         Utils.ANSIColorConstants.ANSI_RED_BOLD
     );
@@ -117,19 +131,23 @@ public class CompilationContext {
     // context after the problematic line
     var numPostCursorLines = Math.min(
         3,
-        sourceCodeLines.length - error.tokenPosition().line() - 1
+        sourceCodeLines.length - error.tokenPosition()
+                                      .line() - 1
     );
 
     var postCursorLines = Arrays.copyOfRange(
         sourceCodeLines,
-        error.tokenPosition().line() + 1,
-        error.tokenPosition().line() + 1 + numPostCursorLines
+        error.tokenPosition()
+             .line() + 1,
+        error.tokenPosition()
+             .line() + 1 + numPostCursorLines
     );
     output.add(
         Utils.identBlockWithNumbering(
             postCursorLines,
             indent,
-            error.tokenPosition().line() + 2
+            error.tokenPosition()
+                 .line() + 2
         )
     );
 

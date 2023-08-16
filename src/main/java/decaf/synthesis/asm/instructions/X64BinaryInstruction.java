@@ -3,9 +3,9 @@ package decaf.synthesis.asm.instructions;
 
 import java.util.Objects;
 
+import decaf.ir.names.IrValue;
 import decaf.synthesis.asm.operands.X86Value;
 import decaf.synthesis.asm.types.X64BinaryInstructionType;
-import decaf.ir.names.IrValue;
 
 public class X64BinaryInstruction extends X64Instruction {
   private final X64BinaryInstructionType x64BinaryInstructionType;

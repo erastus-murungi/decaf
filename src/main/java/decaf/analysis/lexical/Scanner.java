@@ -212,40 +212,6 @@ public class Scanner implements Iterable<Token> {
         token.type == Token.Type.BLOCK_COMMENT || token.type == Token.Type.ERROR;
   }
 
-  class TokensIterator implements Iterator<Token> {
-    private @Nullable Token token = nextHelper();
-
-    private Token nextHelper() {
-      Token token;
-      do {
-        token = nextTokenHelper();
-        if (!isSkipAble(token))
-          prevToken = token;
-        if (shouldTrace) {
-          System.out.println(token);
-        }
-      } while (isSkipAble(token));
-      return token;
-    }
-
-    public Token next() {
-      final Token token = this.token;
-      if (token == null)
-        throw new IllegalStateException("no more tokens");
-      else if (token.type == Token.Type.EOF) {
-        this.token = null;
-      } else {
-        this.token = nextHelper();
-      }
-      return token;
-    }
-
-    @Override
-    public boolean hasNext() {
-      return token != null;
-    }
-  }
-
   private boolean currentSubstringMatches(String s) {
     return sourceCode.startsWith(
         s,
@@ -881,5 +847,39 @@ public class Scanner implements Iterable<Token> {
   @Override
   public Iterator<Token> iterator() {
     return new TokensIterator();
+  }
+
+  class TokensIterator implements Iterator<Token> {
+    private @Nullable Token token = nextHelper();
+
+    private Token nextHelper() {
+      Token token;
+      do {
+        token = nextTokenHelper();
+        if (!isSkipAble(token))
+          prevToken = token;
+        if (shouldTrace) {
+          System.out.println(token);
+        }
+      } while (isSkipAble(token));
+      return token;
+    }
+
+    public Token next() {
+      final Token token = this.token;
+      if (token == null)
+        throw new IllegalStateException("no more tokens");
+      else if (token.type == Token.Type.EOF) {
+        this.token = null;
+      } else {
+        this.token = nextHelper();
+      }
+      return token;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return token != null;
+    }
   }
 }

@@ -4,9 +4,9 @@ package decaf.ir.dataflow.operand;
 import java.util.List;
 import java.util.Objects;
 
+import decaf.analysis.lexical.Scanner;
 import decaf.ir.codes.StoreInstruction;
 import decaf.ir.names.IrValue;
-import decaf.analysis.lexical.Scanner;
 
 public class UnmodifiedOperand extends Operand {
   public IrValue irValue;

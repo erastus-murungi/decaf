@@ -8,12 +8,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import decaf.analysis.syntax.ast.Type;
-import decaf.ir.codes.UnaryInstruction;
-import decaf.ir.names.IrSsaRegister;
-import decaf.ir.dataflow.analyses.AvailableExpressions;
 import decaf.analysis.lexical.Scanner;
+import decaf.analysis.syntax.ast.Type;
 import decaf.ir.codes.BinaryInstruction;
+import decaf.ir.codes.UnaryInstruction;
+import decaf.ir.dataflow.analyses.AvailableExpressions;
+import decaf.ir.names.IrSsaRegister;
 
 public class AvailableExpressionsTest {
   private static final String[] allDecafOperators = {Scanner.PLUS, Scanner.MULTIPLY, Scanner.MINUS, Scanner.DIVIDE, Scanner.GEQ, Scanner.MOD, Scanner.GT, Scanner.LEQ, Scanner.LT};

@@ -12,10 +12,10 @@ import decaf.ir.codes.HasOperand;
 import decaf.ir.codes.Instruction;
 import decaf.ir.codes.Method;
 import decaf.ir.codes.StoreInstruction;
-import decaf.ir.names.IrSsaRegister;
-import decaf.ir.names.IrValue;
 import decaf.ir.dataflow.OptimizationContext;
 import decaf.ir.dataflow.dominator.DominatorTree;
+import decaf.ir.names.IrSsaRegister;
+import decaf.ir.names.IrValue;
 import decaf.ir.ssa.SSA;
 
 public class CopyPropagationSsaPass extends SsaOptimizationPass {

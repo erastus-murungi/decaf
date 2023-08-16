@@ -5,13 +5,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import decaf.synthesis.asm.AsmWriter;
 import decaf.analysis.syntax.ast.MethodDefinition;
-import decaf.ir.cfg.BasicBlock;
 import decaf.ir.InstructionList;
+import decaf.ir.cfg.BasicBlock;
 import decaf.ir.names.IrSsaRegister;
 import decaf.ir.names.IrValue;
 import decaf.shared.Utils;
+import decaf.synthesis.asm.AsmWriter;
 
 public class Method extends Instruction {
   private final MethodDefinition methodDefinition;

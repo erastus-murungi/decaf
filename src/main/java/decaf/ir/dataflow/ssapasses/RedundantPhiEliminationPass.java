@@ -6,11 +6,11 @@ import java.util.ArrayList;
 import decaf.ir.codes.CopyInstruction;
 import decaf.ir.codes.Instruction;
 import decaf.ir.codes.Method;
-import decaf.ir.names.IrSsaRegister;
-import decaf.shared.SSAEdgesUtil;
 import decaf.ir.dataflow.OptimizationContext;
+import decaf.ir.names.IrSsaRegister;
 import decaf.ir.ssa.Phi;
 import decaf.ir.ssa.SSA;
+import decaf.shared.SSAEdgesUtil;
 
 
 /**

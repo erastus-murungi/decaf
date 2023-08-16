@@ -3,14 +3,14 @@ package decaf.analysis.syntax.ast;
 
 import java.util.List;
 
-import decaf.analysis.lexical.Scanner;
 import decaf.analysis.TokenPosition;
+import decaf.analysis.lexical.Scanner;
+import decaf.analysis.semantic.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
 import decaf.shared.Utils;
-import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 public class If extends Statement implements HasExpression {
   public final Block ifBlock;
@@ -95,11 +95,11 @@ public class If extends Statement implements HasExpression {
   @Override
   public <T> T accept(
       AstVisitor<T> ASTVisitor,
-      SymbolTable curSymbolTable
+      Scope curScope
   ) {
     return ASTVisitor.visit(
         this,
-        curSymbolTable
+        curScope
     );
   }
 

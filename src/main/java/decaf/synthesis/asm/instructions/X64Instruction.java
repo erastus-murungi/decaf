@@ -19,10 +19,11 @@ public abstract class X64Instruction {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     X64Instruction x64Instruction = (X64Instruction) o;
-    return Objects.equals(this.toString()
-                              .strip(),
-                          x64Instruction.toString()
-                                        .strip()
+    return Objects.equals(
+        this.toString()
+            .strip(),
+        x64Instruction.toString()
+                      .strip()
     );
   }
 

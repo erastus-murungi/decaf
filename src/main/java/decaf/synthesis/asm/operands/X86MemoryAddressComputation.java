@@ -5,9 +5,9 @@ import static com.google.common.base.Preconditions.checkState;
 import java.util.ArrayList;
 import java.util.List;
 
-import decaf.synthesis.asm.X86Register;
 import decaf.ir.names.IrIntegerConstant;
 import decaf.shared.Utils;
+import decaf.synthesis.asm.X86Register;
 
 public class X86MemoryAddressComputation extends X86Value {
   private final X86Value base;
@@ -22,9 +22,10 @@ public class X86MemoryAddressComputation extends X86Value {
         base instanceof X86RegisterMappedValue && index instanceof X86RegisterMappedValue ||
             base instanceof X86StackMappedValue &&
                 (index instanceof X86ConstantValue || index instanceof X86RegisterMappedValue),
-        String.format("base = %s, index = %s",
-                      base,
-                      index
+        String.format(
+            "base = %s, index = %s",
+            base,
+            index
         )
     );
     this.base = base;

@@ -3,8 +3,8 @@ package decaf.synthesis.asm.operands;
 
 import java.util.List;
 
-import decaf.synthesis.asm.X86Register;
 import decaf.ir.names.IrValue;
+import decaf.synthesis.asm.X86Register;
 
 public abstract class X86Value {
 

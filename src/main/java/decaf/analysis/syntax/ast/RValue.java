@@ -5,23 +5,22 @@ import java.util.Collections;
 import java.util.List;
 
 import decaf.analysis.TokenPosition;
+import decaf.analysis.semantic.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
-import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 
-/* A irAssignableValue name. id holds the name as a string, and ctx is one of the following types. (Load, Store) */
-public class Name extends AST {
+public class RValue extends AST {
+  public static final RValue DUMMY_R_VALUE = new RValue(
+      "INVALID NAME",
+      TokenPosition.dummyTokenPosition()
+  );
   public final TokenPosition tokenPosition;
   private String label;
 
-  public static final Name dummyName = new Name(
-      "INVALID NAME", TokenPosition.dummyTokenPosition()
-  );
-
-  public Name(
+  public RValue(
       String label,
       TokenPosition tokenPosition
   ) {
@@ -39,7 +38,7 @@ public class Name extends AST {
 
   @Override
   public String toString() {
-    return "Name{" + "label='" + label + '\'' +'}';
+    return "Name{" + "label='" + label + '\'' + '}';
   }
 
   @Override
@@ -65,11 +64,11 @@ public class Name extends AST {
   @Override
   public <T> T accept(
       AstVisitor<T> ASTVisitor,
-      SymbolTable curSymbolTable
+      Scope curScope
   ) {
     return ASTVisitor.visit(
         this,
-        curSymbolTable
+        curScope
     );
   }
 

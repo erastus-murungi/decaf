@@ -5,27 +5,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 import decaf.analysis.TokenPosition;
+import decaf.analysis.semantic.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
-import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 public class FieldDeclaration extends Declaration {
   final public TokenPosition tokenPosition;
-  final public List<Name> names;
+  final public List<RValue> vars;
   final public List<Array> arrays;
   final private Type type;
 
   public FieldDeclaration(
       TokenPosition tokenPosition,
       Type type,
-      List<Name> names,
+      List<RValue> vars,
       List<Array> arrays
   ) {
     this.tokenPosition = tokenPosition;
     this.type = type;
-    this.names = names;
+    this.vars = vars;
     this.arrays = arrays;
   }
 
@@ -34,14 +34,15 @@ public class FieldDeclaration extends Declaration {
     ArrayList<Pair<String, AST>> pairArrayList = new ArrayList<>();
     pairArrayList.add(new Pair<>(
         "type",
-        new Name(type.toString(),
-                 tokenPosition
+        new RValue(
+            type.toString(),
+            tokenPosition
         )
     ));
-    for (Name name : names)
+    for (RValue RValue : vars)
       pairArrayList.add(new Pair<>(
           "var",
-          name
+          RValue
       ));
     for (Array array : arrays)
       pairArrayList.add(new Pair<>(
@@ -58,14 +59,14 @@ public class FieldDeclaration extends Declaration {
 
   @Override
   public String toString() {
-    return "FieldDeclaration{" + "type=" + type + ", names=" + names + ", arrays=" + arrays + '}';
+    return "FieldDeclaration{" + "type=" + type + ", names=" + vars + ", arrays=" + arrays + '}';
   }
 
   @Override
   public String getSourceCode() {
     List<String> stringList = new ArrayList<>();
-    for (Name name : names)
-      stringList.add(name.getSourceCode());
+    for (RValue RValue : vars)
+      stringList.add(RValue.getSourceCode());
     for (Array array : arrays)
       stringList.add(array.getSourceCode());
     String args = String.join(
@@ -82,11 +83,11 @@ public class FieldDeclaration extends Declaration {
   @Override
   public <T> T accept(
       AstVisitor<T> ASTVisitor,
-      SymbolTable curSymbolTable
+      Scope curScope
   ) {
     return ASTVisitor.visit(
         this,
-        curSymbolTable
+        curScope
     );
   }
 

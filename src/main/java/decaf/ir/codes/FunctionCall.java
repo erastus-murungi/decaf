@@ -15,7 +15,7 @@ public interface FunctionCall {
   }
 
   default String getMethodName() {
-    return getMethod().nameId.getLabel();
+    return getMethod().RValueId.getLabel();
   }
 
   default String getMethodReturnType() {

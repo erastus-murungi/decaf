@@ -18,6 +18,7 @@ import decaf.ir.codes.Instruction;
 import decaf.ir.codes.Method;
 import decaf.ir.codes.UnaryInstruction;
 import decaf.ir.codes.UnconditionalBranch;
+import decaf.ir.dataflow.ssapasses.worklistitems.SsaEdge;
 import decaf.ir.names.IrAssignable;
 import decaf.ir.names.IrGlobalArray;
 import decaf.ir.names.IrGlobalScalar;
@@ -26,11 +27,10 @@ import decaf.ir.names.IrMemoryAddress;
 import decaf.ir.names.IrSsaRegister;
 import decaf.ir.names.IrStackArray;
 import decaf.ir.names.IrValue;
+import decaf.ir.ssa.Phi;
 import decaf.shared.SSAEdgesUtil;
 import decaf.shared.StronglyConnectedComponentsTarjan;
 import decaf.shared.Utils;
-import decaf.ir.dataflow.ssapasses.worklistitems.SsaEdge;
-import decaf.ir.ssa.Phi;
 
 /**
  * Sparse Conditional Constant Propagation

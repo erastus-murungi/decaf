@@ -15,18 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import decaf.synthesis.asm.instructions.X64BinaryInstruction;
-import decaf.synthesis.asm.instructions.X64Instruction;
-import decaf.synthesis.asm.operands.X86ConstantValue;
-import decaf.synthesis.asm.operands.X86GlobalValue;
-import decaf.synthesis.asm.operands.X86MemoryAddress;
-import decaf.synthesis.asm.operands.X86MemoryAddressComputation;
-import decaf.synthesis.asm.operands.X86MemoryAddressInRegister;
-import decaf.synthesis.asm.operands.X86MemoryAddressInStack;
-import decaf.synthesis.asm.operands.X86RegisterMappedValue;
-import decaf.synthesis.asm.operands.X86StackMappedValue;
-import decaf.synthesis.asm.operands.X86Value;
-import decaf.synthesis.asm.types.X64BinaryInstructionType;
 import decaf.ir.codes.GetAddress;
 import decaf.ir.codes.GlobalAllocation;
 import decaf.ir.codes.Instruction;
@@ -44,6 +32,18 @@ import decaf.ir.names.IrStackArray;
 import decaf.ir.names.IrValue;
 import decaf.shared.ProgramIr;
 import decaf.shared.Utils;
+import decaf.synthesis.asm.instructions.X64BinaryInstruction;
+import decaf.synthesis.asm.instructions.X64Instruction;
+import decaf.synthesis.asm.operands.X86ConstantValue;
+import decaf.synthesis.asm.operands.X86GlobalValue;
+import decaf.synthesis.asm.operands.X86MemoryAddress;
+import decaf.synthesis.asm.operands.X86MemoryAddressComputation;
+import decaf.synthesis.asm.operands.X86MemoryAddressInRegister;
+import decaf.synthesis.asm.operands.X86MemoryAddressInStack;
+import decaf.synthesis.asm.operands.X86RegisterMappedValue;
+import decaf.synthesis.asm.operands.X86StackMappedValue;
+import decaf.synthesis.asm.operands.X86Value;
+import decaf.synthesis.asm.types.X64BinaryInstructionType;
 import decaf.synthesis.regalloc.RegisterAllocator;
 
 /**

@@ -26,14 +26,14 @@ import decaf.ir.codes.HasOperand;
 import decaf.ir.codes.Instruction;
 import decaf.ir.codes.Method;
 import decaf.ir.codes.StoreInstruction;
+import decaf.ir.dataflow.analyses.LiveVariableAnalysis;
+import decaf.ir.dataflow.dominator.DominatorTree;
 import decaf.ir.names.IrSsaRegister;
 import decaf.ir.names.IrValue;
 import decaf.shared.Pair;
 import decaf.shared.ProgramIr;
 import decaf.shared.UnionFind;
 import decaf.shared.Utils;
-import decaf.ir.dataflow.analyses.LiveVariableAnalysis;
-import decaf.ir.dataflow.dominator.DominatorTree;
 import decaf.synthesis.regalloc.InterferenceGraph;
 import decaf.synthesis.regalloc.LiveIntervalsManager;
 

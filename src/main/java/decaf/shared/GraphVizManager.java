@@ -49,8 +49,8 @@ import decaf.analysis.syntax.ast.Block;
 import decaf.analysis.syntax.ast.MethodDefinition;
 import decaf.ir.cfg.BasicBlock;
 import decaf.ir.cfg.NOP;
+import decaf.shared.env.Scope;
 import decaf.synthesis.regalloc.InterferenceGraph;
-import decaf.shared.symboltable.SymbolTable;
 
 /**
  * <dl>
@@ -271,13 +271,14 @@ public class GraphVizManager {
                .hashCode(),
           entry.second()
                .hashCode(),
-          String.format("%s <=> %s",
-                        escape(entry.first
-                                   .irSsaRegister()
-                                   .toString()),
-                        escape(entry.second
-                                   .irSsaRegister()
-                                   .toString())
+          String.format(
+              "%s <=> %s",
+              escape(entry.first
+                         .irSsaRegister()
+                         .toString()),
+              escape(entry.second
+                         .irSsaRegister()
+                         .toString())
           )
       ));
     }
@@ -291,7 +292,7 @@ public class GraphVizManager {
 
   public static String writeSymbolTable(
       AST root,
-      HashMap<String, SymbolTable> methods
+      HashMap<String, Scope> methods
   ) {
     List<String> subGraphs = new ArrayList<>();// add this node
     Stack<AST> stack = new Stack<>();
@@ -304,48 +305,48 @@ public class GraphVizManager {
       for (Pair<String, AST> astPair : ast.getChildren()) {
         AST child = astPair.second;
         if (child instanceof Block) {
-          SymbolTable blockSymbolTable = ((Block) child).blockSymbolTable;
-          if (blockSymbolTable.isEmpty())
+          Scope blockScope = ((Block) child).blockScope;
+          if (blockScope.isEmpty())
             continue;
           nodes.add(String.format(
               "   %s [shape=record, label=%s, color=blue];",
-              blockSymbolTable.hashCode(),
-              "\"<from_node>" + escape(blockSymbolTable.toString()).replace(
+              blockScope.hashCode(),
+              "\"<from_node>" + escape(blockScope.toString()).replace(
                   " ",
                   "\u2007"
               ) + "\""
           ));
-          for (SymbolTable symbolTable : blockSymbolTable.children) {
-            if (symbolTable.isEmpty())
+          for (Scope scope : blockScope.children) {
+            if (scope.isEmpty())
               continue;
             edges.add(String.format(
                 "   %s -> %s;",
-                blockSymbolTable.hashCode() + ":from_node",
-                symbolTable.hashCode() + ":from_node"
+                blockScope.hashCode() + ":from_node",
+                scope.hashCode() + ":from_node"
             ));
           }
         }
         if (child instanceof MethodDefinition) {
-          SymbolTable blockSymbolTable = methods.get(((MethodDefinition) child).getMethodName()
-                                                                               .getLabel());
-          if (blockSymbolTable.isEmpty())
+          Scope blockScope = methods.get(((MethodDefinition) child).getMethodName()
+                                                                   .getLabel());
+          if (blockScope.isEmpty())
             continue;
           nodes.add(String.format(
               "   %s [shape=record, label=%s, color=blue];",
-              blockSymbolTable.hashCode(),
-              "\"<from_node>" + escape(blockSymbolTable.myToString(((MethodDefinition) child).getMethodName()
-                                                                                             .getLabel())).replace(
+              blockScope.hashCode(),
+              "\"<from_node>" + escape(blockScope.myToString(((MethodDefinition) child).getMethodName()
+                                                                                       .getLabel())).replace(
                   " ",
                   "\u2007"
               ) + "\""
           ));
-          for (SymbolTable symbolTable : blockSymbolTable.children) {
-            if (symbolTable.isEmpty())
+          for (Scope scope : blockScope.children) {
+            if (scope.isEmpty())
               continue;
             edges.add(String.format(
                 "   %s -> %s;",
-                blockSymbolTable.hashCode() + ":from_node",
-                symbolTable.hashCode() + ":from_node"
+                blockScope.hashCode() + ":from_node",
+                scope.hashCode() + ":from_node"
             ));
           }
 
@@ -521,7 +522,7 @@ public class GraphVizManager {
 
   public static void printSymbolTables(
       AST root,
-      HashMap<String, SymbolTable> methods
+      HashMap<String, Scope> methods
   ) {
     GraphVizManager.createDotGraph(
         writeSymbolTable(

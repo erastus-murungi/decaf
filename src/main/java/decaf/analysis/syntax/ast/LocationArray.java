@@ -3,20 +3,20 @@ package decaf.analysis.syntax.ast;
 
 import java.util.List;
 
+import decaf.analysis.semantic.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
-import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 public class LocationArray extends Location implements HasExpression {
   public Expression expression;
 
   public LocationArray(
-      Name name,
+      RValue RValue,
       Expression expression
   ) {
-    super(name);
+    super(RValue);
     this.expression = expression;
   }
 
@@ -25,7 +25,7 @@ public class LocationArray extends Location implements HasExpression {
     return List.of(
         new Pair<>(
             "id",
-            name
+            RValue
         ),
         new Pair<>(
             "expression",
@@ -42,11 +42,11 @@ public class LocationArray extends Location implements HasExpression {
   @Override
   public <T> T accept(
       AstVisitor<T> ASTVisitor,
-      SymbolTable currentSymbolTable
+      Scope currentScope
   ) {
     return ASTVisitor.visit(
         this,
-        currentSymbolTable
+        currentScope
     );
   }
 
@@ -62,14 +62,14 @@ public class LocationArray extends Location implements HasExpression {
 
   @Override
   public String toString() {
-    return "LocationArray{" + "name=" + name + ", expression=" + expression + '}';
+    return "LocationArray{" + "name=" + RValue + ", expression=" + expression + '}';
   }
 
   @Override
   public String getSourceCode() {
     return String.format(
         "%s[%s]",
-        name.getSourceCode(),
+        RValue.getSourceCode(),
         expression.getSourceCode()
     );
   }

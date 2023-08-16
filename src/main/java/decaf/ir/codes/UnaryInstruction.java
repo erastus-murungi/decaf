@@ -4,14 +4,14 @@ package decaf.ir.codes;
 import java.util.List;
 import java.util.Optional;
 
-import decaf.synthesis.asm.AsmWriter;
 import decaf.analysis.syntax.ast.AST;
+import decaf.ir.dataflow.operand.Operand;
+import decaf.ir.dataflow.operand.UnaryOperand;
 import decaf.ir.names.IrAssignable;
 import decaf.ir.names.IrMemoryAddress;
 import decaf.ir.names.IrValue;
 import decaf.shared.Operators;
-import decaf.ir.dataflow.operand.Operand;
-import decaf.ir.dataflow.operand.UnaryOperand;
+import decaf.synthesis.asm.AsmWriter;
 
 public class UnaryInstruction extends StoreInstruction {
   public IrValue operand;
@@ -88,10 +88,11 @@ public class UnaryInstruction extends StoreInstruction {
 
   @Override
   public Instruction copy() {
-    return new UnaryInstruction(getDestination(),
-                                operator,
-                                operand,
-                                getSource()
+    return new UnaryInstruction(
+        getDestination(),
+        operator,
+        operand,
+        getSource()
     );
   }
 

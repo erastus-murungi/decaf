@@ -2,11 +2,11 @@ package decaf.analysis.syntax.ast;
 
 
 import decaf.analysis.TokenPosition;
-import decaf.ir.CodegenAstVisitor;
-import decaf.ir.names.IrAssignable;
 import decaf.analysis.lexical.Scanner;
 import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.ir.CodegenAstVisitor;
+import decaf.ir.names.IrAssignable;
+import decaf.shared.env.Scope;
 
 public class CompoundAssignOperator extends Operator {
   public CompoundAssignOperator(
@@ -36,7 +36,7 @@ public class CompoundAssignOperator extends Operator {
   @Override
   public <T> T accept(
       AstVisitor<T> ASTVisitor,
-      SymbolTable curSymbolTable
+      Scope curScope
   ) {
     return null;
   }

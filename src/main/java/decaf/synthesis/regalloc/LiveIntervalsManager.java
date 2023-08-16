@@ -14,14 +14,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import decaf.ir.cfg.BasicBlock;
 import decaf.ir.InstructionList;
 import decaf.ir.TraceScheduler;
+import decaf.ir.cfg.BasicBlock;
 import decaf.ir.codes.GetAddress;
 import decaf.ir.codes.HasOperand;
 import decaf.ir.codes.Instruction;
 import decaf.ir.codes.Method;
 import decaf.ir.codes.StoreInstruction;
+import decaf.ir.dataflow.analyses.LiveVariableAnalysis;
 import decaf.ir.names.IrGlobalArray;
 import decaf.ir.names.IrGlobalScalar;
 import decaf.ir.names.IrMemoryAddress;
@@ -30,7 +31,6 @@ import decaf.ir.names.IrValuePredicates;
 import decaf.shared.ProgramIr;
 import decaf.shared.StronglyConnectedComponentsTarjan;
 import decaf.shared.Utils;
-import decaf.ir.dataflow.analyses.LiveVariableAnalysis;
 
 public class LiveIntervalsManager {
   /**

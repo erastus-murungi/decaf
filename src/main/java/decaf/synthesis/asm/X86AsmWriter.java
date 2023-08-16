@@ -11,22 +11,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
-import decaf.synthesis.asm.instructions.X64BinaryInstruction;
-import decaf.synthesis.asm.instructions.X64Instruction;
-import decaf.synthesis.asm.instructions.X64NoOperandInstruction;
-import decaf.synthesis.asm.instructions.X64UnaryInstruction;
-import decaf.synthesis.asm.instructions.X86MetaData;
-import decaf.synthesis.asm.operands.X64CallOperand;
-import decaf.synthesis.asm.operands.X64JumpTargetOperand;
-import decaf.synthesis.asm.operands.X86ConstantValue;
-import decaf.synthesis.asm.operands.X86MemoryAddressComputation;
-import decaf.synthesis.asm.operands.X86MemoryAddressInRegister;
-import decaf.synthesis.asm.operands.X86RegisterMappedValue;
-import decaf.synthesis.asm.operands.X86StackMappedValue;
-import decaf.synthesis.asm.operands.X86Value;
-import decaf.synthesis.asm.types.X64BinaryInstructionType;
-import decaf.synthesis.asm.types.X64NopInstructionType;
-import decaf.synthesis.asm.types.X64UnaryInstructionType;
 import decaf.analysis.syntax.ast.Type;
 import decaf.ir.TraceScheduler;
 import decaf.ir.codes.ArrayBoundsCheck;
@@ -55,6 +39,22 @@ import decaf.shared.CompilationContext;
 import decaf.shared.Operators;
 import decaf.shared.ProgramIr;
 import decaf.shared.Utils;
+import decaf.synthesis.asm.instructions.X64BinaryInstruction;
+import decaf.synthesis.asm.instructions.X64Instruction;
+import decaf.synthesis.asm.instructions.X64NoOperandInstruction;
+import decaf.synthesis.asm.instructions.X64UnaryInstruction;
+import decaf.synthesis.asm.instructions.X86MetaData;
+import decaf.synthesis.asm.operands.X64CallOperand;
+import decaf.synthesis.asm.operands.X64JumpTargetOperand;
+import decaf.synthesis.asm.operands.X86ConstantValue;
+import decaf.synthesis.asm.operands.X86MemoryAddressComputation;
+import decaf.synthesis.asm.operands.X86MemoryAddressInRegister;
+import decaf.synthesis.asm.operands.X86RegisterMappedValue;
+import decaf.synthesis.asm.operands.X86StackMappedValue;
+import decaf.synthesis.asm.operands.X86Value;
+import decaf.synthesis.asm.types.X64BinaryInstructionType;
+import decaf.synthesis.asm.types.X64NopInstructionType;
+import decaf.synthesis.asm.types.X64UnaryInstructionType;
 import decaf.synthesis.regalloc.RegisterAllocator;
 
 public class X86AsmWriter implements AsmWriter {
@@ -78,7 +78,6 @@ public class X86AsmWriter implements AsmWriter {
   private Instruction currentInstruction;
 
   private Method currentMethod;
-
 
 
   public X86AsmWriter(
@@ -766,9 +765,10 @@ public class X86AsmWriter implements AsmWriter {
 
   @Override
   public void emitInstruction(GetAddress getAddress) {
-    x86Method.addLine(X86MetaData.blockComment(String.format("&(%s)",
-                                                             getAddress.getSource()
-                                                                       .getSourceCode()
+    x86Method.addLine(X86MetaData.blockComment(String.format(
+        "&(%s)",
+        getAddress.getSource()
+                  .getSourceCode()
     )));
     x86ValueResolver.processGetAddress(getAddress);
   }

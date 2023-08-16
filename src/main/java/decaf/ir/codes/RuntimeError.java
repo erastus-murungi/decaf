@@ -4,8 +4,8 @@ package decaf.ir.codes;
 import java.util.Collections;
 import java.util.List;
 
-import decaf.synthesis.asm.AsmWriter;
 import decaf.ir.names.IrValue;
+import decaf.synthesis.asm.AsmWriter;
 
 public class RuntimeError extends Instruction {
   public final int errorCode;

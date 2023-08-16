@@ -6,9 +6,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
 
-import decaf.synthesis.asm.AsmWriter;
 import decaf.analysis.syntax.ast.AST;
 import decaf.ir.names.IrValue;
+import decaf.synthesis.asm.AsmWriter;
 
 public abstract class Instruction {
   public static final String INDENT = "    ";

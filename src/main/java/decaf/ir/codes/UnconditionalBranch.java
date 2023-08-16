@@ -5,10 +5,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import decaf.synthesis.asm.AsmWriter;
 import decaf.ir.cfg.BasicBlock;
 import decaf.ir.names.IrValue;
 import decaf.shared.Utils;
+import decaf.synthesis.asm.AsmWriter;
 
 public class UnconditionalBranch extends Instruction implements WithTarget {
   public BasicBlock target;

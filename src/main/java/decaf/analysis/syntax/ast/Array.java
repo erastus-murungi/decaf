@@ -4,31 +4,36 @@ package decaf.analysis.syntax.ast;
 import java.util.Collections;
 import java.util.List;
 
+import decaf.analysis.TokenPosition;
+import decaf.analysis.semantic.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
-import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 public class Array extends AST {
+  public final TokenPosition tokenPosition;
   private final IntLiteral size;
-  private final Name id;
+  private final String label;
 
   public Array(
+      TokenPosition tokenPosition,
       IntLiteral size,
-      Name id
+      String label
   ) {
+    this.tokenPosition = tokenPosition;
     this.size = size;
-    this.id = id;
+    this.label = label;
   }
 
   public IntLiteral getSize() {
     return size;
   }
 
-  public Name getId() {
-    return id;
+  public String getLabel() {
+    return label;
   }
+
 
   @Override
   public Type getType() {
@@ -47,14 +52,14 @@ public class Array extends AST {
 
   @Override
   public String toString() {
-    return "Array{" + "size=" + size + ", id=" + id + '}';
+    return "Array{" + "size=" + size + ", id=" + label + '}';
   }
 
   @Override
   public String getSourceCode() {
     return String.format(
         "%s[%s]",
-        id.getLabel(),
+        label,
         size.literal
     );
   }
@@ -62,11 +67,11 @@ public class Array extends AST {
   @Override
   public <T> T accept(
       AstVisitor<T> ASTVisitor,
-      SymbolTable curSymbolTable
+      Scope curScope
   ) {
     return ASTVisitor.visit(
         this,
-        curSymbolTable
+        curScope
     );
   }
 

@@ -8,8 +8,8 @@ import decaf.ir.cfg.BasicBlock;
 import decaf.ir.codes.CopyInstruction;
 import decaf.ir.codes.Instruction;
 import decaf.ir.codes.Method;
-import decaf.ir.names.IrValue;
 import decaf.ir.dataflow.OptimizationContext;
+import decaf.ir.names.IrValue;
 
 public abstract class OptimizationPass {
   protected final OptimizationContext optimizationContext;

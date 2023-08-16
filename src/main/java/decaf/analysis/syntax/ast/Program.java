@@ -4,11 +4,11 @@ package decaf.analysis.syntax.ast;
 import java.util.ArrayList;
 import java.util.List;
 
+import decaf.analysis.semantic.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
-import decaf.analysis.semantic.AstVisitor;
-import decaf.shared.symboltable.SymbolTable;
+import decaf.shared.env.Scope;
 
 public class Program extends AST {
   private final List<ImportDeclaration> importDeclarationList;
@@ -115,9 +115,10 @@ public class Program extends AST {
     }
     return String.join(
         ";\n\n\n",
-        List.of(imports,
-                fieldDeclarations,
-                methodDefinitions
+        List.of(
+            imports,
+            fieldDeclarations,
+            methodDefinitions
         )
     );
   }
@@ -125,11 +126,11 @@ public class Program extends AST {
   @Override
   public <T> T accept(
       AstVisitor<T> ASTVisitor,
-      SymbolTable curSymbolTable
+      Scope curScope
   ) {
     return ASTVisitor.visit(
         this,
-        curSymbolTable
+        curScope
     );
   }
 

@@ -2,10 +2,10 @@ package decaf.analysis.syntax.ast;
 
 
 public abstract class Location extends Expression {
-  public final Name name;
+  public final RValue RValue;
 
-  public Location(Name name) {
-    super(name.tokenPosition);
-    this.name = name;
+  public Location(RValue RValue) {
+    super(RValue.tokenPosition);
+    this.RValue = RValue;
   }
 }

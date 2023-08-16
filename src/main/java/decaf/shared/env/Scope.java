@@ -1,5 +1,8 @@
-package decaf.shared.symboltable;
+package decaf.shared.env;
 
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,27 +11,30 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import decaf.analysis.syntax.ast.Block;
-import decaf.analysis.syntax.ast.Type;
 import decaf.shared.descriptors.ArrayDescriptor;
 import decaf.shared.descriptors.Descriptor;
 
 
-public class SymbolTable {
-  public final SymbolTableType symbolTableType;
-  public final HashMap<String, Descriptor> entries = new HashMap<>();
+public class Scope extends HashMap<String, Descriptor> {
+  @NotNull
+  public final For target;
+  @Nullable
   public final Block owner;
-  public SymbolTable parent;
-  public ArrayList<SymbolTable> children = new ArrayList<>();
+  @Nullable
+  public Scope parent;
+  @NotNull
+  public List<Scope> children;
 
-  public SymbolTable(
-      SymbolTable parent,
-      SymbolTableType symbolTableType,
-      Block owner
+  public Scope(
+      @Nullable Scope parent,
+      @NotNull For target,
+      @Nullable Block owner
   ) {
     super();
     this.parent = parent;
-    this.symbolTableType = symbolTableType;
+    this.target = target;
     this.owner = owner;
+    this.children = new ArrayList<>();
   }
 
   private static String padRight(
@@ -40,43 +46,21 @@ public class SymbolTable {
   }
 
   /**
-   * Look up a irAssignableValue only within the current scope
-   *
-   * @param stringId the id to lookup in the symbol table hierarchy
-   * @return Optional.empty if the descriptor is not found else Optional[Descriptor]
-   */
-
-  public Optional<Descriptor> getDescriptorFromCurrentScope(String stringId) {
-    Descriptor currentDescriptor = entries.get(stringId);
-    if (currentDescriptor == null) {
-      if (parent != null)
-        return parent.getDescriptorFromValidScopes(stringId);
-    }
-    return Optional.ofNullable(currentDescriptor);
-  }
-
-  /**
-   * @param key the id to lookup in the symbol table hierarchy
-   * @return true if the descriptor for key is found else false
-   */
-
-  public boolean containsEntry(String key) {
-    return entries.containsKey(key);
-  }
-
-  /**
    * Look up a irAssignableValue recursively up the scope hierarchy
    *
    * @param stringId the id to lookup in the symbol table hierarchy
    * @return Optional.empty if the descriptor is not found else Optional[Descriptor]
    */
-  public Optional<Descriptor> getDescriptorFromValidScopes(String stringId) {
-    Descriptor currentDescriptor = entries.get(stringId);
-    if (currentDescriptor == null) {
-      if (parent != null)
-        return parent.getDescriptorFromValidScopes(stringId);
+  public Optional<Descriptor> lookup(String stringId) {
+    var currentScope = this;
+    while (currentScope != null && !currentScope.containsKey(stringId)) {
+      currentScope = currentScope.parent;
     }
-    return Optional.ofNullable(currentDescriptor);
+    if (currentScope == null) {
+      return Optional.empty();
+    } else {
+      return Optional.ofNullable(currentScope.get(stringId));
+    }
   }
 
   /**
@@ -86,11 +70,11 @@ public class SymbolTable {
    * @return true if there is incorrect shadowing of parameter and false otherwise
    */
   public boolean isShadowingParameter(String stringId) {
-    Descriptor currentDescriptor = entries.get(stringId);
+    Descriptor currentDescriptor = get(stringId);
     if (parent == null) {
-      return currentDescriptor != null && symbolTableType == SymbolTableType.Parameter;
+      return currentDescriptor != null && target == For.Parameter;
     } else {
-      if (currentDescriptor != null && symbolTableType == SymbolTableType.Parameter)
+      if (currentDescriptor != null && target == For.Parameter)
         return true;
       else
         return parent.isShadowingParameter(stringId);
@@ -123,7 +107,7 @@ public class SymbolTable {
         indent.length(),
         8
     ));
-    if (this.entries.size() == 0) {
+    if (isEmpty()) {
       return (repeat + repeat1 + "EmptySymbolTable " + suffix);
     }
     final var IDENTIFIER = "Identifier";
@@ -136,9 +120,9 @@ public class SymbolTable {
                                      IDENTIFIER,
                                      "-".repeat(IDENTIFIER.length())
                                  ),
-                                 this.entries.keySet()
-                                             .stream()
-                                             .map(Object::toString)
+                                 keySet()
+                                     .stream()
+                                     .map(Object::toString)
                              )
                              .map(String::length)
                              .reduce(Math::max);
@@ -148,9 +132,9 @@ public class SymbolTable {
             IDENTIFIER,
             "-".repeat(IDENTIFIER.length())
         ),
-        this.entries.keySet()
-                    .stream()
-                    .map(Object::toString)
+        keySet()
+            .stream()
+            .map(Object::toString)
     );
 
     var ids = maxLengthIdsStream.map(((String s) -> padRight(
@@ -164,10 +148,10 @@ public class SymbolTable {
                                    DESCRIPTOR_CLASSES,
                                    "-".repeat(DESCRIPTOR_CLASSES.length())
                                ),
-                               this.entries.keySet()
-                                           .stream()
-                                           .map(Object::getClass)
-                                           .map(Class::getSimpleName)
+                               keySet()
+                                   .stream()
+                                   .map(Object::getClass)
+                                   .map(Class::getSimpleName)
                            )
                            .map(String::length)
                            .reduce(Math::max);
@@ -176,10 +160,10 @@ public class SymbolTable {
                                         DESCRIPTOR_CLASSES,
                                         "-".repeat(DESCRIPTOR_CLASSES.length())
                                     ),
-                                    this.entries.values()
-                                                .stream()
-                                                .map(Object::getClass)
-                                                .map(Class::getSimpleName)
+                                    values()
+                                        .stream()
+                                        .map(Object::getClass)
+                                        .map(Class::getSimpleName)
                                 )
                                 .map(s -> padRight(
                                     s,
@@ -187,10 +171,10 @@ public class SymbolTable {
                                 ))
                                 .toList();
 
-    var list1 = new ArrayList<>(this.entries.values());
+    var list1 = new ArrayList<>(values());
     var builtins = new ArrayList<String>();
     for (var descriptor1 : list1) {
-      Type type = descriptor1.type;
+      decaf.analysis.syntax.ast.Type type = descriptor1.type;
       String toString = type.toString();
       builtins.add(toString);
     }
@@ -248,11 +232,12 @@ public class SymbolTable {
     List<String> rows = new ArrayList<>();
     rows.add(repeat + repeat1 + "SymbolTable: " + suffix);
     for (int i = 0; i < ids.size(); i++) {
-      rows.add(indent + String.join("",
-                                    ids.get(i),
-                                    descriptorTypes.get(i),
-                                    builtinTypes.get(i),
-                                    arraySizes.get(i)
+      rows.add(indent + String.join(
+          "",
+          ids.get(i),
+          descriptorTypes.get(i),
+          builtinTypes.get(i),
+          arraySizes.get(i)
       ));
     }
     return String.join(
@@ -261,7 +246,9 @@ public class SymbolTable {
     );
   }
 
-  public boolean isEmpty() {
-    return entries.isEmpty();
+  public enum For {
+    Parameter,
+    Method,
+    Field
   }
 }

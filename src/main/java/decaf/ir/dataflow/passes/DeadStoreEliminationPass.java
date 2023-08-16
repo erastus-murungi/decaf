@@ -8,21 +8,21 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import decaf.ir.cfg.BasicBlock;
 import decaf.ir.InstructionList;
+import decaf.ir.cfg.BasicBlock;
 import decaf.ir.codes.FunctionCall;
 import decaf.ir.codes.FunctionCallWithResult;
 import decaf.ir.codes.HasOperand;
 import decaf.ir.codes.Instruction;
 import decaf.ir.codes.Method;
 import decaf.ir.codes.StoreInstruction;
+import decaf.ir.dataflow.OptimizationContext;
+import decaf.ir.dataflow.analyses.LiveVariableAnalysis;
 import decaf.ir.names.IrIntegerConstant;
 import decaf.ir.names.IrMemoryAddress;
 import decaf.ir.names.IrStringConstant;
 import decaf.ir.names.IrValue;
 import decaf.ir.names.IrValuePredicates;
-import decaf.ir.dataflow.OptimizationContext;
-import decaf.ir.dataflow.analyses.LiveVariableAnalysis;
 
 /**
  * A local irAssignableValue that is assigned a value but is not read by any subsequent instruction is referred to as a dead store
