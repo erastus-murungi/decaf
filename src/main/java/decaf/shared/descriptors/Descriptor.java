@@ -7,13 +7,10 @@ import decaf.analysis.syntax.ast.Type;
  */
 public abstract class Descriptor {
   public Type type;
-  public String id;
 
   public Descriptor(
-      Type type,
-      String id
+      Type type
   ) {
     this.type = type;
-    this.id = id;
   }
 }

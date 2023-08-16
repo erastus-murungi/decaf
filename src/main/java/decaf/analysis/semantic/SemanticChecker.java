@@ -57,7 +57,7 @@ import decaf.shared.CompilationContext;
 import decaf.shared.Utils;
 import decaf.shared.descriptors.ArrayDescriptor;
 import decaf.shared.descriptors.Descriptor;
-import decaf.shared.descriptors.GlobalDescriptor;
+import decaf.shared.env.TypingContext;
 import decaf.shared.descriptors.MethodDescriptor;
 import decaf.shared.descriptors.ParameterDescriptor;
 import decaf.shared.descriptors.VariableDescriptor;
@@ -68,19 +68,7 @@ public class SemanticChecker implements AstVisitor<Type> {
   @NotNull
   public final TreeSet<String> imports = new TreeSet<>();
   @NotNull
-  public final Scope fields =
-      new Scope(
-          null,
-          Scope.For.Field,
-          null
-      );
-  @NotNull
-  public final Scope methods =
-      new Scope(
-          null,
-          Scope.For.Method,
-          null
-      );
+  public final Scope globalScope = Scope.forGlobals();
   @NotNull
   private final List<SemanticError> errors = new ArrayList<>();
   @NotNull
@@ -99,19 +87,17 @@ public class SemanticChecker implements AstVisitor<Type> {
       @NotNull Program root, @NotNull CompilationContext context
   ) {
     this.context = context;
-    visit(root, fields);
+    visit(root, globalScope);
     if (context.debugModeOn()) {
       context.stringifyErrors(errors);
     }
   }
 
-  public Optional<GlobalDescriptor> getGlobalDescriptor() {
+  public Optional<TypingContext> getTypingContext() {
     if (hasErrors()) return Optional.empty();
     return Optional.of(
-        new GlobalDescriptor(
-            Type.Undefined,
-            fields,
-            methods,
+        new TypingContext(
+            globalScope,
             imports
         ));
   }
@@ -151,7 +137,7 @@ public class SemanticChecker implements AstVisitor<Type> {
     final var block = methodDefinition.getBlock();
 
     var formalArgumentScope = new Scope(
-        fields,
+        globalScope,
         Scope.For.Parameter,
         block
     );
@@ -161,9 +147,8 @@ public class SemanticChecker implements AstVisitor<Type> {
             Scope.For.Field,
             block
         );
-    if (methods.containsKey(methodId) ||
-        imports.contains(methodId) ||
-        fields.containsKey(methodId)) {
+    if (globalScope.containsKey(methodId) ||
+        imports.contains(methodId)) {
 
       errors.add(new SemanticError(
           methodDefinition.getTokenPosition(),
@@ -179,7 +164,7 @@ public class SemanticChecker implements AstVisitor<Type> {
         );
       }
       // visit the method definition and populate the local symbol table
-      methods.put(
+      globalScope.put(
           methodId,
           new MethodDescriptor(
               methodDefinition,
@@ -286,16 +271,16 @@ public class SemanticChecker implements AstVisitor<Type> {
           scope
       );
       --loopDepth;
-      optionalDescriptor = scope.lookup(forStatement.update.getLocation()
-                                                           .getLabel());
+      var updateId = forStatement.update.getLocation().getLabel();
+      optionalDescriptor = scope.lookupNonMethod(updateId);
       if (optionalDescriptor.isEmpty()) {
         errors.add(new SemanticError(
             forStatement.update.getLocation().tokenPosition,
             SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-            forStatement.update.getLocation() + " must be declared in scope"
+            updateId + " must be declared in scope"
         ));
       } else {
-        Descriptor updatingDescriptor = optionalDescriptor.get();
+        var updatingDescriptor = optionalDescriptor.get();
         if (updatingDescriptor.type != Type.Int) {
           errors.add(new SemanticError(
               forStatement.initialization.initExpression.tokenPosition,
@@ -316,7 +301,7 @@ public class SemanticChecker implements AstVisitor<Type> {
               String.format(
                   "The location and the expression in an incrementing/decrementing assignment must be of type `int`, " +
                       "currently the location `%s` is of type `%s` and the expression `%s` is of type `%s`",
-                  updatingDescriptor.id,
+                  updateId,
                   updatingDescriptor.type,
                   forStatement.update.assignExpr.getSourceCode(),
                   updateExprType
@@ -356,7 +341,7 @@ public class SemanticChecker implements AstVisitor<Type> {
 
   private void
   checkMainMethodExists(List<MethodDefinition> methodDefinitionList) {
-    for (MethodDefinition methodDefinition : methodDefinitionList) {
+    for (var methodDefinition : methodDefinitionList) {
       if (methodDefinition.getMethodName()
                           .getLabel()
                           .equals("main")) {
@@ -398,19 +383,18 @@ public class SemanticChecker implements AstVisitor<Type> {
       Program program,
       Scope scope
   ) {
-    checkMainMethodExists(program.getMethodDefinitionList());
-    for (ImportDeclaration importDeclaration :
-        program.getImportDeclarationList())
+    checkMainMethodExists(program.getMethodDefinitions());
+    for (var importDeclaration : program.getImportDeclaration())
       imports.add(importDeclaration.value.getLabel());
-    for (var fieldDeclaration : program.getFieldDeclarationList())
+    for (var fieldDeclaration : program.getFieldDeclaration())
       fieldDeclaration.accept(
           this,
-          fields
+          globalScope
       );
-    for (MethodDefinition methodDefinition : program.getMethodDefinitionList())
+    for (var methodDefinition : program.getMethodDefinitions())
       methodDefinition.accept(
           this,
-          methods
+          scope
       );
     return Type.Undefined;
   }
@@ -690,7 +674,6 @@ public class SemanticChecker implements AstVisitor<Type> {
       scope.put(
           formalArgumentId,
           new ParameterDescriptor(
-              formalArgumentId,
               formalArgument.getType()
           )
       );
@@ -750,7 +733,7 @@ public class SemanticChecker implements AstVisitor<Type> {
       @NotNull Scope scope
   ) {
 
-    final Optional<Descriptor> optionalMethodDescriptor = methods.lookup(methodCall.RValueId.getLabel());
+    final Optional<Descriptor> optionalMethodDescriptor = globalScope.lookup(methodCall.RValueId.getLabel());
     final Descriptor descriptor;
     if (scope.containsKey(methodCall.RValueId.getLabel())) {
       errors.add(new SemanticError(
@@ -798,19 +781,19 @@ public class SemanticChecker implements AstVisitor<Type> {
       MethodCallStatement methodCallStatement,
       Scope scope
   ) {
-    if (!imports.contains(methodCallStatement.methodCall.RValueId.getLabel()) &&
-        !methods.containsKey(methodCallStatement.methodCall.RValueId.getLabel())) {
+    final var methodId = methodCallStatement.methodCall.RValueId.getLabel();
+    if (!imports.contains(methodId) && globalScope.lookupMethod(methodId).isEmpty()) {
       errors.add(new SemanticError(
           methodCallStatement.tokenPosition,
           SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
-          "identifier `" + methodCallStatement.methodCall.RValueId.getLabel() +
-              "` in a method statement must be a declared method or import."
+          String.format("identifier `%s` in a method statement must be a declared method or import.", methodId)
       ));
+    } else {
+      methodCallStatement.methodCall.accept(
+          this,
+          scope
+      );
     }
-    methodCallStatement.methodCall.accept(
-        this,
-        scope
-    );
     return Type.Undefined;
   }
 
@@ -819,7 +802,7 @@ public class SemanticChecker implements AstVisitor<Type> {
       LocationAssignExpr locationAssignExpr,
       Scope scope
   ) {
-    Optional<Descriptor> optionalDescriptor = scope.lookup(locationAssignExpr.location.getLabel());
+    var optionalDescriptor = scope.lookupNonMethod(locationAssignExpr.location.getLabel());
     if (optionalDescriptor.isEmpty() || (locationAssignExpr.location instanceof LocationVariable &&
         optionalDescriptor.get() instanceof ArrayDescriptor)) {
       if (optionalDescriptor.isEmpty()) {
@@ -909,7 +892,7 @@ public class SemanticChecker implements AstVisitor<Type> {
               String.format(
                   "The location and the expression in an incrementing/decrementing assignment must be of type `int`, " +
                       "currently the location `%s` is of type `%s` and the expression `%s` is of type `%s`",
-                  locationDescriptor.id,
+                  locationAssignExpr.location.getLabel(),
                   locationDescriptor.type,
                   locationAssignExpr.assignExpr.getSourceCode(),
                   expressionType
@@ -947,7 +930,7 @@ public class SemanticChecker implements AstVisitor<Type> {
       RValue RValue,
       Scope scope
   ) {
-    return null;
+    return Type.Undefined;
   }
 
   @Override
@@ -1043,7 +1026,7 @@ public class SemanticChecker implements AstVisitor<Type> {
       Initialization initialization,
       Scope scope
   ) {
-    return null;
+    return Type.Undefined;
   }
 
   @Override
@@ -1051,7 +1034,7 @@ public class SemanticChecker implements AstVisitor<Type> {
       Assignment assignment,
       Scope scope
   ) {
-    return null;
+   return Type.Undefined;
   }
 
   @Override
@@ -1109,11 +1092,9 @@ public class SemanticChecker implements AstVisitor<Type> {
             )
         ));
       } else {
-        // fields just declared do not have a value.
         scope.put(
             rValue.getLabel(),
             new VariableDescriptor(
-                rValue.getLabel(),
                 type
             )
         );
@@ -1157,11 +1138,9 @@ public class SemanticChecker implements AstVisitor<Type> {
                       + " must be greater than 0"
               ));
         } else {
-          // TODO: Check hex parse long
           scope.put(
               arrayIdLabel,
               new ArrayDescriptor(
-                  arrayIdLabel,
                   array.getSize()
                        .convertToLong(),
                   type == Type.Int ? Type.IntArray

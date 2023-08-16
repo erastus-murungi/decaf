@@ -29,17 +29,17 @@ public class Program extends AST {
   @Override
   public List<Pair<String, AST>> getChildren() {
     ArrayList<Pair<String, AST>> nodeList = new ArrayList<>();
-    for (ImportDeclaration importDeclaration : getImportDeclarationList())
+    for (ImportDeclaration importDeclaration : getImportDeclaration())
       nodeList.add(new Pair<>(
           "import",
           importDeclaration
       ));
-    for (FieldDeclaration fieldDeclaration : getFieldDeclarationList())
+    for (FieldDeclaration fieldDeclaration : getFieldDeclaration())
       nodeList.add(new Pair<>(
           "field",
           fieldDeclaration
       ));
-    for (MethodDefinition methodDefinition : getMethodDefinitionList())
+    for (MethodDefinition methodDefinition : getMethodDefinitions())
       nodeList.add(new Pair<>(
           "method",
           methodDefinition
@@ -56,18 +56,18 @@ public class Program extends AST {
   public String toString() {
     return "Program{"
         + "importDeclarationList="
-        + getImportDeclarationList()
+        + getImportDeclaration()
         + ", fieldDeclarationList="
-        + getFieldDeclarationList()
+        + getFieldDeclaration()
         + ", methodDefinitionList="
-        + getMethodDefinitionList()
+        + getMethodDefinitions()
         + '}';
   }
 
   @Override
   public String getSourceCode() {
     List<String> stringList = new ArrayList<>();
-    for (ImportDeclaration importDeclaration : getImportDeclarationList()) {
+    for (ImportDeclaration importDeclaration : getImportDeclaration()) {
       String sourceCode = importDeclaration.getSourceCode();
       stringList.add(sourceCode);
     }
@@ -77,7 +77,7 @@ public class Program extends AST {
     );
 
     List<String> list = new ArrayList<>();
-    for (FieldDeclaration fieldDeclaration : getFieldDeclarationList()) {
+    for (FieldDeclaration fieldDeclaration : getFieldDeclaration()) {
       String sourceCode = fieldDeclaration.getSourceCode();
       list.add(sourceCode);
     }
@@ -86,7 +86,7 @@ public class Program extends AST {
         list
     );
     List<String> result = new ArrayList<>();
-    for (MethodDefinition methodDefinition : getMethodDefinitionList()) {
+    for (MethodDefinition methodDefinition : getMethodDefinitions()) {
       String sourceCode = methodDefinition.getSourceCode();
       result.add(sourceCode);
     }
@@ -141,15 +141,15 @@ public class Program extends AST {
     return null;
   }
 
-  public List<ImportDeclaration> getImportDeclarationList() {
+  public List<ImportDeclaration> getImportDeclaration() {
     return importDeclarationList;
   }
 
-  public List<FieldDeclaration> getFieldDeclarationList() {
+  public List<FieldDeclaration> getFieldDeclaration() {
     return fieldDeclarationList;
   }
 
-  public List<MethodDefinition> getMethodDefinitionList() {
+  public List<MethodDefinition> getMethodDefinitions() {
     return methodDefinitionList;
   }
 }

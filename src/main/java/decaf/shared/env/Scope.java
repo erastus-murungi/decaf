@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 import decaf.analysis.syntax.ast.Block;
 import decaf.shared.descriptors.ArrayDescriptor;
 import decaf.shared.descriptors.Descriptor;
+import decaf.shared.descriptors.MethodDescriptor;
 
 
 public class Scope extends HashMap<String, Descriptor> {
@@ -35,6 +36,28 @@ public class Scope extends HashMap<String, Descriptor> {
     this.target = target;
     this.owner = owner;
     this.children = new ArrayList<>();
+  }
+
+  public Scope(@NotNull For target) {
+    super();
+    this.parent = null;
+    this.target = target;
+    this.owner = null;
+    this.children = new ArrayList<>();
+  }
+
+  public static Scope forGlobals() {
+    return new Scope(
+        For.Field
+    );
+  }
+
+  public Optional<MethodDescriptor> lookupMethod(
+      String methodName
+  ) {
+    return lookup(methodName)
+               .filter(descriptor -> descriptor instanceof MethodDescriptor)
+               .map(descriptor -> (MethodDescriptor) descriptor);
   }
 
   private static String padRight(
@@ -61,6 +84,11 @@ public class Scope extends HashMap<String, Descriptor> {
     } else {
       return Optional.ofNullable(currentScope.get(stringId));
     }
+  }
+
+  public Optional<Descriptor> lookupNonMethod(@NotNull String stringId) {
+    return lookup(stringId)
+               .filter(descriptor -> !(descriptor instanceof MethodDescriptor));
   }
 
   /**
@@ -248,7 +276,6 @@ public class Scope extends HashMap<String, Descriptor> {
 
   public enum For {
     Parameter,
-    Method,
     Field
   }
 }

@@ -503,7 +503,7 @@ public class Parser {
   private void processImportDeclarations(Program program) {
     while (getCurrentTokenType() == RESERVED_IMPORT) {
       parseImportDeclaration().ifPresent(
-          program.getImportDeclarationList()::add);
+          program.getImportDeclaration()::add);
     }
   }
 
@@ -636,7 +636,7 @@ public class Parser {
         "expected a semicolon to terminate a field declaration"
     )
         .map(token
-                 -> program.getFieldDeclarationList()
+                 -> program.getFieldDeclaration()
                            .add(new FieldDeclaration(
                                tokenPosition,
                                type,
@@ -675,7 +675,7 @@ public class Parser {
                                getCurrentToken().lexeme)
               .map(nameId -> {
                 if (getCurrentTokenType() == LEFT_PARENTHESIS) {
-                  parseMethodDeclaration(program.getMethodDefinitionList(),
+                  parseMethodDeclaration(program.getMethodDefinitions(),
                                          nameId,
                                          fieldType
                   );
@@ -689,7 +689,7 @@ public class Parser {
                 return fieldType;
               }));
     } else if (getCurrentTokenType() == RESERVED_VOID) {
-      parseMethodDeclarations(program.getMethodDefinitionList());
+      parseMethodDeclarations(program.getMethodDefinitions());
     } else {
       if (getCurrentTokenType() == ID &&
           currentTokenIndex + 1 < tokens.size() &&

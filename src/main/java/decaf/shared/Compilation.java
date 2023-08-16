@@ -255,7 +255,7 @@ public class Compilation {
 
     cfg = new ControlFlowGraph(
         parser.getRoot(),
-        semanticChecker.getGlobalDescriptor().orElseThrow()
+        semanticChecker.getTypingContext().orElseThrow()
     );
     cfg.build();
     compilationState = CompilationState.CFG_GENERATED;

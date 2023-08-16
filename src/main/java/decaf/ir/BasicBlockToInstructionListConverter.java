@@ -55,7 +55,7 @@ public class BasicBlockToInstructionListConverter {
     controlFlowGraph.getMethodNameToEntryBlockMapping()
                     .forEach((methodName, entryBlock) -> methods.add(generateMethodInstructionList(
                         controlFlowGraph.getProgram()
-                                        .getMethodDefinitionList()
+                                        .getMethodDefinitions()
                                         .stream()
                                         .filter(methodDefinition -> methodDefinition.getMethodName()
                                                                                     .getLabel()
@@ -135,7 +135,7 @@ public class BasicBlockToInstructionListConverter {
 
   private InstructionList genPrologue(Program program) {
     var prologue = new InstructionList();
-    for (var fieldDeclaration : program.getFieldDeclarationList()) {
+    for (var fieldDeclaration : program.getFieldDeclaration()) {
       for (var name : fieldDeclaration.vars) {
         prologue.add(new GlobalAllocation(
             new IrGlobalScalar(
@@ -181,7 +181,7 @@ public class BasicBlockToInstructionListConverter {
     var literalList = new HashSet<String>();
     var toExplore = new Stack<AST>();
 
-    toExplore.addAll(program.getMethodDefinitionList());
+    toExplore.addAll(program.getMethodDefinitions());
     while (!toExplore.isEmpty()) {
       final AST node = toExplore.pop();
       if (node instanceof StringLiteral) literalList.add(((StringLiteral) node).literal);

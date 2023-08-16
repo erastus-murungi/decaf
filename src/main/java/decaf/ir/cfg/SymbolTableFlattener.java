@@ -11,22 +11,20 @@ import decaf.analysis.syntax.ast.Block;
 import decaf.analysis.syntax.ast.RValue;
 import decaf.shared.Pair;
 import decaf.shared.descriptors.Descriptor;
-import decaf.shared.descriptors.GlobalDescriptor;
+import decaf.shared.env.TypingContext;
 import decaf.shared.descriptors.MethodDescriptor;
 import decaf.shared.env.Scope;
 
 public class SymbolTableFlattener {
   private final Scope fields;
-  private final Scope methods;
   private final TreeSet<String> imports;
 
   private final HashMap<String, Scope> cfgMethods = new HashMap<>();
   private int uniqueIndex;
 
-  public SymbolTableFlattener(GlobalDescriptor globalDescriptor) {
-    this.fields = globalDescriptor.globalVariablesScope;
-    this.methods = globalDescriptor.methodsScope;
-    this.imports = globalDescriptor.imports;
+  public SymbolTableFlattener(TypingContext typingContext) {
+    this.fields = typingContext.globalScope;
+    this.imports = typingContext.imports;
   }
 
   private static void renameVariableWithinCurrentScope(
@@ -77,12 +75,12 @@ public class SymbolTableFlattener {
   }
 
   public HashMap<String, Scope> createCFGSymbolTables() {
-    for (HashMap.Entry<String, Descriptor> methodEntry : methods.entrySet()) {
+    for (HashMap.Entry<String, Descriptor> methodEntry : fields.entrySet()) {
       // is this check necessary? does a method table only contain one entry of type MethodDescriptor?
       if (methodEntry.getValue() instanceof MethodDescriptor methodDesc) {
         Scope methodVars = new Scope(
             null,
-            Scope.For.Method,
+            Scope.For.Field,
             methodDesc.methodDefinition.getBlock()
         );
         cfgMethods.put(
@@ -99,7 +97,7 @@ public class SymbolTableFlattener {
 //                    methodVars.entries.put(newParamName, paramEntry.getValue());
 //                    rename(methodDesc.methodDefinition.block, paramName, newParamName);
 //                }
-        methodVars.putAll(methodDesc.parameterScope);
+        methodVars.putAll(methodDesc.formalAgumentsScope);
         methodVars.putAll(this.fields);
         // iterate through all children of children blocks
         addChildrenVars(

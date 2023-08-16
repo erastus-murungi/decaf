@@ -38,14 +38,14 @@ import decaf.analysis.syntax.ast.Type;
 import decaf.analysis.syntax.ast.While;
 import decaf.ir.dataflow.passes.BranchFoldingPass;
 import decaf.shared.Utils;
-import decaf.shared.descriptors.GlobalDescriptor;
+import decaf.shared.env.TypingContext;
 import decaf.shared.descriptors.MethodDescriptor;
 import decaf.shared.env.Scope;
 import decaf.shared.errors.SemanticError;
 
 public class ControlFlowGraph {
   private final Program program;
-  private final GlobalDescriptor globalDescriptor;
+  private final TypingContext typingContext;
   private final List<SemanticError> errors = new ArrayList<>();
   private final BasicBlock prologue = BasicBlock.noBranch();
   private final HashMap<String, NOP> methodNameToExitNop = new HashMap<>();
@@ -58,10 +58,10 @@ public class ControlFlowGraph {
 
   public ControlFlowGraph(
       Program program,
-      GlobalDescriptor globalDescriptor
+      TypingContext typingContext
   ) {
     this.program = program;
-    this.globalDescriptor = globalDescriptor;
+    this.typingContext = typingContext;
   }
 
   public static void removeNOPs(
@@ -213,8 +213,8 @@ public class ControlFlowGraph {
     return methodNameToEntryBlock;
   }
 
-  public GlobalDescriptor getGlobalDescriptor() {
-    return globalDescriptor;
+  public TypingContext getGlobalDescriptor() {
+    return typingContext;
   }
 
   public Program getProgram() {
@@ -289,7 +289,7 @@ public class ControlFlowGraph {
 
     visitProgram(
         program,
-        globalDescriptor.globalVariablesScope
+        typingContext.globalScope
     );
 
 
@@ -302,8 +302,8 @@ public class ControlFlowGraph {
       maximalVisitor.setExitNOP(methodNameToExitNop.get(k));
       checkNotNull(v.getSuccessor());
       maximalVisitor.visit(v.getSuccessor());
-      catchFalloutError((MethodDescriptor) globalDescriptor.methodsScope.lookup(k)
-                                                                        .orElseThrow());
+      catchFalloutError((MethodDescriptor) typingContext.globalScope.lookup(k)
+                                                                    .orElseThrow());
     });
     removeNOPs(
         prologue,
@@ -573,7 +573,7 @@ public class ControlFlowGraph {
         )
     );
     prologue.setSuccessor(curPair.endBlock);
-    for (var import_ : program.getImportDeclarationList()) {
+    for (var import_ : program.getImportDeclaration()) {
       BasicBlocksPair placeholder = dispatch(
           import_,
           scope
@@ -582,7 +582,7 @@ public class ControlFlowGraph {
       placeholder.startBlock.addPredecessor(curPair.endBlock);
       curPair = placeholder;
     }
-    for (var field : program.getFieldDeclarationList()) {
+    for (var field : program.getFieldDeclaration()) {
       BasicBlocksPair placeholder = dispatch(
           field,
           scope
@@ -591,7 +591,7 @@ public class ControlFlowGraph {
       placeholder.startBlock.addPredecessor(curPair.endBlock);
       curPair = placeholder;
     }
-    for (var method : program.getMethodDefinitionList()) {
+    for (var method : program.getMethodDefinitions()) {
       exitNop = new NOP(
           method.getMethodName()
                 .getLabel(),

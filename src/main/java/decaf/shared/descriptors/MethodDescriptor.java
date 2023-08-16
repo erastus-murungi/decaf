@@ -17,21 +17,19 @@ import decaf.shared.env.Scope;
  */
 public class MethodDescriptor extends Descriptor {
   public MethodDefinition methodDefinition;
-  public Scope parameterScope;
+  public Scope formalAgumentsScope;
   public Scope localScope;
 
   public MethodDescriptor(
       MethodDefinition methodDefinition,
-      Scope parameterScope,
+      Scope formalAgumentsScope,
       Scope localScope
   ) {
     super(
-        methodDefinition.getReturnType(),
-        methodDefinition.getMethodName()
-                        .getLabel()
+        methodDefinition.getReturnType()
     );
     this.methodDefinition = methodDefinition;
-    this.parameterScope = parameterScope;
+    this.formalAgumentsScope = formalAgumentsScope;
     this.localScope = localScope;
   }
 }

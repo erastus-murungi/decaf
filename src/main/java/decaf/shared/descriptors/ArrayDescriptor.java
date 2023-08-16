@@ -7,15 +7,12 @@ import decaf.analysis.syntax.ast.Type;
  */
 public class ArrayDescriptor extends Descriptor {
   public final Long size;
-
   public ArrayDescriptor(
-      String id,
       Long size,
       Type type
   ) {
     super(
-        type,
-        id
+        type
     );
     this.size = size;
   }
