@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import decaf.analysis.Token;
 import decaf.analysis.TokenPosition;
@@ -64,8 +65,6 @@ public class Scanner implements Iterable<Token> {
   public static final String LINE_COMMENT_START = "//";
   public static final String BLOCK_COMMENT_START = "/*";
 
-  public static final String HEX_PREFIX_LOWERCASE = "0x";
-
   public static final String IDENTIFIER = "identifier";
 
   public static final String EOF = "END_OF_FILE_MARKER";
@@ -85,6 +84,7 @@ public class Scanner implements Iterable<Token> {
   public static final String RESERVED_TRUE = "true";
   public static final String RESERVED_FALSE = "false";
 
+  public static final Pattern INT_LITERAL_REGEX = Pattern.compile("(0[xX](?:_?[0-9a-fA-F])+)|(?:0(?:_?0)*|[1-9](?:_?[0-9])*)|0[bB](?:_?[01])+|(0[oO](?:_?[0-7])+)");
 
   private final CompilationContext context;
   private final String sourceCode;
@@ -324,11 +324,22 @@ public class Scanner implements Iterable<Token> {
           return handleBlockComment(tokenPosition);
         else if (isValidIdFirstCodePoint(c))
           return handleId(tokenPosition);
-        else if (currentSubstringMatches(HEX_PREFIX_LOWERCASE))
-          return handleHexLiteral(tokenPosition);
-        else if (Character.isDigit(c))
-          return handleDecimalLiteral(tokenPosition);
-        else if (currentSubstringMatches(ADD_ASSIGN))
+        else if (INT_LITERAL_REGEX.matcher(sourceCode.substring(stringIndex))
+                                  .lookingAt()) {
+          return INT_LITERAL_REGEX.matcher(sourceCode.substring(stringIndex))
+                                  .results()
+                                  .findFirst()
+                                  .map(matchResult -> {
+                                    consumeMultipleCharactersNoCheck(matchResult.group()
+                                                                                .length());
+                                    return makeToken(
+                                        tokenPosition,
+                                        Token.Type.INT_LITERAL,
+                                        matchResult.group()
+                                    );
+                                  })
+                                  .orElseThrow();
+        } else if (currentSubstringMatches(ADD_ASSIGN))
           return handleCompoundOperator(
               tokenPosition,
               Token.Type.ADD_ASSIGN,
@@ -707,54 +718,6 @@ public class Scanner implements Iterable<Token> {
   private void consumeMultipleCharactersNoCheck(int nChars) {
     stringIndex += nChars;
     column += nChars;
-  }
-
-  private Token handleDecimalLiteral(TokenPosition tokenPosition) {
-    assert Character.isDigit(sourceCode.charAt(stringIndex));
-    int i = stringIndex + 1;
-    while (i < sourceCode.length()) {
-      if (!Character.isDigit(sourceCode.charAt(i)))
-        break;
-      ++i;
-    }
-    consumeMultipleCharactersNoCheck(i - stringIndex);
-    return makeToken(
-        tokenPosition,
-        Token.Type.DECIMAL_LITERAL,
-        sourceCode.substring(
-            tokenPosition.offset(),
-            stringIndex
-        )
-    );
-  }
-
-  private boolean isValidHexDigit(char hexDigit) {
-    return Character.isDigit(hexDigit) || ((hexDigit <= 'f') && (hexDigit >= 'a')) ||
-        ((hexDigit <= 'F') && (hexDigit >= 'A'));
-  }
-
-  private Token handleHexLiteral(TokenPosition tokenPosition) {
-    consumeCompoundCharacter(HEX_PREFIX_LOWERCASE);
-
-    int i = stringIndex;
-    while (i < sourceCode.length()) {
-      final char hexDigit = sourceCode.charAt(i);
-      if (!isValidHexDigit(hexDigit)) {
-        break;
-      }
-      ++i;
-    }
-    if (i == stringIndex)
-      throw new IllegalStateException("<hex_literal> != <hex_digit> <hex_digit>*");
-    consumeMultipleCharactersNoCheck(i - stringIndex);
-    return makeToken(
-        tokenPosition,
-        Token.Type.HEX_LITERAL,
-        sourceCode.substring(
-            tokenPosition.offset(),
-            i
-        )
-    );
   }
 
   private Token handleSingleOperator(

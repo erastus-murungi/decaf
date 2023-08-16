@@ -12,8 +12,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import decaf.analysis.lexical.Scanner;
-import decaf.analysis.semantic.SemanticChecker;
 import decaf.analysis.syntax.Parser;
+import decaf.analysis.semantic.SemanticChecker;
 import decaf.ir.BasicBlockToInstructionListConverter;
 import decaf.ir.cfg.ControlFlowGraph;
 import decaf.ir.dataflow.DataflowOptimizer;
@@ -255,7 +255,7 @@ public class Compilation {
 
     cfg = new ControlFlowGraph(
         parser.getRoot(),
-        semanticChecker.getGlobalDescriptor()
+        semanticChecker.getGlobalDescriptor().orElseThrow()
     );
     cfg.build();
     compilationState = CompilationState.CFG_GENERATED;

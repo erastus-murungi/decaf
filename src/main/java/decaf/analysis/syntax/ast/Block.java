@@ -13,7 +13,7 @@ import decaf.shared.env.Scope;
 public class Block extends AST {
   final public List<FieldDeclaration> fieldDeclarationList;
   final public List<Statement> statementList;
-  public Scope blockScope;
+  public Scope scope;
 
   public Block(
       List<FieldDeclaration> fieldDeclarationList,

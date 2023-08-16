@@ -1,0 +1,19 @@
+import printf;
+
+int foo ( ) {
+  int a, b, c, i;
+  bool x;
+  a = 7;
+  b = 2;
+  x = true;
+  c = 0;
+  for (i = a+b; i < 2* ( a+b ); i += 1) {
+    c = c + i * i * ( a+b );
+  }
+  return c;
+}
+void main ( ) {
+  int c;
+  c = foo ( );
+  printf ( "%d\n", c );
+}

@@ -13,7 +13,6 @@ dot/
 *ssa*.pdf
 *dom*.pdf
 *cfg*.pdf
-tests/
 test.asm
 symbolTables.pdf
 dotsource.dot

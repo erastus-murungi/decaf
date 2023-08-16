@@ -1,0 +1,44 @@
+
+
+int udivmodsi4(int a, int b, int c) {
+   int k;
+   if (a > b) {
+       k = 0;
+   } else {
+       k = 3;
+   }
+   return k;
+}
+
+int
+foo (int a, int b)
+{
+  bool neg;
+  int res;
+
+  if (a < 0)
+    {
+      a = -a;
+      neg = !neg;
+    }
+
+  if (b < 0)
+    {
+      b = -b;
+      neg = !neg;
+    }
+
+  res = udivmodsi4 (a, b, 0);
+
+ if (neg) {
+    res = -res;
+    }
+
+  return res;
+}
+
+
+void main() {
+   foo(-2, 3);
+}
+

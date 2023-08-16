@@ -1,0 +1,23 @@
+import printf;
+import random_int;
+
+int get_int(int x) {
+    return x;
+}
+
+void main ( ) {
+  int a, b, c, d, e, f;
+  bool x;
+  a = 2;
+  b = 3;
+  x = true;
+  f = random_int();
+  if ( x ) {
+    c = a * b;
+    d = c * c;
+  } else {
+    c = 3 / 2;
+    d = a + b;
+  }
+  printf (d);
+}

@@ -305,7 +305,7 @@ public class GraphVizManager {
       for (Pair<String, AST> astPair : ast.getChildren()) {
         AST child = astPair.second;
         if (child instanceof Block) {
-          Scope blockScope = ((Block) child).blockScope;
+          Scope blockScope = ((Block) child).scope;
           if (blockScope.isEmpty())
             continue;
           nodes.add(String.format(

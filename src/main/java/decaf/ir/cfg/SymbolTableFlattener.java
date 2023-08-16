@@ -104,7 +104,7 @@ public class SymbolTableFlattener {
         // iterate through all children of children blocks
         addChildrenVars(
             methodVars,
-            methodDesc.methodDefinition.getBlock().blockScope
+            methodDesc.methodDefinition.getBlock().scope
         );
         this.fields.forEach(methodVars::remove);
         methodVars.parent = this.fields;

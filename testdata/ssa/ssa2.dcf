@@ -1,0 +1,15 @@
+import printf;
+
+void main() {
+    int a, k;
+    a = 10;
+    k = 1;
+    if (k < a) {
+        a = 3;
+    }
+    else {
+        a = 2;
+    }
+    k = a + k;
+    printf("%d\n", k);
+}

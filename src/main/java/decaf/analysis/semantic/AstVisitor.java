@@ -10,12 +10,10 @@ import decaf.analysis.syntax.ast.Break;
 import decaf.analysis.syntax.ast.CharLiteral;
 import decaf.analysis.syntax.ast.CompoundAssignOpExpr;
 import decaf.analysis.syntax.ast.Continue;
-import decaf.analysis.syntax.ast.DecimalLiteral;
 import decaf.analysis.syntax.ast.Decrement;
 import decaf.analysis.syntax.ast.ExpressionParameter;
 import decaf.analysis.syntax.ast.FieldDeclaration;
 import decaf.analysis.syntax.ast.For;
-import decaf.analysis.syntax.ast.HexLiteral;
 import decaf.analysis.syntax.ast.If;
 import decaf.analysis.syntax.ast.ImportDeclaration;
 import decaf.analysis.syntax.ast.Increment;
@@ -43,10 +41,6 @@ public interface AstVisitor<T> {
   T visit(IntLiteral intLiteral, Scope scope);
 
   T visit(BooleanLiteral booleanLiteral, Scope scope);
-
-  T visit(DecimalLiteral decimalLiteral, Scope scope);
-
-  T visit(HexLiteral hexLiteral, Scope scope);
 
   T visit(FieldDeclaration fieldDeclaration, Scope scope);
 
@@ -93,10 +87,7 @@ public interface AstVisitor<T> {
 
   T visit(AssignOpExpr assignOpExpr, Scope scope);
 
-  T visit(
-      FormalArgument formalArgument,
-      Scope scope
-  );
+  T visit(FormalArgument formalArgument, Scope scope);
 
   T visit(RValue RValue, Scope scope);
 

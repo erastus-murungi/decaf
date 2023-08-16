@@ -5,16 +5,15 @@ import static decaf.analysis.Token.Type.CHAR_LITERAL;
 import static decaf.analysis.Token.Type.COMMA;
 import static decaf.analysis.Token.Type.CONDITIONAL_AND;
 import static decaf.analysis.Token.Type.CONDITIONAL_OR;
-import static decaf.analysis.Token.Type.DECIMAL_LITERAL;
 import static decaf.analysis.Token.Type.DECREMENT;
 import static decaf.analysis.Token.Type.DIVIDE;
 import static decaf.analysis.Token.Type.EOF;
 import static decaf.analysis.Token.Type.EQ;
 import static decaf.analysis.Token.Type.GEQ;
 import static decaf.analysis.Token.Type.GT;
-import static decaf.analysis.Token.Type.HEX_LITERAL;
 import static decaf.analysis.Token.Type.ID;
 import static decaf.analysis.Token.Type.INCREMENT;
+import static decaf.analysis.Token.Type.INT_LITERAL;
 import static decaf.analysis.Token.Type.LEFT_CURLY;
 import static decaf.analysis.Token.Type.LEFT_PARENTHESIS;
 import static decaf.analysis.Token.Type.LEFT_SQUARE_BRACKET;
@@ -52,6 +51,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -59,6 +59,7 @@ import decaf.analysis.Token;
 import decaf.analysis.TokenPosition;
 import decaf.analysis.lexical.Scanner;
 import decaf.analysis.syntax.ast.AST;
+import decaf.analysis.syntax.ast.ActualArgument;
 import decaf.analysis.syntax.ast.ArithmeticOperator;
 import decaf.analysis.syntax.ast.Array;
 import decaf.analysis.syntax.ast.AssignExpr;
@@ -74,14 +75,13 @@ import decaf.analysis.syntax.ast.CompoundAssignOpExpr;
 import decaf.analysis.syntax.ast.CompoundAssignOperator;
 import decaf.analysis.syntax.ast.ConditionalOperator;
 import decaf.analysis.syntax.ast.Continue;
-import decaf.analysis.syntax.ast.DecimalLiteral;
 import decaf.analysis.syntax.ast.Decrement;
 import decaf.analysis.syntax.ast.EqualityOperator;
 import decaf.analysis.syntax.ast.Expression;
 import decaf.analysis.syntax.ast.ExpressionParameter;
 import decaf.analysis.syntax.ast.FieldDeclaration;
 import decaf.analysis.syntax.ast.For;
-import decaf.analysis.syntax.ast.HexLiteral;
+import decaf.analysis.syntax.ast.FormalArgument;
 import decaf.analysis.syntax.ast.If;
 import decaf.analysis.syntax.ast.ImportDeclaration;
 import decaf.analysis.syntax.ast.Increment;
@@ -94,10 +94,8 @@ import decaf.analysis.syntax.ast.LocationArray;
 import decaf.analysis.syntax.ast.LocationAssignExpr;
 import decaf.analysis.syntax.ast.LocationVariable;
 import decaf.analysis.syntax.ast.MethodCall;
-import decaf.analysis.syntax.ast.ActualArgument;
 import decaf.analysis.syntax.ast.MethodCallStatement;
 import decaf.analysis.syntax.ast.MethodDefinition;
-import decaf.analysis.syntax.ast.FormalArgument;
 import decaf.analysis.syntax.ast.ParenthesizedExpression;
 import decaf.analysis.syntax.ast.Program;
 import decaf.analysis.syntax.ast.RValue;
@@ -458,7 +456,10 @@ public class Parser {
             unaryOp
                 -> parseExpr().map(
                 expression
-                    -> new UnaryOpExpression(
+                    -> (Objects.equals(
+                    unaryOp.lexeme,
+                    Scanner.MINUS
+                ) && expression instanceof IntLiteral intLiteral) ? intLiteral.negate() :new UnaryOpExpression(
                     new UnaryOperator(
                         unaryOp.tokenPosition,
                         unaryOp.lexeme
@@ -570,15 +571,9 @@ public class Parser {
 
   private Optional<IntLiteral> parseIntLiteral() {
     Token intLiteralToken;
-    if (getCurrentToken().type == DECIMAL_LITERAL) {
+    if (getCurrentToken().type == INT_LITERAL) {
       intLiteralToken = consumeTokenNoCheck();
-      return Optional.of(new DecimalLiteral(
-          intLiteralToken.tokenPosition,
-          intLiteralToken.lexeme
-      ));
-    } else if (getCurrentToken().type == HEX_LITERAL) {
-      intLiteralToken = consumeTokenNoCheck();
-      return Optional.of(new HexLiteral(
+      return Optional.of(new IntLiteral(
           intLiteralToken.tokenPosition,
           intLiteralToken.lexeme
       ));
@@ -1147,11 +1142,8 @@ public class Parser {
       case RESERVED_LEN -> {
         return parseLen();
       }
-      case DECIMAL_LITERAL -> {
-        return parseLiteral(DECIMAL_LITERAL);
-      }
-      case HEX_LITERAL -> {
-        return parseLiteral(HEX_LITERAL);
+      case INT_LITERAL -> {
+        return parseLiteral(INT_LITERAL);
       }
       case CHAR_LITERAL -> {
         return parseLiteral(CHAR_LITERAL);
@@ -1229,11 +1221,7 @@ public class Parser {
               token.tokenPosition,
               Scanner.RESERVED_TRUE
           );
-          case HEX_LITERAL -> new HexLiteral(
-              token.tokenPosition,
-              token.lexeme
-          );
-          default -> new DecimalLiteral(
+          default -> new IntLiteral(
               token.tokenPosition,
               token.lexeme
           );

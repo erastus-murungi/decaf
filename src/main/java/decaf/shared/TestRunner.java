@@ -259,7 +259,7 @@ public class TestRunner {
         case ID -> "IDENTIFIER" + " " + token.lexeme;
         case STRING_LITERAL -> "STRINGLITERAL" + " " + token.lexeme;
         case CHAR_LITERAL -> "CHARLITERAL" + " " + token.lexeme;
-        case HEX_LITERAL, DECIMAL_LITERAL -> "INTLITERAL" + " " + token.lexeme;
+        case INT_LITERAL -> "INTLITERAL" + " " + token.lexeme;
         case RESERVED_FALSE, RESERVED_TRUE -> "BOOLEANLITERAL" + " " + token.lexeme;
         case EOF -> "";
         default -> token.lexeme;
@@ -637,9 +637,9 @@ public class TestRunner {
 
   public static String getTestsFilePathForType(@NotNull Type type) {
     return switch (type) {
-      case SCANNER -> "tests/scanner";
-      case PARSER -> "tests/parser";
-      case SEMANTICS -> "tests/semantics";
+      case SCANNER -> "testdata/scanner";
+      case PARSER -> "testdata/parser";
+      case SEMANTICS -> "testdata/semantics";
     };
   }
 

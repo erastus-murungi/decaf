@@ -10,7 +10,6 @@ import decaf.analysis.lexical.Scanner;
 import decaf.analysis.syntax.ast.AST;
 import decaf.analysis.syntax.ast.BinaryOpExpression;
 import decaf.analysis.syntax.ast.BooleanLiteral;
-import decaf.analysis.syntax.ast.DecimalLiteral;
 import decaf.analysis.syntax.ast.Expression;
 import decaf.analysis.syntax.ast.HasExpression;
 import decaf.analysis.syntax.ast.IntLiteral;
@@ -28,11 +27,11 @@ import decaf.shared.Utils;
 // they have not been simplified then results are correct but maybe suboptimal).
 
 public class InstructionSimplifyIrPass {
-  private static final IntLiteral mZero = new DecimalLiteral(
+  private static final IntLiteral mZero = new IntLiteral(
       null,
       "0"
   );
-  private static final IntLiteral mOne = new DecimalLiteral(
+  private static final IntLiteral mOne = new IntLiteral(
       null,
       "1"
   );
@@ -46,14 +45,14 @@ public class InstructionSimplifyIrPass {
   );
 
   private static IntLiteral getZero(TokenPosition tokenPosition) {
-    return new DecimalLiteral(
+    return new IntLiteral(
         tokenPosition,
         "0"
     );
   }
 
   private static IntLiteral getOne(TokenPosition tokenPosition) {
-    return new DecimalLiteral(
+    return new IntLiteral(
         tokenPosition,
         "1"
     );
@@ -166,7 +165,7 @@ public class InstructionSimplifyIrPass {
     if (expression instanceof UnaryOpExpression unaryOpExpression) {
       if (unaryOpExpression.getUnaryOperator().label.equals(Scanner.MINUS)) {
         if (unaryOpExpression.operand instanceof IntLiteral) {
-          return new DecimalLiteral(
+          return new IntLiteral(
               unaryOpExpression.tokenPosition,
               "-" + unaryOpExpression.operand.getSourceCode()
           );
@@ -200,7 +199,7 @@ public class InstructionSimplifyIrPass {
       return expression;
     var maybeEvaluatedLong = Utils.symbolicallyEvaluate(expression.getSourceCode());
     if (maybeEvaluatedLong.isPresent())
-      return new DecimalLiteral(
+      return new IntLiteral(
           expression.tokenPosition,
           maybeEvaluatedLong.get()
                             .toString()
