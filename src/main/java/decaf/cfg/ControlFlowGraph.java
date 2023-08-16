@@ -39,14 +39,14 @@ import decaf.common.Utils;
 import decaf.dataflow.passes.BranchFoldingPass;
 import decaf.descriptors.GlobalDescriptor;
 import decaf.descriptors.MethodDescriptor;
-import decaf.exceptions.DecafException;
+import decaf.errors.SemanticError;
 import decaf.grammar.Scanner;
 import decaf.symboltable.SymbolTable;
 
 public class ControlFlowGraph {
   private final Program program;
   private final GlobalDescriptor globalDescriptor;
-  private final List<DecafException> errors = new ArrayList<>();
+  private final List<SemanticError> errors = new ArrayList<>();
   private final BasicBlock prologue = BasicBlock.noBranch();
   private final HashMap<String, NOP> methodNameToExitNop = new HashMap<>();
 
@@ -242,8 +242,9 @@ public class ControlFlowGraph {
 
     if (returningPaths.size() != nonReturningPaths.size()) {
       errors.addAll(nonReturningPaths.stream()
-                                     .map(basicBlock -> new DecafException(
+                                     .map(basicBlock -> new SemanticError(
                                          methodDefinition.getTokenPosition(),
+                                         SemanticError.SemanticErrorType.MISSING_RETURN_STATEMENT,
                                          methodDefinition.getMethodName()
                                                          .getLabel() + "'s execution path ends with" +
                                              (basicBlock.getAstNodes()
@@ -254,8 +255,9 @@ public class ControlFlowGraph {
                                      .toList());
     }
     if (returningPaths.isEmpty()) {
-      errors.add(new DecafException(
+      errors.add(new SemanticError(
           methodDefinition.getTokenPosition(),
+          SemanticError.SemanticErrorType.MISMATCHING_RETURN_TYPE,
           methodDefinition.getMethodName()
                           .getLabel() + " method does not return expected type " +
               methodDefinition.getReturnType()
@@ -769,6 +771,20 @@ public class ControlFlowGraph {
     final var assignment = BasicBlock.noBranch();
     locationAssignExpr.assignExpr.expression = Utils.rotateBinaryOpExpression(locationAssignExpr.assignExpr.expression);
 
+    String op = getOpString(locationAssignExpr);
+
+    assignment.addAstNode(new Assignment(
+        locationAssignExpr.location,
+        locationAssignExpr.assignExpr,
+        op
+    ));
+    return new BasicBlocksPair(
+        assignment,
+        assignment
+    );
+  }
+
+  private static String getOpString(LocationAssignExpr locationAssignExpr) {
     String op;
     if (locationAssignExpr.assignExpr instanceof final AssignOpExpr assignOpExpr) {
       op = assignOpExpr.assignOp.label;
@@ -781,16 +797,7 @@ public class ControlFlowGraph {
     } else {
       throw new IllegalStateException("unrecognized AST node " + locationAssignExpr.assignExpr);
     }
-
-    assignment.addAstNode(new Assignment(
-        locationAssignExpr.location,
-        locationAssignExpr.assignExpr,
-        op
-    ));
-    return new BasicBlocksPair(
-        assignment,
-        assignment
-    );
+    return op;
   }
 
   public BasicBlocksPair visitMethodDefinitionParameter(MethodDefinitionParameter methodDefinitionParameter) {

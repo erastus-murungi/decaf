@@ -110,6 +110,7 @@ import decaf.ast.While;
 import decaf.common.CompilationContext;
 import decaf.common.Pair;
 import decaf.common.Utils;
+import decaf.errors.ParserError;
 
 public class Parser {
   @NotNull
@@ -213,7 +214,7 @@ public class Parser {
   }
 
   public String getPrettyErrorOutput() {
-    return context.processParserErrorOutput(errors);
+    return context.stringifyErrors(errors);
   }
 
   public Program getRoot() {
@@ -1331,11 +1332,11 @@ public class Parser {
                                 "implementation error: expected else statement"
                             ).flatMap(
                                 tk2 -> parseBlock().map(
-                                    block1 -> new If(
+                                    elseBlock -> new If(
                                         token.tokenPosition,
                                         expression,
                                         block,
-                                        block1
+                                        elseBlock
                                     )
                                 )
                             );

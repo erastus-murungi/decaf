@@ -8,18 +8,10 @@ import java.util.Collection;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import decaf.exceptions.DecafSemanticException;
-import decaf.grammar.ParserError;
-import decaf.grammar.ScannerError;
-import decaf.grammar.TokenPosition;
+import decaf.errors.Error;
 
 public class CompilationContext {
   public static final String NEW_LINE = "\n";
-  public static final String TERNARY_COLON = ":";
-  public static final String TILDE = "~";
-  public final int MAX_NUM_CHARS = 30;
-  private String asmOutputFilename;
-  private String sourceFilename;
   private final String sourceCode;
   @NotNull private final Logger logger;
   @NotNull private Boolean isDebugModeOn;
@@ -44,42 +36,15 @@ public class CompilationContext {
     this.isDebugModeOn = debugMode;
   }
 
-  public Logger getLogger() {
+  public @NotNull Logger getLogger() {
     return logger;
   }
 
-  public String getAsmOutputFilename() {
-    return asmOutputFilename;
+  public <ErrType extends Enum<ErrType>> String stringifyErrors(@NotNull Collection<? extends Error<ErrType>> errors) {
+    return errors.stream().map(this::stringifyError).collect(Collectors.joining(NEW_LINE.repeat(2)));
   }
 
-  public void setAsmOutputFilename(String asmOutputFilename) {
-    this.asmOutputFilename = asmOutputFilename;
-  }
-
-  public String getSourceFilename() {
-    return sourceFilename;
-  }
-
-  public void setSourceFilename(String sourceFilename) {
-    this.sourceFilename = sourceFilename;
-  }
-
-  public DecafSemanticException processDecafSemanticException(DecafSemanticException decafSemanticException) {
-    TokenPosition tokenPosition = new TokenPosition(
-        decafSemanticException.line,
-        decafSemanticException.column,
-        -1
-    );
-    DecafSemanticException decafSemanticException1 = new DecafSemanticException(
-        tokenPosition,
-        decafSemanticException.getMessage()
-    );
-    decafSemanticException1.setStackTrace(decafSemanticException.getStackTrace());
-    //            System.err.println(decafSemanticException.getMessage());
-    return decafSemanticException1;
-  }
-
-  public String processScannerErrorOutput(@NotNull ScannerError scannerError) {
+  <ErrType extends Enum<ErrType>> String stringifyError(@NotNull Error<ErrType> error) {
     var output = new ArrayList<String>();
 
     final String indent = Utils.DEFAULT_INDENT.repeat(3);
@@ -87,27 +52,28 @@ public class CompilationContext {
     // print header in sorta Rust style
     output.add(Utils.coloredPrint(
         String.format(
-            "scanning_error[%s]",
-            scannerError.getErrorType()
-                        .toString()
+            "%s[%s]",
+            error.errorType().getClass().getEnclosingClass().getSimpleName(),
+            error.errorType().name()
         ),
         Utils.ANSIColorConstants.ANSI_RED_BOLD
     ) + ": " + Utils.coloredPrint(
-        scannerError.getErrorSummary(),
+        error.getErrorSummary(),
         Utils.ANSIColorConstants.ANSI_YELLOW
     ));
 
     // context before the problematic line
     var sourceCodeLines = sourceCode.split(NEW_LINE);
 
-    var numPrecursorLines = Math.max(
-        0,
-        scannerError.tokenPosition.line()
+    var numPrecursorLines = Math.min(
+        error.tokenPosition()
+             .line(),
+        2
     );
     var precursorLines = Arrays.copyOfRange(
         sourceCodeLines,
-        0,
-        numPrecursorLines
+        error.tokenPosition().line() - numPrecursorLines,
+        error.tokenPosition().line()
     );
 
     var numDigits = (int) Math.log10(sourceCodeLines.length) + 1;
@@ -115,23 +81,23 @@ public class CompilationContext {
         Utils.identBlockWithNumbering(
             precursorLines,
             indent,
-            1,
+            error.tokenPosition().line() - numPrecursorLines + 1,
             numDigits
         )
     );
 
     // context of the problematic line
-    var problematicLine = sourceCodeLines[scannerError.tokenPosition.line()];
+    var problematicLine = sourceCodeLines[error.tokenPosition().line()];
     output.add(Utils.identPointNumberOneLine(
         problematicLine,
         subIndent,
-        scannerError.tokenPosition.line() + 1,
+        error.tokenPosition().line() + 1,
         numDigits
     ));
 
     // underline column of the problematic line
     var underline = Utils.coloredPrint(
-        Utils.SPACE.repeat(scannerError.tokenPosition.column() + numDigits + 3),
+        Utils.SPACE.repeat(error.tokenPosition().column() + numDigits + 3),
         Utils.ANSIColorConstants.ANSI_GREEN_BOLD
     );
     underline += Utils.coloredPrint(
@@ -142,7 +108,7 @@ public class CompilationContext {
     var detail = Utils.coloredPrint(
         String.format(
             " %s",
-            scannerError.getDetail()
+            error.getDetail()
         ),
         Utils.ANSIColorConstants.ANSI_RED_BOLD
     );
@@ -151,19 +117,19 @@ public class CompilationContext {
     // context after the problematic line
     var numPostCursorLines = Math.min(
         3,
-        sourceCodeLines.length - scannerError.tokenPosition.line() - 1
+        sourceCodeLines.length - error.tokenPosition().line() - 1
     );
 
     var postCursorLines = Arrays.copyOfRange(
         sourceCodeLines,
-        scannerError.tokenPosition.line() + 1,
-        scannerError.tokenPosition.line() + 1 + numPostCursorLines
+        error.tokenPosition().line() + 1,
+        error.tokenPosition().line() + 1 + numPostCursorLines
     );
     output.add(
         Utils.identBlockWithNumbering(
             postCursorLines,
             indent,
-            scannerError.tokenPosition.line() + 2
+            error.tokenPosition().line() + 2
         )
     );
 
@@ -171,111 +137,5 @@ public class CompilationContext {
         NEW_LINE,
         output
     );
-  }
-
-  public String processScannerErrorOutput(@NotNull Collection<ScannerError> scannerErrorsCollection) {
-    return scannerErrorsCollection.stream()
-                                  .map(this::processScannerErrorOutput)
-                                  .collect(Collectors.joining(NEW_LINE.repeat(2)));
-  }
-
-  public String processParserErrorOutput(@NotNull ParserError parserError) {
-    var output = new ArrayList<String>();
-
-    final String indent = Utils.DEFAULT_INDENT.repeat(3);
-    final String subIndent = Utils.DEFAULT_INDENT.repeat(2);
-    // print header in sorta Rust style
-    output.add(Utils.coloredPrint(
-        String.format(
-            "parsing_error[%s]",
-            parserError.errorType()
-                        .toString()
-        ),
-        Utils.ANSIColorConstants.ANSI_RED_BOLD
-    ) + ": " + Utils.coloredPrint(
-        parserError.getErrorSummary(),
-        Utils.ANSIColorConstants.ANSI_YELLOW
-    ));
-
-    // context before the problematic line
-    var sourceCodeLines = sourceCode.split(NEW_LINE);
-
-    var numPrecursorLines = Math.max(
-        0,
-        parserError.token().tokenPosition.line()
-    );
-    var precursorLines = Arrays.copyOfRange(
-        sourceCodeLines,
-        0,
-        numPrecursorLines
-    );
-
-    var numDigits = (int) Math.log10(sourceCodeLines.length) + 1;
-    output.add(
-        Utils.identBlockWithNumbering(
-            precursorLines,
-            indent,
-            1,
-            numDigits
-        )
-    );
-
-    // context of the problematic line
-    var problematicLine = sourceCodeLines[parserError.token().tokenPosition.line()];
-    output.add(Utils.identPointNumberOneLine(
-        problematicLine,
-        subIndent,
-        parserError.token().tokenPosition.line() + 1,
-        numDigits
-    ));
-
-    // underline column of the problematic line
-    var underline = Utils.coloredPrint(
-        Utils.SPACE.repeat(parserError.token().tokenPosition.column() + numDigits + 3),
-        Utils.ANSIColorConstants.ANSI_GREEN_BOLD
-    );
-    underline += Utils.coloredPrint(
-        "^",
-        Utils.ANSIColorConstants.ANSI_CYAN
-    );
-
-    var detail = Utils.coloredPrint(
-        String.format(
-            " %s",
-            parserError.detail()
-        ),
-        Utils.ANSIColorConstants.ANSI_RED_BOLD
-    );
-    output.add(indent + underline + detail);
-
-    // context after the problematic line
-    var numPostCursorLines = Math.min(
-        3,
-        sourceCodeLines.length - parserError.token().tokenPosition.line() - 1
-    );
-
-    var postCursorLines = Arrays.copyOfRange(
-        sourceCodeLines,
-        parserError.token().tokenPosition.line() + 1,
-        parserError.token().tokenPosition.line() + 1 + numPostCursorLines
-    );
-    output.add(
-        Utils.identBlockWithNumbering(
-            postCursorLines,
-            indent,
-            parserError.token().tokenPosition.line() + 2
-        )
-    );
-
-    return String.join(
-        NEW_LINE,
-        output
-    );
-  }
-
-  public String processParserErrorOutput(@NotNull Collection<ParserError> parserErrorsCollection) {
-    return parserErrorsCollection.stream()
-                                  .map(this::processParserErrorOutput)
-                                  .collect(Collectors.joining(NEW_LINE.repeat(2)));
   }
 }

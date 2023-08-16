@@ -47,11 +47,12 @@ import decaf.ast.Statement;
 import decaf.ast.StringLiteral;
 import decaf.ast.Type;
 import decaf.ast.UnaryOpExpression;
+import decaf.ast.VoidExpression;
 import decaf.ast.While;
 import decaf.descriptors.ArrayDescriptor;
 import decaf.descriptors.Descriptor;
 import decaf.descriptors.MethodDescriptor;
-import decaf.exceptions.DecafSemanticException;
+import decaf.errors.SemanticError;
 import decaf.grammar.Scanner;
 import decaf.symboltable.SymbolTable;
 
@@ -62,16 +63,19 @@ public class TypeResolver implements AstVisitor<Type> {
   private SymbolTable globalFields;
   private TreeSet<String> imports;
   private Type returnTypeSeen;
+  private final List<SemanticError> errors;
 
   public TypeResolver(
       Program root,
       SymbolTable methods,
       SymbolTable globalFields,
-      TreeSet<String> imports
+      TreeSet<String> imports,
+      List<SemanticError> errors
   ) {
     this.setMethods(methods);
     this.setGlobalFields(globalFields);
     this.setImports(imports);
+    this.errors = errors;
     visit(
         root,
         globalFields
@@ -149,17 +153,21 @@ public class TypeResolver implements AstVisitor<Type> {
             parameterSymbolTable
         );
       if (getReturnTypeSeen() != Type.Undefined && methodDefinition.getReturnType() != getReturnTypeSeen()) {
-        exceptions.add(new DecafSemanticException(
-            methodDefinition.getTokenPosition(),
-            methodDefinition.getMethodName()
-                            .getLabel() + " does not have a declared type " + methodDefinition.getReturnType() +
-                " instead it returns type " + getReturnTypeSeen()
+        errors.add(new SemanticError(
+            methodDefinition.getMethodName().tokenPosition,
+            SemanticError.SemanticErrorType.SHOULD_RETURN_VOID,
+            String.format("method `%s` must not return a value of type `%s` in a void method",
+                methodDefinition.getMethodName()
+                                .getLabel(),
+                getReturnTypeSeen()
+            )
         ));
       }
       setReturnTypeSeen(Type.Undefined);
     } else {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           methodDefinition.getTokenPosition(),
+          SemanticError.SemanticErrorType.METHOD_DEFINITION_NOT_FOUND,
           "method definition not found"
       ));
     }
@@ -180,59 +188,86 @@ public class TypeResolver implements AstVisitor<Type> {
       SymbolTable symbolTable
   ) {
     Optional<Descriptor> optionalDescriptor = symbolTable.getDescriptorFromValidScopes(forStatement.initialization.initLocation.getLabel());
-    if (optionalDescriptor.isEmpty()) exceptions.add(new DecafSemanticException(
-        forStatement.initialization.initLocation.tokenPosition,
-        forStatement.initialization.initLocation + " must be declared in scope"
-    ));
+    if (optionalDescriptor.isEmpty()) {
+      errors.add(new SemanticError(
+          forStatement.initialization.initLocation.tokenPosition,
+          SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
+          forStatement.initialization.initLocation + " must be declared in scope"
+      ));
+    }
     else {
       Descriptor initDescriptor = optionalDescriptor.get();
-      if (initDescriptor.type != Type.Int) exceptions.add(new DecafSemanticException(
-          forStatement.tokenPosition,
-          forStatement.initialization.initLocation + " must type must be " + Type.Int + " not " + initDescriptor.type
-      ));
+      if (initDescriptor.type != Type.Int) {
+        errors.add(new SemanticError(
+            forStatement.tokenPosition,
+            SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
+            forStatement.initialization.initLocation + " must type must be " + Type.Int + " not " + initDescriptor.type
+        ));
+      }
 
       Type type = forStatement.initialization.initExpression.accept(
           this,
           symbolTable
       );
-      if (type != Type.Int) exceptions.add(new DecafSemanticException(
-          forStatement.initialization.initExpression.tokenPosition,
-          "init expression must evaluate to an int"
-      ));
+      if (type != Type.Int) {
+        errors.add(new SemanticError(
+            forStatement.initialization.initExpression.tokenPosition,
+            SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
+            "init expression must evaluate to an int"
+        ));
+      }
 
       Type testType = forStatement.terminatingCondition.accept(
           this,
           symbolTable
       );
-      if (testType != Type.Bool) exceptions.add(new DecafSemanticException(
-          forStatement.terminatingCondition.tokenPosition,
-          "for-loop test must evaluate to " + Type.Bool + " not " + testType
-      ));
+      if (testType != Type.Bool) {
+        errors.add(new SemanticError(
+            forStatement.terminatingCondition.tokenPosition,
+            SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
+            "for-loop test must evaluate to " + Type.Bool + " not " + testType
+        ));
+      }
       forStatement.block.accept(
           this,
           symbolTable
       );
       optionalDescriptor = symbolTable.getDescriptorFromValidScopes(forStatement.update.getLocation().name.getLabel());
-      if (optionalDescriptor.isEmpty()) exceptions.add(new DecafSemanticException(
-          forStatement.update.getLocation().tokenPosition,
-          forStatement.update.getLocation().name + " must be declared in scope"
-      ));
+      if (optionalDescriptor.isEmpty()) {
+        errors.add(new SemanticError(
+            forStatement.update.getLocation().tokenPosition,
+            SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
+            forStatement.update.getLocation().name + " must be declared in scope"
+        ));
+      }
       else {
         Descriptor updatingDescriptor = optionalDescriptor.get();
-        if (updatingDescriptor.type != Type.Int) exceptions.add(new DecafSemanticException(
-            forStatement.initialization.initExpression.tokenPosition,
-            "update location must have type int, not " + updatingDescriptor.type
-        ));
-        Type updateExprType = forStatement.update.assignExpr.accept(
+        if (updatingDescriptor.type != Type.Int) {
+          errors.add(new SemanticError(
+              forStatement.initialization.initExpression.tokenPosition,
+              SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
+              "update location must have type int, not " + updatingDescriptor.type
+          ));
+        }
+        var updateExprType = forStatement.update.assignExpr.accept(
             this,
             symbolTable
         );
         if (forStatement.update.assignExpr instanceof CompoundAssignOpExpr)
           updateExprType = forStatement.update.assignExpr.expression.getType();
-        if (updateExprType != Type.Int) exceptions.add(new DecafSemanticException(
-            forStatement.update.assignExpr.tokenPosition,
-            "incrementing/decrementing must have type int, not " + updateExprType
-        ));
+        if (updateExprType != Type.Int) {
+          errors.add(new SemanticError(
+              forStatement.update.assignExpr.tokenPosition,
+              SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
+              String.format("The location and the expression in an incrementing/decrementing assignment must be of type `int`, " +
+                                "currently the location `%s` is of type `%s` and the expression `%s` is of type `%s`",
+                            updatingDescriptor.id,
+                            updatingDescriptor.type,
+                            forStatement.update.assignExpr.getSourceCode(),
+                            updateExprType
+              )
+          ));
+        }
       }
     }
     return Type.Undefined;
@@ -264,8 +299,9 @@ public class TypeResolver implements AstVisitor<Type> {
         symbolTable
     );
     if (type != Type.Bool) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           whileStatement.test.tokenPosition,
+          SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
           "while statement test must evaluate to a bool, not " + type
       ));
     }
@@ -306,20 +342,23 @@ public class TypeResolver implements AstVisitor<Type> {
         symbolTable
     );
     if (operandType != Type.Bool && operandType != Type.Int) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           unaryOpExpression.tokenPosition,
-          "could not infer"
+          SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
+          "expected either bool or int, not `" + operandType + "`"
       ));
     }
     if (operandType != Type.Bool && unaryOpExpression.getUnaryOperator().label.equals("!")) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           unaryOpExpression.tokenPosition,
+          SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
           "Can only use a not operator on Bools"
       ));
     }
     if (operandType != Type.Int && unaryOpExpression.getUnaryOperator().label.equals("-")) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           unaryOpExpression.tokenPosition,
+          SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
           "Can only use an unary minus operator on Integers"
       ));
     }
@@ -352,13 +391,15 @@ public class TypeResolver implements AstVisitor<Type> {
         if (leftType == Type.Bool && rightType == Type.Bool) {
           binaryOpExpressionType = Type.Bool;
         } else if (leftType != Type.Bool) {
-          exceptions.add(new DecafSemanticException(
+          errors.add(new SemanticError(
               binaryOpExpression.tokenPosition,
+              SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
               "lhs must have type bool not `" + leftType + " `"
           ));
         } else {
-          exceptions.add(new DecafSemanticException(
+          errors.add(new SemanticError(
               binaryOpExpression.tokenPosition,
+              SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
               "rhs must have type bool not `" + rightType + " `"
           ));
         }
@@ -366,35 +407,40 @@ public class TypeResolver implements AstVisitor<Type> {
         if (leftType == Type.Int && rightType == Type.Int) {
           binaryOpExpressionType = Type.Int;
         } else if (leftType != Type.Int) {
-          exceptions.add(new DecafSemanticException(
+          errors.add(new SemanticError(
               binaryOpExpression.tokenPosition,
+              SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
               "lhs must have type int not `" + leftType + " `"
           ));
         } else {
-          exceptions.add(new DecafSemanticException(
+          errors.add(new SemanticError(
               binaryOpExpression.tokenPosition,
+              SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
               "rhs must have type int not `" + rightType + " `"
           ));
         }
       } else if (binaryOpExpression.op instanceof EqualityOperator) {
         if (leftType.equals(rightType) && (leftType == Type.Int || leftType == Type.Bool))
           binaryOpExpressionType = Type.Bool;
-        else exceptions.add(new DecafSemanticException(
+        else errors.add(new SemanticError(
             binaryOpExpression.tokenPosition,
-            "operands of " + binaryOpExpression.op + " must have same type, either both bool or both int, not `" +
+            SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
+            "operands of " + binaryOpExpression.op.getSourceCode() + " must have same type, either both bool or both int, not `" +
                 leftType + "` and `" + rightType
         ));
       } else if (binaryOpExpression.op instanceof RelationalOperator) {
         if (leftType.equals(Type.Int) && rightType.equals(Type.Int)) {
           binaryOpExpressionType = Type.Bool;
         } else if (leftType != Type.Int) {
-          exceptions.add(new DecafSemanticException(
+          errors.add(new SemanticError(
               binaryOpExpression.tokenPosition,
+              SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
               "lhs must have type int not `" + leftType + " `"
           ));
         } else {
-          exceptions.add(new DecafSemanticException(
+          errors.add(new SemanticError(
               binaryOpExpression.tokenPosition,
+              SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
               "rhs must have type int not `" + rightType + " `"
           ));
         }
@@ -444,8 +490,9 @@ public class TypeResolver implements AstVisitor<Type> {
         this,
         symbolTable
     ) != Type.Int) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           locationArray.tokenPosition,
+          SemanticError.SemanticErrorType.INVALID_ARRAY_INDEX,
           "array index must evaluate to int"
       ));
     }
@@ -456,8 +503,9 @@ public class TypeResolver implements AstVisitor<Type> {
         switch (descriptor.get().type) {
           case Bool, BoolArray -> type = Type.Bool;
           case Int, IntArray -> type = Type.Int;
-          default -> exceptions.add(new DecafSemanticException(
+          default -> errors.add(new SemanticError(
               locationArray.tokenPosition,
+              SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
               locationArray.name.getLabel() + " must be an array"
           ));
         }
@@ -491,8 +539,9 @@ public class TypeResolver implements AstVisitor<Type> {
         symbolTable
     );
     if (type != Type.Bool) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           ifStatement.test.tokenPosition,
+          SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
           "if statement test must evaluate to a bool, not " + type
       ));
     }
@@ -514,14 +563,10 @@ public class TypeResolver implements AstVisitor<Type> {
       Return returnStatement,
       SymbolTable symbolTable
   ) {
-    Type type = Type.Void;
-    if (returnStatement.retExpression != null) {
-      type = returnStatement.retExpression.accept(
+    Type type = returnStatement.retExpression.accept(
           this,
-          symbolTable
-      );
-      checkIntBounds();
-    }
+          symbolTable);
+    checkIntBounds();
     setReturnTypeSeen(type);
     return Type.Void;
   }
@@ -533,8 +578,9 @@ public class TypeResolver implements AstVisitor<Type> {
   ) {
     if (array.getSize()
              .convertToLong() <= 0) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           array.getSize().tokenPosition,
+          SemanticError.SemanticErrorType.INVALID_ARRAY_INDEX,
           "The int_literal in an array declaration must be greater than 0"
       ));
     }
@@ -548,9 +594,15 @@ public class TypeResolver implements AstVisitor<Type> {
   ) {
     if (methodCall.methodCallParameterList.size() != methodDefinition.getParameterList()
                                                                      .size()) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           methodCall.tokenPosition,
-          "unequal number of args"
+          SemanticError.SemanticErrorType.MISMATCHING_NUMBER_OR_ARGUMENTS,
+          String.format("method %s expects %d arguments but %d were passed in",
+              methodCall.nameId.getLabel(),
+              methodDefinition.getParameterList()
+                              .size(),
+              methodCall.methodCallParameterList.size()
+          )
       ));
       return;
     }
@@ -559,8 +611,9 @@ public class TypeResolver implements AstVisitor<Type> {
                                                                                   .get(i);
       final MethodCallParameter methodCallParameter = methodCall.methodCallParameterList.get(i);
       if (methodCallParameter.type != methodDefinitionParameter.getType()) {
-        exceptions.add(new DecafSemanticException(
+        errors.add(new SemanticError(
             methodCall.tokenPosition,
+            SemanticError.SemanticErrorType.INCORRECT_ARG_TYPE,
             "method param " + methodDefinitionParameter.getName() + " is defined with type " +
                 methodDefinitionParameter.getType() + " but " + methodCallParameter.type + " is passed in"
         ));
@@ -589,9 +642,10 @@ public class TypeResolver implements AstVisitor<Type> {
     final Optional<Descriptor> optionalMethodDescriptor = getMethods().getDescriptorFromCurrentScope(methodCall.nameId.getLabel());
     final Descriptor descriptor;
     if (symbolTable.containsEntry(methodCall.nameId.getLabel())) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           methodCall.tokenPosition,
-          methodCall.nameId.getLabel() + " refers to locally defined irAssignableValue"
+          SemanticError.SemanticErrorType.METHOD_CALL_CONFLICTS_WITH_LOCALLY_DEFINED_IDENTIFIER,
+          methodCall.nameId.getLabel() + " refers to locally defined identifier"
       ));
       return Type.Undefined;
     }
@@ -608,8 +662,9 @@ public class TypeResolver implements AstVisitor<Type> {
     if (optionalMethodDescriptor.isPresent()) {
       descriptor = optionalMethodDescriptor.get();
     } else {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           methodCall.tokenPosition,
+          SemanticError.SemanticErrorType.METHOD_DEFINITION_NOT_FOUND,
           "method " + methodCall.nameId.getLabel() + " not found"
       ));
       return Type.Undefined;
@@ -634,8 +689,9 @@ public class TypeResolver implements AstVisitor<Type> {
   ) {
     if (!getImports().contains(methodCallStatement.methodCall.nameId.getLabel()) &&
         !getMethods().containsEntry(methodCallStatement.methodCall.nameId.getLabel())) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           methodCallStatement.tokenPosition,
+          SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
           "identifier `" + methodCallStatement.methodCall.nameId.getLabel() +
               "` in a method statement must be a declared method or import."
       ));
@@ -654,11 +710,24 @@ public class TypeResolver implements AstVisitor<Type> {
   ) {
     Optional<Descriptor> optionalDescriptor = symbolTable.getDescriptorFromValidScopes(locationAssignExpr.location.name.getLabel());
     if (optionalDescriptor.isEmpty() || (locationAssignExpr.location instanceof LocationVariable &&
-        optionalDescriptor.get() instanceof ArrayDescriptor)) exceptions.add(new DecafSemanticException(
-        locationAssignExpr.tokenPosition,
-        "id `" + locationAssignExpr.location.name.getLabel() +
-            "` being assigned to must be a declared local/global irAssignableValue or formal parameter."
-    ));
+        optionalDescriptor.get() instanceof ArrayDescriptor)) {
+      if (optionalDescriptor.isEmpty()) {
+        errors.add(new SemanticError(
+            locationAssignExpr.tokenPosition,
+            SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
+            "id `" + locationAssignExpr.location.name.getLabel() +
+                "` being assigned to must be a declared local/global irAssignableValue or formal parameter."
+        ));
+      } else {
+errors.add(new SemanticError(
+            locationAssignExpr.tokenPosition,
+            SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
+            String.format("`%s` is an array and cannot be modified directly like a variable",
+                locationAssignExpr.location.name.getLabel()
+            )
+        ));
+      }
+    }
     else {
       if (locationAssignExpr.location instanceof final LocationArray locationArray) {
         locationArray.expression.setType(locationArray.expression.accept(
@@ -666,8 +735,9 @@ public class TypeResolver implements AstVisitor<Type> {
             symbolTable
         ));
         if (locationArray.expression.getType() != Type.Int) {
-          exceptions.add(new DecafSemanticException(
+          errors.add(new SemanticError(
               locationAssignExpr.tokenPosition,
+              SemanticError.SemanticErrorType.INVALID_ARRAY_INDEX,
               "array index must evaluate to an int"
           ));
         }
@@ -682,15 +752,17 @@ public class TypeResolver implements AstVisitor<Type> {
         if (assignOpExpr.assignOp.label.equals(Scanner.ASSIGN)) {
           if ((locationDescriptor.type == Type.Int || locationDescriptor.type == Type.IntArray) &&
               expressionType != Type.Int) {
-            exceptions.add(new DecafSemanticException(
+            errors.add(new SemanticError(
                 locationAssignExpr.tokenPosition,
+                SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
                 "lhs is type " + locationDescriptor.type + " rhs must be type Int, not " + expressionType
             ));
           }
           if ((locationDescriptor.type == Type.Bool || locationDescriptor.type == Type.BoolArray) &&
               expressionType != Type.Bool) {
-            exceptions.add(new DecafSemanticException(
+            errors.add(new SemanticError(
                 locationAssignExpr.tokenPosition,
+                SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
                 "lhs is type " + locationDescriptor.type + " rhs must be type Bool, not " + expressionType
             ));
           }
@@ -709,9 +781,16 @@ public class TypeResolver implements AstVisitor<Type> {
         // both must be of type int
         if (!((locationDescriptor.type == Type.Int || locationDescriptor.type == Type.IntArray) &&
             expressionType == Type.Int)) {
-          exceptions.add(new DecafSemanticException(
+          errors.add(new SemanticError(
               locationAssignExpr.tokenPosition,
-              "The location and the expression in an incrementing/decrementing assignment must be of type int"
+              SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
+              String.format("The location and the expression in an incrementing/decrementing assignment must be of type `int`, " +
+                                "currently the location `%s` is of type `%s` and the expression `%s` is of type `%s`",
+                  locationDescriptor.id,
+                  locationDescriptor.type,
+                  locationAssignExpr.assignExpr.getSourceCode(),
+                  expressionType
+              )
           ));
         }
       }
@@ -768,8 +847,9 @@ public class TypeResolver implements AstVisitor<Type> {
       locationVariable.setType(descriptorOptional.get().type);
       return descriptorOptional.get().type;
     } else {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           locationVariable.tokenPosition,
+          SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
           "No identifier can be used before it is declared: " + locationVariable.name.getLabel() + " not in scope"
       ));
       return Type.Undefined;
@@ -846,6 +926,14 @@ public class TypeResolver implements AstVisitor<Type> {
     return null;
   }
 
+  @Override
+  public Type visit(
+      VoidExpression voidExpression,
+      SymbolTable symbolTable
+  ) {
+    return Type.Void;
+  }
+
 
   private void checkIntBounds() {
     if (intLiteral != null) {
@@ -865,9 +953,10 @@ public class TypeResolver implements AstVisitor<Type> {
         }
 
       } catch (Exception e) {
-        exceptions.add(new DecafSemanticException(
+        errors.add(new SemanticError(
             intLiteral.tokenPosition,
-            "Encountered int literal that's out of bounds"
+            SemanticError.SemanticErrorType.INT_LITERAL_TOO_BIG,
+            "Encountered int literal that's out of bounds; -9223372036854775808 <= x <= 9223372036854775807"
         ));
       }
     }

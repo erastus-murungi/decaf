@@ -1,12 +1,11 @@
-package decaf.grammar;
+package decaf.errors;
 
-public class ScannerError extends Token {
+import decaf.grammar.Token;
+import decaf.grammar.TokenPosition;
+import decaf.grammar.TokenType;
+
+public class ScannerError extends Token implements Error<ScannerError.ErrorType> {
   private final ErrorType errorType;
-
-  public ErrorType getErrorType() {
-    return errorType;
-  }
-
   public ScannerError(
       TokenPosition tokenPosition,
       ErrorType errorType,
@@ -30,6 +29,16 @@ public class ScannerError extends Token {
 
   public String getDetail() {
     return lexeme;
+  }
+
+  @Override
+  public TokenPosition tokenPosition() {
+    return tokenPosition;
+  }
+
+  @Override
+  public ErrorType errorType() {
+    return errorType;
   }
 
   public enum ErrorType {

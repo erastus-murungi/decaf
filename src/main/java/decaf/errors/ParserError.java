@@ -1,6 +1,22 @@
-package decaf.grammar;
+package decaf.errors;
 
-public record ParserError(decaf.grammar.ParserError.ErrorType errorType, Token token, String detail) {
+import decaf.grammar.Token;
+import decaf.grammar.TokenPosition;
+
+public class ParserError implements Error<ParserError.ErrorType> {
+  private final ErrorType errorType;
+  private final Token token;
+  private final String detail;
+
+  public ParserError(
+      ErrorType errorType,
+      Token token,
+      String detail
+  ) {
+    this.errorType = errorType;
+    this.token = token;
+    this.detail = detail;
+  }
 
   public String getErrorSummary() {
     return switch (errorType) {
@@ -24,6 +40,20 @@ public record ParserError(decaf.grammar.ParserError.ErrorType errorType, Token t
     };
   }
 
+  @Override
+  public String getDetail() {
+    return detail;
+  }
+
+  @Override
+  public TokenPosition tokenPosition() {
+    return token.tokenPosition;
+  }
+
+  @Override
+  public ErrorType errorType() {
+    return errorType;
+  }
 
   public enum ErrorType {
     UNEXPECTED_TOKEN,

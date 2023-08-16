@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import decaf.common.CompilationContext;
+import decaf.errors.ScannerError;
 
 public class Scanner implements Iterable<Token> {
   public static final String LEFT_CURLY = "{";
@@ -107,7 +108,7 @@ public class Scanner implements Iterable<Token> {
   }
 
   public String getPrettyErrorOutput() {
-    return context.processScannerErrorOutput(errors);
+    return context.stringifyErrors(errors);
   }
 
   public boolean finished() {

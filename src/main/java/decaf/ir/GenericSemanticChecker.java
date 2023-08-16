@@ -44,6 +44,7 @@ import decaf.ast.Statement;
 import decaf.ast.StringLiteral;
 import decaf.ast.Type;
 import decaf.ast.UnaryOpExpression;
+import decaf.ast.VoidExpression;
 import decaf.ast.While;
 import decaf.common.Pair;
 import decaf.common.Utils;
@@ -52,7 +53,7 @@ import decaf.descriptors.Descriptor;
 import decaf.descriptors.MethodDescriptor;
 import decaf.descriptors.ParameterDescriptor;
 import decaf.descriptors.VariableDescriptor;
-import decaf.exceptions.DecafSemanticException;
+import decaf.errors.SemanticError;
 import decaf.grammar.TokenPosition;
 import decaf.symboltable.SymbolTable;
 import decaf.symboltable.SymbolTableType;
@@ -60,6 +61,7 @@ import decaf.symboltable.SymbolTableType;
 public class GenericSemanticChecker implements AstVisitor<Void> {
   int depth = 0; // the number of nested while/for loops we are in
   private TreeSet<String> imports = new TreeSet<>();
+  private final List<SemanticError> errors;
   private SymbolTable fields = new SymbolTable(
       null,
       SymbolTableType.Field,
@@ -70,6 +72,10 @@ public class GenericSemanticChecker implements AstVisitor<Void> {
       SymbolTableType.Method,
       null
   );
+
+  public GenericSemanticChecker(List<SemanticError> errors) {
+    this.errors = errors;
+  }
 
   public Void visit(
       IntLiteral intLiteral,
@@ -106,22 +112,25 @@ public class GenericSemanticChecker implements AstVisitor<Void> {
     Type type = fieldDeclaration.getType();
     for (Name name : fieldDeclaration.names) {
       if (symbolTable.isShadowingParameter(name.getLabel())) {
-        exceptions.add(new DecafSemanticException(
+        errors.add(new SemanticError(
             fieldDeclaration.tokenPosition,
+            SemanticError.SemanticErrorType.SHADOWING_PARAMETER,
             "Field " + name.getLabel() + " shadows a parameter"
         ));
       } else if (symbolTable.parent == null && (
           getMethods().containsEntry(name.getLabel()) || getImports().contains(name.getLabel()) ||
               getFields().containsEntry(name.getLabel()))) {
         // global field already declared in global scope
-        exceptions.add(new DecafSemanticException(
+        errors.add(new SemanticError(
             fieldDeclaration.tokenPosition,
+            SemanticError.SemanticErrorType.IDENTIFIER_ALREADY_DECLARED,
             "(global) Field " + name.getLabel() + " already declared"
         ));
       } else if (symbolTable.containsEntry(name.getLabel())) {
         // field already declared in scope
-        exceptions.add(new DecafSemanticException(
+        errors.add(new SemanticError(
             fieldDeclaration.tokenPosition,
+            SemanticError.SemanticErrorType.IDENTIFIER_ALREADY_DECLARED,
             "Field " + name.getLabel() + " already declared"
         ));
       } else {
@@ -141,15 +150,17 @@ public class GenericSemanticChecker implements AstVisitor<Void> {
                               .getLabel();
       if (symbolTable.isShadowingParameter(array.getId()
                                                 .getLabel())) {
-        exceptions.add(new DecafSemanticException(
+        errors.add(new SemanticError(
             fieldDeclaration.tokenPosition,
+            SemanticError.SemanticErrorType.SHADOWING_PARAMETER,
             "Field " + arrayIdLabel + " shadows a parameter"
         ));
       } else if (symbolTable.getDescriptorFromValidScopes(array.getId()
                                                                .getLabel())
                             .isPresent()) {
-        exceptions.add(new DecafSemanticException(
+        errors.add(new SemanticError(
             fieldDeclaration.tokenPosition,
+            SemanticError.SemanticErrorType.IDENTIFIER_ALREADY_DECLARED,
             "Field " + arrayIdLabel + " already declared"
         ));
       } else {
@@ -201,14 +212,16 @@ public class GenericSemanticChecker implements AstVisitor<Void> {
         if (methodDefinition.getReturnType() == Type.Void) {
           if (!(methodDefinition.getParameterList()
                                 .isEmpty())) {
-            exceptions.add(new DecafSemanticException(
+            errors.add(new SemanticError(
                 methodDefinition.getTokenPosition(),
+                SemanticError.SemanticErrorType.INVALID_MAIN_METHOD,
                 "main method must have no parameters, yours has: " + simplify(methodDefinition.getParameterList())
             ));
           }
         } else {
-          exceptions.add(new DecafSemanticException(
+          errors.add(new SemanticError(
               methodDefinition.getTokenPosition(),
+              SemanticError.SemanticErrorType.INVALID_MAIN_METHOD,
               "main method return type must be void, not `" +
                   methodDefinition.getReturnType() + "`"
           ));
@@ -216,12 +229,13 @@ public class GenericSemanticChecker implements AstVisitor<Void> {
         return;
       }
     }
-    exceptions.add(new DecafSemanticException(
+    errors.add(new SemanticError(
         new TokenPosition(
             0,
             0,
             0
         ),
+        SemanticError.SemanticErrorType.MISSING_MAIN_METHOD,
         "main method not found"
     ));
   }
@@ -244,14 +258,15 @@ public class GenericSemanticChecker implements AstVisitor<Void> {
                                               .getLabel()) || getFields().containsEntry(methodDefinition.getMethodName()
                                                                                                         .getLabel())) {
       // method already defined. add an exception
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           methodDefinition.getTokenPosition(),
-          "Method name " + methodDefinition.getMethodName()
-                                           .getLabel() + " already defined"
+          SemanticError.SemanticErrorType.METHOD_ALREADY_DEFINED,
+          String.format("Method ``%s`` already defined", methodDefinition.getMethodName()
+                                                                          .getLabel())
       ));
       methodDefinition.getBlock().blockSymbolTable = localSymbolTable;
     } else {
-      for (MethodDefinitionParameter parameter : methodDefinition.getParameterList()) {
+      for (var parameter : methodDefinition.getParameterList()) {
         parameter.accept(
             this,
             parameterSymbolTable
@@ -280,17 +295,19 @@ public class GenericSemanticChecker implements AstVisitor<Void> {
       SymbolTable symbolTable
   ) {
     if (symbolTable.isShadowingParameter(importDeclaration.nameId.getLabel())) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           importDeclaration.nameId.tokenPosition,
+          SemanticError.SemanticErrorType.SHADOWING_PARAMETER,
           "Import identifier " + importDeclaration.nameId.getLabel() + " shadows a parameter"
       ));
     } else if (getImports().contains(importDeclaration.nameId.getLabel())) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           new TokenPosition(
               0,
               0,
               0
           ),
+          SemanticError.SemanticErrorType.IDENTIFIER_ALREADY_DECLARED,
           "Import identifier " + importDeclaration.nameId.getLabel() + " already declared"
       ));
     } else {
@@ -317,8 +334,9 @@ public class GenericSemanticChecker implements AstVisitor<Void> {
       --depth;
     } else {
       // the irAssignableValue referred to was not declared. Add an exception.
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           forStatement.tokenPosition,
+          SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
           "Variable " + initializedVariableName + " was not declared"
       ));
     }
@@ -330,9 +348,10 @@ public class GenericSemanticChecker implements AstVisitor<Void> {
       SymbolTable symbolTable
   ) {
     if (depth < 1) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           breakStatement.tokenPosition,
-          "break statement not enclosed"
+          SemanticError.SemanticErrorType.BREAK_STATEMENT_NOT_ENCLOSED,
+          String.format("break statement not enclosed; it is at a perceived depth of %s", depth)
       ));
     }
     return null;
@@ -343,9 +362,10 @@ public class GenericSemanticChecker implements AstVisitor<Void> {
       SymbolTable symbolTable
   ) {
     if (depth < 1) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           continueStatement.tokenPosition,
-          "continue statement not enclosed"
+          SemanticError.SemanticErrorType.CONTINUE_STATEMENT_NOT_ENCLOSED,
+          String.format("continue statement not enclosed; it is at a perceived depth of %s", depth)
       ));
     }
     return null;
@@ -439,13 +459,15 @@ public class GenericSemanticChecker implements AstVisitor<Void> {
   ) {
     final Optional<Descriptor> optionalDescriptor = symbolTable.getDescriptorFromValidScopes(locationArray.name.getLabel());
     if (optionalDescriptor.isEmpty())
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           locationArray.tokenPosition,
+          SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
           "Array " + locationArray.name.getLabel() + " not declared"
       ));
     else if (!(optionalDescriptor.get() instanceof ArrayDescriptor))
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           locationArray.tokenPosition,
+          SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
           locationArray.name.getLabel() + " is not an array"
       ));
     locationArray.expression.accept(
@@ -477,6 +499,14 @@ public class GenericSemanticChecker implements AstVisitor<Void> {
   @Override
   public Void visit(
       Assignment assignment,
+      SymbolTable symbolTable
+  ) {
+    return null;
+  }
+
+  @Override
+  public Void visit(
+      VoidExpression voidExpression,
       SymbolTable symbolTable
   ) {
     return null;
@@ -521,9 +551,10 @@ public class GenericSemanticChecker implements AstVisitor<Void> {
       SymbolTable symbolTable
   ) {
     if (Integer.parseInt(array.getSize().literal) <= 0) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           array.getSize().tokenPosition,
-          "array declaration " + array.getId() + "[" + array.getSize().literal + "]" + " must be greater than 0"
+          SemanticError.SemanticErrorType.INVALID_ARRAY_SIZE,
+          "array declaration size " + array.getId() + "[" + array.getSize().literal + "]" + " must be greater than 0"
       ));
     }
     return null;
@@ -537,16 +568,18 @@ public class GenericSemanticChecker implements AstVisitor<Void> {
 
     if (getMethods().getDescriptorFromValidScopes(methodName.getLabel())
                     .isEmpty() && !getImports().contains(methodName.getLabel()))
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           methodName.tokenPosition,
+          SemanticError.SemanticErrorType.METHOD_DEFINITION_NOT_FOUND,
           "Method name " + methodName.getLabel() + " hasn't been defined yet"
       ));
 
     for (MethodCallParameter parameter : methodCall.methodCallParameterList) {
       // TODO: partial rule 7 - array checking will be done in second pass
       if (!getImports().contains(methodName.getLabel()) && parameter instanceof StringLiteral)
-        exceptions.add(new DecafSemanticException(
+        errors.add(new SemanticError(
             methodName.tokenPosition,
+            SemanticError.SemanticErrorType.INVALID_ARGUMENT_TYPE,
             "String " + parameter + " cannot be arguments to non-import methods"
         ));
       parameter.accept(
@@ -601,8 +634,9 @@ public class GenericSemanticChecker implements AstVisitor<Void> {
     String paramName = methodDefinitionParameter.getName();
     Type paramType = methodDefinitionParameter.getType();
     if (symbolTable.isShadowingParameter(paramName))
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           methodDefinitionParameter.tokenPosition,
+          SemanticError.SemanticErrorType.SHADOWING_PARAMETER,
           "MethodDefinitionParameter " + paramName + " is shadowing a parameter"
       ));
     else
@@ -629,8 +663,9 @@ public class GenericSemanticChecker implements AstVisitor<Void> {
   ) {
     if (symbolTable.getDescriptorFromValidScopes(locationVariable.name.getLabel())
                    .isEmpty()) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           locationVariable.name.tokenPosition,
+          SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
           "Location " + locationVariable.name.getLabel() + " must be defined"
       ));
     }
@@ -644,13 +679,15 @@ public class GenericSemanticChecker implements AstVisitor<Void> {
     String arrayName = len.nameId.getLabel();
     Optional<Descriptor> descriptor = symbolTable.getDescriptorFromValidScopes(arrayName);
     if (descriptor.isEmpty()) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           len.nameId.tokenPosition,
+          SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
           arrayName + " not in scope"
       ));
     } else if (!(descriptor.get() instanceof ArrayDescriptor)) {
-      exceptions.add(new DecafSemanticException(
+      errors.add(new SemanticError(
           len.nameId.tokenPosition,
+          SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
           "the argument of the len operator must be an array"
       ));
     }

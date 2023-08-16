@@ -3,7 +3,6 @@ package decaf.common;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -14,14 +13,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import decaf.asm.X86AsmWriter;
-import decaf.ast.AST;
 import decaf.cfg.ControlFlowGraph;
 import decaf.codegen.BasicBlockToInstructionListConverter;
 import decaf.dataflow.DataflowOptimizer;
 import decaf.dataflow.passes.InstructionSimplifyIrPass;
 import decaf.grammar.Parser;
 import decaf.grammar.Scanner;
-import decaf.ir.SemanticCheckingManager;
+import decaf.ir.SemanticChecker;
 import decaf.regalloc.RegisterAllocator;
 import decaf.ssa.SSA;
 
@@ -40,7 +38,7 @@ public class Compilation {
   private String sourceCode;
   private Scanner scanner;
   private Parser parser;
-  private SemanticCheckingManager semanticChecker;
+  private SemanticChecker semanticChecker;
   private ControlFlowGraph cfg;
   private BasicBlockToInstructionListConverter basicBlockToInstructionListConverter;
   private ProgramIr programIr;
@@ -62,20 +60,6 @@ public class Compilation {
     compilationContext.setDebugMode(debug);
   }
 
-  public Compilation() throws FileNotFoundException {
-    compilationContext = defaultInitialize();
-    initialize();
-  }
-
-  public Compilation(
-      InputStream inputStream,
-      boolean debug
-  ) throws FileNotFoundException {
-    compilationContext = specificTestFileInitialize(inputStream);
-    initialize();
-    compilationContext.setDebugMode(debug);
-  }
-
   public Compilation(
       String filename,
       boolean debug
@@ -87,21 +71,12 @@ public class Compilation {
     );
   }
 
-  public Compilation(InputStream inputStream) throws FileNotFoundException {
-    compilationContext = specificTestFileInitialize(inputStream);
-    initialize();
-  }
-
   public int getNLinesRemovedByAssemblyOptimizer() {
     return 0;
   }
 
   public double getNLinesOfCodeReductionFactor() {
     return nLinesOfCodeReductionFactor;
-  }
-
-  public AST getAstRoot() {
-    return parser.getRoot();
   }
 
   private void runNextStep() {
@@ -197,19 +172,8 @@ public class Compilation {
     return compilationContext;
   }
 
-  private CompilationContext defaultInitialize() throws FileNotFoundException {
-    InputStream inputStream = compilationContext.getSourceFilename() ==
-        null ? System.in: new FileInputStream(compilationContext.getSourceFilename());
-    sourceCode = Utils.getStringFromInputStream(
-        inputStream,
-        logger
-    );
-    return new CompilationContext(sourceCode);
-  }
-
-  private void initialize() throws FileNotFoundException {
-    outputStream = compilationContext.getAsmOutputFilename() ==
-        null ? System.out: new java.io.PrintStream(new FileOutputStream(compilationContext.getAsmOutputFilename()));
+  private void initialize() {
+    outputStream = System.out;
     compilationState = CompilationState.INITIALIZED;
   }
 
@@ -241,10 +205,8 @@ public class Compilation {
 
   private void runSemanticsChecker() {
     assert compilationState == CompilationState.PARSED;
-    semanticChecker = new SemanticCheckingManager(parser.getRoot());
-    semanticChecker.setTrace(compilationContext.debugModeOn());
-    semanticChecker.runChecks(compilationContext);
-    if (semanticChecker.hasError()) {
+    semanticChecker = new SemanticChecker(parser.getRoot(), compilationContext);
+    if (semanticChecker.hasErrors()) {
       System.exit(1);
     }
     compilationState = CompilationState.SEM_CHECKED;

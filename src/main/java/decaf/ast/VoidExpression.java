@@ -27,10 +27,13 @@ public class VoidExpression  extends Expression {
 
   @Override
   public <T> T accept(
-      AstVisitor<T> ASTVisitor,
+      AstVisitor<T> astVisitor,
       SymbolTable currentSymbolTable
   ) {
-    throw new UnsupportedOperationException();
+    return astVisitor.visit(
+        this,
+        currentSymbolTable
+    );
   }
 
   @Override

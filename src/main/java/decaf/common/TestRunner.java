@@ -28,6 +28,7 @@ import java.util.stream.IntStream;
 
 import decaf.grammar.Parser;
 import decaf.grammar.Scanner;
+import decaf.ir.SemanticChecker;
 
 public class TestRunner {
   public static final String DEFAULT_DATAFLOW_TESTS_ROOT = "tests/optimizer/dcf";
@@ -367,8 +368,8 @@ public class TestRunner {
       case AST -> {
         return "Testing AST";
       }
-      case CFG -> {
-        return "Testing CFG";
+      case SEMANTICS -> {
+        return "Testing Semantics";
       }
       case IR -> {
         return "Testing IR";
@@ -379,9 +380,7 @@ public class TestRunner {
       case OPTIMIZER -> {
         return "Testing Optimizer";
       }
-      default -> {
-        throw new IllegalArgumentException("Unknown test type");
-      }
+      default -> throw new IllegalArgumentException("Unknown test type");
 
     }
   }
@@ -524,6 +523,24 @@ public class TestRunner {
     );
   }
 
+  public static void testSemantics(
+      @NotNull String filename,
+      boolean expectedToPass
+  ) {
+    final String filepath = "tests/semantics";
+    var input = Paths.get(filepath + "/input/" + (expectedToPass ? "legal/": "illegal/") + filename + ".dcf").toFile();
+    var testPairs = List.of(
+        new Pair<>(
+            input,
+            input
+        )
+    );
+    testSemantics(
+        testPairs,
+        expectedToPass
+    );
+  }
+
   public static void testParser(
       @NotNull String filename,
       boolean expectedToPass
@@ -570,6 +587,53 @@ public class TestRunner {
     System.out.println(getTestingEpilogue(
         Type.SCANNER,
         "tests/scanner",
+        startTime.elapsed(TimeUnit.MILLISECONDS),
+        List.of(
+            new Quadruple<>(
+                "legal",
+                expectedToPassResults.first(),
+                expectedToPassTestPairs.size(),
+                expectedToPassResults.second()
+            ),
+            new Quadruple<>(
+                "illegal",
+                expectedToFailResults.first(),
+                expectedToFailTestPairs.size(),
+                expectedToFailResults.second()
+            )
+        )
+    ));
+  }
+
+  public static void testSemantics() {
+    final String filepath = "tests/semantics";
+
+    System.out.println(getTestingPrologue(Type.SEMANTICS));
+
+    var startTime = Stopwatch.createStarted();
+    var expectedToPassTestPairs = getTestPairs(
+        filepath,
+        true,
+        false
+    );
+    var expectedToPassResults = testSemantics(
+        expectedToPassTestPairs,
+        true
+    );
+
+    var expectedToFailTestPairs = getTestPairs(
+        filepath,
+        false,
+        false
+    );
+    var expectedToFailResults = testSemantics(
+        expectedToFailTestPairs,
+        false
+    );
+
+    System.out.println(getTestingEpilogue(
+        Type.SEMANTICS,
+        "tests/semantics",
         startTime.elapsed(TimeUnit.MILLISECONDS),
         List.of(
             new Quadruple<>(
@@ -670,13 +734,11 @@ public class TestRunner {
           scanner,
           new CompilationContext(input)
       );
-      var actualOutput = parser.getErrors()
-                               .toString();
       if (parser.getErrors()
                 .isEmpty()) {
         return new Pair<>(
             true,
-            actualOutput
+            ""
         );
       } else {
         return new Pair<>(
@@ -684,6 +746,52 @@ public class TestRunner {
             parser.getPrettyErrorOutput()
         );
       }
+    };
+    return testSuite(
+        testPairs,
+        expectedToPass,
+        fn
+    );
+  }
+
+  public static Pair<Integer, Long> testSemantics(
+      List<Pair<File, File>> testPairs,
+      boolean expectedToPass
+  ) {
+    BiFunction<String, String, Pair<Boolean, String>> fn = (String input, String output) -> {
+      var context = new CompilationContext(input);
+      var scanner = new Scanner(
+          input,
+          context
+      );
+      if (!scanner.finished()) {
+        return new Pair<>(
+            false,
+            scanner.getPrettyErrorOutput()
+        );
+      }
+      var parser = new Parser(
+          scanner,
+          context
+      );
+      if (!parser.getErrors()
+                 .isEmpty()) {
+        return new Pair<>(
+            false,
+            parser.getPrettyErrorOutput()
+        );
+      }
+      var semanticChecker = new SemanticChecker(parser.getRoot(), context);
+      if (semanticChecker.hasErrors()) {
+        return new Pair<>(
+            false,
+            semanticChecker.getPrettyErrorOutput()
+        );
+      }
+      return new Pair<>(
+          true,
+          ""
+      );
     };
     return testSuite(
         testPairs,
@@ -718,8 +826,8 @@ public class TestRunner {
     );
 
     System.out.println(getTestingEpilogue(
-        Type.SCANNER,
-        "tests/scanner",
+        Type.PARSER,
+        "tests/parser",
         startTime.elapsed(TimeUnit.MILLISECONDS),
         List.of(
             new Quadruple<>(
@@ -788,7 +896,7 @@ public class TestRunner {
     SCANNER,
     PARSER,
     AST,
-    CFG,
+    SEMANTICS,
     IR,
     CODEGEN,
     OPTIMIZER,

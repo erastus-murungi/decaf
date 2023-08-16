@@ -6,22 +6,18 @@ import java.util.List;
 
 import decaf.asm.AsmWriter;
 import decaf.codegen.names.IrValue;
-import decaf.exceptions.DecafException;
 
 public class RuntimeError extends Instruction {
   public final int errorCode;
   final String errorMessage;
-  final DecafException decafException;
 
   public RuntimeError(
       String errorMessage,
-      int errorCode,
-      DecafException decafException
+      int errorCode
   ) {
     super(null);
     this.errorMessage = errorMessage;
     this.errorCode = errorCode;
-    this.decafException = decafException;
   }
 
   @Override
@@ -43,18 +39,16 @@ public class RuntimeError extends Instruction {
   public Instruction copy() {
     return new RuntimeError(
         errorMessage,
-        errorCode,
-        decafException
+        errorCode
     );
   }
 
   @Override
   public String toString() {
     return String.format(
-        "%s%s(%s)",
+        "%s%s",
         DOUBLE_INDENT,
-        "raise RuntimeException",
-        decafException.getMessage()
+        "raise RuntimeException"
     );
   }
 }

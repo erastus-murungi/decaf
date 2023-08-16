@@ -62,10 +62,10 @@ public class While extends Statement implements HasExpression {
 
   @Override
   public <T> T accept(
-      AstVisitor<T> ASTVisitor,
+      AstVisitor<T> astVisitor,
       SymbolTable curSymbolTable
   ) {
-    return ASTVisitor.visit(
+    return astVisitor.visit(
         this,
         curSymbolTable
     );

@@ -1,8 +1,5 @@
 package decaf.ir;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import decaf.ast.Array;
 import decaf.ast.AssignOpExpr;
 import decaf.ast.Assignment;
@@ -38,13 +35,11 @@ import decaf.ast.Program;
 import decaf.ast.Return;
 import decaf.ast.StringLiteral;
 import decaf.ast.UnaryOpExpression;
+import decaf.ast.VoidExpression;
 import decaf.ast.While;
-import decaf.exceptions.DecafSemanticException;
 import decaf.symboltable.SymbolTable;
 
 public interface AstVisitor<T> {
-  List<DecafSemanticException> exceptions = new ArrayList<>();
-
   T visit(
       IntLiteral intLiteral,
       SymbolTable symbolTable
@@ -222,6 +217,11 @@ public interface AstVisitor<T> {
 
   T visit(
       Assignment assignment,
+      SymbolTable symbolTable
+  );
+
+  T visit(
+      VoidExpression voidExpression,
       SymbolTable symbolTable
   );
 }

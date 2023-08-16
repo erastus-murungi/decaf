@@ -11,13 +11,12 @@ import decaf.common.CompilationContext;
 import decaf.common.StronglyConnectedComponentsTarjan;
 import decaf.grammar.Parser;
 import decaf.grammar.Scanner;
-import decaf.ir.SemanticCheckingManager;
+import decaf.ir.SemanticChecker;
 import decaf.cfg.BasicBlock;
 import decaf.cfg.ControlFlowGraph;
 
 
 import java.util.List;
-import java.util.logging.Logger;
 
 public class DataFlowAnalysisTest {
     List<BasicBlock> basicBlockList;
@@ -30,7 +29,7 @@ public class DataFlowAnalysisTest {
         var parser = new Parser(scanner, context);
         parser.program();
 
-        var semChecker = new SemanticCheckingManager(parser.getRoot());
+        var semChecker = new SemanticChecker(parser.getRoot());
         semChecker.runChecks(context);
         ControlFlowGraph cfgGenerator = new ControlFlowGraph(parser.getRoot(),
                                                              semChecker.getGlobalDescriptor()
