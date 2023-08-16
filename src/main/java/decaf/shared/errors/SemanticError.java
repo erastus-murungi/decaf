@@ -26,8 +26,8 @@ public record SemanticError(TokenPosition tokenPosition,
       case INVALID_MAIN_METHOD -> "invalid main method";
       case MISSING_MAIN_METHOD -> "missing main method";
       case METHOD_ALREADY_DEFINED -> "method already defined";
-      case BREAK_STATEMENT_NOT_ENCLOSED -> "break statement not enclosed";
-      case CONTINUE_STATEMENT_NOT_ENCLOSED -> "continue statement not enclosed";
+      case BREAK_OUT_OF_CONTEXT -> "break statement not enclosed";
+      case CONTINUE_OUT_OF_CONTEXT -> "continue statement not enclosed";
       case INVALID_ARRAY_SIZE -> "invalid array size";
       case INVALID_ARGUMENT_TYPE -> "invalid argument type";
       case MISMATCHING_RETURN_TYPE -> "mismatching return type";
@@ -57,8 +57,8 @@ public record SemanticError(TokenPosition tokenPosition,
     INVALID_MAIN_METHOD,
     MISSING_MAIN_METHOD,
     METHOD_ALREADY_DEFINED,
-    BREAK_STATEMENT_NOT_ENCLOSED,
-    CONTINUE_STATEMENT_NOT_ENCLOSED,
+    BREAK_OUT_OF_CONTEXT,
+    CONTINUE_OUT_OF_CONTEXT,
     INVALID_ARRAY_SIZE,
     INVALID_ARGUMENT_TYPE,
     MISMATCHING_RETURN_TYPE,

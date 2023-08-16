@@ -23,22 +23,12 @@ public class SemanticChecker {
   }
 
   private void runChecks() {
-    var genericSemanticChecker = new GenericSemanticChecker(errors);
-    rootNode.accept(
-        genericSemanticChecker,
-        null
-    );
-    new TypeChecker((Program) rootNode,
-                    genericSemanticChecker.getMethods(),
-                    genericSemanticChecker.getFields(),
-                    genericSemanticChecker.getImports(),
-                    errors
-    );
+    var checker = new TypeChecker((Program) rootNode, errors);
     setGlobalDescriptor(
         new GlobalDescriptor(Type.Undefined,
-                             genericSemanticChecker.getFields(),
-                             genericSemanticChecker.getMethods(),
-                             genericSemanticChecker.getImports()
+                             checker.fields,
+                             checker.methods,
+                             checker.imports
         ));
     if (context.debugModeOn()) {
       context.stringifyErrors(errors);

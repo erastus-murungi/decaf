@@ -31,7 +31,8 @@ import decaf.analysis.syntax.ast.Expression;
 import decaf.analysis.syntax.ast.ExpressionParameter;
 import decaf.analysis.syntax.ast.LocationArray;
 import decaf.analysis.syntax.ast.MethodCall;
-import decaf.analysis.syntax.ast.MethodCallParameter;
+import decaf.analysis.syntax.ast.ActualArgument;
+import decaf.analysis.syntax.ast.FormalArgument;
 import decaf.analysis.syntax.ast.ParenthesizedExpression;
 import decaf.analysis.syntax.ast.UnaryOpExpression;
 import decaf.ir.cfg.BasicBlock;
@@ -362,10 +363,10 @@ public class Utils {
     } else if (expr instanceof ParenthesizedExpression) {
       rotateBinaryOpExpression(((ParenthesizedExpression) expr).expression);
     } else if (expr instanceof MethodCall) {
-      for (int i = 0; i < ((MethodCall) expr).methodCallParameterList.size(); i++) {
-        MethodCallParameter param = ((MethodCall) expr).methodCallParameterList.get(i);
+      for (int i = 0; i < ((MethodCall) expr).actualArgumentList.size(); i++) {
+        ActualArgument param = ((MethodCall) expr).actualArgumentList.get(i);
         if (param instanceof ExpressionParameter) {
-          ((MethodCall) expr).methodCallParameterList.set(
+          ((MethodCall) expr).actualArgumentList.set(
               i,
               new ExpressionParameter(rotateBinaryOpExpression(((ExpressionParameter) param).expression))
           );
@@ -453,5 +454,34 @@ public class Utils {
     String ANSI_BRIGHT_BG_WHITE = "\u001B[107m";
 
     String[] BACKGROUNDS = {ANSI_BG_BLACK, ANSI_BG_RED, ANSI_BG_GREEN, ANSI_BG_YELLOW, ANSI_BG_BLUE, ANSI_BG_PURPLE, ANSI_BG_CYAN, ANSI_BG_WHITE, ANSI_BRIGHT_BG_BLACK, ANSI_BRIGHT_BG_RED, ANSI_BRIGHT_BG_GREEN, ANSI_BRIGHT_BG_YELLOW, ANSI_BRIGHT_BG_BLUE, ANSI_BRIGHT_BG_PURPLE, ANSI_BRIGHT_BG_CYAN, ANSI_BRIGHT_BG_WHITE};
+  }
+
+  public static String
+  prettyPrintMethodFormalArguments(@NotNull List<FormalArgument> formalArgumentList) {
+    if (formalArgumentList.isEmpty()) {
+      return "";
+    }
+    StringBuilder stringBuilder = new StringBuilder();
+    for (FormalArgument formalArgument :
+        formalArgumentList) {
+      stringBuilder.append(
+          Utils.coloredPrint(
+              formalArgument.getType()
+                            .toString(),
+              Utils.ANSIColorConstants.ANSI_PURPLE
+          ));
+      stringBuilder.append(" ");
+      stringBuilder.append(
+          Utils.coloredPrint(
+              formalArgument.getName(),
+              Utils.ANSIColorConstants.ANSI_WHITE
+          ));
+      stringBuilder.append(", ");
+    }
+    stringBuilder.delete(
+        stringBuilder.length() - 2,
+        stringBuilder.length()
+    );
+    return stringBuilder.toString();
   }
 }

@@ -417,7 +417,7 @@ public class TestRunner {
             )
                 ? 1
                 : 0;
-      } catch (IOException e) {
+      } catch (Exception e) {
         if (verbose) {
           printFailError(
               pairIndex,

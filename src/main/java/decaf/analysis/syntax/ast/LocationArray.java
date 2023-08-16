@@ -25,7 +25,7 @@ public class LocationArray extends Location implements HasExpression {
     return List.of(
         new Pair<>(
             "id",
-            RValue
+            rValue
         ),
         new Pair<>(
             "expression",
@@ -62,14 +62,14 @@ public class LocationArray extends Location implements HasExpression {
 
   @Override
   public String toString() {
-    return "LocationArray{" + "name=" + RValue + ", expression=" + expression + '}';
+    return "LocationArray{" + "name=" + rValue + ", expression=" + expression + '}';
   }
 
   @Override
   public String getSourceCode() {
     return String.format(
         "%s[%s]",
-        RValue.getSourceCode(),
+        rValue.getSourceCode(),
         expression.getSourceCode()
     );
   }

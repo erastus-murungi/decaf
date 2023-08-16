@@ -28,7 +28,7 @@ import decaf.analysis.syntax.ast.LocationVariable;
 import decaf.analysis.syntax.ast.MethodCall;
 import decaf.analysis.syntax.ast.MethodCallStatement;
 import decaf.analysis.syntax.ast.MethodDefinition;
-import decaf.analysis.syntax.ast.MethodDefinitionParameter;
+import decaf.analysis.syntax.ast.FormalArgument;
 import decaf.analysis.syntax.ast.ParenthesizedExpression;
 import decaf.analysis.syntax.ast.Program;
 import decaf.analysis.syntax.ast.RValue;
@@ -94,7 +94,7 @@ public interface AstVisitor<T> {
   T visit(AssignOpExpr assignOpExpr, Scope scope);
 
   T visit(
-      MethodDefinitionParameter methodDefinitionParameter,
+      FormalArgument formalArgument,
       Scope scope
   );
 

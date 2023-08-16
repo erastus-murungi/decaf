@@ -10,12 +10,12 @@ import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
-public class MethodDefinitionParameter extends Declaration {
+public class FormalArgument extends Declaration {
   final public TokenPosition tokenPosition;
   final private String name;
   final private Type type;
 
-  public MethodDefinitionParameter(
+  public FormalArgument(
       TokenPosition tokenPosition,
       String name,
       Type type

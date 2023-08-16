@@ -94,10 +94,10 @@ import decaf.analysis.syntax.ast.LocationArray;
 import decaf.analysis.syntax.ast.LocationAssignExpr;
 import decaf.analysis.syntax.ast.LocationVariable;
 import decaf.analysis.syntax.ast.MethodCall;
-import decaf.analysis.syntax.ast.MethodCallParameter;
+import decaf.analysis.syntax.ast.ActualArgument;
 import decaf.analysis.syntax.ast.MethodCallStatement;
 import decaf.analysis.syntax.ast.MethodDefinition;
-import decaf.analysis.syntax.ast.MethodDefinitionParameter;
+import decaf.analysis.syntax.ast.FormalArgument;
 import decaf.analysis.syntax.ast.ParenthesizedExpression;
 import decaf.analysis.syntax.ast.Program;
 import decaf.analysis.syntax.ast.RValue;
@@ -747,13 +747,13 @@ public class Parser {
     };
   }
 
-  private Optional<MethodDefinitionParameter> parseMethodArgument() {
+  private Optional<FormalArgument> parseMethodArgument() {
     final var tokenPosition = getCurrentToken().tokenPosition;
     final var typeOpt = parseType();
     return typeOpt.flatMap(type -> parseName(
         Scanner.IDENTIFIER
     ).map(
-        nameId -> new MethodDefinitionParameter(
+        nameId -> new FormalArgument(
             tokenPosition,
             nameId.getLabel(),
             type
@@ -761,19 +761,19 @@ public class Parser {
     ));
   }
 
-  private void parseMethodArguments(List<MethodDefinitionParameter> methodDefinitionParameterList) {
+  private void parseMethodArguments(List<FormalArgument> formalArgumentList) {
     parseMethodArgument().ifPresent(
         methodDefinitionParameter -> {
-          methodDefinitionParameterList.add(methodDefinitionParameter);
+          formalArgumentList.add(methodDefinitionParameter);
           if (getCurrentTokenType() == COMMA) {
             consumeTokenNoCheck();
-            parseMethodArguments(methodDefinitionParameterList);
+            parseMethodArguments(formalArgumentList);
           }
         }
     );
   }
 
-  private List<MethodDefinitionParameter> parseMethodArguments() {
+  private List<FormalArgument> parseMethodArguments() {
     consumeToken(
         LEFT_PARENTHESIS,
         (Token token) -> {
@@ -787,7 +787,7 @@ public class Parser {
         }
     );
     if (getCurrentToken().type == RESERVED_INT || getCurrentToken().type == RESERVED_BOOL) {
-      var methodDefinitionParameterList = new ArrayList<MethodDefinitionParameter>();
+      var methodDefinitionParameterList = new ArrayList<FormalArgument>();
       parseMethodArguments(methodDefinitionParameterList);
       consumeToken(RIGHT_PARENTHESIS);
       return methodDefinitionParameterList;
@@ -851,29 +851,29 @@ public class Parser {
     );
   }
 
-  private void parseMethodCallArguments(List<MethodCallParameter> methodCallParameterList) {
+  private void parseMethodCallArguments(List<ActualArgument> actualArgumentList) {
     if (getCurrentTokenType() == STRING_LITERAL) {
       final Token token = consumeTokenNoCheck();
-      methodCallParameterList.add(new StringLiteral(
+      actualArgumentList.add(new StringLiteral(
           token.tokenPosition,
           token.lexeme
       ));
     } else {
       var exprOpt = parseOrExpr();
-      exprOpt.ifPresent(expression -> methodCallParameterList.add(new ExpressionParameter(expression)));
+      exprOpt.ifPresent(expression -> actualArgumentList.add(new ExpressionParameter(expression)));
     }
     if (getCurrentTokenType() == COMMA) {
       consumeToken(COMMA);
-      parseMethodCallArguments(methodCallParameterList);
+      parseMethodCallArguments(actualArgumentList);
     }
   }
 
-  private List<MethodCallParameter> parseMethodCallArguments() {
+  private List<ActualArgument> parseMethodCallArguments() {
     if (getCurrentTokenType() == RIGHT_PARENTHESIS)
       return Collections.emptyList();
-    List<MethodCallParameter> methodCallParameterList = new ArrayList<>();
-    parseMethodCallArguments(methodCallParameterList);
-    return methodCallParameterList;
+    List<ActualArgument> actualArgumentList = new ArrayList<>();
+    parseMethodCallArguments(actualArgumentList);
+    return actualArgumentList;
   }
 
   private Optional<MethodCall> parseMethodCall(@NotNull Token token) {

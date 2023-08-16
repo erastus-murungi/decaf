@@ -11,7 +11,7 @@ import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
-public class StringLiteral extends MethodCallParameter {
+public class StringLiteral extends ActualArgument {
   final public String literal;
   final TokenPosition tokenPosition;
 

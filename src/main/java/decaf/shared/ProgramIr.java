@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import decaf.analysis.syntax.ast.MethodDefinition;
-import decaf.analysis.syntax.ast.MethodDefinitionParameter;
+import decaf.analysis.syntax.ast.FormalArgument;
 import decaf.ir.IndexManager;
 import decaf.ir.InstructionList;
 import decaf.ir.TraceScheduler;
@@ -71,9 +71,9 @@ public class ProgramIr {
   ) {
     var parameters = new ArrayList<IrRegister>();
 
-    var parametersFromAst = methodDefinition.getParameterList()
+    var parametersFromAst = methodDefinition.getFormalArguments()
                                             .stream()
-                                            .map(MethodDefinitionParameter::getName)
+                                            .map(FormalArgument::getName)
                                             .collect(Collectors.toSet());
 
     var methodParamNamesList = new ArrayList<IrRegister>();

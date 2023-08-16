@@ -11,10 +11,10 @@ import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
 public class ImportDeclaration extends Declaration {
-  public final RValue RValueId;
+  public final RValue value;
 
   public ImportDeclaration(RValue RValueId) {
-    this.RValueId = RValueId;
+    this.value = RValueId;
   }
 
   @Override
@@ -26,7 +26,7 @@ public class ImportDeclaration extends Declaration {
   public List<Pair<String, AST>> getChildren() {
     return List.of(new Pair<>(
         "name",
-        RValueId
+        value
     ));
   }
 
@@ -37,7 +37,7 @@ public class ImportDeclaration extends Declaration {
 
   @Override
   public String toString() {
-    return "ImportDeclaration{" + "nameId=" + RValueId + '}';
+    return "ImportDeclaration{" + "nameId=" + value + '}';
   }
 
   @Override
@@ -45,7 +45,7 @@ public class ImportDeclaration extends Declaration {
     return String.format(
         "%s %s",
         Scanner.RESERVED_IMPORT,
-        RValueId.getSourceCode()
+        value.getSourceCode()
     );
   }
 

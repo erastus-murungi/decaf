@@ -27,10 +27,10 @@ import decaf.analysis.syntax.ast.If;
 import decaf.analysis.syntax.ast.ImportDeclaration;
 import decaf.analysis.syntax.ast.Increment;
 import decaf.analysis.syntax.ast.LocationAssignExpr;
-import decaf.analysis.syntax.ast.MethodCallParameter;
+import decaf.analysis.syntax.ast.ActualArgument;
 import decaf.analysis.syntax.ast.MethodCallStatement;
 import decaf.analysis.syntax.ast.MethodDefinition;
-import decaf.analysis.syntax.ast.MethodDefinitionParameter;
+import decaf.analysis.syntax.ast.FormalArgument;
 import decaf.analysis.syntax.ast.Program;
 import decaf.analysis.syntax.ast.Return;
 import decaf.analysis.syntax.ast.Statement;
@@ -354,8 +354,8 @@ public class ControlFlowGraph {
           whileLoop,
           scope
       );
-    } else if (ast instanceof MethodDefinitionParameter methodDefinitionParameter) {
-      return visitMethodDefinitionParameter(methodDefinitionParameter);
+    } else if (ast instanceof FormalArgument formalArgument) {
+      return visitMethodDefinitionParameter(formalArgument);
     } else if (ast instanceof Block block) {
       return visitBlock(
           block,
@@ -404,7 +404,7 @@ public class ControlFlowGraph {
     );
     methodEntryNop.setSuccessor(currentPair.endBlock);
     currentPair.startBlock.setSuccessor(currentPair.endBlock);
-    for (var param : methodDefinition.getParameterList()) {
+    for (var param : methodDefinition.getFormalArguments()) {
       var placeholder = dispatch(
           param,
           scope
@@ -765,11 +765,11 @@ public class ControlFlowGraph {
 
   public BasicBlocksPair visitMethodCallStatement(MethodCallStatement methodCallStatement) {
     BasicBlock methodCallExpr = BasicBlock.noBranch();
-    for (int i = 0; i < methodCallStatement.methodCall.methodCallParameterList.size(); i++) {
-      MethodCallParameter param = methodCallStatement.methodCall.methodCallParameterList.get(i);
+    for (int i = 0; i < methodCallStatement.methodCall.actualArgumentList.size(); i++) {
+      ActualArgument param = methodCallStatement.methodCall.actualArgumentList.get(i);
       if (param instanceof ExpressionParameter expressionParameter) {
         expressionParameter.expression = Utils.rotateBinaryOpExpression(expressionParameter.expression);
-        methodCallStatement.methodCall.methodCallParameterList.set(
+        methodCallStatement.methodCall.actualArgumentList.set(
             i,
             param
         );
@@ -799,10 +799,10 @@ public class ControlFlowGraph {
     );
   }
 
-  public BasicBlocksPair visitMethodDefinitionParameter(MethodDefinitionParameter methodDefinitionParameter) {
+  public BasicBlocksPair visitMethodDefinitionParameter(FormalArgument formalArgument) {
     var methodParam = BasicBlock.noBranch();
     methodParam.setSuccessor(methodParam);
-    methodParam.addAstNode(methodDefinitionParameter);
+    methodParam.addAstNode(formalArgument);
     return new BasicBlocksPair(
         methodParam,
         methodParam

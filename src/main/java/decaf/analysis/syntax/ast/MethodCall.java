@@ -12,17 +12,17 @@ import decaf.shared.env.Scope;
 
 public class MethodCall extends Expression {
   final public RValue RValueId;
-  final public List<MethodCallParameter> methodCallParameterList;
+  final public List<ActualArgument> actualArgumentList;
 
   public boolean isImported = false;
 
   public MethodCall(
       RValue RValueId,
-      List<MethodCallParameter> methodCallParameterList
+      List<ActualArgument> actualArgumentList
   ) {
     super(RValueId.tokenPosition);
     this.RValueId = RValueId;
-    this.methodCallParameterList = methodCallParameterList;
+    this.actualArgumentList = actualArgumentList;
   }
 
   @Override
@@ -32,10 +32,10 @@ public class MethodCall extends Expression {
         "methodName",
         RValueId
     ));
-    for (MethodCallParameter methodCallParameter : methodCallParameterList)
+    for (ActualArgument actualArgument : actualArgumentList)
       nodeArrayList.add(new Pair<>(
           "arg",
-          methodCallParameter
+          actualArgument
       ));
     return nodeArrayList;
   }
@@ -47,14 +47,14 @@ public class MethodCall extends Expression {
 
   @Override
   public String toString() {
-    return "MethodCall{" + "nameId=" + RValueId + ", methodCallParameterList=" + methodCallParameterList + '}';
+    return "MethodCall{" + "nameId=" + RValueId + ", methodCallParameterList=" + actualArgumentList + '}';
   }
 
   @Override
   public String getSourceCode() {
     List<String> stringList = new ArrayList<>();
-    for (MethodCallParameter methodCallParameter : methodCallParameterList) {
-      String sourceCode = methodCallParameter.getSourceCode();
+    for (ActualArgument actualArgument : actualArgumentList) {
+      String sourceCode = actualArgument.getSourceCode();
       stringList.add(sourceCode);
     }
     return String.format(

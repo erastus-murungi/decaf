@@ -24,7 +24,7 @@ public class Method extends Instruction {
   public Method(MethodDefinition methodDefinition) {
     super(methodDefinition);
     this.methodDefinition = methodDefinition;
-    parameterNames = methodDefinition.getParameterList()
+    parameterNames = methodDefinition.getFormalArguments()
                                      .stream()
                                      .map(methodDefinitionParameter -> new IrSsaRegister(
                                          methodDefinitionParameter.getName(),

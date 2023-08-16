@@ -19,7 +19,7 @@ public class LocationVariable extends Location {
   public List<Pair<String, AST>> getChildren() {
     return Collections.singletonList(new Pair<>(
         "name",
-        RValue
+        rValue
     ));
   }
 
@@ -51,11 +51,11 @@ public class LocationVariable extends Location {
 
   @Override
   public String toString() {
-    return "LocationVariable{" + "name=" + RValue + '}';
+    return "LocationVariable{" + "name=" + rValue + '}';
   }
 
   @Override
   public String getSourceCode() {
-    return RValue.getSourceCode();
+    return rValue.getSourceCode();
   }
 }

@@ -15,7 +15,7 @@ import decaf.analysis.syntax.ast.LocationAssignExpr;
 import decaf.analysis.syntax.ast.LocationVariable;
 import decaf.analysis.syntax.ast.MethodCall;
 import decaf.analysis.syntax.ast.MethodCallStatement;
-import decaf.analysis.syntax.ast.MethodDefinitionParameter;
+import decaf.analysis.syntax.ast.FormalArgument;
 import decaf.analysis.syntax.ast.ParenthesizedExpression;
 import decaf.analysis.syntax.ast.RValue;
 import decaf.analysis.syntax.ast.Return;
@@ -122,7 +122,7 @@ public interface CodegenAstVisitor<T> {
   );
 
   T visit(
-      MethodDefinitionParameter methodDefinitionParameter,
+      FormalArgument formalArgument,
       IrAssignable resultLocation
   );
 }

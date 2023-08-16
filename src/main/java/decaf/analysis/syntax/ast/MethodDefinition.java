@@ -15,19 +15,19 @@ public class MethodDefinition extends AST {
   private final TokenPosition tokenPosition;
   private final Type returnType;
   private final RValue methodRValue;
-  private final List<MethodDefinitionParameter> parameterList;
+  private final List<FormalArgument> formalArguments;
   private final Block block;
 
   public MethodDefinition(
       TokenPosition tokenPosition,
       Type returnType,
-      List<MethodDefinitionParameter> parameterList,
+      List<FormalArgument> formalArguments,
       RValue methodRValue,
       Block block
   ) {
     this.tokenPosition = tokenPosition;
     this.returnType = returnType;
-    this.parameterList = parameterList;
+    this.formalArguments = formalArguments;
     this.methodRValue = methodRValue;
     this.block = block;
   }
@@ -51,10 +51,10 @@ public class MethodDefinition extends AST {
         "methodName",
         getMethodName()
     ));
-    for (MethodDefinitionParameter methodDefinitionParameter : getParameterList()) {
+    for (FormalArgument formalArgument : getFormalArguments()) {
       nodes.add(new Pair<>(
           "arg",
-          methodDefinitionParameter
+          formalArgument
       ));
     }
     nodes.add(new Pair<>(
@@ -75,7 +75,7 @@ public class MethodDefinition extends AST {
     return "MethodDefinition{" +
         ", returnType=" + getReturnType() +
         ", methodName=" + getMethodName() +
-        ", parameterList=" + getParameterList() +
+        ", parameterList=" + getFormalArguments() +
         ", block=" + getBlock() +
         '}';
   }
@@ -83,8 +83,8 @@ public class MethodDefinition extends AST {
   @Override
   public String getSourceCode() {
     List<String> params = new ArrayList<>();
-    for (MethodDefinitionParameter methodDefinitionParameter : getParameterList()) {
-      String sourceCode = methodDefinitionParameter.getSourceCode();
+    for (FormalArgument formalArgument : getFormalArguments()) {
+      String sourceCode = formalArgument.getSourceCode();
       params.add(sourceCode);
     }
     String indent = " ".repeat(getReturnType().getSourceCode()
@@ -132,8 +132,8 @@ public class MethodDefinition extends AST {
     return methodRValue;
   }
 
-  public List<MethodDefinitionParameter> getParameterList() {
-    return parameterList;
+  public List<FormalArgument> getFormalArguments() {
+    return formalArguments;
   }
 
   public Block getBlock() {

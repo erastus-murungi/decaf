@@ -12,23 +12,23 @@ import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
 public class Len extends Expression {
-  final public RValue RValueId;
+  final public RValue rValue;
   final public Type type = Type.Int;
 
   public Len(
       TokenPosition tokenPosition,
-      RValue RValueId
+      RValue rValue
   ) {
     super(tokenPosition);
     this.tokenPosition = tokenPosition;
-    this.RValueId = RValueId;
+    this.rValue = rValue;
   }
 
   @Override
   public List<Pair<String, AST>> getChildren() {
     return List.of(new Pair<>(
         "id",
-        RValueId
+        rValue
     ));
   }
 
@@ -39,7 +39,7 @@ public class Len extends Expression {
 
   @Override
   public String toString() {
-    return "Len{" + "nameId=" + RValueId + '}';
+    return "Len{" + "nameId=" + rValue + '}';
   }
 
   @Override
@@ -47,7 +47,7 @@ public class Len extends Expression {
     return String.format(
         "%s (%s)",
         Scanner.RESERVED_LEN,
-        RValueId.getLabel()
+        rValue.getLabel()
     );
   }
 

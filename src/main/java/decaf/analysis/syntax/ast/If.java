@@ -1,6 +1,9 @@
 package decaf.analysis.syntax.ast;
 
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.List;
 
 import decaf.analysis.TokenPosition;
@@ -13,15 +16,18 @@ import decaf.shared.Utils;
 import decaf.shared.env.Scope;
 
 public class If extends Statement implements HasExpression {
+  @NotNull
   public final Block ifBlock;
+  @Nullable
   public final Block elseBlock; // maybe null
+  @NotNull
   public Expression test;
 
   public If(
       TokenPosition tokenPosition,
-      Expression test,
-      Block ifBlock,
-      Block elseBlock
+      @NotNull Expression test,
+      @NotNull Block ifBlock,
+      @Nullable Block elseBlock
   ) {
     super(tokenPosition);
     this.test = test;

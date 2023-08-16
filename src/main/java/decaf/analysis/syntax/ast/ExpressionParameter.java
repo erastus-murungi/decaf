@@ -10,7 +10,7 @@ import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
-public class ExpressionParameter extends MethodCallParameter implements HasExpression {
+public class ExpressionParameter extends ActualArgument implements HasExpression {
   public Expression expression;
 
   public ExpressionParameter(Expression expression) {
