@@ -34,9 +34,10 @@ public class ParserError implements Error<ParserError.ErrorType> {
       case MISSING_IMPORT_NAME -> "Missing import name";
       case MISSING_SEMICOLON -> "Missing semicolon";
       case DID_NOT_FINISH_PARSING -> "Did not finish parsing";
-      case MISSING_RIGHT_PARENTHESIS -> "Missing right parenthesis";
+      case UNCLOSED_PARENTHESIS -> "Missing right parenthesis";
       case MISSING_RIGHT_SQUARE_BRACKET -> "Missing right square bracket";
       case INVALID_TYPE -> "Invalid type";
+      case IMPLEMENTATION_ERROR -> "Implementation error";
     };
   }
 
@@ -70,8 +71,9 @@ public class ParserError implements Error<ParserError.ErrorType> {
     MISSING_IMPORT_NAME,
     MISSING_SEMICOLON,
     DID_NOT_FINISH_PARSING,
-    MISSING_RIGHT_PARENTHESIS,
+    UNCLOSED_PARENTHESIS,
     MISSING_RIGHT_SQUARE_BRACKET,
     INVALID_TYPE,
+    IMPLEMENTATION_ERROR
   }
 }

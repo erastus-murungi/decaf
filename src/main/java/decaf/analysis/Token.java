@@ -6,14 +6,14 @@ import org.jetbrains.annotations.NotNull;
 import decaf.analysis.lexical.Scanner;
 
 public class Token {
-  public TokenPosition tokenPosition;
-  public Type type;
-  public String lexeme;
+  @NotNull public TokenPosition tokenPosition;
+  @NotNull public Type type;
+  @NotNull public String lexeme;
 
   public Token(
-      TokenPosition tokenPosition,
-      Type type,
-      String lexeme
+      @NotNull TokenPosition tokenPosition,
+      @NotNull Type type,
+      @NotNull String lexeme
   ) {
     this.tokenPosition = tokenPosition;
     this.type = type;

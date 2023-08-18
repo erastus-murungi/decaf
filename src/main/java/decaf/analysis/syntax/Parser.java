@@ -113,18 +113,16 @@ import decaf.shared.errors.ParserError;
 
 public class Parser {
   @NotNull
-  public final Scanner scanner;
-  @NotNull
   private final CompilationContext context;
   @NotNull
   private final List<Token> tokens;
   @NotNull
   private final List<ParserError> errors;
+  @NotNull
   private final Program root;
   private int currentTokenIndex;
 
   public Parser(@NotNull Scanner scanner, @NotNull CompilationContext context) {
-    this.scanner = scanner;
     this.context = context;
     this.tokens = Lists.newArrayList(scanner);
     this.errors = new ArrayList<>();
@@ -210,11 +208,11 @@ public class Parser {
     return context.stringifyErrors(errors);
   }
 
-  public Program getRoot() {
+  public @NotNull Program getRoot() {
     return root;
   }
 
-  public final Program program() {
+  private Program program() {
     var program = new Program();
     processImportDeclarations(program);
     processFieldOrMethod(program);
@@ -239,12 +237,13 @@ public class Parser {
   }
 
   private @NotNull Optional<Token> consumeToken(
-      Token.Type expectedType,
-      String errorMessage
+      @NotNull Token.Type expectedType,
+      @NotNull ParserError.ErrorType errorType,
+      @NotNull String errorMessage
   ) {
     if (getCurrentTokenType() != expectedType) {
       errors.add(new ParserError(
-          ParserError.ErrorType.UNEXPECTED_TOKEN,
+          errorType,
           getCurrentToken(),
           errorMessage
       ));
@@ -268,6 +267,7 @@ public class Parser {
         + " received " + s;
     return consumeToken(
         expectedType,
+        ParserError.ErrorType.UNEXPECTED_TOKEN,
         errMessage
     );
   }
@@ -322,6 +322,7 @@ public class Parser {
       if (getCurrentTokenType() == CONDITIONAL_AND) {
         return consumeToken(
             CONDITIONAL_AND,
+            ParserError.ErrorType.IMPLEMENTATION_ERROR,
             "was promised conditional and ('&&') by implementation"
         )
             .flatMap(token
@@ -470,6 +471,7 @@ public class Parser {
   private Optional<ParenthesizedExpression> parseParenthesizedExpression() {
     return consumeToken(
         LEFT_PARENTHESIS,
+        ParserError.ErrorType.IMPLEMENTATION_ERROR,
         "expected a left parenthesis to open a parenthesized expression"
     )
         .flatMap(
@@ -478,6 +480,7 @@ public class Parser {
                 expr
                     -> consumeToken(
                     RIGHT_PARENTHESIS,
+                    ParserError.ErrorType.UNCLOSED_PARENTHESIS,
                     "expected a right parenthesis to close a parenthesized expression"
                 )
                     .map(tk1
@@ -542,11 +545,12 @@ public class Parser {
   private void parseFieldDeclarationGroup(
       List<RValue> variables,
       List<Array> arrays,
-      RValue RValueId
+      RValue rValueId
   ) {
     if (getCurrentToken().type == LEFT_SQUARE_BRACKET) {
       consumeToken(
           LEFT_SQUARE_BRACKET,
+          ParserError.ErrorType.IMPLEMENTATION_ERROR,
           "was promised a left square bracket by the implementation"
       )
           .flatMap(
@@ -555,16 +559,18 @@ public class Parser {
                   intLiteral
                       -> consumeToken(
                       RIGHT_SQUARE_BRACKET,
-                      "expected a right square bracket to close an array declaration"
+                      ParserError.ErrorType.UNCLOSED_PARENTHESIS,
+                      "expected a right square bracket to close an array declaration, but found " +
+                          getCurrentToken().lexeme
                   )
                       .map(tk1
                                -> arrays.add(new Array(
-                          RValueId.tokenPosition,
+                          rValueId.tokenPosition,
                           intLiteral,
-                          RValueId.getLabel()
+                          rValueId.getLabel()
                       )))));
     } else {
-      variables.add(RValueId);
+      variables.add(rValueId);
     }
   }
 
@@ -634,6 +640,7 @@ public class Parser {
     }
     consumeToken(
         SEMICOLON,
+        ParserError.ErrorType.MISSING_SEMICOLON,
         "expected a semicolon to terminate a field declaration"
     )
         .map(token
@@ -729,9 +736,9 @@ public class Parser {
   private Type parseMethodReturnType() {
     final Token token = consumeTokenNoCheck();
     return switch (token.type) {
-      case RESERVED_BOOL -> decaf.analysis.syntax.ast.Type.Bool;
-      case RESERVED_INT -> decaf.analysis.syntax.ast.Type.Int;
-      case RESERVED_VOID -> decaf.analysis.syntax.ast.Type.Void;
+      case RESERVED_BOOL -> Type.Bool;
+      case RESERVED_INT -> Type.Int;
+      case RESERVED_VOID -> Type.Void;
       default -> {
         errors.add(
             new ParserError(
@@ -740,7 +747,7 @@ public class Parser {
                 "expected a valid return type, one of (int, bool, void) but found: " + token.lexeme
             )
         );
-        yield decaf.analysis.syntax.ast.Type.Undefined;
+        yield Type.Undefined;
       }
     };
   }
@@ -877,12 +884,14 @@ public class Parser {
   private Optional<MethodCall> parseMethodCall(@NotNull Token token) {
     return consumeToken(
         LEFT_PARENTHESIS,
+        ParserError.ErrorType.IMPLEMENTATION_ERROR,
         "was expecting a method call to start with a left parenthesis: `(`"
     ).flatMap(
         tk -> {
           var methodCallParameterList = parseMethodCallArguments();
           return consumeToken(
               RIGHT_PARENTHESIS,
+              ParserError.ErrorType.UNCLOSED_PARENTHESIS,
               "was expecting a method call to end with a right parenthesis"
           ).map(
               tk1 -> new MethodCall(
@@ -900,12 +909,14 @@ public class Parser {
   private Optional<MethodCall> parseMethodCall(@NotNull RValue RValue) {
     return consumeToken(
         LEFT_PARENTHESIS,
+        ParserError.ErrorType.IMPLEMENTATION_ERROR,
         "was expecting a method call to start with a left parenthesis: `(`"
     ).flatMap(
         tk -> {
           var methodCallParameterList = parseMethodCallArguments();
           return consumeToken(
               RIGHT_PARENTHESIS,
+              ParserError.ErrorType.UNCLOSED_PARENTHESIS,
               "was expecting a method call to end with a right parenthesis"
           ).map(
               tk1 -> new MethodCall(
@@ -920,14 +931,16 @@ public class Parser {
   private Optional<Statement> parseLocationAndAssignExprOrMethodCall() {
     return consumeToken(
         ID,
-        "Expected x = `expr` or fn()"
+        ParserError.ErrorType.IMPLEMENTATION_ERROR,
+        "Expected a valid identifier, `var` or fn_name()"
     ).flatMap(
         token -> {
           if (getCurrentTokenType() == LEFT_PARENTHESIS) {
             return parseMethodCall(token).flatMap(
                 methodCall -> consumeToken(
                     SEMICOLON,
-                    Scanner.SEMICOLON
+                    ParserError.ErrorType.MISSING_SEMICOLON,
+                    "expected a semicolon to terminate a method call"
                 ).map(
                     tk -> new MethodCallStatement(
                         token.tokenPosition,
@@ -939,7 +952,8 @@ public class Parser {
             return parseLocationAndAssignExpr(token).flatMap(
                 locationAssignExpr -> consumeToken(
                     SEMICOLON,
-                    Scanner.SEMICOLON
+                    ParserError.ErrorType.MISSING_SEMICOLON,
+                    "expected a semicolon to terminate an assignment expression"
                 ).map(
                     tk -> locationAssignExpr
                 )
@@ -1090,11 +1104,13 @@ public class Parser {
   private Optional<LocationArray> parseLocationArray(@NotNull RValue RValue) {
     return consumeToken(
         LEFT_SQUARE_BRACKET,
+        ParserError.ErrorType.IMPLEMENTATION_ERROR,
         "expected a left square bracket (`[`) to open array[expr]"
     )
         .flatMap(tk -> parseOrExpr().flatMap(
             expression -> consumeToken(
                 RIGHT_SQUARE_BRACKET,
+                ParserError.ErrorType.UNCLOSED_PARENTHESIS,
                 "expected a right square bracket (`]`) to close array[expr]"
             ).map(
                 tk1 -> new LocationArray(
@@ -1131,31 +1147,15 @@ public class Parser {
   }
 
   private Optional<? extends Expression> parseExpr() {
-    switch (getCurrentTokenType()) {
-      case NOT, MINUS -> {
-        return parseUnaryOpExpr();
-      }
-      case LEFT_PARENTHESIS -> {
-        return parseParenthesizedExpression();
-      }
-      case RESERVED_LEN -> {
-        return parseLen();
-      }
-      case INT_LITERAL -> {
-        return parseLiteral(INT_LITERAL);
-      }
-      case CHAR_LITERAL -> {
-        return parseLiteral(CHAR_LITERAL);
-      }
-      case RESERVED_FALSE -> {
-        return parseLiteral(RESERVED_FALSE);
-      }
-      case RESERVED_TRUE -> {
-        return parseLiteral(RESERVED_TRUE);
-      }
-      case ID -> {
-        return parseLocationOrMethodCall();
-      }
+    return switch (getCurrentTokenType()) {
+      case NOT, MINUS -> parseUnaryOpExpr();
+      case LEFT_PARENTHESIS -> parseParenthesizedExpression();
+      case RESERVED_LEN -> parseLen();
+      case INT_LITERAL -> parseLiteral(INT_LITERAL);
+      case CHAR_LITERAL -> parseLiteral(CHAR_LITERAL);
+      case RESERVED_FALSE -> parseLiteral(RESERVED_FALSE);
+      case RESERVED_TRUE -> parseLiteral(RESERVED_TRUE);
+      case ID -> parseLocationOrMethodCall();
       default -> {
         errors.add(
             new ParserError(
@@ -1164,23 +1164,26 @@ public class Parser {
                 "expected an expression"
             )
         );
-        return Optional.empty();
+        yield Optional.empty();
       }
-    }
+    };
   }
 
   private Optional<Len> parseLen() {
     return consumeToken(
         RESERVED_LEN,
+        ParserError.ErrorType.IMPLEMENTATION_ERROR,
         "was promised a len statement by implementation"
     ).flatMap(
         token -> consumeToken(
             LEFT_PARENTHESIS,
-            "expected a `(` to open a len statement"
+            ParserError.ErrorType.UNEXPECTED_TOKEN,
+            "expected a `(` to open a len statement but got " + getCurrentToken().lexeme
         ).flatMap(
             tk -> parseName("cannot find len of " + tk.lexeme).flatMap(
                 name -> consumeToken(
                     RIGHT_PARENTHESIS,
+                    ParserError.ErrorType.UNCLOSED_PARENTHESIS,
                     "expected a `)` to close len statement"
                 ).map(
                     tk1 -> new Len(
@@ -1218,12 +1221,14 @@ public class Parser {
   private Optional<Return> parseReturnStatement() {
     return consumeToken(
         RESERVED_RETURN,
+        ParserError.ErrorType.IMPLEMENTATION_ERROR,
         "was promised a return statement by implementation"
     ).flatMap(
         token -> {
           if (getCurrentTokenType() == SEMICOLON) {
             consumeToken(
                 SEMICOLON,
+                ParserError.ErrorType.IMPLEMENTATION_ERROR,
                 "was promised a semicolon by implementation"
             );
             return Optional.of(new Return(
@@ -1236,6 +1241,7 @@ public class Parser {
             return parseOrExpr().flatMap(
                 expression -> consumeToken(
                     SEMICOLON,
+                    ParserError.ErrorType.MISSING_SEMICOLON,
                     "was expecting semicolon after return statement"
                 ).flatMap(
                     tk -> Optional.of(new Return(
@@ -1252,16 +1258,19 @@ public class Parser {
   private Optional<Statement> parseWhileStatement() {
     return consumeToken(
         RESERVED_WHILE,
-        Scanner.RESERVED_WHILE
+        ParserError.ErrorType.IMPLEMENTATION_ERROR,
+        "was promised a `while statement` by implementation"
     ).flatMap(
         token -> consumeToken(
             LEFT_PARENTHESIS,
-            Scanner.LEFT_PARENTHESIS
+            ParserError.ErrorType.UNEXPECTED_TOKEN,
+            "expected a `(` after " + Scanner.RESERVED_WHILE + " to denote beginning of while statement"
         ).flatMap(
             tk -> parseOrExpr().flatMap(
                 expression -> consumeToken(
                     RIGHT_PARENTHESIS,
-                    Scanner.RIGHT_PARENTHESIS
+                    ParserError.ErrorType.UNCLOSED_PARENTHESIS,
+                    "expected `)` to close out while statement condition"
                 ).flatMap(
                     tk1 -> parseBlock().map(
                         block -> new While(
@@ -1279,15 +1288,18 @@ public class Parser {
   private Optional<If> parseIfStatement() {
     return consumeToken(
         RESERVED_IF,
-        "expected the reserved keyword `if` to denote beginning of if statement"
+        ParserError.ErrorType.IMPLEMENTATION_ERROR,
+        "was promised an `if statement` by implementation"
     ).flatMap(
         token -> consumeToken(
             LEFT_PARENTHESIS,
+            ParserError.ErrorType.UNEXPECTED_TOKEN,
             "expected a `(` after " + Scanner.RESERVED_IF + " to denote beginning of if statement"
         ).flatMap(
             tk -> parseOrExpr().flatMap(
                 expression -> consumeToken(
                     RIGHT_PARENTHESIS,
+                    ParserError.ErrorType.UNCLOSED_PARENTHESIS,
                     "expected `)` to close out if statement condition"
                 ).flatMap(
                     tk1 -> parseBlock().flatMap(
@@ -1295,7 +1307,8 @@ public class Parser {
                           if (getCurrentTokenType() == RESERVED_ELSE) {
                             return consumeToken(
                                 RESERVED_ELSE,
-                                "implementation error: expected else statement"
+                                ParserError.ErrorType.IMPLEMENTATION_ERROR,
+                                "was promised an `else statement` by implementation"
                             ).flatMap(
                                 tk2 -> parseBlock().map(
                                     elseBlock -> new If(
@@ -1325,26 +1338,32 @@ public class Parser {
   private Optional<Statement> parseForStatement() {
     return consumeToken(
         RESERVED_FOR,
-        "expected the reserved keyword `for` to denote beginning of for statement"
+        ParserError.ErrorType.IMPLEMENTATION_ERROR,
+        "was promised a `for statement` by implementation"
     ).flatMap(
         token -> consumeToken(
             LEFT_PARENTHESIS,
-            "expected a `(` after " + Scanner.RESERVED_FOR + " to denote beginning of for statement"
+            ParserError.ErrorType.UNEXPECTED_TOKEN,
+            "expected a `(` after " + Scanner.RESERVED_FOR +
+                " to denote beginning of for statement but found " + getCurrentToken().lexeme
         ).flatMap(
             tk -> parseName("expected initialization variable").flatMap(
                 initId -> consumeToken(
                     ASSIGN,
+                    ParserError.ErrorType.UNEXPECTED_TOKEN,
                     "expected `=` to split initialization variable and expression"
                 ).flatMap(
                     tk1 -> parseOrExpr(
                     ).flatMap(
                         initExpr -> consumeToken(
                             SEMICOLON,
+                            ParserError.ErrorType.MISSING_SEMICOLON,
                             "expected a `;` after for statement initializer"
                         ).flatMap(
                             tk2 -> parseOrExpr().flatMap(
                                 terminatingCondition -> consumeToken(
                                     SEMICOLON,
+                                    ParserError.ErrorType.MISSING_SEMICOLON,
                                     "expected a `;` after for statement terminating condition"
                                 ).flatMap(
                                     tk3 -> parseLocation().flatMap(
@@ -1352,6 +1371,7 @@ public class Parser {
                                             updateAssignExpr ->
                                                 consumeToken(
                                                     RIGHT_PARENTHESIS,
+                                                    ParserError.ErrorType.UNCLOSED_PARENTHESIS,
                                                     "expected a `)` to close out for statement"
                                                 ).flatMap(
                                                     tk4 -> parseBlock().map(
@@ -1386,11 +1406,13 @@ public class Parser {
   private Optional<Break> parseBreak() {
     return consumeToken(
         RESERVED_BREAK,
-        Scanner.RESERVED_BREAK
+        ParserError.ErrorType.IMPLEMENTATION_ERROR,
+        "was promised keyword `break` by implementation"
     ).flatMap(
         token -> consumeToken(
             SEMICOLON,
-            Scanner.SEMICOLON
+            ParserError.ErrorType.MISSING_SEMICOLON,
+            "expected semicolon after break statement"
         ).map(
             tk -> new Break(
                 token.tokenPosition
@@ -1402,11 +1424,13 @@ public class Parser {
   private Optional<Continue> parseContinue() {
     return consumeToken(
         RESERVED_CONTINUE,
-        Scanner.RESERVED_CONTINUE
+        ParserError.ErrorType.IMPLEMENTATION_ERROR,
+        "was promised keyword `continue` by implementation"
     ).flatMap(
         token -> consumeToken(
             SEMICOLON,
-            Scanner.SEMICOLON
+            ParserError.ErrorType.MISSING_SEMICOLON,
+            "expected semicolon after continue statement"
         ).map(
             tk -> new Continue(
                 token.tokenPosition
@@ -1440,6 +1464,7 @@ public class Parser {
   private Optional<Block> parseBlock() {
     return consumeToken(
         LEFT_CURLY,
+        ParserError.ErrorType.UNEXPECTED_TOKEN,
         "expected a left curly brace to start a block"
     ).flatMap(
         token -> {
@@ -1449,6 +1474,7 @@ public class Parser {
           parseStatements(statementList);
           return consumeToken(
               RIGHT_CURLY,
+              ParserError.ErrorType.UNCLOSED_PARENTHESIS,
               "expected a right curly brace to end a block"
           ).map(
               rightCurlyToken -> new Block(
@@ -1463,12 +1489,14 @@ public class Parser {
   private Optional<ImportDeclaration> parseImportDeclaration() {
     return (consumeToken(
         RESERVED_IMPORT,
+        ParserError.ErrorType.IMPLEMENTATION_ERROR,
         "was promised keyword `import` by implementation"
     ).flatMap(token -> parseName(
         "expected valid import name not " + getCurrentToken().lexeme
     ).flatMap(
         importName -> consumeToken(
             SEMICOLON,
+            ParserError.ErrorType.MISSING_SEMICOLON,
             "expected semicolon after import statement"
         ).map(
             tk -> new ImportDeclaration(
@@ -1495,7 +1523,8 @@ public class Parser {
                                 while (getCurrentTokenType() == COMMA) {
                                   consumeToken(
                                       COMMA,
-                                      Scanner.COMMA
+                                      ParserError.ErrorType.UNEXPECTED_TOKEN,
+                                      "expected a comma to separate field declarations"
                                   );
                                   nameId = parseName(
                                       Scanner.IDENTIFIER
@@ -1548,6 +1577,7 @@ public class Parser {
   ) {
     return consumeToken(
         ID,
+        ParserError.ErrorType.MISSING_NAME,
         expected
     ).map(
         token -> new RValue(
@@ -1560,8 +1590,8 @@ public class Parser {
   private Optional<Type> parseType() {
     final Token token = consumeTokenNoCheck();
     return switch (token.type) {
-      case RESERVED_INT -> Optional.of(decaf.analysis.syntax.ast.Type.Int);
-      case RESERVED_BOOL -> Optional.of(decaf.analysis.syntax.ast.Type.Bool);
+      case RESERVED_INT -> Optional.of(Type.Int);
+      case RESERVED_BOOL -> Optional.of(Type.Bool);
       default -> {
         errors.add(
             new ParserError(

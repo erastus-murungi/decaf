@@ -1,6 +1,8 @@
 package decaf.analysis.syntax.ast;
 
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,16 +14,20 @@ import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
 public class FieldDeclaration extends Declaration {
+  @NotNull
   final public TokenPosition tokenPosition;
+  @NotNull
   final public List<RValue> vars;
+  @NotNull
   final public List<Array> arrays;
+  @NotNull
   final private Type type;
 
   public FieldDeclaration(
-      TokenPosition tokenPosition,
-      Type type,
-      List<RValue> vars,
-      List<Array> arrays
+      @NotNull TokenPosition tokenPosition,
+      @NotNull Type type,
+      @NotNull List<RValue> vars,
+      @NotNull List<Array> arrays
   ) {
     this.tokenPosition = tokenPosition;
     this.type = type;
@@ -31,7 +37,7 @@ public class FieldDeclaration extends Declaration {
 
   @Override
   public List<Pair<String, AST>> getChildren() {
-    ArrayList<Pair<String, AST>> pairArrayList = new ArrayList<>();
+   var pairArrayList = new ArrayList<Pair<String, AST>>();
     pairArrayList.add(new Pair<>(
         "type",
         new RValue(
@@ -102,7 +108,7 @@ public class FieldDeclaration extends Declaration {
   }
 
   @Override
-  public Type getType() {
+  public @NotNull Type getType() {
     return type;
   }
 }

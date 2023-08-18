@@ -70,6 +70,16 @@ public class CompilationContext {
         Utils.ANSIColorConstants.ANSI_YELLOW
     ));
 
+    output.add(Utils.coloredPrint(
+        String.format(
+            "%s --> %s",
+            subIndent,
+            error.tokenPosition()
+                 .toString()
+        ),
+        Utils.ANSIColorConstants.ANSI_CYAN
+    ));
+
     // context before the problematic line
     var sourceCodeLines = sourceCode.split(NEW_LINE);
 

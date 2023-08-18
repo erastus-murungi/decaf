@@ -399,7 +399,7 @@ public class TestRunner {
     int numPassed = 0;
     Stopwatch testSuiteTestTime = Stopwatch.createStarted();
     for (var pairIndex = 0; pairIndex < testPairs.size(); pairIndex++) {
-      Stopwatch stopwatch = Stopwatch.createStarted();
+      var stopwatch = Stopwatch.createStarted();
       var pair = testPairs.get(pairIndex);
       var sourceFile = pair.first;
       try {
