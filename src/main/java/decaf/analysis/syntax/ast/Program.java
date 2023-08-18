@@ -1,6 +1,8 @@
 package decaf.analysis.syntax.ast;
 
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,14 +13,21 @@ import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
 public class Program extends AST {
+  @NotNull
   private final List<ImportDeclaration> importDeclarationList;
+  @NotNull
   private final List<FieldDeclaration> fieldDeclarationList;
+  @NotNull
   private final List<MethodDefinition> methodDefinitionList;
 
-  public Program() {
-    this.importDeclarationList = new ArrayList<>();
-    this.fieldDeclarationList = new ArrayList<>();
-    this.methodDefinitionList = new ArrayList<>();
+  public Program(
+      @NotNull List<ImportDeclaration> importDeclarationList,
+      @NotNull List<FieldDeclaration> fieldDeclarationList,
+      @NotNull List<MethodDefinition> methodDefinitionList
+  ) {
+    this.importDeclarationList = importDeclarationList;
+    this.fieldDeclarationList = fieldDeclarationList;
+    this.methodDefinitionList = methodDefinitionList;
   }
 
   @Override
