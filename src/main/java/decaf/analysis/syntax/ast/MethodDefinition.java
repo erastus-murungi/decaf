@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import decaf.analysis.TokenPosition;
-import decaf.analysis.semantic.AstVisitor;
+import decaf.shared.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
@@ -59,7 +59,7 @@ public class MethodDefinition extends AST {
     }
     nodes.add(new Pair<>(
         "block",
-        getBlock()
+        getBody()
     ));
 
     return nodes;
@@ -76,7 +76,7 @@ public class MethodDefinition extends AST {
         ", returnType=" + getReturnType() +
         ", methodName=" + getMethodName() +
         ", parameterList=" + getFormalArguments() +
-        ", block=" + getBlock() +
+        ", block=" + getBody() +
         '}';
   }
 
@@ -98,7 +98,7 @@ public class MethodDefinition extends AST {
                              params
                          )
         ,
-                         getBlock().getSourceCode()
+                         getBody().getSourceCode()
     );
   }
 
@@ -132,11 +132,15 @@ public class MethodDefinition extends AST {
     return methodRValue;
   }
 
+  public String getMethodNameString() {
+    return methodRValue.getLabel();
+  }
+
   public List<FormalArgument> getFormalArguments() {
     return formalArguments;
   }
 
-  public Block getBlock() {
+  public Block getBody() {
     return block;
   }
 }

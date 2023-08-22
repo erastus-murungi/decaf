@@ -5,6 +5,9 @@ import static decaf.shared.Preconditions.checkArgument;
 import static decaf.shared.Preconditions.checkNotNull;
 import static decaf.shared.Preconditions.checkState;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,28 +29,27 @@ import decaf.ir.codes.WithTarget;
 import decaf.ir.ssa.Phi;
 
 public class BasicBlock {
-
-
+  @NotNull
   private final ArrayList<BasicBlock> predecessors = new ArrayList<>();
-
+  @NotNull
   private final ArrayList<AST> astNodes = new ArrayList<>();
-
+  @NotNull
   private final Set<WithTarget> tributaries = new HashSet<>();
-
+  @Nullable
   protected Expression branchCondition;
-
+  @NotNull
   private BasicBlockType basicBlockType;
-
-  private InstructionList instructionList = new InstructionList();    // to be set by a visitor
-
+  @Nullable
+  private InstructionList instructionList = null;
+  @Nullable
   private BasicBlock successor;
-
+  @Nullable
   private BasicBlock alternateSuccessor;
 
 
   protected BasicBlock(
-      BasicBlockType basicBlockType,
-      Expression branchCondition
+      @NotNull BasicBlockType basicBlockType,
+      @Nullable Expression branchCondition
   ) {
     this.branchCondition = branchCondition;
     this.basicBlockType = basicBlockType;
@@ -65,9 +67,9 @@ public class BasicBlock {
   }
 
   public static BasicBlock branch(
-      Expression branchCondition,
-      BasicBlock trueTarget,
-      BasicBlock falseTarget
+      @NotNull Expression branchCondition,
+      @NotNull BasicBlock trueTarget,
+      @NotNull BasicBlock falseTarget
   ) {
 
     var basicBlock = new BasicBlock(BasicBlockType.BRANCH);
@@ -87,6 +89,7 @@ public class BasicBlock {
   }
 
   public List<WithTarget> getWithTargets() {
+    assert instructionList != null;
     return instructionList.stream()
                           .filter(instruction -> instruction instanceof WithTarget)
                           .map(instruction -> (WithTarget) instruction)
@@ -117,7 +120,7 @@ public class BasicBlock {
     return basicBlockType.equals(BasicBlockType.NO_BRANCH);
   }
 
-  public ArrayList<AST> getAstNodes() {
+  public @NotNull ArrayList<AST> getAstNodes() {
     return astNodes;
   }
 
@@ -125,11 +128,11 @@ public class BasicBlock {
     astNodes.add(astNode);
   }
 
-  public void addAstNodes(Collection<AST> astNodes) {
+  public void addAstNodes(Collection<? extends AST> astNodes) {
     this.astNodes.addAll(astNodes);
   }
 
-  public BasicBlockType getBasicBlockType() {
+  public @NotNull BasicBlockType getBasicBlockType() {
     return basicBlockType;
   }
 
@@ -142,11 +145,13 @@ public class BasicBlock {
     this.astNodes.removeAll(astNodes);
   }
 
-  public InstructionList getInstructionList() {
+  public @NotNull InstructionList getInstructionList() {
+    if (instructionList == null)
+      throw new IllegalStateException("instruction list not initialized");
     return instructionList;
   }
 
-  public void setInstructionList(InstructionList instructionList) {
+  public void setInstructionList(@NotNull InstructionList instructionList) {
     this.instructionList = instructionList;
   }
 
@@ -185,7 +190,7 @@ public class BasicBlock {
     return !predecessors.contains(predecessor);
   }
 
-  public ArrayList<BasicBlock> getPredecessors() {
+  public @NotNull ArrayList<BasicBlock> getPredecessors() {
     return predecessors;
   }
 
@@ -206,8 +211,8 @@ public class BasicBlock {
 
   public String getLinesOfCodeString() {
     if (astNodes.isEmpty()) {
-      if (!instructionList.isEmpty()) {
-        return instructionList.get(0)
+      if (!getInstructionList().isEmpty()) {
+        return getInstructionList().get(0)
                               .syntaxHighlightedToString();
       }
     }
@@ -222,21 +227,21 @@ public class BasicBlock {
    * @return Iterator of Assignment TACs
    */
   public List<StoreInstruction> getStoreInstructions() {
-    return instructionList.stream()
+    return getInstructionList().stream()
                           .filter(tac -> tac instanceof StoreInstruction)
                           .map(tac -> (StoreInstruction) tac)
                           .collect(Collectors.toList());
   }
 
   public List<Phi> getPhiFunctions() {
-    return instructionList.stream()
+    return getInstructionList().stream()
                           .filter(tac -> tac instanceof Phi)
                           .map(tac -> (Phi) tac)
                           .collect(Collectors.toList());
   }
 
   public List<Instruction> getNonPhiInstructions() {
-    return instructionList.stream()
+    return getInstructionList().stream()
                           .filter(tac -> !(tac instanceof Phi))
                           .collect(Collectors.toList());
   }
@@ -247,11 +252,11 @@ public class BasicBlock {
    * @return an {@link ArrayList} of the Instructions in this {@link InstructionList}
    */
   public List<Instruction> getCopyOfInstructionList() {
-    return new ArrayList<>(instructionList);
+    return new ArrayList<>(getInstructionList());
   }
 
   public boolean phiPresent() {
-    return instructionList.stream()
+    return getInstructionList().stream()
                           .anyMatch(instruction -> instruction instanceof Phi);
   }
 
@@ -309,11 +314,11 @@ public class BasicBlock {
                                                    .orElseThrow(() -> new RuntimeException(toString()));
   }
 
-  public BasicBlock getSuccessor() {
+  public @Nullable BasicBlock getSuccessor() {
     return successor;
   }
 
-  public void setSuccessor(BasicBlock successor) {
+  public void setSuccessor(@Nullable BasicBlock successor) {
     this.successor = successor;
   }
 
@@ -326,8 +331,6 @@ public class BasicBlock {
 
   private void fixPhiNodes(BasicBlock newSuccessor) {
     var removed = genRemoved(newSuccessor);
-
-
   }
 
   public void convertToBranchLess(BasicBlock newSuccessor) {
@@ -375,7 +378,7 @@ public class BasicBlock {
     return getLinesOfCodeString();
   }
 
-  public BasicBlock getAlternateSuccessor() {
+  public @Nullable BasicBlock getAlternateSuccessor() {
     return alternateSuccessor;
   }
 

@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import decaf.analysis.TokenPosition;
-import decaf.analysis.semantic.AstVisitor;
+import decaf.shared.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;

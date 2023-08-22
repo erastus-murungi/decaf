@@ -116,7 +116,6 @@ public class ControlFlowGraph {
   ) {
     if (!seen.contains(basicBlockBranchLess)) {
       seen.add(basicBlockBranchLess);
-      // we assume this is the first instance of the
       if (basicBlockBranchLess.getSuccessor() != null) {
         visit(
             basicBlockBranchLess.getSuccessor(),
@@ -414,7 +413,7 @@ public class ControlFlowGraph {
       currentPair = placeholder;
     }
     var methodBody = dispatch(
-        methodDefinition.getBlock(),
+        methodDefinition.getBody(),
         scope
     );
     currentPair.endBlock.setSuccessor(methodBody.startBlock);
@@ -625,7 +624,7 @@ public class ControlFlowGraph {
     );
     initial.setSuccessor(curPair.endBlock);
 
-    for (FieldDeclaration field : block.fieldDeclarationList) {
+    for (FieldDeclaration field : block.getFieldDeclarations()) {
       BasicBlocksPair placeholder = dispatch(
           field,
           scope
@@ -635,7 +634,7 @@ public class ControlFlowGraph {
       curPair = placeholder;
     }
 
-    for (Statement statement : block.statementList) {
+    for (Statement statement : block.getStatements()) {
       if (statement instanceof Continue) {
         // will return a NOP() for sure because Continue blocks should be pointers back to the evaluation block
         BasicBlock continueCfg = new NOP();

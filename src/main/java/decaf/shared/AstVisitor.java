@@ -1,4 +1,4 @@
-package decaf.analysis.semantic;
+package decaf.shared;
 
 import decaf.analysis.syntax.ast.Array;
 import decaf.analysis.syntax.ast.AssignOpExpr;

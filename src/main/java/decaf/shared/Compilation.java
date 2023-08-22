@@ -258,6 +258,9 @@ public class Compilation {
         semanticChecker.getTypingContext().orElseThrow()
     );
     cfg.build();
+    if (compilationContext.debugModeOn()) {
+      GraphVizManager.printGraph(cfg.getMethodNameToEntryBlockMapping(), "ssa1");
+    }
     compilationState = CompilationState.CFG_GENERATED;
   }
 

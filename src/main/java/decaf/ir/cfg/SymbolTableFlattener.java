@@ -81,7 +81,7 @@ public class SymbolTableFlattener {
         Scope methodVars = new Scope(
             null,
             Scope.For.Field,
-            methodDesc.methodDefinition.getBlock()
+            methodDesc.methodDefinition.getBody()
         );
         cfgMethods.put(
             methodEntry.getKey(),
@@ -102,7 +102,7 @@ public class SymbolTableFlattener {
         // iterate through all children of children blocks
         addChildrenVars(
             methodVars,
-            methodDesc.methodDefinition.getBlock().scope
+            methodDesc.methodDefinition.getBody().scope
         );
         this.fields.forEach(methodVars::remove);
         methodVars.parent = this.fields;

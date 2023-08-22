@@ -4,15 +4,15 @@ package decaf.analysis.syntax.ast;
 import java.util.ArrayList;
 import java.util.List;
 
-import decaf.analysis.semantic.AstVisitor;
+import decaf.shared.AstVisitor;
 import decaf.ir.CodegenAstVisitor;
 import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
 public class Block extends AST {
-  final public List<FieldDeclaration> fieldDeclarationList;
-  final public List<Statement> statementList;
+  final private List<FieldDeclaration> fieldDeclarationList;
+  final private List<Statement> statementList;
   public Scope scope;
 
   public Block(
@@ -21,6 +21,15 @@ public class Block extends AST {
   ) {
     this.fieldDeclarationList = fieldDeclarationList;
     this.statementList = statementList;
+  }
+
+
+  public List<Statement> getStatements() {
+    return statementList;
+  }
+
+  public List<FieldDeclaration> getFieldDeclarations() {
+    return fieldDeclarationList;
   }
 
   @Override

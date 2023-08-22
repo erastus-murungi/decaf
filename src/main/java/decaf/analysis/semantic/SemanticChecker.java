@@ -53,6 +53,7 @@ import decaf.analysis.syntax.ast.Type;
 import decaf.analysis.syntax.ast.UnaryOpExpression;
 import decaf.analysis.syntax.ast.VoidExpression;
 import decaf.analysis.syntax.ast.While;
+import decaf.shared.AstVisitor;
 import decaf.shared.CompilationContext;
 import decaf.shared.Utils;
 import decaf.shared.descriptors.ArrayDescriptor;
@@ -134,7 +135,7 @@ public class SemanticChecker implements AstVisitor<Type> {
   ) {
     final var methodId = methodDefinition.getMethodName()
                                          .getLabel();
-    final var block = methodDefinition.getBlock();
+    final var block = methodDefinition.getBody();
 
     var formalArgumentScope = new Scope(
         globalScope,
