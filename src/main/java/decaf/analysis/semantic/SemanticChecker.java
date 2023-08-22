@@ -527,12 +527,12 @@ public class SemanticChecker implements AstVisitor<Type> {
     block.scope = localScope;
     parentScope.children.add(localScope);
 
-    for (var fieldDeclaration : block.fieldDeclarationList)
+    for (var fieldDeclaration : block.getFieldDeclarations())
       fieldDeclaration.accept(
           this,
           block.scope
       );
-    for (Statement statement : block.statementList)
+    for (Statement statement : block.getStatements())
       statement.accept(
           this,
           block.scope

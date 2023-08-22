@@ -563,11 +563,11 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
       IrAssignable resultLocation
   ) {
     final InstructionList blockInstructionList = new InstructionList();
-    block.fieldDeclarationList.forEach(fieldDeclaration -> blockInstructionList.addAll(fieldDeclaration.accept(
+    block.getFieldDeclarations().forEach(fieldDeclaration -> blockInstructionList.addAll(fieldDeclaration.accept(
         this,
         null
     )));
-    block.statementList.forEach(statement -> statement.accept(
+    block.getStatements().forEach(statement -> statement.accept(
         this,
         null
     ));
