@@ -1,27 +1,32 @@
 package decaf.shared.env;
 
 
+import static com.google.common.base.Preconditions.checkState;
+
+import org.jetbrains.annotations.NotNull;
+
 import java.util.TreeSet;
 
-
-/**
- * <ul>
- *     <li> a symbol table for methods of parent class </li>
- *     <li> a symbol table for globally accessible fields</li>
- *     <li> an ordered set of imports </li>
- * </ul>
- */
-
 public class TypingContext {
+  @NotNull
   public Scope globalScope;
-  public TreeSet<String> imports = new TreeSet<>();
+  @NotNull
+  public TreeSet<String> imports;
 
   public TypingContext(
-      Scope globalScope,
-      TreeSet<String> importDeclarations
+      @NotNull Scope globalScope,
+      @NotNull TreeSet<String> importDeclarations
   ) {
     this.globalScope = globalScope;
-    this.imports.addAll(importDeclarations);
+    this.imports = importDeclarations;
   }
 
+  public boolean isGlobalVariable(String name) {
+    return globalScope.containsKey(name);
+  }
+
+  public boolean isMethodParam(@NotNull String name, @NotNull Scope scope) {
+    checkState(scope.target == Scope.For.Arguments);
+    return scope.containsKey(name);
+  }
 }

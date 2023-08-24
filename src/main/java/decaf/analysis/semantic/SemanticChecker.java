@@ -60,8 +60,7 @@ import decaf.shared.descriptors.ArrayDescriptor;
 import decaf.shared.descriptors.Descriptor;
 import decaf.shared.env.TypingContext;
 import decaf.shared.descriptors.MethodDescriptor;
-import decaf.shared.descriptors.ParameterDescriptor;
-import decaf.shared.descriptors.VariableDescriptor;
+import decaf.shared.descriptors.ValueDescriptor;
 import decaf.shared.env.Scope;
 import decaf.shared.errors.SemanticError;
 
@@ -139,7 +138,7 @@ public class SemanticChecker implements AstVisitor<Type> {
 
     var formalArgumentScope = new Scope(
         globalScope,
-        Scope.For.Parameter,
+        Scope.For.Arguments,
         block
     );
     var localScope =
@@ -235,11 +234,11 @@ public class SemanticChecker implements AstVisitor<Type> {
       ));
     } else {
       Descriptor initDescriptor = optionalDescriptor.get();
-      if (initDescriptor.type != Type.Int) {
+      if (!initDescriptor.typeIs(Type.Int)) {
         errors.add(new SemanticError(
             forStatement.tokenPosition,
             SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-            forStatement.initialization.initLocation + " must type must be " + Type.Int + " not " + initDescriptor.type
+            forStatement.initialization.initLocation + " must type must be " + Type.Int + " not " + initDescriptor.getType()
         ));
       }
 
@@ -282,11 +281,11 @@ public class SemanticChecker implements AstVisitor<Type> {
         ));
       } else {
         var updatingDescriptor = optionalDescriptor.get();
-        if (updatingDescriptor.type != Type.Int) {
+        if (!updatingDescriptor.typeIs(Type.Int)) {
           errors.add(new SemanticError(
               forStatement.initialization.initExpression.tokenPosition,
               SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-              "update location must have type int, not " + updatingDescriptor.type
+              "update location must have type int, not " + updatingDescriptor.getType()
           ));
         }
         var updateExprType = forStatement.update.assignExpr.accept(
@@ -303,7 +302,7 @@ public class SemanticChecker implements AstVisitor<Type> {
                   "The location and the expression in an incrementing/decrementing assignment must be of type `int`, " +
                       "currently the location `%s` is of type `%s` and the expression `%s` is of type `%s`",
                   updateId,
-                  updatingDescriptor.type,
+                  updatingDescriptor.getType(),
                   forStatement.update.assignExpr.getSourceCode(),
                   updateExprType
               )
@@ -570,7 +569,7 @@ public class SemanticChecker implements AstVisitor<Type> {
     Optional<Descriptor> descriptor = scope.lookup(locationArray.getLabel());
     if (descriptor.isPresent()) {
       if ((descriptor.get() instanceof ArrayDescriptor)) {
-        switch (descriptor.get().type) {
+        switch (descriptor.get().getType()) {
           case Bool, BoolArray -> type = Type.Bool;
           case Int, IntArray -> type = Type.Int;
           default -> errors.add(new SemanticError(
@@ -674,8 +673,9 @@ public class SemanticChecker implements AstVisitor<Type> {
     else
       scope.put(
           formalArgumentId,
-          new ParameterDescriptor(
-              formalArgument.getType()
+          new ValueDescriptor(
+              formalArgument.getType(),
+              true
           )
       );
     return formalArgument.getType();
@@ -773,8 +773,8 @@ public class SemanticChecker implements AstVisitor<Type> {
         methodCall
     );
 
-    methodCall.setType(descriptor.type);
-    return descriptor.type;
+    methodCall.setType(descriptor.getType());
+    return descriptor.getType();
   }
 
   @Override
@@ -825,14 +825,14 @@ public class SemanticChecker implements AstVisitor<Type> {
       }
     } else {
       if (locationAssignExpr.location instanceof final LocationArray locationArray) {
-        if (optionalDescriptor.get().type != Type.IntArray && optionalDescriptor.get().type != Type.BoolArray) {
+        if (optionalDescriptor.get().typeIsNotAnyOf(Type.IntArray, Type.BoolArray)) {
           errors.add(new SemanticError(
               locationAssignExpr.tokenPosition,
               SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
               String.format(
                   "The location `%s` is of type `%s` and cannot be indexed like an array",
                   locationArray.getLabel(),
-                  optionalDescriptor.get().type
+                  optionalDescriptor.get().getType()
               )
           ));
         }
@@ -856,20 +856,20 @@ public class SemanticChecker implements AstVisitor<Type> {
 
       if (locationAssignExpr.assignExpr instanceof final AssignOpExpr assignOpExpr) {
         if (assignOpExpr.assignOp.label.equals(Scanner.ASSIGN)) {
-          if ((locationDescriptor.type == Type.Int || locationDescriptor.type == Type.IntArray) &&
+          if ((locationDescriptor.getType() == Type.Int || locationDescriptor.getType() == Type.IntArray) &&
               expressionType != Type.Int) {
             errors.add(new SemanticError(
                 locationAssignExpr.tokenPosition,
                 SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                "lhs is type " + locationDescriptor.type + " rhs must be type Int, not " + expressionType
+                "lhs is type " + locationDescriptor.getType() + " rhs must be type Int, not " + expressionType
             ));
           }
-          if ((locationDescriptor.type == Type.Bool || locationDescriptor.type == Type.BoolArray) &&
+          if ((locationDescriptor.typeIsAnyOf(Type.Bool, Type.BoolArray)) &&
               expressionType != Type.Bool) {
             errors.add(new SemanticError(
                 locationAssignExpr.tokenPosition,
                 SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                "lhs is type " + locationDescriptor.type + " rhs must be type Bool, not " + expressionType
+                "lhs is type " + locationDescriptor.getType() + " rhs must be type Bool, not " + expressionType
             ));
           }
         }
@@ -885,7 +885,7 @@ public class SemanticChecker implements AstVisitor<Type> {
           Scanner.MULTIPLY_ASSIGN
       ) || locationAssignExpr.assignExpr instanceof Decrement || locationAssignExpr.assignExpr instanceof Increment) {
         // both must be of type int
-        if (!((locationDescriptor.type == Type.Int || locationDescriptor.type == Type.IntArray) &&
+        if (!((locationDescriptor.getType() == Type.Int || locationDescriptor.getType() == Type.IntArray) &&
             expressionType == Type.Int)) {
           errors.add(new SemanticError(
               locationAssignExpr.tokenPosition,
@@ -894,7 +894,7 @@ public class SemanticChecker implements AstVisitor<Type> {
                   "The location and the expression in an incrementing/decrementing assignment must be of type `int`, " +
                       "currently the location `%s` is of type `%s` and the expression `%s` is of type `%s`",
                   locationAssignExpr.location.getLabel(),
-                  locationDescriptor.type,
+                  locationDescriptor.getType(),
                   locationAssignExpr.assignExpr.getSourceCode(),
                   expressionType
               )
@@ -941,8 +941,8 @@ public class SemanticChecker implements AstVisitor<Type> {
   ) {
     var descriptorOptional = scope.lookup(locationVariable.getLabel());
     if (descriptorOptional.isPresent()) {
-      locationVariable.setType(descriptorOptional.get().type);
-      return descriptorOptional.get().type;
+      locationVariable.setType(descriptorOptional.get().getType());
+      return descriptorOptional.get().getType();
     } else {
       errors.add(new SemanticError(
           locationVariable.tokenPosition,
@@ -1095,8 +1095,8 @@ public class SemanticChecker implements AstVisitor<Type> {
       } else {
         scope.put(
             rValue.getLabel(),
-            new VariableDescriptor(
-                type
+            new ValueDescriptor(
+                type, false
             )
         );
       }

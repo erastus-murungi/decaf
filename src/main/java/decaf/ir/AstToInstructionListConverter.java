@@ -100,12 +100,12 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
         "expected to find array " + locationArray.getLabel() + " in scope"));
     var base = newIrLocation(
         locationArray.getLabel(),
-        arrayDescriptor.type
+        arrayDescriptor.getType()
     );
     final var getAddressInstruction = new GetAddress(
         base,
         indexInstructionList.getPlace(),
-        generateAddressName(arrayDescriptor.type),
+        generateAddressName(arrayDescriptor.getType()),
         arrayDescriptor.size,
         locationArray
     );
@@ -238,7 +238,7 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
       IrAssignable resultLocation
   ) {
     Type type = scope.lookup(RValue.getLabel())
-                     .orElseThrow().type;
+                     .orElseThrow().getType();
     return new InstructionList(newIrLocation(
         RValue.getLabel(),
         type
@@ -251,7 +251,7 @@ class AstToInstructionListConverter implements CodegenAstVisitor<InstructionList
       IrAssignable resultLocation
   ) {
     Type type = scope.lookup(locationVariable.getLabel())
-                     .orElseThrow().type;
+                     .orElseThrow().getType();
     return new InstructionList(newIrLocation(
         locationVariable.getLabel(),
         type

@@ -1,7 +1,7 @@
 package decaf.ir.cfg;
 
 
-import static decaf.shared.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -248,7 +248,7 @@ public class ControlFlowGraph {
 
   private void catchFalloutError(MethodDescriptor methodDescriptor) {
     var methodDefinition = methodDescriptor.methodDefinition;
-    if (methodDescriptor.type == Type.Void) return;
+    if (methodDescriptor.typeIs(Type.Void)) return;
 
     correctExitNopPredecessors();
     var returningPaths = getReturningPaths();

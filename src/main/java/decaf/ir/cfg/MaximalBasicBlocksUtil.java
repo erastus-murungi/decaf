@@ -1,6 +1,6 @@
 package decaf.ir.cfg;
 
-import static decaf.shared.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.HashMap;
 

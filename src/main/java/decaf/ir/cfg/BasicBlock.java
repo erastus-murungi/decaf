@@ -1,9 +1,9 @@
 package decaf.ir.cfg;
 
 
-import static decaf.shared.Preconditions.checkArgument;
-import static decaf.shared.Preconditions.checkNotNull;
-import static decaf.shared.Preconditions.checkState;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

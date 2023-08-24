@@ -52,9 +52,7 @@ public class Scope extends HashMap<String, Descriptor> {
     );
   }
 
-  public Optional<MethodDescriptor> lookupMethod(
-      String methodName
-  ) {
+  public Optional<MethodDescriptor> lookupMethod(@NotNull String methodName) {
     return lookup(methodName)
                .filter(descriptor -> descriptor instanceof MethodDescriptor)
                .map(descriptor -> (MethodDescriptor) descriptor);
@@ -100,9 +98,9 @@ public class Scope extends HashMap<String, Descriptor> {
   public boolean isShadowingParameter(String stringId) {
     Descriptor currentDescriptor = get(stringId);
     if (parent == null) {
-      return currentDescriptor != null && target == For.Parameter;
+      return currentDescriptor != null && target == For.Arguments;
     } else {
-      if (currentDescriptor != null && target == For.Parameter)
+      if (currentDescriptor != null && target == For.Arguments)
         return true;
       else
         return parent.isShadowingParameter(stringId);
@@ -202,7 +200,7 @@ public class Scope extends HashMap<String, Descriptor> {
     var list1 = new ArrayList<>(values());
     var builtins = new ArrayList<String>();
     for (var descriptor1 : list1) {
-      decaf.analysis.syntax.ast.Type type = descriptor1.type;
+      decaf.analysis.syntax.ast.Type type = descriptor1.getType();
       String toString = type.toString();
       builtins.add(toString);
     }
@@ -275,7 +273,7 @@ public class Scope extends HashMap<String, Descriptor> {
   }
 
   public enum For {
-    Parameter,
+    Arguments,
     Field
   }
 }
