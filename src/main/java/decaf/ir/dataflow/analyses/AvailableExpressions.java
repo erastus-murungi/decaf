@@ -10,9 +10,6 @@ import java.util.Set;
 
 import decaf.analysis.lexical.Scanner;
 import decaf.ir.cfg.BasicBlock;
-import decaf.ir.codes.BinaryInstruction;
-import decaf.ir.codes.StoreInstruction;
-import decaf.ir.codes.UnaryInstruction;
 import decaf.ir.dataflow.Direction;
 import decaf.ir.dataflow.operand.Operand;
 

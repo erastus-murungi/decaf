@@ -36,8 +36,6 @@ import decaf.analysis.syntax.ast.FormalArgument;
 import decaf.analysis.syntax.ast.ParenthesizedExpression;
 import decaf.analysis.syntax.ast.UnaryOpExpression;
 import decaf.ir.cfg.BasicBlock;
-import decaf.ir.codes.Instruction;
-import decaf.ir.codes.Method;
 import decaf.ir.names.IrSsaRegister;
 import decaf.ir.names.IrValue;
 import decaf.ir.names.IrValuePredicates;

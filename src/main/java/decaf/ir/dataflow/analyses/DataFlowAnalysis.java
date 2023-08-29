@@ -13,7 +13,6 @@ import java.util.stream.Stream;
 import decaf.ir.InstructionList;
 import decaf.ir.cfg.BasicBlock;
 import decaf.ir.cfg.NOP;
-import decaf.ir.codes.Instruction;
 import decaf.ir.dataflow.Direction;
 import decaf.shared.StronglyConnectedComponentsTarjan;
 

@@ -1,8 +1,6 @@
 package decaf.synthesis.asm;
 
 
-import decaf.ir.codes.FunctionCall;
-
 public class AsmWriterContext {
   /**
    * keeps track of whether the {@code .text} label has been added or not

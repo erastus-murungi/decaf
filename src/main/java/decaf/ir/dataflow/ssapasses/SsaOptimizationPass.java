@@ -1,7 +1,6 @@
 package decaf.ir.dataflow.ssapasses;
 
 
-import decaf.ir.codes.Method;
 import decaf.ir.dataflow.OptimizationContext;
 import decaf.ir.dataflow.passes.OptimizationPass;
 

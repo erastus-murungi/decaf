@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import decaf.ir.codes.Method;
 import decaf.ir.names.IrValue;
 import decaf.synthesis.asm.X86Register;
 

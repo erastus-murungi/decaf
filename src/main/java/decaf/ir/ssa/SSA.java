@@ -21,11 +21,6 @@ import java.util.Stack;
 import java.util.stream.Collectors;
 
 import decaf.ir.cfg.BasicBlock;
-import decaf.ir.codes.CopyInstruction;
-import decaf.ir.codes.HasOperand;
-import decaf.ir.codes.Instruction;
-import decaf.ir.codes.Method;
-import decaf.ir.codes.StoreInstruction;
 import decaf.ir.dataflow.analyses.LiveVariableAnalysis;
 import decaf.ir.dataflow.dominator.DominatorTree;
 import decaf.ir.names.IrSsaRegister;

@@ -7,8 +7,6 @@ import java.util.Optional;
 
 import decaf.ir.InstructionList;
 import decaf.ir.cfg.BasicBlock;
-import decaf.ir.codes.ConditionalBranch;
-import decaf.ir.codes.Method;
 import decaf.ir.dataflow.OptimizationContext;
 
 public class BranchSimplificationPass extends OptimizationPass {

@@ -3,7 +3,6 @@ package decaf.ir.dataflow.ssapasses;
 import java.util.ArrayList;
 import java.util.List;
 
-import decaf.ir.codes.Method;
 import decaf.ir.dataflow.OptimizationContext;
 import decaf.ir.dataflow.dominator.DominatorTree;
 

@@ -5,10 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import decaf.ir.cfg.BasicBlock;
-import decaf.ir.codes.HasOperand;
-import decaf.ir.codes.Instruction;
-import decaf.ir.codes.Method;
-import decaf.ir.codes.StoreInstruction;
 import decaf.ir.dataflow.OptimizationContext;
 import decaf.ir.dataflow.analyses.AvailableCopies;
 import decaf.ir.dataflow.operand.Operand;

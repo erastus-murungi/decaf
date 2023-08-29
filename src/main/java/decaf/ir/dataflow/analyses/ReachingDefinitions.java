@@ -10,7 +10,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import decaf.ir.cfg.BasicBlock;
-import decaf.ir.codes.StoreInstruction;
 import decaf.ir.dataflow.Direction;
 
 /**

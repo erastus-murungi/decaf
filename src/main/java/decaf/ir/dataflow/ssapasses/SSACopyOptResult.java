@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 
-import decaf.ir.codes.Instruction;
 import decaf.ir.names.IrValue;
 import decaf.shared.Utils;
 

@@ -10,8 +10,6 @@ import org.junit.jupiter.api.Test;
 
 import decaf.analysis.lexical.Scanner;
 import decaf.analysis.syntax.ast.Type;
-import decaf.ir.codes.BinaryInstruction;
-import decaf.ir.codes.UnaryInstruction;
 import decaf.ir.dataflow.analyses.AvailableExpressions;
 import decaf.ir.names.IrSsaRegister;
 

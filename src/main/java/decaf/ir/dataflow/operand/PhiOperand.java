@@ -4,7 +4,6 @@ package decaf.ir.dataflow.operand;
 import java.util.List;
 import java.util.Objects;
 
-import decaf.ir.codes.StoreInstruction;
 import decaf.ir.names.IrValue;
 import decaf.ir.ssa.Phi;
 

@@ -4,8 +4,6 @@ package decaf.ir.dataflow.operand;
 import java.util.List;
 import java.util.Objects;
 
-import decaf.ir.codes.StoreInstruction;
-import decaf.ir.codes.UnaryInstruction;
 import decaf.ir.names.IrValue;
 
 public class UnaryOperand extends Operand {

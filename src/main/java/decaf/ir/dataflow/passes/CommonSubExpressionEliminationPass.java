@@ -8,12 +8,6 @@ import java.util.Objects;
 
 import decaf.ir.InstructionList;
 import decaf.ir.cfg.BasicBlock;
-import decaf.ir.codes.BinaryInstruction;
-import decaf.ir.codes.CopyInstruction;
-import decaf.ir.codes.Instruction;
-import decaf.ir.codes.Method;
-import decaf.ir.codes.StoreInstruction;
-import decaf.ir.codes.UnaryInstruction;
 import decaf.ir.dataflow.OptimizationContext;
 import decaf.ir.dataflow.analyses.AvailableExpressions;
 import decaf.ir.dataflow.analyses.DataFlowAnalysis;

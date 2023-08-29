@@ -9,10 +9,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import decaf.ir.cfg.BasicBlock;
-import decaf.ir.codes.GetAddress;
-import decaf.ir.codes.HasOperand;
-import decaf.ir.codes.Instruction;
-import decaf.ir.codes.StoreInstruction;
 import decaf.ir.dataflow.Direction;
 import decaf.ir.dataflow.usedef.Def;
 import decaf.ir.dataflow.usedef.Use;

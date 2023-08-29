@@ -4,7 +4,6 @@ package decaf.ir.dataflow;
 import java.util.ArrayList;
 import java.util.List;
 
-import decaf.ir.codes.Method;
 import decaf.ir.dataflow.passes.BranchSimplificationPass;
 import decaf.ir.dataflow.passes.CommonSubExpressionEliminationPass;
 import decaf.ir.dataflow.passes.ConstantPropagationPass;

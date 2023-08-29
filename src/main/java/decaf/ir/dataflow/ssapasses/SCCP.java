@@ -11,13 +11,6 @@ import java.util.Stack;
 import java.util.stream.Collectors;
 
 import decaf.ir.cfg.BasicBlock;
-import decaf.ir.codes.BinaryInstruction;
-import decaf.ir.codes.ConditionalBranch;
-import decaf.ir.codes.CopyInstruction;
-import decaf.ir.codes.Instruction;
-import decaf.ir.codes.Method;
-import decaf.ir.codes.UnaryInstruction;
-import decaf.ir.codes.UnconditionalBranch;
 import decaf.ir.dataflow.ssapasses.worklistitems.SsaEdge;
 import decaf.ir.names.IrAssignable;
 import decaf.ir.names.IrGlobalArray;

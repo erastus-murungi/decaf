@@ -2,8 +2,6 @@ package decaf.synthesis.regalloc;
 
 
 import decaf.ir.InstructionList;
-import decaf.ir.codes.Instruction;
-import decaf.ir.codes.Method;
 import decaf.ir.names.IrValue;
 
 /**

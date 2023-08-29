@@ -9,8 +9,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import decaf.ir.codes.CopyInstruction;
-import decaf.ir.codes.Method;
 import decaf.ir.names.IrSsaRegister;
 import decaf.shared.Pair;
 

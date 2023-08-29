@@ -3,7 +3,6 @@ package decaf.ir.dataflow.usedef;
 
 import java.util.Objects;
 
-import decaf.ir.codes.Instruction;
 import decaf.ir.names.IrValue;
 
 public abstract class UseDef {

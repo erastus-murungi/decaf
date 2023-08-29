@@ -4,7 +4,6 @@ package decaf.synthesis.asm.operands;
 import java.util.Collections;
 import java.util.List;
 
-import decaf.ir.codes.FunctionCall;
 import decaf.synthesis.asm.X86Register;
 
 public class X64CallOperand extends X86Value {

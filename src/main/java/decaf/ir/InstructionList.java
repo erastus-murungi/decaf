@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import decaf.ir.codes.Instruction;
 import decaf.ir.names.IrSsaRegister;
 import decaf.ir.names.IrValue;
 

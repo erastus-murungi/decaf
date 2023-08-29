@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Set;
 
 import decaf.ir.cfg.BasicBlock;
-import decaf.ir.codes.Method;
 import decaf.ir.names.IrValue;
 import decaf.shared.ProgramIr;
 import decaf.shared.StronglyConnectedComponentsTarjan;

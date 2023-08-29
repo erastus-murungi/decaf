@@ -10,8 +10,6 @@ import java.util.Set;
 
 import decaf.ir.cfg.BasicBlock;
 import decaf.ir.cfg.NOP;
-import decaf.ir.codes.Method;
-import decaf.ir.codes.UnconditionalBranch;
 import decaf.shared.StronglyConnectedComponentsTarjan;
 
 /**

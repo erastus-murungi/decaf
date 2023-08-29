@@ -1,7 +1,5 @@
 package decaf.ir.dataflow.ssapasses;
 
-import decaf.ir.codes.Instruction;
-
 public record SCCPOptResult(Instruction before, Instruction after) {
 
   @Override

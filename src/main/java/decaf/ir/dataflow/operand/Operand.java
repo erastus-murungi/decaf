@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Set;
 
 import decaf.analysis.lexical.Scanner;
-import decaf.ir.codes.StoreInstruction;
 import decaf.ir.names.IrValue;
 
 public abstract class Operand {

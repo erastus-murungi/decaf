@@ -1,9 +1,6 @@
 package decaf.ir.dataflow.ssapasses.worklistitems;
 
 import decaf.ir.cfg.BasicBlock;
-import decaf.ir.codes.HasOperand;
-import decaf.ir.codes.Instruction;
-import decaf.ir.codes.StoreInstruction;
 import decaf.ir.names.IrSsaRegister;
 
 

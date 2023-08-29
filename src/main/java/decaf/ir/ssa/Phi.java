@@ -10,8 +10,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import decaf.ir.cfg.BasicBlock;
-import decaf.ir.codes.Instruction;
-import decaf.ir.codes.StoreInstruction;
 import decaf.ir.dataflow.operand.Operand;
 import decaf.ir.dataflow.operand.PhiOperand;
 import decaf.ir.names.IrSsaRegister;

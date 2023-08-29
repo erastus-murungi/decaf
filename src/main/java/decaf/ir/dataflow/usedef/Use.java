@@ -1,7 +1,6 @@
 package decaf.ir.dataflow.usedef;
 
 
-import decaf.ir.codes.Instruction;
 import decaf.ir.names.IrValue;
 
 public class Use extends UseDef {

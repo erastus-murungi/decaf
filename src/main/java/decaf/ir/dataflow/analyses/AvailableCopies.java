@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import decaf.ir.cfg.BasicBlock;
-import decaf.ir.codes.StoreInstruction;
 import decaf.ir.dataflow.Direction;
 import decaf.ir.dataflow.copy.CopyQuadruple;
 import decaf.ir.dataflow.operand.UnmodifiedOperand;

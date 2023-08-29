@@ -9,8 +9,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import decaf.ir.codes.Instruction;
-import decaf.ir.codes.Method;
 import decaf.ir.names.IrValue;
 import decaf.shared.ProgramIr;
 import decaf.synthesis.asm.X86Register;

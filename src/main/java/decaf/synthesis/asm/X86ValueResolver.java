@@ -15,11 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import decaf.ir.codes.GetAddress;
-import decaf.ir.codes.GlobalAllocation;
-import decaf.ir.codes.Instruction;
-import decaf.ir.codes.Method;
-import decaf.ir.codes.StringConstantAllocation;
 import decaf.ir.names.IrConstant;
 import decaf.ir.names.IrGlobal;
 import decaf.ir.names.IrGlobalArray;

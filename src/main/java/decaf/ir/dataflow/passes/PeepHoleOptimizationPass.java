@@ -7,7 +7,6 @@ import java.util.ArrayList;
 
 import decaf.ir.cfg.BasicBlock;
 import decaf.ir.cfg.NOP;
-import decaf.ir.codes.Method;
 import decaf.ir.dataflow.OptimizationContext;
 
 public class PeepHoleOptimizationPass extends OptimizationPass {

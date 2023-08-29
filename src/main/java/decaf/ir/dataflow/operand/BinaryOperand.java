@@ -3,8 +3,6 @@ package decaf.ir.dataflow.operand;
 
 import java.util.List;
 
-import decaf.ir.codes.BinaryInstruction;
-import decaf.ir.codes.StoreInstruction;
 import decaf.ir.names.IrValue;
 
 

@@ -1,7 +1,6 @@
 package decaf.ir.dataflow.passes;
 
 
-import decaf.ir.codes.Method;
 import decaf.ir.dataflow.OptimizationContext;
 
 public class InstructionStrengthReductionPass extends OptimizationPass {

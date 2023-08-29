@@ -21,11 +21,6 @@ import decaf.analysis.syntax.ast.AST;
 import decaf.analysis.syntax.ast.Expression;
 import decaf.ir.IndexManager;
 import decaf.ir.InstructionList;
-import decaf.ir.codes.ConditionalBranch;
-import decaf.ir.codes.Instruction;
-import decaf.ir.codes.StoreInstruction;
-import decaf.ir.codes.UnconditionalBranch;
-import decaf.ir.codes.WithTarget;
 import decaf.ir.ssa.Phi;
 
 public class BasicBlock {

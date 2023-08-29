@@ -7,9 +7,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import decaf.ir.cfg.BasicBlock;
-import decaf.ir.codes.HasOperand;
-import decaf.ir.codes.Method;
-import decaf.ir.codes.StoreInstruction;
 import decaf.ir.dataflow.dominator.DominatorTree;
 import decaf.ir.dataflow.ssapasses.worklistitems.SsaEdge;
 import decaf.ir.names.IrSsaRegister;
