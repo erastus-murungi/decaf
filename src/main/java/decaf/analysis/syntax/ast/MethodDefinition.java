@@ -6,10 +6,10 @@ import java.util.List;
 
 import decaf.analysis.TokenPosition;
 import decaf.shared.AstVisitor;
-import decaf.ir.CodegenAstVisitor;
-import decaf.ir.names.IrAssignable;
+
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
+import decaf.shared.types.Type;
 
 public class MethodDefinition extends AST {
   private final TokenPosition tokenPosition;
@@ -30,11 +30,6 @@ public class MethodDefinition extends AST {
     this.formalArguments = formalArguments;
     this.methodRValue = methodRValue;
     this.block = block;
-  }
-
-  @Override
-  public Type getType() {
-    return Type.Undefined;
   }
 
   @Override
@@ -111,13 +106,6 @@ public class MethodDefinition extends AST {
         this,
         curScope
     );
-  }
-
-  public <T> T accept(
-      CodegenAstVisitor<T> codegenAstVisitor,
-      IrAssignable resultLocation
-  ) {
-    return null;
   }
 
   public TokenPosition getTokenPosition() {

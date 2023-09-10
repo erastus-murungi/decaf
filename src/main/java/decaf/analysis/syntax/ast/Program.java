@@ -7,8 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import decaf.shared.AstVisitor;
-import decaf.ir.CodegenAstVisitor;
-import decaf.ir.names.IrAssignable;
+
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
@@ -28,11 +27,6 @@ public class Program extends AST {
     this.importDeclarationList = importDeclarationList;
     this.fieldDeclarationList = fieldDeclarationList;
     this.methodDefinitionList = methodDefinitionList;
-  }
-
-  @Override
-  public Type getType() {
-    return Type.Undefined;
   }
 
   @Override
@@ -141,13 +135,6 @@ public class Program extends AST {
         this,
         curScope
     );
-  }
-
-  public <T> T accept(
-      CodegenAstVisitor<T> codegenAstVisitor,
-      IrAssignable resultLocation
-  ) {
-    return null;
   }
 
   public List<ImportDeclaration> getImportDeclaration() {

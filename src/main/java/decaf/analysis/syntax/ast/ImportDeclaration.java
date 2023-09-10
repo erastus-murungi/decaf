@@ -5,8 +5,7 @@ import java.util.List;
 
 import decaf.analysis.lexical.Scanner;
 import decaf.shared.AstVisitor;
-import decaf.ir.CodegenAstVisitor;
-import decaf.ir.names.IrAssignable;
+
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
@@ -15,11 +14,6 @@ public class ImportDeclaration extends Declaration {
 
   public ImportDeclaration(RValue RValueId) {
     this.value = RValueId;
-  }
-
-  @Override
-  public Type getType() {
-    return Type.Undefined;
   }
 
   @Override
@@ -58,12 +52,5 @@ public class ImportDeclaration extends Declaration {
         this,
         curScope
     );
-  }
-
-  public <T> T accept(
-      CodegenAstVisitor<T> codegenAstVisitor,
-      IrAssignable resultLocation
-  ) {
-    return null;
   }
 }

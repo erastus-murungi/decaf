@@ -6,8 +6,7 @@ import java.util.List;
 
 import decaf.analysis.TokenPosition;
 import decaf.shared.AstVisitor;
-import decaf.ir.CodegenAstVisitor;
-import decaf.ir.names.IrAssignable;
+
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
@@ -21,11 +20,6 @@ public class StringLiteral extends ActualArgument {
   ) {
     this.tokenPosition = tokenPosition;
     this.literal = literal;
-  }
-
-  @Override
-  public Type getType() {
-    return Type.String;
   }
 
   @Override
@@ -56,16 +50,6 @@ public class StringLiteral extends ActualArgument {
     return ASTVisitor.visit(
         this,
         curScope
-    );
-  }
-
-  public <T> T accept(
-      CodegenAstVisitor<T> codegenAstVisitor,
-      IrAssignable resultLocation
-  ) {
-    return codegenAstVisitor.visit(
-        this,
-        resultLocation
     );
   }
 }

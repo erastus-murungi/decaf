@@ -1,6 +1,6 @@
 package decaf.shared.descriptors;
 
-import decaf.analysis.syntax.ast.Type;
+import decaf.shared.types.Type;
 
 /**
  * An Array Descriptor is just a tuple of (Array size, String id, Array Element Type)

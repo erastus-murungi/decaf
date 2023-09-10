@@ -1,25 +1,21 @@
 package decaf.analysis.syntax.ast;
 
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Collections;
 import java.util.List;
 
 import decaf.shared.AstVisitor;
-import decaf.ir.CodegenAstVisitor;
-import decaf.ir.names.IrAssignable;
+
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
-public class ExpressionParameter extends ActualArgument implements HasExpression {
+public class ExpressionParameter extends ActualArgument implements HasExpression, Typed<ExpressionParameter> {
   public Expression expression;
 
   public ExpressionParameter(Expression expression) {
     this.expression = expression;
-  }
-
-  @Override
-  public Type getType() {
-    return expression.getType();
   }
 
   @Override
@@ -56,16 +52,6 @@ public class ExpressionParameter extends ActualArgument implements HasExpression
     );
   }
 
-  public <T> T accept(
-      CodegenAstVisitor<T> codegenAstVisitor,
-      IrAssignable resultLocation
-  ) {
-    return codegenAstVisitor.visit(
-        this,
-        resultLocation
-    );
-  }
-
   @Override
   public List<Expression> getExpression() {
     return List.of(expression);
@@ -78,5 +64,16 @@ public class ExpressionParameter extends ActualArgument implements HasExpression
   ) {
     if (expression == oldExpr)
       expression = newExpr;
+  }
+
+  @Override
+  public @NotNull Type getType() {
+    return expression.getType();
+  }
+
+  @Override
+  public ExpressionParameter setType(@NotNull Type type) {
+    expression.setType(type);
+    return this;
   }
 }

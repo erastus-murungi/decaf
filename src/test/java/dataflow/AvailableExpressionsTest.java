@@ -9,7 +9,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import decaf.analysis.lexical.Scanner;
-import decaf.analysis.syntax.ast.Type;
 import decaf.ir.dataflow.analyses.AvailableExpressions;
 import decaf.ir.names.IrSsaRegister;
 

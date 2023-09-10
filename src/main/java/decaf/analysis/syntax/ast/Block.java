@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import decaf.shared.AstVisitor;
-import decaf.ir.CodegenAstVisitor;
-import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
@@ -23,18 +21,12 @@ public class Block extends AST {
     this.statementList = statementList;
   }
 
-
   public List<Statement> getStatements() {
     return statementList;
   }
 
   public List<FieldDeclaration> getFieldDeclarations() {
     return fieldDeclarationList;
-  }
-
-  @Override
-  public Type getType() {
-    return Type.Undefined;
   }
 
   @Override
@@ -98,16 +90,6 @@ public class Block extends AST {
     return ASTVisitor.visit(
         this,
         curScope
-    );
-  }
-
-  public <T> T accept(
-      CodegenAstVisitor<T> codegenAstVisitor,
-      IrAssignable resultLocation
-  ) {
-    return codegenAstVisitor.visit(
-        this,
-        resultLocation
     );
   }
 }

@@ -1,12 +1,12 @@
 package decaf.analysis.syntax.ast;
 
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.HashMap;
 import java.util.List;
 
 import decaf.shared.AstVisitor;
-import decaf.ir.CodegenAstVisitor;
-import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
@@ -157,22 +157,12 @@ public class BinaryOpExpression extends Expression implements HasExpression {
 
   @Override
   public <T> T accept(
-      AstVisitor<T> ASTVisitor,
+      AstVisitor<T> astVisitor,
       Scope curScope
   ) {
-    return ASTVisitor.visit(
+    return astVisitor.visit(
         this,
         curScope
-    );
-  }
-
-  public <T> T accept(
-      CodegenAstVisitor<T> codegenAstVisitor,
-      IrAssignable resultLocation
-  ) {
-    return codegenAstVisitor.visit(
-        this,
-        resultLocation
     );
   }
 
@@ -194,5 +184,15 @@ public class BinaryOpExpression extends Expression implements HasExpression {
       rhs = newExpr;
     if (oldExpr == lhs)
       lhs = newExpr;
+  }
+
+  @Override
+  public @NotNull Type getType() {
+    return Type.getUnsetType();
+  }
+
+  @Override
+  public Expression setType(@NotNull Type type) {
+    return null;
   }
 }

@@ -6,14 +6,14 @@ import java.util.List;
 import decaf.analysis.TokenPosition;
 import decaf.analysis.lexical.Scanner;
 import decaf.shared.AstVisitor;
-import decaf.ir.CodegenAstVisitor;
-import decaf.ir.names.IrAssignable;
+
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
+import decaf.shared.types.Type;
 
 public class Len extends Expression {
   final public RValue rValue;
-  final public Type type = Type.Int;
+  final public Type type = Type.getIntType();
 
   public Len(
       TokenPosition tokenPosition,
@@ -61,12 +61,4 @@ public class Len extends Expression {
         curScope
     );
   }
-
-  public <T> T accept(
-      CodegenAstVisitor<T> codegenAstVisitor,
-      IrAssignable resultLocation
-  ) {
-    return codegenAstVisitor.visit(this);
-  }
-
 }

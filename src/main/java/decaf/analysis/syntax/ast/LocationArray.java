@@ -4,8 +4,7 @@ package decaf.analysis.syntax.ast;
 import java.util.List;
 
 import decaf.shared.AstVisitor;
-import decaf.ir.CodegenAstVisitor;
-import decaf.ir.names.IrAssignable;
+
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
@@ -47,16 +46,6 @@ public class LocationArray extends Location implements HasExpression {
     return ASTVisitor.visit(
         this,
         currentScope
-    );
-  }
-
-  public <T> T accept(
-      CodegenAstVisitor<T> codegenAstVisitor,
-      IrAssignable resultLocation
-  ) {
-    return codegenAstVisitor.visit(
-        this,
-        resultLocation
     );
   }
 

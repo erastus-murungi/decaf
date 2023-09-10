@@ -14,13 +14,6 @@ import java.util.logging.Logger;
 import decaf.analysis.lexical.Scanner;
 import decaf.analysis.semantic.SemanticChecker;
 import decaf.analysis.syntax.Parser;
-import decaf.ir.BasicBlockToInstructionListConverter;
-import decaf.ir.cfg.ControlFlowGraph;
-import decaf.ir.dataflow.DataflowOptimizer;
-import decaf.ir.dataflow.passes.InstructionSimplifyIrPass;
-import decaf.ir.ssa.SSA;
-import decaf.synthesis.asm.X86AsmWriter;
-import decaf.synthesis.regalloc.RegisterAllocator;
 
 public class Compilation {
   private final static String osName =
@@ -39,10 +32,6 @@ public class Compilation {
   private Scanner scanner;
   private Parser parser;
   private SemanticChecker semanticChecker;
-  private ControlFlowGraph cfg;
-  private BasicBlockToInstructionListConverter
-      basicBlockToInstructionListConverter;
-  private ProgramIr programIr;
   private PrintStream outputStream;
   private CompilationState compilationState;
   private double nLinesOfCodeReductionFactor = 0.0D;
@@ -83,13 +72,6 @@ public class Compilation {
       case INITIALIZED -> System.out.println("starting!");
       case SCANNED -> runParser();
       case PARSED -> runSemanticsChecker();
-      case SEM_CHECKED -> generateCFGs();
-      case CFG_GENERATED -> generateIr();
-      case IR_GENERATED -> generateSsa();
-      case SSA_GENERATED -> runDataflowOptimizationPasses();
-      case DATAFLOW_OPTIMIZED -> generateAssembly();
-      case ASSEMBLED -> compileAssembly();
-      case COMPLETED -> System.out.println("done!");
       default -> throw new IllegalStateException("Unexpected value: " + compilationState);
     }
   }
@@ -212,142 +194,6 @@ public class Compilation {
       System.exit(1);
     }
     compilationState = CompilationState.SEM_CHECKED;
-  }
-
-  private void generateCFGVisualizationPdfs() {
-    var copy = new HashMap<>(cfg.getMethodNameToEntryBlockMapping());
-    copy.put(
-        "globals",
-        cfg.getPrologueBasicBlock()
-    );
-//        GraphVizPrinter.printGraph(copy, (basicBlock -> basicBlock.threeAddressCodeList.getCodes().stream().map(ThreeAddressCode::repr).collect(Collectors.joining("\n"))));
-    GraphVizManager.printGraph(copy);
-  }
-
-  private boolean shouldOptimize() {
-    return true;
-  }
-
-  private void generateSymbolTablePdfs() {
-    GraphVizManager.printSymbolTables(
-        parser.getRoot(),
-        basicBlockToInstructionListConverter.getPerMethodSymbolTables()
-    );
-  }
-
-  private void generateCFGs() {
-    assert compilationState == CompilationState.SEM_CHECKED;
-    if (shouldOptimize()) {
-
-      if (compilationContext.debugModeOn()) {
-        System.out.println("before InstructionSimplifyPass");
-        System.out.println(parser.getRoot()
-                                 .getSourceCode());
-      }
-
-      InstructionSimplifyIrPass.run(parser.getRoot());
-      if (compilationContext.debugModeOn()) {
-        System.out.println("after InstructionSimplifyPass");
-        System.out.println(parser.getRoot()
-                                 .getSourceCode());
-      }
-    }
-
-    cfg = new ControlFlowGraph(
-        parser.getRoot(),
-        semanticChecker.getTypingContext().orElseThrow()
-    );
-    cfg.build();
-    if (compilationContext.debugModeOn()) {
-      GraphVizManager.printGraph(cfg.getMethodNameToEntryBlockMapping(), "ssa1");
-    }
-    compilationState = CompilationState.CFG_GENERATED;
-  }
-
-  private void generateIr() {
-    assert compilationState == CompilationState.CFG_GENERATED;
-    basicBlockToInstructionListConverter = new BasicBlockToInstructionListConverter(cfg);
-    programIr = basicBlockToInstructionListConverter.getProgramIr();
-    if (compilationContext.debugModeOn()) {
-      generateSymbolTablePdfs();
-    }
-    if (compilationContext.debugModeOn()) {
-      generateCFGVisualizationPdfs();
-    }
-    compilationState = CompilationState.IR_GENERATED;
-    if (compilationContext.debugModeOn()) {
-      System.out.println(programIr.mergeProgram());
-    }
-  }
-
-  private int countLinesOfCode() {
-    return programIr.toSingleInstructionList()
-                    .size();
-  }
-
-  private void generateSsa() {
-    assert compilationState == CompilationState.IR_GENERATED;
-    programIr.getMethods()
-             .forEach(SSA::construct);
-    compilationState = CompilationState.SSA_GENERATED;
-  }
-
-  private void runDataflowOptimizationPasses() {
-    assert compilationState == CompilationState.SSA_GENERATED;
-    double oldNLinesOfCode;
-    oldNLinesOfCode = countLinesOfCode();
-
-    if (shouldOptimize()) {
-      if (compilationContext.debugModeOn()) {
-        System.out.println("Before optimization");
-        System.out.println(programIr.mergeProgram());
-      }
-      programIr.setGlobals(basicBlockToInstructionListConverter.getGlobalNames());
-      var dataflowOptimizer = new DataflowOptimizer(
-          programIr,
-          compilationContext
-      );
-      dataflowOptimizer.initialize();
-      dataflowOptimizer.optimize();
-      programIr.setMethods(dataflowOptimizer.getOptimizedMethods());
-      nLinesOfCodeReductionFactor = (oldNLinesOfCode - countLinesOfCode()) / oldNLinesOfCode;
-
-    }
-    compilationState = CompilationState.DATAFLOW_OPTIMIZED;
-
-    System.out.println(programIr.mergeProgram());
-  }
-
-  private void generateAssembly() {
-    assert compilationState == CompilationState.DATAFLOW_OPTIMIZED;
-
-    programIr.getMethods()
-             .forEach(method -> SSA.deconstruct(
-                 method,
-                 programIr
-             ));
-    programIr.renumberLabels();
-
-    if (compilationContext.debugModeOn()) {
-      System.out.println("After optimization");
-      System.out.println(programIr.mergeProgram());
-      System.out.format(
-          "lines of code reduced by a factor of: %f\n",
-          nLinesOfCodeReductionFactor
-      );
-    }
-
-    var registerAllocator = new RegisterAllocator(programIr);
-    programIr.findGlobals();
-    var x64AsmWriter = new X86AsmWriter(
-        programIr,
-        registerAllocator,
-        compilationContext
-    );
-    var x86Program = x64AsmWriter.getX86Program();
-    outputStream.println(x86Program);
-    if (compilationContext.debugModeOn()) System.out.println(x86Program);
-    compilationState = CompilationState.ASSEMBLED;
   }
 
   enum CompilationState {

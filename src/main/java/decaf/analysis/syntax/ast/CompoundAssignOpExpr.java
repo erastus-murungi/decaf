@@ -5,8 +5,6 @@ import java.util.List;
 
 import decaf.analysis.TokenPosition;
 import decaf.shared.AstVisitor;
-import decaf.ir.CodegenAstVisitor;
-import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
@@ -67,16 +65,6 @@ public class CompoundAssignOpExpr extends AssignExpr implements HasExpression {
     return ASTVisitor.visit(
         this,
         curScope
-    );
-  }
-
-  public <T> T accept(
-      CodegenAstVisitor<T> codegenAstVisitor,
-      IrAssignable resultLocation
-  ) {
-    return codegenAstVisitor.visit(
-        this,
-        resultLocation
     );
   }
 

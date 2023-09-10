@@ -8,10 +8,10 @@ import java.util.List;
 
 import decaf.analysis.TokenPosition;
 import decaf.shared.AstVisitor;
-import decaf.ir.CodegenAstVisitor;
-import decaf.ir.names.IrAssignable;
+
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
+import decaf.shared.types.Type;
 
 public class FieldDeclaration extends Declaration {
   @NotNull
@@ -95,20 +95,5 @@ public class FieldDeclaration extends Declaration {
         this,
         curScope
     );
-  }
-
-  public <T> T accept(
-      CodegenAstVisitor<T> codegenAstVisitor,
-      IrAssignable resultLocation
-  ) {
-    return codegenAstVisitor.visit(
-        this,
-        resultLocation
-    );
-  }
-
-  @Override
-  public @NotNull Type getType() {
-    return type;
   }
 }

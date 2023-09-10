@@ -14,10 +14,5 @@ public abstract class AssignExpr extends AST {
     this.expression = expression;
   }
 
-  @Override
-  public Type getType() {
-    return expression.getType();
-  }
-
   public abstract String getOperator();
 }

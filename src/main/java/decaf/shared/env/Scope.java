@@ -14,6 +14,7 @@ import decaf.analysis.syntax.ast.Block;
 import decaf.shared.descriptors.ArrayDescriptor;
 import decaf.shared.descriptors.Descriptor;
 import decaf.shared.descriptors.MethodDescriptor;
+import decaf.shared.types.Type;
 
 
 public class Scope extends HashMap<String, Descriptor> {
@@ -200,7 +201,7 @@ public class Scope extends HashMap<String, Descriptor> {
     var list1 = new ArrayList<>(values());
     var builtins = new ArrayList<String>();
     for (var descriptor1 : list1) {
-      decaf.analysis.syntax.ast.Type type = descriptor1.getType();
+      Type type = descriptor1.getType();
       String toString = type.toString();
       builtins.add(toString);
     }

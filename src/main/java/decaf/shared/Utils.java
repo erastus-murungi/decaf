@@ -12,8 +12,6 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -25,20 +23,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import decaf.analysis.syntax.ast.AST;
-import decaf.analysis.syntax.ast.BinaryOpExpression;
 import decaf.analysis.syntax.ast.Block;
-import decaf.analysis.syntax.ast.Expression;
-import decaf.analysis.syntax.ast.ExpressionParameter;
-import decaf.analysis.syntax.ast.LocationArray;
-import decaf.analysis.syntax.ast.MethodCall;
-import decaf.analysis.syntax.ast.ActualArgument;
 import decaf.analysis.syntax.ast.FormalArgument;
-import decaf.analysis.syntax.ast.ParenthesizedExpression;
-import decaf.analysis.syntax.ast.UnaryOpExpression;
-import decaf.ir.cfg.BasicBlock;
-import decaf.ir.names.IrSsaRegister;
-import decaf.ir.names.IrValue;
-import decaf.ir.names.IrValuePredicates;
 
 public class Utils {
   // adopted from Java 15
@@ -265,98 +251,9 @@ public class Utils {
     );
   }
 
-  public static void printSsaCfg(
-      Collection<Method> methodCollection,
-      String filename
-  ) {
-    var copy = new HashMap<String, BasicBlock>();
-    methodCollection.forEach(methodBegin -> copy.put(
-        methodBegin.methodName(),
-        methodBegin.getEntryBlock()
-    ));
-    GraphVizManager.printGraph(
-        copy,
-        (basicBlock -> basicBlock.getInstructionList()
-                                 .stream()
-                                 .map(Instruction::toString)
-                                 .collect(Collectors.joining("\n"))),
-        filename
-    );
-  }
-
-  public static Set<IrValue> genRegAllocatableValuesFromInstructions(Collection<Instruction> instructionList) {
-    return instructionList.stream()
-                          .flatMap(instruction -> instruction.genIrValuesFiltered(IrValuePredicates.isRegisterAllocatable())
-                                                             .stream())
-                          .collect(Collectors.toSet());
-
-  }
-
-  public static Set<IrSsaRegister> genIrSsaRegistersIn(List<BasicBlock> basicBlocks) {
-    return basicBlocks.stream()
-                      .flatMap(basicBlock -> basicBlock.getInstructionList()
-                                                       .stream())
-                      .flatMap(instruction -> instruction.genIrValuesFiltered(IrSsaRegister.class)
-                                                         .stream())
-                      .collect(Collectors.toUnmodifiableSet());
-  }
-
-  public static Expression rotateBinaryOpExpression(Expression expr) {
-    if (expr instanceof BinaryOpExpression) {
-      if (((BinaryOpExpression) expr).rhs instanceof BinaryOpExpression rhsTemp) {
-        if (BinaryOpExpression.operatorPrecedence.get(((BinaryOpExpression) expr).op.getSourceCode())
-                                                 .equals(BinaryOpExpression.operatorPrecedence.get(rhsTemp.op.getSourceCode()))) {
-          ((BinaryOpExpression) expr).rhs = rhsTemp.lhs;
-          rhsTemp.lhs = expr;
-          ((BinaryOpExpression) expr).lhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);
-          ((BinaryOpExpression) expr).rhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).rhs);
-          return rotateBinaryOpExpression(rhsTemp);
-        }
-      }
-      ((BinaryOpExpression) expr).lhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).lhs);
-      ((BinaryOpExpression) expr).rhs = rotateBinaryOpExpression(((BinaryOpExpression) expr).rhs);
-    } else if (expr instanceof ParenthesizedExpression) {
-      rotateBinaryOpExpression(((ParenthesizedExpression) expr).expression);
-    } else if (expr instanceof MethodCall) {
-      for (int i = 0; i < ((MethodCall) expr).actualArgumentList.size(); i++) {
-        ActualArgument param = ((MethodCall) expr).actualArgumentList.get(i);
-        if (param instanceof ExpressionParameter) {
-          ((MethodCall) expr).actualArgumentList.set(
-              i,
-              new ExpressionParameter(rotateBinaryOpExpression(((ExpressionParameter) param).expression))
-          );
-        }
-      }
-    } else if (expr instanceof LocationArray) {
-      rotateBinaryOpExpression(((LocationArray) expr).expression);
-    } else if (expr instanceof UnaryOpExpression) {
-      rotateBinaryOpExpression(((UnaryOpExpression) expr).operand);
-    }
-    return expr;
-  }
-
   public static int roundUp16(int n) {
     if (n == 0) return 16;
     return n >= 0 ? ((n + 16 - 1) / 16) * 16: (n / 16) * 16;
-  }
-
-  public static boolean isReachable(
-      BasicBlock source,
-      BasicBlock destination
-  ) {
-    var workList = new ArrayDeque<BasicBlock>();
-    workList.offer(source);
-    var explored = new HashSet<BasicBlock>();
-    while (!workList.isEmpty()) {
-      var current = workList.remove();
-      if (explored.contains(current)) continue;
-      explored.add(current);
-      if (destination == current) return true;
-      for (var successor : current.getSuccessors()) {
-        workList.offer(successor);
-      }
-    }
-    return false;
   }
 
   public interface ANSIColorConstants {

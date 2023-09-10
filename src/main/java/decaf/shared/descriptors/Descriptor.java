@@ -4,7 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import org.jetbrains.annotations.NotNull;
 
-import decaf.analysis.syntax.ast.Type;
+import decaf.shared.types.Type;
 
 /**
  * Every descriptor should at least have a type and an identifier

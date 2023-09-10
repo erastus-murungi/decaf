@@ -4,8 +4,6 @@ package decaf.analysis.syntax.ast;
 import java.util.List;
 
 import decaf.shared.AstVisitor;
-import decaf.ir.CodegenAstVisitor;
-import decaf.ir.names.IrAssignable;
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
@@ -30,11 +28,6 @@ public class Assignment extends AST {
 
   public String getOperator() {
     return operator;
-  }
-
-  @Override
-  public Type getType() {
-    return Type.Undefined;
   }
 
   @Override
@@ -64,16 +57,6 @@ public class Assignment extends AST {
     return ASTVisitor.visit(
         this,
         currentScope
-    );
-  }
-
-  public <T> T accept(
-      CodegenAstVisitor<T> codegenAstVisitor,
-      IrAssignable resultLocation
-  ) {
-    return codegenAstVisitor.visit(
-        this,
-        resultLocation
     );
   }
 

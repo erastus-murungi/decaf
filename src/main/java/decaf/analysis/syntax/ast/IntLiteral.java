@@ -1,15 +1,16 @@
 package decaf.analysis.syntax.ast;
 
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Objects;
 
 import decaf.analysis.TokenPosition;
 import decaf.shared.AstVisitor;
-import decaf.ir.CodegenAstVisitor;
-import decaf.ir.names.IrAssignable;
+
 import decaf.shared.env.Scope;
 
-public class IntLiteral extends Literal {
+public class IntLiteral extends Literal implements Typed<IntLiteral> {
   public IntLiteral(
       TokenPosition tokenPosition,
       String literalToken
@@ -50,16 +51,6 @@ public class IntLiteral extends Literal {
     );
   }
 
-  public <T> T accept(
-      CodegenAstVisitor<T> codegenAstVisitor,
-      IrAssignable resultLocation
-  ) {
-    return codegenAstVisitor.visit(
-        this,
-        resultLocation
-    );
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
@@ -77,7 +68,12 @@ public class IntLiteral extends Literal {
   }
 
   @Override
-  public Type getType() {
-    return Type.Int;
+  public @NotNull Type getType() {
+    return Type.getIntType();
+  }
+
+  @Override
+  public IntLiteral setType(@NotNull Type type) {
+    throw new UnsupportedOperationException();
   }
 }

@@ -1,6 +1,6 @@
 package decaf.shared.descriptors;
 
-import decaf.analysis.syntax.ast.Type;
+import decaf.shared.types.Type;
 
 public class ValueDescriptor extends Descriptor {
   private final boolean isFormalArgument;

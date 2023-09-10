@@ -7,8 +7,7 @@ import java.util.List;
 import decaf.analysis.TokenPosition;
 import decaf.analysis.lexical.Scanner;
 import decaf.shared.AstVisitor;
-import decaf.ir.CodegenAstVisitor;
-import decaf.ir.names.IrAssignable;
+
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
@@ -54,12 +53,5 @@ public class Increment extends AssignExpr {
   @Override
   public String getOperator() {
     return "++";
-  }
-
-  public <T> T accept(
-      CodegenAstVisitor<T> codegenAstVisitor,
-      IrAssignable resultLocation
-  ) {
-    return null;
   }
 }

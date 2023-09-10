@@ -36,9 +36,4 @@ public abstract class Operator extends AST {
   public String toString() {
     return opRep() + "{}";
   }
-
-  @Override
-  public Type getType() {
-    return Type.Undefined;
-  }
 }

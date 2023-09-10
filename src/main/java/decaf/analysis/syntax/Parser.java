@@ -103,7 +103,6 @@ import decaf.analysis.syntax.ast.RelationalOperator;
 import decaf.analysis.syntax.ast.Return;
 import decaf.analysis.syntax.ast.Statement;
 import decaf.analysis.syntax.ast.StringLiteral;
-import decaf.analysis.syntax.ast.Type;
 import decaf.analysis.syntax.ast.UnaryOpExpression;
 import decaf.analysis.syntax.ast.UnaryOperator;
 import decaf.analysis.syntax.ast.VoidExpression;
@@ -111,6 +110,7 @@ import decaf.analysis.syntax.ast.While;
 import decaf.shared.CompilationContext;
 import decaf.shared.Utils;
 import decaf.shared.errors.ParserError;
+import decaf.shared.types.Type;
 
 public class Parser {
   @NotNull
@@ -613,9 +613,9 @@ public class Parser {
         RESERVED_INT,
         RESERVED_VOID
     ).map(token -> switch (token.type) {
-      case RESERVED_BOOL -> Type.Bool;
-      case RESERVED_INT -> Type.Int;
-      case RESERVED_VOID -> Type.Void;
+      case RESERVED_BOOL -> Type.getBoolType();
+      case RESERVED_INT -> Type.getIntType();
+      case RESERVED_VOID -> Type.getVoidType();
       default -> Type.Undefined;
     });
   }
@@ -1316,7 +1316,7 @@ public class Parser {
   }
 
   private Optional<FieldDeclaration> parseFieldDeclarationWithType(@NotNull Type type) {
-    assert type == Type.Int || type == Type.Bool;
+    assert type == Type.getIntType() || type == Type.getBoolType();
 
     var tokenPosition = getCurrentToken().tokenPosition;
     var variables = new ArrayList<RValue>();
@@ -1375,8 +1375,8 @@ public class Parser {
         RESERVED_BOOL
     ).map(
         token -> switch (token.type) {
-          case RESERVED_INT -> Type.Int;
-          case RESERVED_BOOL -> Type.Bool;
+          case RESERVED_INT -> Type.getIntType();
+          case RESERVED_BOOL -> Type.getBoolType();
           default -> Type.Undefined;
         }
     );

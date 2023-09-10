@@ -6,17 +6,12 @@ import java.util.List;
 
 import decaf.analysis.TokenPosition;
 import decaf.shared.AstVisitor;
-import decaf.ir.CodegenAstVisitor;
-import decaf.ir.names.IrAssignable;
+
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
 
 public class RValue extends AST {
-  public static final RValue DUMMY_R_VALUE = new RValue(
-      "INVALID NAME",
-      TokenPosition.dummyTokenPosition()
-  );
   public final TokenPosition tokenPosition;
   private String label;
 
@@ -47,11 +42,6 @@ public class RValue extends AST {
   }
 
   @Override
-  public Type getType() {
-    return Type.Undefined;
-  }
-
-  @Override
   public List<Pair<String, AST>> getChildren() {
     return Collections.emptyList();
   }
@@ -69,16 +59,6 @@ public class RValue extends AST {
     return ASTVisitor.visit(
         this,
         curScope
-    );
-  }
-
-  public <T> T accept(
-      CodegenAstVisitor<T> codegenAstVisitor,
-      IrAssignable resultLocation
-  ) {
-    return codegenAstVisitor.visit(
-        this,
-        resultLocation
     );
   }
 }

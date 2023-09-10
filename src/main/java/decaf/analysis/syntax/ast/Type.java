@@ -1,58 +1,79 @@
 package decaf.analysis.syntax.ast;
 
+import org.jetbrains.annotations.NotNull;
 
-import decaf.analysis.lexical.Scanner;
-import decaf.shared.Utils;
+import java.util.Collections;
+import java.util.List;
 
-public enum Type {
-  Int,
-  Void,
-  Bool,
-  IntArray,
-  BoolArray,
-  String,
-  Undefined;
+import decaf.shared.AstVisitor;
+import decaf.shared.Pair;
+import decaf.shared.env.Scope;
 
-//    public String getSourceCode() {
-//        return switch (this) {
-//            case Int, IntArray -> RESERVED_INT;
-//            case Bool, BoolArray -> RESERVED_BOOL;
-//            case Void -> RESERVED_VOID;
-//            default -> throw new IllegalStateException("Unexpected value: " + this);
-//        };
-//    }
-
-  public static Type lower(Type type) {
-    if (type.equals(IntArray))
-      return Int;
-    else if (type.equals(BoolArray))
-      return Bool;
-    return type;
+public class Type extends AST {
+  private final TypeId typeId;
+  public enum TypeId {
+    // primitives
+    Int,
+    Bool,
+    Void,
+    String,
+    // unset
+    Unset,
+    // derived
+    Array
   }
 
+  private static final Type intType = new Type(TypeId.Int);
+  private static final Type boolType = new Type(TypeId.Bool);
+  private static final Type voidType = new Type(TypeId.Void);
+  private static final Type stringType = new Type(TypeId.String);
+  private static final Type unsetType = new Type(TypeId.Unset);
+
+  public static Type getIntType() {
+    return intType;
+  }
+
+  public static Type getBoolType() {
+    return boolType;
+  }
+
+  public static Type getVoidType() {
+    return voidType;
+  }
+
+  public static Type getStringType() {
+    return stringType;
+  }
+
+  public static Type getUnsetType() {
+    return unsetType;
+  }
+
+  private Type(@NotNull TypeId typeId) {
+    this.typeId = typeId;
+  }
+
+  @NotNull public TypeId getTypeId() {
+    return typeId;
+  }
+
+  @Override
+  public List<Pair<String, AST>> getChildren() {
+    return Collections.emptyList();
+  }
+
+  @Override
+  public boolean isTerminal() {
+    return true;
+  }
+
+  @Override
+  public <T> T accept(@NotNull AstVisitor<T> astVisitor, @NotNull Scope currentScope) {
+    return astVisitor.visit(this, currentScope);
+  }
+
+  @Override
   public String getSourceCode() {
-    return switch (this) {
-      case Bool -> Scanner.RESERVED_BOOL;
-      case BoolArray -> Scanner.RESERVED_BOOL + "*";
-      case Int -> Scanner.RESERVED_INT;
-      case IntArray -> Scanner.RESERVED_INT + "*";
-      case Void -> Scanner.RESERVED_VOID;
-      default -> throw new IllegalStateException("Unexpected value: " + this);
-    };
-  }
-
-  public String getColoredSourceCode() {
-    return Utils.coloredPrint(
-        getSourceCode(),
-        Utils.ANSIColorConstants.ANSI_CYAN
-    );
-  }
-
-  public long getFieldSize() {
-    return switch (this) {
-      case Int, IntArray, Bool, BoolArray -> Utils.WORD_SIZE;
-      case Void -> 0;
-      default -> throw new IllegalStateException("Unexpected value: " + this);
-    };
+    return null;
   }
 }
