@@ -1,19 +1,14 @@
 package decaf.shared;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.util.HashMap;
+import decaf.analysis.lexical.Scanner;
+import decaf.analysis.semantic.SemanticChecker;
+import decaf.analysis.syntax.Parser;
+
+import java.io.*;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import decaf.analysis.lexical.Scanner;
-import decaf.analysis.semantic.SemanticChecker;
-import decaf.analysis.syntax.Parser;
 
 public class Compilation {
   private final static String osName =
@@ -44,7 +39,7 @@ public class Compilation {
       compilationContext =
           specificTestFileInitialize(new FileInputStream(filenameOrSourceCode));
     } else {
-      compilationContext = new CompilationContext(filenameOrSourceCode);
+      compilationContext = CompilationContext.fromSourceCode(filenameOrSourceCode, debug);
     }
     initialize();
     compilationContext.setDebugMode(debug);
@@ -148,7 +143,7 @@ public class Compilation {
         inputStream,
         logger
     );
-    var compilationContext = new CompilationContext(sourceCode);
+    var compilationContext = CompilationContext.fromSourceCode(sourceCode);
     compilationContext.setDebugMode(true);
     return compilationContext;
   }

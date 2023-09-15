@@ -1,9 +1,9 @@
 package decaf.shared;
 
-import static java.util.logging.Level.SEVERE;
-
 import com.google.common.base.Stopwatch;
-
+import decaf.analysis.lexical.Scanner;
+import decaf.analysis.semantic.SemanticChecker;
+import decaf.analysis.syntax.Parser;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -14,18 +14,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import decaf.analysis.lexical.Scanner;
-import decaf.analysis.semantic.SemanticChecker;
-import decaf.analysis.syntax.Parser;
+import static java.util.logging.Level.SEVERE;
 
 public class TestRunner {
   private static final Logger logger =
@@ -43,7 +38,7 @@ public class TestRunner {
       boolean outputExists
   ) {
     var filepath =
-        filepathPrefix + "/input/" + (expectedToPass ? "/legal": "/illegal");
+        filepathPrefix + "/input" + (expectedToPass ? "/legal": "/illegal");
     try (var files = Files.list(Paths.get(filepath))) {
       if (outputExists) {
         return files.map(Path::toFile)
@@ -90,7 +85,7 @@ public class TestRunner {
       String reason
   ) {
     System.out.format(
-        "%s %s ........... (%s ms)\n%s\n",
+        "%s '%s' (%s ms)\n%s\n",
         Utils.coloredPrint(
             String.format(
                 "\t✗ [%s/%s] ",
@@ -119,7 +114,7 @@ public class TestRunner {
       String filePath, long runTimeMs
   ) {
     System.out.format(
-        "%s %s ........... (%s ms)\n",
+        "%s '%s' (%s ms)\n",
         Utils.coloredPrint(
             String.format(
                 "\t✓ [%s/%s] ",
@@ -142,11 +137,11 @@ public class TestRunner {
       String actualFailReason
   ) {
     System.out.format(
-        """
-            %s %s ........... (%s ms)
+            """
+            %s '%s' (%s ms)
             %s
             """,
-        Utils.coloredPrint(
+            Utils.coloredPrint(
             String.format(
                 "\t✓ [%s/%s] ",
                 pairIndex,
@@ -154,12 +149,12 @@ public class TestRunner {
             ),
             Utils.ANSIColorConstants.ANSI_GREEN_BOLD
         ),
-        Utils.coloredPrint(
+            Utils.coloredPrint(
             filePath,
             Utils.ANSIColorConstants.LIGHT_GREY
         ),
-        runTimeMs,
-        Utils.coloredPrint(
+            runTimeMs,
+            Utils.coloredPrint(
             actualFailReason,
             Utils.ANSIColorConstants.ANSI_WHITE
         )
@@ -392,7 +387,7 @@ public class TestRunner {
 
   public static Pair<Integer, Long> testSuite(
       List<Pair<File, File>> testPairs, boolean expectedToPass,
-      BiFunction<String, String, Pair<Boolean, String>> fn,
+      TriFunction<String, String, String, Pair<Boolean, String>> fn,
       boolean verbose
   ) {
     final int numTests = testPairs.size();
@@ -413,7 +408,8 @@ public class TestRunner {
                         numTests,
                         sourceFile.getAbsolutePath(),
                         expectedToPass,
-                        verbose
+                        verbose,
+                        pair.first.getName()
             )
                 ? 1
                 : 0;
@@ -422,7 +418,7 @@ public class TestRunner {
           printFailError(
               pairIndex,
               numTests,
-              sourceFile.getAbsolutePath(),
+              sourceFile.getName(),
               stopwatch.elapsed(TimeUnit.MILLISECONDS),
               e.getMessage()
           );
@@ -437,11 +433,12 @@ public class TestRunner {
 
   public static Pair<Boolean, String> scannerTestFunction(
       String input,
-      String output
-  ) {
+      String output,
+      String filename
+                                                         ) {
     var scanner = new Scanner(
         input,
-        new CompilationContext(input)
+        new CompilationContext(input, false, filename)
     );
     var actualOutput = formatTokensToOutputFormat(scanner);
     if (scanner.finished() && actualOutput.equals(output)) {
@@ -459,15 +456,16 @@ public class TestRunner {
 
   public static Pair<Boolean, String> parserTestFunction(
       String input,
-      String output
+      String output,
+      String filename
   ) {
     var scanner = new Scanner(
         input,
-        new CompilationContext(input)
+        new CompilationContext(input, false, filename)
     );
     var parser = new Parser(
         scanner,
-        new CompilationContext(input)
+        new CompilationContext(input, false, filename)
     );
     if (parser.getErrors()
               .isEmpty()) {
@@ -484,9 +482,10 @@ public class TestRunner {
   }
 
   public static Pair<Boolean, String> semanticsTestFunction(
-      String input, String output
-  ) {
-    var context = new CompilationContext(input);
+      String input, String output,
+      String filename
+                                                           ) {
+    var context = new CompilationContext(input, false, filename);
     var scanner = new Scanner(
         input,
         context
@@ -580,16 +579,17 @@ public class TestRunner {
   }
 
   private static <InputType, OutputType> boolean testOnePair(
-      @NotNull BiFunction<InputType, OutputType, Pair<Boolean, String>>
+      @NotNull TriFunction<InputType, OutputType, String, Pair<Boolean, String>>
           fn,
       @NotNull InputType input, @Nullable OutputType expectedOutput,
       int pairIndex, int numTests, @Nullable String sourceFilePath,
-      boolean expectedToPass, boolean shouldPrint
+      boolean expectedToPass, boolean shouldPrint, @NotNull String fileName
   ) {
     var stopwatch = Stopwatch.createStarted();
     var ret = fn.apply(
         input,
-        expectedOutput
+        expectedOutput,
+        sourceFilePath
     );
     var timeElapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
     var hasPassed = ret.first;
@@ -598,7 +598,7 @@ public class TestRunner {
       if (shouldPrint) {
         printFailedSuccessfully(pairIndex,
                                 numTests,
-                                sourceFilePath,
+                                fileName,
                                 timeElapsed,
                                 failureOutput
         );
@@ -608,7 +608,7 @@ public class TestRunner {
       if (shouldPrint) {
         printSuccessError(pairIndex,
                           numTests,
-                          sourceFilePath,
+                          fileName,
                           timeElapsed
         );
       }
@@ -617,7 +617,7 @@ public class TestRunner {
       if (shouldPrint) {
         printFailError(pairIndex,
                        numTests,
-                       sourceFilePath,
+                       fileName,
                        timeElapsed,
                        failureOutput
         );
@@ -626,7 +626,7 @@ public class TestRunner {
     }
   }
 
-  public static BiFunction<String, String, Pair<Boolean, String>>
+  public static TriFunction<String, String, String, Pair<Boolean, String>>
   getTestFunctionForType(@NotNull Type type) {
     return switch (type) {
       case SCANNER -> TestRunner::scannerTestFunction;
@@ -647,5 +647,16 @@ public class TestRunner {
     SCANNER,
     PARSER,
     SEMANTICS,
+  }
+
+  @FunctionalInterface
+  public interface TriFunction<T, U, V, R> {
+
+    R apply(T t, U u, V v);
+
+    default <K> TriFunction<T, U, V, K> andThen(Function<? super R, ? extends K> after) {
+      Objects.requireNonNull(after);
+      return (T t, U u, V v) -> after.apply(apply(t, u, v));
+    }
   }
 }
