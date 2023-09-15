@@ -32,7 +32,7 @@ import decaf.analysis.syntax.ast.Program;
 import decaf.analysis.syntax.ast.RValue;
 import decaf.analysis.syntax.ast.Return;
 import decaf.analysis.syntax.ast.StringLiteral;
-import decaf.analysis.syntax.ast.Type;
+import decaf.analysis.syntax.ast.types.Type;
 import decaf.analysis.syntax.ast.UnaryOpExpression;
 import decaf.analysis.syntax.ast.VoidExpression;
 import decaf.analysis.syntax.ast.While;

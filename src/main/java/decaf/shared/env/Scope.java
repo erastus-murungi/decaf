@@ -1,6 +1,8 @@
 package decaf.shared.env;
 
 
+import decaf.analysis.syntax.ast.types.ArrayType;
+import decaf.analysis.syntax.ast.types.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -11,10 +13,8 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import decaf.analysis.syntax.ast.Block;
-import decaf.shared.descriptors.ArrayDescriptor;
 import decaf.shared.descriptors.Descriptor;
 import decaf.shared.descriptors.MethodDescriptor;
-import decaf.shared.types.Type;
 
 
 public class Scope extends HashMap<String, Descriptor> {
@@ -57,6 +57,11 @@ public class Scope extends HashMap<String, Descriptor> {
     return lookup(methodName)
                .filter(descriptor -> descriptor instanceof MethodDescriptor)
                .map(descriptor -> (MethodDescriptor) descriptor);
+  }
+
+  public Optional<Descriptor> lookupImport(@NotNull String stringId) {
+    return lookup(stringId)
+               .filter(Descriptor::isImport);
   }
 
   private static String padRight(
@@ -230,7 +235,13 @@ public class Scope extends HashMap<String, Descriptor> {
 
     List<String> list = new ArrayList<>();
     for (Descriptor descriptor : list1) {
-      String o = (descriptor instanceof ArrayDescriptor) ? ((ArrayDescriptor) descriptor).size.toString(): "N / A";
+      String o;
+      if (descriptor.isForArray()) {
+        var arrayType = (ArrayType) descriptor.getType();
+        o = String.valueOf(arrayType.getNumElements());
+      } else {
+        o = "N / A";
+      }
       list.add(o);
     }
     Optional<Integer> maxLengthArraySize = Stream.concat(

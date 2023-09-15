@@ -49,6 +49,7 @@ import static decaf.analysis.Token.Type.STRING_LITERAL;
 
 import com.google.common.collect.Lists;
 
+import decaf.analysis.syntax.ast.types.Type;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -110,7 +111,6 @@ import decaf.analysis.syntax.ast.While;
 import decaf.shared.CompilationContext;
 import decaf.shared.Utils;
 import decaf.shared.errors.ParserError;
-import decaf.shared.types.Type;
 
 public class Parser {
   @NotNull
@@ -616,7 +616,7 @@ public class Parser {
       case RESERVED_BOOL -> Type.getBoolType();
       case RESERVED_INT -> Type.getIntType();
       case RESERVED_VOID -> Type.getVoidType();
-      default -> Type.Undefined;
+      default -> Type.getUnsetType();
     });
   }
 
@@ -1377,7 +1377,7 @@ public class Parser {
         token -> switch (token.type) {
           case RESERVED_INT -> Type.getIntType();
           case RESERVED_BOOL -> Type.getBoolType();
-          default -> Type.Undefined;
+          default -> Type.getUnsetType();
         }
     );
   }

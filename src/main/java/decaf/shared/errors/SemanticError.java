@@ -33,6 +33,7 @@ public record SemanticError(TokenPosition tokenPosition,
       case MISMATCHING_RETURN_TYPE -> "mismatching return type";
       case MISSING_RETURN_STATEMENT -> "missing return statement";
       case SHADOWING_IMPORT -> "shadowing import";
+        case TYPE_MISMATCH -> "type mismatch";
     };
   }
 
@@ -63,5 +64,7 @@ public record SemanticError(TokenPosition tokenPosition,
     INVALID_ARGUMENT_TYPE,
     MISMATCHING_RETURN_TYPE,
     MISSING_RETURN_STATEMENT,
+
+    TYPE_MISMATCH,
   }
 }

@@ -1,8 +1,9 @@
 package decaf.analysis.syntax.ast;
 
+import decaf.analysis.syntax.ast.types.Type;
 import org.jetbrains.annotations.NotNull;
 
-public interface Typed<T extends AST> {
+public interface Typed {
   @NotNull Type getType();
-  T setType(@NotNull Type type);
+  void setType(@NotNull Type type);
 }

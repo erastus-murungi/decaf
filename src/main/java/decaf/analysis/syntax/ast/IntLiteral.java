@@ -1,6 +1,7 @@
 package decaf.analysis.syntax.ast;
 
 
+import decaf.analysis.syntax.ast.types.Type;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -10,7 +11,7 @@ import decaf.shared.AstVisitor;
 
 import decaf.shared.env.Scope;
 
-public class IntLiteral extends Literal implements Typed<IntLiteral> {
+public class IntLiteral extends Literal {
   public IntLiteral(
       TokenPosition tokenPosition,
       String literalToken
@@ -73,7 +74,8 @@ public class IntLiteral extends Literal implements Typed<IntLiteral> {
   }
 
   @Override
-  public IntLiteral setType(@NotNull Type type) {
-    throw new UnsupportedOperationException();
+  public void setType(@NotNull Type type) {
+    // do nothing;
+    // literal types are constant
   }
 }

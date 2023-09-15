@@ -1,4 +1,4 @@
-package decaf.shared.types;
+package decaf.ir.types;
 
 import org.jetbrains.annotations.NotNull;
 

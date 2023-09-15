@@ -4,11 +4,11 @@ package decaf.analysis.syntax.ast;
 import java.util.List;
 
 import decaf.analysis.TokenPosition;
+import decaf.analysis.syntax.ast.types.Type;
 import decaf.shared.AstVisitor;
 
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
-import decaf.shared.types.Type;
 
 public class FormalArgument extends Declaration {
   final public TokenPosition tokenPosition;
@@ -69,5 +69,9 @@ public class FormalArgument extends Declaration {
         this,
         curScope
     );
+  }
+
+  public Type getType() {
+    return type;
   }
 }

@@ -5,11 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import decaf.analysis.TokenPosition;
+import decaf.analysis.syntax.ast.types.Type;
 import decaf.shared.AstVisitor;
 
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
-import decaf.shared.types.Type;
 
 public class MethodDefinition extends AST {
   private final TokenPosition tokenPosition;

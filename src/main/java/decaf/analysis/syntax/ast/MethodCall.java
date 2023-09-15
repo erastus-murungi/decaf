@@ -10,17 +10,17 @@ import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
 public class MethodCall extends Expression {
-  final public RValue RValueId;
+  final public RValue methodId;
   final public List<ActualArgument> actualArgumentList;
 
   public boolean isImported = false;
 
   public MethodCall(
-      RValue RValueId,
+      RValue methodId,
       List<ActualArgument> actualArgumentList
   ) {
-    super(RValueId.tokenPosition);
-    this.RValueId = RValueId;
+    super(methodId.tokenPosition);
+    this.methodId = methodId;
     this.actualArgumentList = actualArgumentList;
   }
 
@@ -29,7 +29,7 @@ public class MethodCall extends Expression {
     ArrayList<Pair<String, AST>> nodeArrayList = new ArrayList<>();
     nodeArrayList.add(new Pair<>(
         "methodName",
-        RValueId
+        methodId
     ));
     for (ActualArgument actualArgument : actualArgumentList)
       nodeArrayList.add(new Pair<>(
@@ -46,7 +46,7 @@ public class MethodCall extends Expression {
 
   @Override
   public String toString() {
-    return "MethodCall{" + "nameId=" + RValueId + ", methodCallParameterList=" + actualArgumentList + '}';
+    return "MethodCall{" + "nameId=" + methodId + ", methodCallParameterList=" + actualArgumentList + '}';
   }
 
   @Override
@@ -57,9 +57,9 @@ public class MethodCall extends Expression {
       stringList.add(sourceCode);
     }
     return String.format(
-        "%s(%s)",
-        RValueId.getSourceCode(),
-        String.join(
+            "%s(%s)",
+            methodId.getSourceCode(),
+            String.join(
             ", ",
             stringList
         )

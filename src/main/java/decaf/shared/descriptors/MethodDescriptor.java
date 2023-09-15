@@ -26,7 +26,7 @@ public class MethodDescriptor extends Descriptor {
       Scope localScope
   ) {
     super(
-        methodDefinition.getReturnType()
+        methodDefinition.getReturnType(), From.METHOD
     );
     this.methodDefinition = methodDefinition;
     this.formalAgumentsScope = formalAgumentsScope;

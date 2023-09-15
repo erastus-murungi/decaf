@@ -1,6 +1,7 @@
 package decaf.analysis.syntax.ast;
 
 
+import decaf.analysis.syntax.ast.types.Type;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -11,7 +12,7 @@ import decaf.shared.AstVisitor;
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
-public class ExpressionParameter extends ActualArgument implements HasExpression, Typed<ExpressionParameter> {
+public class ExpressionParameter extends ActualArgument implements HasExpression, Typed {
   public Expression expression;
 
   public ExpressionParameter(Expression expression) {
@@ -72,8 +73,7 @@ public class ExpressionParameter extends ActualArgument implements HasExpression
   }
 
   @Override
-  public ExpressionParameter setType(@NotNull Type type) {
+  public void setType(@NotNull Type type) {
     expression.setType(type);
-    return this;
   }
 }

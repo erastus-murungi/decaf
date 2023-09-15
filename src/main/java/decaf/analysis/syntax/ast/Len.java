@@ -9,7 +9,7 @@ import decaf.shared.AstVisitor;
 
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
-import decaf.shared.types.Type;
+import decaf.ir.types.Type;
 
 public class Len extends Expression {
   final public RValue rValue;

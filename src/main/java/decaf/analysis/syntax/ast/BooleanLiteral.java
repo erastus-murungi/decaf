@@ -2,8 +2,10 @@ package decaf.analysis.syntax.ast;
 
 
 import decaf.analysis.TokenPosition;
+import decaf.analysis.syntax.ast.types.Type;
 import decaf.shared.AstVisitor;
 import decaf.shared.env.Scope;
+import org.jetbrains.annotations.NotNull;
 
 public class BooleanLiteral extends IntLiteral {
   public BooleanLiteral(
@@ -41,4 +43,8 @@ public class BooleanLiteral extends IntLiteral {
     );
   }
 
+  @Override
+  public @NotNull Type getType() {
+    return Type.getBoolType();
+  }
 }

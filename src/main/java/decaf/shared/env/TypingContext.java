@@ -5,20 +5,13 @@ import static com.google.common.base.Preconditions.checkState;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.TreeSet;
-
 public class TypingContext {
   @NotNull
   public Scope globalScope;
-  @NotNull
-  public TreeSet<String> imports;
-
   public TypingContext(
-      @NotNull Scope globalScope,
-      @NotNull TreeSet<String> importDeclarations
+      @NotNull Scope globalScope
   ) {
     this.globalScope = globalScope;
-    this.imports = importDeclarations;
   }
 
   public boolean isGlobalVariable(String name) {

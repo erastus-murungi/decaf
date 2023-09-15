@@ -1,5 +1,6 @@
-package decaf.analysis.syntax.ast;
+package decaf.analysis.syntax.ast.types;
 
+import decaf.analysis.syntax.ast.AST;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -21,6 +22,14 @@ public class Type extends AST {
     Unset,
     // derived
     Array
+  }
+
+  public boolean isPrimitiveType() {
+    return typeId == TypeId.Int || typeId == TypeId.Bool || typeId == TypeId.Void || typeId == TypeId.String;
+  }
+
+  public boolean isDerivedArrayType() {
+    return typeId == TypeId.Array;
   }
 
   private static final Type intType = new Type(TypeId.Int);
@@ -49,12 +58,8 @@ public class Type extends AST {
     return unsetType;
   }
 
-  private Type(@NotNull TypeId typeId) {
+  protected Type(@NotNull TypeId typeId) {
     this.typeId = typeId;
-  }
-
-  @NotNull public TypeId getTypeId() {
-    return typeId;
   }
 
   @Override
@@ -75,5 +80,17 @@ public class Type extends AST {
   @Override
   public String getSourceCode() {
     return null;
+  }
+
+  @Override
+  public String toString() {
+    return switch (typeId) {
+      case Int -> "int";
+      case Bool -> "bool";
+      case Void -> "void";
+      case String -> "string";
+      case Unset -> "unset";
+      default -> throw new IllegalStateException("Unexpected value: " + typeId);
+    };
   }
 }

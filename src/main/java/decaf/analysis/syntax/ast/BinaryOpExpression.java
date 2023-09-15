@@ -1,6 +1,7 @@
 package decaf.analysis.syntax.ast;
 
 
+import decaf.analysis.syntax.ast.types.Type;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -184,15 +185,5 @@ public class BinaryOpExpression extends Expression implements HasExpression {
       rhs = newExpr;
     if (oldExpr == lhs)
       lhs = newExpr;
-  }
-
-  @Override
-  public @NotNull Type getType() {
-    return Type.getUnsetType();
-  }
-
-  @Override
-  public Expression setType(@NotNull Type type) {
-    return null;
   }
 }

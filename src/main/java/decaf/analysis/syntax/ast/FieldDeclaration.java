@@ -1,6 +1,7 @@
 package decaf.analysis.syntax.ast;
 
 
+import decaf.analysis.syntax.ast.types.Type;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -11,7 +12,6 @@ import decaf.shared.AstVisitor;
 
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
-import decaf.shared.types.Type;
 
 public class FieldDeclaration extends Declaration {
   @NotNull
@@ -56,6 +56,10 @@ public class FieldDeclaration extends Declaration {
           array
       ));
     return pairArrayList;
+  }
+
+  public @NotNull Type getType() {
+    return type;
   }
 
   @Override
