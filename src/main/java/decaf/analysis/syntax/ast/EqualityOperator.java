@@ -33,7 +33,7 @@ public class EqualityOperator extends BinOperator {
 
   @Override
   public <T> T accept(
-      AstVisitor<T> ASTVisitor,
+      AstVisitor<T> astVisitor,
       Scope curScope
   ) {
     return null;

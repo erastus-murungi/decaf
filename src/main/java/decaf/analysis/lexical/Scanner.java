@@ -91,8 +91,8 @@ public class Scanner implements Iterable<Token> {
     private int stringIndex;
     private Token prevToken = null;
 
-    public Scanner(String in, CompilationContext context) {
-        sourceCode = maybeAppendNewLineCharacter(in);
+    public Scanner(CompilationContext context) {
+        sourceCode = maybeAppendNewLineCharacter(context.getSourceCode());
         stringIndex = 0;
         this.context = context;
     }

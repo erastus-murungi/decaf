@@ -438,7 +438,6 @@ public class TestRunner {
                                                          ) {
     var context = new CompilationContext(input, false, filename);
     var scanner = new Scanner(
-        input,
         context
     );
     var actualOutput = formatTokensToOutputFormat(scanner);
@@ -462,7 +461,6 @@ public class TestRunner {
   ) {
     final var context = new CompilationContext(input, false, filename);
     var scanner = new Scanner(
-        input,
         context
     );
     if (!context.scanningSuccessful()) {
@@ -494,7 +492,6 @@ public class TestRunner {
                                                            ) {
     var context = new CompilationContext(input, false, filename);
     var scanner = new Scanner(
-        input,
         context
     );
     if (!context.scanningSuccessful()) {

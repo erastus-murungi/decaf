@@ -57,10 +57,10 @@ public class Len extends Expression {
 
   @Override
   public <T> T accept(
-      AstVisitor<T> ASTVisitor,
+      AstVisitor<T> astVisitor,
       Scope curScope
   ) {
-    return ASTVisitor.visit(
+    return astVisitor.visit(
         this,
         curScope
     );

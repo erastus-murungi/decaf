@@ -29,8 +29,12 @@ public class CompilationContext {
 
     // errors
     private final List<ScannerError> scanningErrors = new ArrayList<>();
-    private List<ParserError> parsingErrors = new ArrayList<>();
-    private List<SemanticError> semanticErrors = new ArrayList<>();
+    private final List<ParserError> parsingErrors = new ArrayList<>();
+    private final List<SemanticError> semanticErrors = new ArrayList<>();
+
+    public String getSourceCode() {
+        return sourceCode;
+    }
 
     public CompilationContext(@NotNull String sourceCode, boolean debugModeOn, String filePath) {
         this.sourceCode = sourceCode;

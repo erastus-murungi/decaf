@@ -23,7 +23,6 @@ public class Compilation {
       Logger.getLogger(Compilation.class.getName());
   private final CompilationContext compilationContext;
   String output = null;
-  private String sourceCode;
   private Scanner scanner;
   private Parser parser;
   private SemanticChecker semanticChecker;
@@ -67,7 +66,11 @@ public class Compilation {
       case INITIALIZED -> System.out.println("starting!");
       case SCANNED -> runParser();
       case PARSED -> runSemanticsChecker();
-      default -> throw new IllegalStateException("Unexpected value: " + compilationState);
+      default -> {
+        if (compilationContext.debugModeOn())
+          System.out.println("compilation completed!");
+        compilationState = CompilationState.COMPLETED;
+      }
     }
   }
 
@@ -139,7 +142,7 @@ public class Compilation {
   }
 
   private CompilationContext specificTestFileInitialize(InputStream inputStream) {
-    sourceCode = Utils.getStringFromInputStream(
+    var sourceCode = Utils.getStringFromInputStream(
         inputStream,
         logger
     );
@@ -156,7 +159,6 @@ public class Compilation {
   private void runScanner() {
     assert compilationState == CompilationState.INITIALIZED;
     scanner = new Scanner(
-        sourceCode,
         compilationContext
     );
     if (!compilationContext.scanningSuccessful()) {
@@ -186,7 +188,7 @@ public class Compilation {
         parser.getRoot(),
         compilationContext
     );
-    if (compilationContext.semanticCheckingSuccessful()) {
+    if (!compilationContext.semanticCheckingSuccessful()) {
       System.exit(1);
     }
     compilationState = CompilationState.SEM_CHECKED;

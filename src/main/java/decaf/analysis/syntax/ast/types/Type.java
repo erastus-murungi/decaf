@@ -79,7 +79,7 @@ public class Type extends AST {
 
   @Override
   public String getSourceCode() {
-    return null;
+    return toString();
   }
 
   @Override

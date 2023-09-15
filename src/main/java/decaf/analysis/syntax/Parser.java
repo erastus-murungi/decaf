@@ -135,6 +135,7 @@ public class Parser {
             return program;
         }).orElse(new Program(Collections.emptyList(), Collections.emptyList(), Collections.emptyList()));
         if (context.debugModeOn()) {
+            context.printParsingErrors();
             Utils.printParseTree(root);
         }
     }
@@ -205,13 +206,16 @@ public class Parser {
     }
 
     private boolean canParseMethod() {
+        if (getCurrentTokenType() == RESERVED_VOID && currentTokenIndex + 1 < tokens.size() &&
+            tokens.get(currentTokenIndex + 1).type == ID) {
+            return true;
+        }
         return (getCurrentTokenType() == RESERVED_BOOL ||
-                getCurrentTokenType() == RESERVED_INT ||
-                getCurrentTokenType() == RESERVED_VOID) &&
+                getCurrentTokenType() == RESERVED_INT &&
                currentTokenIndex + 1 < tokens.size() &&
                tokens.get(currentTokenIndex + 1).type == ID &&
                currentTokenIndex + 2 < tokens.size() &&
-               tokens.get(currentTokenIndex + 2).type == LEFT_PARENTHESIS;
+               tokens.get(currentTokenIndex + 2).type == LEFT_PARENTHESIS);
     }
 
     private boolean canParseArray() {

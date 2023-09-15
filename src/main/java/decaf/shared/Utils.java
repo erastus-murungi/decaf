@@ -418,7 +418,7 @@ public class Utils {
         tree,
         ""
     );
-    while (tree.get(tree.size() - 1)
+    while (!tree.isEmpty() && tree.get(tree.size() - 1)
                .isEmpty())
       tree.remove(tree.size() - 1);
     for (String s : tree) {
