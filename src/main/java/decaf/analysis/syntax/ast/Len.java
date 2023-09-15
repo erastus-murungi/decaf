@@ -12,23 +12,27 @@ import decaf.shared.env.Scope;
 import decaf.ir.types.Type;
 
 public class Len extends Expression {
-  final public RValue rValue;
+  final private RValue arrayName;
   final public Type type = Type.getIntType();
 
   public Len(
       TokenPosition tokenPosition,
-      RValue rValue
+      RValue arrayName
   ) {
     super(tokenPosition);
     this.tokenPosition = tokenPosition;
-    this.rValue = rValue;
+    this.arrayName = arrayName;
+  }
+
+  public String getArrayLabel() {
+    return arrayName.getLabel();
   }
 
   @Override
   public List<Pair<String, AST>> getChildren() {
     return List.of(new Pair<>(
         "id",
-        rValue
+        arrayName
     ));
   }
 
@@ -39,15 +43,15 @@ public class Len extends Expression {
 
   @Override
   public String toString() {
-    return "Len{" + "nameId=" + rValue + '}';
+    return "Len{" + "nameId=" + arrayName + '}';
   }
 
   @Override
   public String getSourceCode() {
     return String.format(
-        "%s (%s)",
-        Scanner.RESERVED_LEN,
-        rValue.getLabel()
+            "%s (%s)",
+            Scanner.RESERVED_LEN,
+            arrayName.getLabel()
     );
   }
 

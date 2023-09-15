@@ -159,7 +159,9 @@ public class Compilation {
         sourceCode,
         compilationContext
     );
-    scanner.setTrace(compilationContext.debugModeOn());
+    if (!compilationContext.scanningSuccessful()) {
+      System.exit(1);
+    }
     compilationState = CompilationState.SCANNED;
   }
 
@@ -170,8 +172,7 @@ public class Compilation {
         compilationContext
     );
 
-    if (parser.hasError()) {
-      System.out.println(parser.getPrettyErrorOutput());
+    if (!compilationContext.parsingSuccessful()) {
       System.exit(1);
     }
     compilationState = CompilationState.PARSED;
@@ -185,7 +186,7 @@ public class Compilation {
         parser.getRoot(),
         compilationContext
     );
-    if (semanticChecker.hasErrors()) {
+    if (compilationContext.semanticCheckingSuccessful()) {
       System.exit(1);
     }
     compilationState = CompilationState.SEM_CHECKED;

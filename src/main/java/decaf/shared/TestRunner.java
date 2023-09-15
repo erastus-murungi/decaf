@@ -436,12 +436,13 @@ public class TestRunner {
       String output,
       String filename
                                                          ) {
+    var context = new CompilationContext(input, false, filename);
     var scanner = new Scanner(
         input,
-        new CompilationContext(input, false, filename)
+        context
     );
     var actualOutput = formatTokensToOutputFormat(scanner);
-    if (scanner.finished() && actualOutput.equals(output)) {
+    if (context.scanningSuccessful() && actualOutput.equals(output)) {
       return new Pair<>(
           true,
           actualOutput
@@ -449,7 +450,7 @@ public class TestRunner {
     } else {
       return new Pair<>(
           false,
-          scanner.getPrettyErrorOutput()
+          context.getScanningErrorOutput()
       );
     }
   }
@@ -459,16 +460,22 @@ public class TestRunner {
       String output,
       String filename
   ) {
+    final var context = new CompilationContext(input, false, filename);
     var scanner = new Scanner(
         input,
-        new CompilationContext(input, false, filename)
+        context
     );
-    var parser = new Parser(
+    if (!context.scanningSuccessful()) {
+        return new Pair<>(
+            false,
+            context.getScanningErrorOutput()
+        );
+    }
+    new Parser(
         scanner,
-        new CompilationContext(input, false, filename)
+        context
     );
-    if (parser.getErrors()
-              .isEmpty()) {
+    if (context.parsingSuccessful()) {
       return new Pair<>(
           true,
           ""
@@ -476,7 +483,7 @@ public class TestRunner {
     } else {
       return new Pair<>(
           false,
-          parser.getPrettyErrorOutput()
+          context.getParsingErrorOutput()
       );
     }
   }
@@ -490,31 +497,30 @@ public class TestRunner {
         input,
         context
     );
-    if (!scanner.finished()) {
+    if (!context.scanningSuccessful()) {
       return new Pair<>(
           false,
-          scanner.getPrettyErrorOutput()
+          context.getScanningErrorOutput()
       );
     }
     var parser = new Parser(
         scanner,
         context
     );
-    if (!parser.getErrors()
-               .isEmpty()) {
+    if (!context.parsingSuccessful()) {
       return new Pair<>(
           false,
-          parser.getPrettyErrorOutput()
+          context.getParsingErrorOutput()
       );
     }
-    var semanticChecker = new SemanticChecker(
+    new SemanticChecker(
         parser.getRoot(),
         context
     );
-    if (semanticChecker.hasErrors()) {
+    if (!context.semanticCheckingSuccessful()) {
       return new Pair<>(
           false,
-          semanticChecker.getPrettyErrorOutput()
+          context.getSemanticErrorOutput()
       );
     }
     return new Pair<>(
@@ -651,12 +657,6 @@ public class TestRunner {
 
   @FunctionalInterface
   public interface TriFunction<T, U, V, R> {
-
     R apply(T t, U u, V v);
-
-    default <K> TriFunction<T, U, V, K> andThen(Function<? super R, ? extends K> after) {
-      Objects.requireNonNull(after);
-      return (T t, U u, V v) -> after.apply(apply(t, u, v));
-    }
   }
 }

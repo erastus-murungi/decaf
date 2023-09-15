@@ -5,8 +5,8 @@ import org.jetbrains.annotations.NotNull;
 import decaf.analysis.TokenPosition;
 
 public record SemanticError(TokenPosition tokenPosition,
-                            @NotNull SemanticErrorType errorType,
-                            String detail) implements Error<SemanticError.SemanticErrorType> {
+                            @NotNull SemanticError.ErrorType errorType,
+                            String detail) implements Error<SemanticError.ErrorType> {
 
   @Override
   public String getErrorSummary() {
@@ -38,11 +38,11 @@ public record SemanticError(TokenPosition tokenPosition,
   }
 
   @Override
-  public SemanticErrorType errorType() {
+  public ErrorType errorType() {
     return errorType;
   }
 
-  public enum SemanticErrorType {
+  public enum ErrorType {
     IDENTIFIER_ALREADY_DECLARED,
     IDENTIFIER_NOT_IN_SCOPE,
     SHOULD_RETURN_VOID,

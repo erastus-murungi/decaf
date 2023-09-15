@@ -1,5 +1,10 @@
 package decaf.shared;
 
+import decaf.analysis.Token;
+import decaf.analysis.TokenPosition;
+import decaf.shared.errors.ParserError;
+import decaf.shared.errors.ScannerError;
+import decaf.shared.errors.SemanticError;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.FileInputStream;
@@ -7,6 +12,7 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -21,11 +27,73 @@ public class CompilationContext {
     @NotNull
     private Boolean isDebugModeOn;
 
+    // errors
+    private final List<ScannerError> scanningErrors = new ArrayList<>();
+    private List<ParserError> parsingErrors = new ArrayList<>();
+    private List<SemanticError> semanticErrors = new ArrayList<>();
+
     public CompilationContext(@NotNull String sourceCode, boolean debugModeOn, String filePath) {
         this.sourceCode = sourceCode;
         this.logger = Logger.getLogger(CompilationContext.class.getName());
         this.isDebugModeOn = debugModeOn;
         this.filePath = filePath;
+    }
+
+    public ScannerError logScannerError(
+            TokenPosition tokenPosition,
+            ScannerError.ErrorType errorType,
+            String detail) {
+        var error = new ScannerError(tokenPosition, errorType, detail);
+        scanningErrors.add(error);
+        return error;
+    }
+
+    public void logParsingError(@NotNull Token token,
+                                 @NotNull ParserError.ErrorType errorType,
+                                 @NotNull String errorMessage) {
+        parsingErrors.add(new ParserError(errorType, token, errorMessage));
+    }
+
+    public void logSemanticError(@NotNull TokenPosition tokenPosition,
+                                 @NotNull SemanticError.ErrorType errorType,
+                                 @NotNull String errorMessage) {
+        semanticErrors.add(new SemanticError(tokenPosition, errorType, errorMessage));
+    }
+
+    public boolean scanningSuccessful() {
+        return scanningErrors.isEmpty();
+    }
+
+    public boolean semanticCheckingSuccessful() {
+        return semanticErrors.isEmpty();
+    }
+
+    public boolean encounteredParsingErrors() {
+        return !parsingErrors.isEmpty();
+    }
+
+    public String getScanningErrorOutput() {
+        return stringifyErrors(scanningErrors);
+    }
+
+    public String getParsingErrorOutput() {
+        return stringifyErrors(parsingErrors);
+    }
+
+    public String getSemanticErrorOutput() {
+        return stringifyErrors(semanticErrors);
+    }
+
+    public void printSemanticErrors() {
+        System.err.println(getSemanticErrorOutput());
+    }
+
+    public void printParsingErrors() {
+        System.err.println(getParsingErrorOutput());
+    }
+
+    public boolean parsingSuccessful() {
+        return parsingErrors.isEmpty();
     }
 
     public static CompilationContext fromSourceCode(@NotNull String sourceCode, boolean debugModeOn) {

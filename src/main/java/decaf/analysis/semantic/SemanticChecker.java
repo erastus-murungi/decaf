@@ -1,6 +1,5 @@
 package decaf.analysis.semantic;
 
-
 import decaf.analysis.TokenPosition;
 import decaf.analysis.lexical.Scanner;
 import decaf.analysis.syntax.ast.*;
@@ -13,25 +12,23 @@ import decaf.shared.descriptors.Descriptor;
 import decaf.shared.descriptors.MethodDescriptor;
 import decaf.shared.env.Scope;
 import decaf.shared.env.TypingContext;
-import decaf.shared.errors.SemanticError;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import static decaf.shared.errors.SemanticError.ErrorType;
 
 public class SemanticChecker implements AstVisitor<Type> {
     @NotNull
     public final Scope globalScope = Scope.forGlobals();
     @NotNull
-    private final List<SemanticError> errors = new ArrayList<>();
-    @NotNull
     private final CompilationContext context;
 
     // BEGIN: state variables
 
-    // the statically return type of the method we are currently visiting
+    // the statically resolved return type of the method we are currently visiting
     private Type inferredReturnType;
     // the number of nested while/for loops we are in
     private int loopDepth = 0;
@@ -42,23 +39,19 @@ public class SemanticChecker implements AstVisitor<Type> {
         this.context = context;
         visit(root, globalScope);
         if (context.debugModeOn()) {
-            context.stringifyErrors(errors);
+            context.printSemanticErrors();
         }
     }
 
     public Optional<TypingContext> getTypingContext() {
-        if (hasErrors()) {
+        if (!context.semanticCheckingSuccessful()) {
             return Optional.empty();
         }
         return Optional.of(new TypingContext(globalScope));
     }
 
-    public boolean hasErrors() {
-        return !errors.isEmpty();
-    }
-
-    public String getPrettyErrorOutput() {
-        return context.stringifyErrors(errors);
+    private void logSemanticError(TokenPosition tokenPosition, ErrorType errorType, String message) {
+        context.logSemanticError(tokenPosition, errorType, message);
     }
 
     @Override
@@ -81,30 +74,28 @@ public class SemanticChecker implements AstVisitor<Type> {
         var localScope = new Scope(formalArgumentScope, Scope.For.Field, block);
         if (globalScope.containsKey(methodId)) {
 
-            errors.add(new SemanticError(methodDefinition.getTokenPosition(),
-                                         SemanticError.SemanticErrorType.METHOD_ALREADY_DEFINED,
-                                         String.format("Method ``%s`` already defined", methodId)
-            ));
+            logSemanticError(methodDefinition.getTokenPosition(),
+                             ErrorType.METHOD_ALREADY_DEFINED,
+                             String.format("method ``%s`` already defined", methodId)
+                            );
             return Type.getUnsetType();
         } else {
             for (var formalArgument : methodDefinition.getFormalArguments()) {
                 formalArgument.accept(this, formalArgumentScope);
             }
-            // visit the method definition and populate the local symbol table
             globalScope.put(methodId, new MethodDescriptor(methodDefinition, formalArgumentScope, localScope));
             setInferredReturnType(Type.getUnsetType());
             block.scope = localScope;
             block.accept(this, localScope);
             if (getInferredReturnType() != Type.getUnsetType() &&
                 methodDefinition.getReturnType() != getInferredReturnType()) {
-                errors.add(new SemanticError(methodDefinition.getMethodName().tokenPosition,
-                                             SemanticError.SemanticErrorType.SHOULD_RETURN_VOID,
-                                             String.format(
-                                                     "method `%s` must not return a value of type `%s` in a void method",
-                                                     methodId,
-                                                     getInferredReturnType()
-                                                          )
-                ));
+                logSemanticError(methodDefinition.getMethodName().tokenPosition,
+                                 ErrorType.SHOULD_RETURN_VOID,
+                                 String.format("method `%s` must not return a value of type `%s` in a void method",
+                                               methodId,
+                                               getInferredReturnType()
+                                              )
+                                );
             }
             setInferredReturnType(Type.getUnsetType());
             return methodDefinition.getReturnType();
@@ -114,17 +105,19 @@ public class SemanticChecker implements AstVisitor<Type> {
     @Override
     public Type visit(@NotNull ImportDeclaration importDeclaration, @NotNull Scope scope) {
         if (scope.isShadowingParameter(importDeclaration.value.getLabel())) {
-            errors.add(new SemanticError(importDeclaration.value.tokenPosition,
-                                         SemanticError.SemanticErrorType.SHADOWING_FORMAL_ARGUMENT,
-                                         "Import identifier " +
-                                         importDeclaration.value.getLabel() +
-                                         " shadows a parameter"
-            ));
+            logSemanticError(importDeclaration.value.tokenPosition,
+                             ErrorType.SHADOWING_FORMAL_ARGUMENT,
+                             String.format("Import identifier `%s` shadows a parameter",
+                                           importDeclaration.value.getLabel()
+                                          )
+                            );
         } else if (globalScope.lookup(importDeclaration.value.getLabel()).isPresent()) {
-            errors.add(new SemanticError(new TokenPosition(0, 0, 0),
-                                         SemanticError.SemanticErrorType.IDENTIFIER_ALREADY_DECLARED,
-                                         "Import identifier " + importDeclaration.value.getLabel() + " already declared"
-            ));
+            logSemanticError(new TokenPosition(0, 0, 0),
+                             ErrorType.IDENTIFIER_ALREADY_DECLARED,
+                             String.format("import identifier `%s` already declared",
+                                           importDeclaration.value.getLabel()
+                                          )
+                            );
         }
         globalScope.put(importDeclaration.value.getLabel(), Descriptor.forImport());
         return Type.getUnsetType();
@@ -134,30 +127,29 @@ public class SemanticChecker implements AstVisitor<Type> {
     public Type visit(For forStatement, Scope scope) {
         return scope.lookup(forStatement.initialization.initLocation.getLabel()).map(initDescriptor -> {
             if (!initDescriptor.typeIs(Type.getIntType())) {
-                errors.add(new SemanticError(forStatement.tokenPosition,
-                                             SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                             forStatement.initialization.initLocation +
-                                             " must type must be " +
-                                             Type.getIntType() +
-                                             " not " +
-                                             initDescriptor.getType()
-                ));
+                logSemanticError(forStatement.tokenPosition,
+                                 ErrorType.UNSUPPORTED_TYPE,
+                                 String.format("init location `%s` must have type int, not `%s`",
+                                               forStatement.initialization.initLocation.getLabel(),
+                                               initDescriptor.getType()
+                                              )
+                                );
             }
 
             var type = forStatement.initialization.initExpression.accept(this, scope);
             if (type != Type.getIntType()) {
-                errors.add(new SemanticError(forStatement.initialization.initExpression.tokenPosition,
-                                             SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                             "init expression must evaluate to an int"
-                ));
+                logSemanticError(forStatement.initialization.initExpression.tokenPosition,
+                                 ErrorType.UNSUPPORTED_TYPE,
+                                 "init expression must evaluate to an int"
+                                );
             }
 
             var testType = forStatement.terminatingCondition.accept(this, scope);
             if (testType != Type.getBoolType()) {
-                errors.add(new SemanticError(forStatement.terminatingCondition.tokenPosition,
-                                             SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                             "for-loop test must evaluate to " + Type.getBoolType() + " not " + testType
-                ));
+                logSemanticError(forStatement.terminatingCondition.tokenPosition,
+                                 ErrorType.UNSUPPORTED_TYPE,
+                                 String.format("for-loop test must evaluate to %s not %s", Type.getBoolType(), testType)
+                                );
             }
             ++loopDepth;
             forStatement.block.accept(this, scope);
@@ -167,42 +159,50 @@ public class SemanticChecker implements AstVisitor<Type> {
             if (updatingDescriptorOpt.isPresent()) {
                 var updatingDescriptor = updatingDescriptorOpt.get();
                 if (!updatingDescriptor.typeIs(Type.getIntType())) {
-                    errors.add(new SemanticError(forStatement.initialization.initExpression.tokenPosition,
-                                                 SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                                 "update location must have type int, not " +
-                                                 updatingDescriptor.getType()
-                    ));
+                    logSemanticError(forStatement.initialization.initExpression.tokenPosition,
+                                     ErrorType.UNSUPPORTED_TYPE,
+                                     String.format("The location `%s` in the for-loop `%s` must have type int, not `%s`",
+                                                   updateId,
+                                                   forStatement,
+                                                   updatingDescriptor.getType()
+                                                  )
+                                    );
                 }
                 var updateExprType = forStatement.update.assignExpr.accept(this, scope);
                 if (forStatement.update.assignExpr instanceof CompoundAssignOpExpr) {
                     updateExprType = forStatement.update.assignExpr.expression.getType();
                 }
                 if (updateExprType != Type.getIntType()) {
-                    errors.add(new SemanticError(forStatement.update.assignExpr.tokenPosition,
-                                                 SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                                 String.format(
-                                                         "The location and the expression in an incrementing/decrementing assignment must be of type `int`, " +
-                                                         "currently the location `%s` is of type `%s` and the expression `%s` is of type `%s`",
-                                                         updateId,
-                                                         updatingDescriptor.getType(),
-                                                         forStatement.update.assignExpr.getSourceCode(),
-                                                         updateExprType
-                                                              )
-                    ));
+                    logSemanticError(forStatement.update.assignExpr.tokenPosition,
+                                     ErrorType.UNSUPPORTED_TYPE,
+                                     String.format(
+                                             "The location and the expression in an incrementing/decrementing assignment must be of type `int`, " +
+                                             "currently the location `%s` is of type `%s` and the expression `%s` is of type `%s`",
+                                             updateId,
+                                             updatingDescriptor.getType(),
+                                             forStatement.update.assignExpr.getSourceCode(),
+                                             updateExprType
+                                                  )
+                                    );
                 }
             } else {
-                errors.add(new SemanticError(forStatement.update.getLocation().tokenPosition,
-                                             SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                             updateId + " must be declared in scope"
-                ));
+                logSemanticError(forStatement.update.getLocation().tokenPosition,
+                                 ErrorType.UNSUPPORTED_TYPE,
+                                 String.format("The location `%s` in the for-loop `%s` must be declared in scope",
+                                               updateId,
+                                               forStatement
+                                              )
+                                );
             }
             return Type.getUnsetType();
         }).orElseGet(() -> {
-            errors.add(new SemanticError(forStatement.initialization.initLocation.tokenPosition,
-                                         SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                         forStatement.initialization.initLocation.getLabel() +
-                                         " must be declared in scope"
-            ));
+            logSemanticError(forStatement.initialization.initLocation.tokenPosition,
+                             ErrorType.UNSUPPORTED_TYPE,
+                             String.format("The location `%s` in the for-loop `%s` must be declared in scope",
+                                           forStatement.initialization.initLocation.getLabel(),
+                                           forStatement
+                                          )
+                            );
             return Type.getUnsetType();
         });
     }
@@ -211,10 +211,10 @@ public class SemanticChecker implements AstVisitor<Type> {
     public Type visit(@NotNull While whileStatement, @NotNull Scope scope) {
         var type = whileStatement.test.accept(this, scope);
         if (type != Type.getBoolType()) {
-            errors.add(new SemanticError(whileStatement.test.tokenPosition,
-                                         SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                         "while statement test must evaluate to a bool, not " + type
-            ));
+            logSemanticError(whileStatement.test.tokenPosition,
+                             ErrorType.UNSUPPORTED_TYPE,
+                             String.format("while statement test must evaluate to a bool, not `%s`", type)
+                            );
         }
         ++loopDepth;
         whileStatement.body.accept(this, scope);
@@ -228,27 +228,25 @@ public class SemanticChecker implements AstVisitor<Type> {
             if (methodDefinition.getMethodName().getLabel().equals("main")) {
                 if (methodDefinition.getReturnType() == Type.getVoidType()) {
                     if (!(methodDefinition.getFormalArguments().isEmpty())) {
-                        errors.add(new SemanticError(methodDefinition.getTokenPosition(),
-                                                     SemanticError.SemanticErrorType.INVALID_MAIN_METHOD,
-                                                     "main method must have no parameters, yours has: " +
-                                                     Utils.prettyPrintMethodFormalArguments(methodDefinition.getFormalArguments())
-                        ));
+                        logSemanticError(methodDefinition.getTokenPosition(),
+                                         ErrorType.INVALID_MAIN_METHOD,
+                                         String.format("main method must have no parameters, yours has: %s",
+                                                       Utils.prettyPrintMethodFormalArguments(methodDefinition.getFormalArguments())
+                                                      )
+                                        );
                     }
                 } else {
-                    errors.add(new SemanticError(methodDefinition.getTokenPosition(),
-                                                 SemanticError.SemanticErrorType.INVALID_MAIN_METHOD,
-                                                 "main method return type must be void, not `" +
-                                                 methodDefinition.getReturnType() +
-                                                 "`"
-                    ));
+                    logSemanticError(methodDefinition.getTokenPosition(),
+                                     ErrorType.INVALID_MAIN_METHOD,
+                                     String.format("main method must have return type void, yours has: %s",
+                                                   methodDefinition.getReturnType()
+                                                  )
+                                    );
                 }
                 return;
             }
         }
-        errors.add(new SemanticError(new TokenPosition(0, 0, 0),
-                                     SemanticError.SemanticErrorType.MISSING_MAIN_METHOD,
-                                     "main method not found"
-        ));
+        logSemanticError(new TokenPosition(0, 0, 0), ErrorType.MISSING_MAIN_METHOD, "main method not found");
     }
 
     @Override
@@ -270,22 +268,24 @@ public class SemanticChecker implements AstVisitor<Type> {
     public Type visit(UnaryOpExpression unaryOpExpression, Scope scope) {
         var operandType = unaryOpExpression.operand.accept(this, scope);
         if (operandType != Type.getBoolType() && operandType != Type.getIntType()) {
-            errors.add(new SemanticError(unaryOpExpression.tokenPosition,
-                                         SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                         "expected either bool or int, not `" + operandType + "`"
-            ));
+            logSemanticError(unaryOpExpression.tokenPosition,
+                             ErrorType.UNSUPPORTED_TYPE,
+                             String.format("operand of unary operator must be either bool or int, not `%s`",
+                                           operandType
+                                          )
+                            );
         }
         if (operandType != Type.getBoolType() && unaryOpExpression.getUnaryOperator().label.equals("!")) {
-            errors.add(new SemanticError(unaryOpExpression.tokenPosition,
-                                         SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                         "Can only use a not operator on booleans"
-            ));
+            logSemanticError(unaryOpExpression.tokenPosition,
+                             ErrorType.UNSUPPORTED_TYPE,
+                             "can only use a not operator on booleans"
+                            );
         }
         if (operandType != Type.getIntType() && unaryOpExpression.getUnaryOperator().label.equals("-")) {
-            errors.add(new SemanticError(unaryOpExpression.tokenPosition,
-                                         SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                         "Can only use an unary minus operator on Integers"
-            ));
+            logSemanticError(unaryOpExpression.tokenPosition,
+                             ErrorType.UNSUPPORTED_TYPE,
+                             "can only use a unary minus operator on ints"
+                            );
         }
         unaryOpExpression.setType(operandType);
         return operandType;
@@ -301,71 +301,71 @@ public class SemanticChecker implements AstVisitor<Type> {
                     if (leftType == Type.getIntType() && rightType == Type.getIntType()) {
                         binaryOpExpression.setType(Type.getIntType());
                     } else if (leftType != Type.getIntType()) {
-                        errors.add(new SemanticError(binaryOpExpression.tokenPosition,
-                                                     SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                                     String.format("lhs must have type int not `%s`", leftType)
-                        ));
+                        logSemanticError(binaryOpExpression.tokenPosition,
+                                         ErrorType.UNSUPPORTED_TYPE,
+                                         String.format("RHS must have type int not `%s`", leftType)
+                                        );
                     } else {
-                        errors.add(new SemanticError(binaryOpExpression.tokenPosition,
-                                                     SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                                     String.format("rhs must have type int not `%s`", rightType)
-                        ));
+                        logSemanticError(binaryOpExpression.tokenPosition,
+                                         ErrorType.UNSUPPORTED_TYPE,
+                                         String.format("RHS must have type int not `%s`", rightType)
+                                        );
                     }
                 } else if (binaryOpExpression.op instanceof EqualityOperator) {
                     if (leftType.equals(rightType) &&
                         (leftType == Type.getIntType() || leftType == Type.getBoolType())) {
                         binaryOpExpression.setType(Type.getBoolType());
                     } else {
-                        errors.add(new SemanticError(binaryOpExpression.tokenPosition,
-                                                     SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                                     String.format(
-                                                             "operands of %s must have same type, either both bool or both int, not `%s` and `%s`",
-                                                             binaryOpExpression.op.getSourceCode(),
-                                                             leftType,
-                                                             rightType
-                                                                  )
-                        ));
+                        logSemanticError(binaryOpExpression.tokenPosition,
+                                         ErrorType.UNSUPPORTED_TYPE,
+                                         String.format(
+                                                 "operands of %s must have same type, either both bool or both int, not `%s` and `%s`",
+                                                 binaryOpExpression.op.getSourceCode(),
+                                                 leftType,
+                                                 rightType
+                                                      )
+                                        );
                     }
                 } else if (binaryOpExpression.op instanceof RelationalOperator) {
                     if (leftType.equals(Type.getIntType()) && rightType.equals(Type.getIntType())) {
                         binaryOpExpression.setType(Type.getBoolType());
                     } else if (leftType != Type.getIntType()) {
-                        errors.add(new SemanticError(binaryOpExpression.tokenPosition,
-                                                     SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                                     String.format("lhs must have type int not `%s`", leftType)
-                        ));
+                        logSemanticError(binaryOpExpression.tokenPosition,
+                                         ErrorType.UNSUPPORTED_TYPE,
+                                         String.format("RHS must have type int not `%s`", leftType)
+                                        );
                     } else {
-                        errors.add(new SemanticError(binaryOpExpression.tokenPosition,
-                                                     SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                                     String.format("rhs must have type int not `%s`", rightType)
-                        ));
+                        logSemanticError(binaryOpExpression.tokenPosition,
+                                         ErrorType.UNSUPPORTED_TYPE,
+                                         String.format("RHS must have type int not `%s`", rightType)
+                                        );
                     }
                 } else if (binaryOpExpression.op instanceof ConditionalOperator) {
                     if (leftType == Type.getBoolType() && rightType == Type.getBoolType()) {
                         binaryOpExpression.setType(Type.getBoolType());
                     } else if (leftType != Type.getBoolType()) {
-                        errors.add(new SemanticError(binaryOpExpression.tokenPosition,
-                                                     SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                                     String.format("lhs must have type bool not `%s`", leftType)
-                        ));
+                        logSemanticError(binaryOpExpression.tokenPosition,
+                                         ErrorType.UNSUPPORTED_TYPE,
+                                         String.format("RHS must have type bool not `%s`", leftType)
+                                        );
                     } else {
-                        errors.add(new SemanticError(binaryOpExpression.tokenPosition,
-                                                     SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                                     String.format("rhs must have type bool not `%s`", rightType)
-                        ));
+                        logSemanticError(binaryOpExpression.tokenPosition,
+                                         ErrorType.UNSUPPORTED_TYPE,
+                                         String.format("RHS must have type bool not `%s`", rightType)
+                                        );
                     }
                 }
             } else {
-                errors.add(new SemanticError(binaryOpExpression.tokenPosition,
-                                             SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                             "RHS must be a primitive type, not `" + rightType + "`"
-                ));
+                logSemanticError(binaryOpExpression.tokenPosition,
+                                 ErrorType.UNSUPPORTED_TYPE,
+                                 String.format("RHS must be a primitive type, not `%s`", rightType)
+                                );
             }
         } else {
-            errors.add(new SemanticError(binaryOpExpression.tokenPosition,
-                                         SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                         "LHS must be a primitive type, not `" + leftType + "`"
-            ));
+            logSemanticError(binaryOpExpression.tokenPosition,
+                             ErrorType.UNSUPPORTED_TYPE,
+                             String.format("RHS must be a primitive type, not `%s`", leftType)
+                            );
         }
         return binaryOpExpression.getType();
     }
@@ -393,10 +393,10 @@ public class SemanticChecker implements AstVisitor<Type> {
     @Override
     public Type visit(LocationArray locationArray, Scope scope) {
         if (locationArray.expression.accept(this, scope) != Type.getIntType()) {
-            errors.add(new SemanticError(locationArray.tokenPosition,
-                                         SemanticError.SemanticErrorType.INVALID_ARRAY_INDEX,
-                                         "array index must evaluate to int"
-            ));
+            logSemanticError(locationArray.tokenPosition,
+                             ErrorType.INVALID_ARRAY_INDEX,
+                             "array index must evaluate to int"
+                            );
         }
         return scope.lookup(locationArray.getLabel()).map(descriptor -> {
             if (descriptor.isForArray()) {
@@ -404,20 +404,22 @@ public class SemanticChecker implements AstVisitor<Type> {
                 assert type.isDerivedArrayType();
                 return ((ArrayType) type).getContainedType();
             } else {
-                errors.add(new SemanticError(locationArray.tokenPosition,
-                                             SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                             String.format("`%s` was declared as %s but it being indexed like an array",
-                                                           locationArray.getLabel(),
-                                                           descriptor.getType()
-                                                          )
-                ));
+                logSemanticError(locationArray.tokenPosition,
+                                 ErrorType.UNSUPPORTED_TYPE,
+                                 String.format("`%s` was declared as %s but it being indexed like an array",
+                                               locationArray.getLabel(),
+                                               descriptor.getType()
+                                              )
+                                );
                 return descriptor.getType();
             }
         }).orElseGet(() -> {
-            errors.add(new SemanticError(locationArray.tokenPosition,
-                                         SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
-                                         locationArray.getLabel() + " must be declared in scope"
-            ));
+            logSemanticError(locationArray.tokenPosition,
+                             ErrorType.IDENTIFIER_NOT_IN_SCOPE,
+                             String.format("identifier `%s` in an array access must be declared in scope",
+                                           locationArray.getLabel()
+                                          )
+                            );
             return Type.getUnsetType();
         });
     }
@@ -433,10 +435,10 @@ public class SemanticChecker implements AstVisitor<Type> {
     public Type visit(@NotNull If ifStatement, @NotNull Scope scope) {
         var typeTest = ifStatement.test.accept(this, scope);
         if (typeTest != Type.getBoolType()) {
-            errors.add(new SemanticError(ifStatement.test.tokenPosition,
-                                         SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                         "if statement test must evaluate to a bool, not " + typeTest
-            ));
+            logSemanticError(ifStatement.test.tokenPosition,
+                             ErrorType.UNSUPPORTED_TYPE,
+                             String.format("if statement test must evaluate to a bool, not `%s`", typeTest)
+                            );
         }
         ifStatement.ifBlock.accept(this, scope);
         if (ifStatement.elseBlock != null) {
@@ -455,10 +457,10 @@ public class SemanticChecker implements AstVisitor<Type> {
     @Override
     public Type visit(Array array, Scope scope) {
         if (array.getSize().convertToLong() <= 0) {
-            errors.add(new SemanticError(array.getSize().tokenPosition,
-                                         SemanticError.SemanticErrorType.INVALID_ARRAY_INDEX,
-                                         "The int literal in an array declaration must be greater than 0"
-            ));
+            logSemanticError(array.getSize().tokenPosition,
+                             ErrorType.INVALID_ARRAY_INDEX,
+                             "The int literal in an array declaration must be greater than 0"
+                            );
         }
         return Type.getUnsetType();
     }
@@ -466,10 +468,10 @@ public class SemanticChecker implements AstVisitor<Type> {
     public Type visit(@NotNull FormalArgument formalArgument, @NotNull Scope scope) {
         var formalArgumentId = formalArgument.getName();
         if (scope.isShadowingParameter(formalArgumentId)) {
-            errors.add(new SemanticError(formalArgument.tokenPosition,
-                                         SemanticError.SemanticErrorType.SHADOWING_FORMAL_ARGUMENT,
-                                         String.format("Formal argument `%s` shadows a parameter", formalArgumentId)
-            ));
+            logSemanticError(formalArgument.tokenPosition,
+                             ErrorType.SHADOWING_FORMAL_ARGUMENT,
+                             String.format("Formal argument `%s` shadows a parameter", formalArgumentId)
+                            );
         } else {
             scope.put(formalArgumentId, Descriptor.forFormalArgument(formalArgument.getType()));
         }
@@ -478,30 +480,29 @@ public class SemanticChecker implements AstVisitor<Type> {
 
     private void checkNumberOfArgumentsAndTypesMatch(MethodDefinition methodDefinition, MethodCall methodCall) {
         if (methodCall.actualArgumentList.size() != methodDefinition.getFormalArguments().size()) {
-            errors.add(new SemanticError(methodCall.tokenPosition,
-                                         SemanticError.SemanticErrorType.MISMATCHING_NUMBER_OR_ARGUMENTS,
-                                         String.format("method %s expects %d arguments but %d were passed in",
-                                                       methodCall.methodId.getLabel(),
-                                                       methodDefinition.getFormalArguments().size(),
-                                                       methodCall.actualArgumentList.size()
-                                                      )
-            ));
+            logSemanticError(methodCall.tokenPosition,
+                             ErrorType.MISMATCHING_NUMBER_OR_ARGUMENTS,
+                             String.format("method %s expects %d arguments but %d were passed in",
+                                           methodCall.methodId.getLabel(),
+                                           methodDefinition.getFormalArguments().size(),
+                                           methodCall.actualArgumentList.size()
+                                          )
+                            );
             return;
         }
         for (int argIndex = 0; argIndex < methodCall.actualArgumentList.size(); argIndex++) {
             final var formalArgument = methodDefinition.getFormalArguments().get(argIndex);
             final var actualArgument = methodCall.actualArgumentList.get(argIndex);
             if (actualArgument.getType() != formalArgument.getType()) {
-                errors.add(new SemanticError(methodCall.tokenPosition,
-                                             SemanticError.SemanticErrorType.INCORRECT_ARG_TYPE,
-                                             String.format(
-                                                     "method %s expects argument %d to be of type %s but %s was passed in",
-                                                     methodCall.methodId.getLabel(),
-                                                     argIndex + 1,
-                                                     formalArgument.getType(),
-                                                     actualArgument.getType()
-                                                          )
-                ));
+                logSemanticError(methodCall.tokenPosition,
+                                 ErrorType.INCORRECT_ARG_TYPE,
+                                 String.format("method %s expects argument %d to be of type %s but %s was passed in",
+                                               methodCall.methodId.getLabel(),
+                                               argIndex + 1,
+                                               formalArgument.getType(),
+                                               actualArgument.getType()
+                                              )
+                                );
             }
         }
     }
@@ -517,10 +518,12 @@ public class SemanticChecker implements AstVisitor<Type> {
         var methodName = methodCall.methodId.getLabel();
         return globalScope.lookup(methodName).map(descriptor -> {
             if (scope.containsKey(methodName)) {
-                errors.add(new SemanticError(methodCall.tokenPosition,
-                                             SemanticError.SemanticErrorType.METHOD_CALL_CONFLICTS_WITH_LOCALLY_DEFINED_IDENTIFIER,
-                                             methodName + " refers to locally defined identifier"
-                ));
+                logSemanticError(methodCall.tokenPosition,
+                                 ErrorType.METHOD_CALL_CONFLICTS_WITH_LOCALLY_DEFINED_IDENTIFIER,
+                                 String.format("method call to `%s` conflicts with locally defined identifier",
+                                               methodName
+                                              )
+                                );
             }
             visitMethodCallParameters(methodCall.actualArgumentList, scope);
             if (descriptor instanceof MethodDescriptor methodDescriptor) {
@@ -531,10 +534,10 @@ public class SemanticChecker implements AstVisitor<Type> {
 
 
         }).orElseGet(() -> {
-            errors.add(new SemanticError(methodCall.tokenPosition,
-                                         SemanticError.SemanticErrorType.METHOD_DEFINITION_NOT_FOUND,
-                                         "method " + methodName + " not found in scope"
-            ));
+            logSemanticError(methodCall.tokenPosition,
+                             ErrorType.METHOD_DEFINITION_NOT_FOUND,
+                             String.format("method `%s` not found in scope", methodName)
+                            );
             return Type.getUnsetType();
         });
     }
@@ -543,13 +546,12 @@ public class SemanticChecker implements AstVisitor<Type> {
     public Type visit(MethodCallStatement methodCallStatement, Scope scope) {
         final var methodId = methodCallStatement.methodCall.methodId.getLabel();
         if (globalScope.lookupMethod(methodId).isEmpty() && globalScope.lookupImport(methodId).isEmpty()) {
-            errors.add(new SemanticError(methodCallStatement.tokenPosition,
-                                         SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
-                                         String.format(
-                                                 "identifier `%s` in a method statement must be a declared method or import.",
-                                                 methodId
-                                                      )
-            ));
+            logSemanticError(methodCallStatement.tokenPosition,
+                             ErrorType.IDENTIFIER_NOT_IN_SCOPE,
+                             String.format("identifier `%s` in a method statement must be a declared method or import",
+                                           methodId
+                                          )
+                            );
         } else {
             methodCallStatement.methodCall.accept(this, scope);
         }
@@ -564,10 +566,10 @@ public class SemanticChecker implements AstVisitor<Type> {
                 if (location instanceof LocationArray locationArray) {
                     final var indexType = locationArray.expression.accept(this, scope);
                     if (indexType != Type.getIntType()) {
-                        errors.add(new SemanticError(locationAssignExpr.tokenPosition,
-                                                     SemanticError.SemanticErrorType.INVALID_ARRAY_INDEX,
-                                                     "array index must evaluate to an int"
-                        ));
+                        logSemanticError(locationAssignExpr.tokenPosition,
+                                         ErrorType.INVALID_ARRAY_INDEX,
+                                         "array index must evaluate to an int"
+                                        );
                     }
                 }
             }
@@ -576,17 +578,17 @@ public class SemanticChecker implements AstVisitor<Type> {
             if (locationAssignExpr.assignExpr instanceof final AssignOpExpr assignOpExpr) {
                 if (assignOpExpr.assignOp.label.equals(Scanner.ASSIGN)) {
                     if (locationType != expressionType) {
-                        errors.add(new SemanticError(locationAssignExpr.tokenPosition,
-                                                     SemanticError.SemanticErrorType.TYPE_MISMATCH,
-                                                     String.format(
-                                                             "The location and the expression in an assignment must have the same type, " +
-                                                             "currently the location `%s` is of type `%s` and the expression `%s` is of type `%s`",
-                                                             location.getLabel(),
-                                                             locationType,
-                                                             locationAssignExpr.assignExpr.expression.getSourceCode(),
-                                                             expressionType
-                                                                  )
-                        ));
+                        logSemanticError(locationAssignExpr.tokenPosition,
+                                         ErrorType.TYPE_MISMATCH,
+                                         String.format(
+                                                 "The location and the expression in an assignment must have the same type, " +
+                                                 "currently the location `%s` is of type `%s` and the expression `%s` is of type `%s`",
+                                                 location.getLabel(),
+                                                 locationType,
+                                                 locationAssignExpr.assignExpr.expression.getSourceCode(),
+                                                 expressionType
+                                                      )
+                                        );
                     }
                 }
             }
@@ -595,27 +597,26 @@ public class SemanticChecker implements AstVisitor<Type> {
                 assignOperatorEquals(locationAssignExpr, Scanner.MULTIPLY_ASSIGN) ||
                 locationAssignExpr.assignExpr instanceof Decrement ||
                 locationAssignExpr.assignExpr instanceof Increment) {
-                // both must be of type int
                 if (!((descriptor.getType() == Type.getIntType()) && expressionType == Type.getIntType())) {
-                    errors.add(new SemanticError(locationAssignExpr.tokenPosition,
-                                                 SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                                 String.format(
-                                                         "The location and the expression in an incrementing/decrementing assignment must be of type `int`, " +
-                                                         "currently the location `%s` is of type `%s` and the expression `%s` is of type `%s`",
-                                                         locationAssignExpr.location.getLabel(),
-                                                         descriptor.getType(),
-                                                         locationAssignExpr.assignExpr.getSourceCode(),
-                                                         expressionType
-                                                              )
-                    ));
+                    logSemanticError(locationAssignExpr.tokenPosition,
+                                     ErrorType.UNSUPPORTED_TYPE,
+                                     String.format(
+                                             "The location and the expression in an incrementing/decrementing assignment must be of type `int`, " +
+                                             "currently the location `%s` is of type `%s` and the expression `%s` is of type `%s`",
+                                             locationAssignExpr.location.getLabel(),
+                                             descriptor.getType(),
+                                             locationAssignExpr.assignExpr.getSourceCode(),
+                                             expressionType
+                                                  )
+                                    );
                 }
             }
             return Type.getUnsetType();
         }).orElseGet(() -> {
-            errors.add(new SemanticError(locationAssignExpr.tokenPosition,
-                                         SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
-                                         String.format("id `%s` not in scope", location.getLabel())
-            ));
+            logSemanticError(locationAssignExpr.tokenPosition,
+                             ErrorType.IDENTIFIER_NOT_IN_SCOPE,
+                             String.format("id `%s` not in scope", location.getLabel())
+                            );
             return Type.getUnsetType();
         });
     }
@@ -643,32 +644,34 @@ public class SemanticChecker implements AstVisitor<Type> {
             locationVariable.setType(descriptor.getType());
             return locationVariable.getType();
         }).orElseGet(() -> {
-            errors.add(new SemanticError(locationVariable.tokenPosition,
-                                         SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
-                                         "No identifier can be used before it is declared: " +
-                                         locationVariable.getLabel() +
-                                         " not in scope"
-            ));
+            logSemanticError(locationVariable.tokenPosition,
+                             ErrorType.IDENTIFIER_NOT_IN_SCOPE,
+                             String.format("No identifier can be used before it is declared: %s not in scope",
+                                           locationVariable.getLabel()
+                                          )
+                            );
             return Type.getUnsetType();
         });
     }
 
     @Override
     public Type visit(Len len, Scope scope) {
-        final var arrayName = len.rValue.getLabel();
-        return scope.lookup(arrayName).map(descriptor -> {
+        final var arrayLabel = len.getArrayLabel();
+        return scope.lookup(arrayLabel).map(descriptor -> {
             if (!(descriptor.isForArray())) {
-                errors.add(new SemanticError(len.rValue.tokenPosition,
-                                             SemanticError.SemanticErrorType.UNSUPPORTED_TYPE,
-                                             "the argument of the len operator must be an array"
-                ));
+                logSemanticError(len.tokenPosition,
+                                 ErrorType.UNSUPPORTED_TYPE,
+                                 "the argument of the len operator must be an array"
+                                );
             }
             return Type.getIntType();
         }).orElseGet(() -> {
-            errors.add(new SemanticError(len.rValue.tokenPosition,
-                                         SemanticError.SemanticErrorType.IDENTIFIER_NOT_IN_SCOPE,
-                                         arrayName + " not in scope"
-            ));
+            logSemanticError(len.tokenPosition,
+                             ErrorType.IDENTIFIER_NOT_IN_SCOPE,
+                             String.format("No identifier can be used before it is declared: %s not in scope",
+                                           arrayLabel
+                                          )
+                            );
             return Type.getIntType();
         });
     }
@@ -724,10 +727,10 @@ public class SemanticChecker implements AstVisitor<Type> {
         try {
             intLiteral.convertToLong();
         } catch (Exception e) {
-            errors.add(new SemanticError(intLiteral.tokenPosition,
-                                         SemanticError.SemanticErrorType.INT_LITERAL_TOO_BIG,
-                                         "Encountered int literal that's out of bounds; -9223372036854775808 <= x <= 9223372036854775807"
-            ));
+            logSemanticError(intLiteral.tokenPosition,
+                             ErrorType.INT_LITERAL_TOO_BIG,
+                             "Encountered int literal that's out of bounds; -9223372036854775808 <= x <= 9223372036854775807"
+                            );
         }
     }
 
@@ -743,16 +746,15 @@ public class SemanticChecker implements AstVisitor<Type> {
         var type = fieldDeclaration.getType();
         for (var rValue : fieldDeclaration.vars) {
             if (scope.isShadowingParameter(rValue.getLabel())) {
-                errors.add(new SemanticError(fieldDeclaration.tokenPosition,
-                                             SemanticError.SemanticErrorType.SHADOWING_FORMAL_ARGUMENT,
-                                             "Field " + rValue.getLabel() + " shadows a parameter"
-                ));
+                logSemanticError(fieldDeclaration.tokenPosition,
+                                 ErrorType.SHADOWING_FORMAL_ARGUMENT,
+                                 String.format("`%s` shadows a parameter", rValue.getLabel())
+                                );
             } else if (scope.containsKey(rValue.getLabel())) {
-                // field already declared in scope
-                errors.add(new SemanticError(fieldDeclaration.tokenPosition,
-                                             SemanticError.SemanticErrorType.IDENTIFIER_ALREADY_DECLARED,
-                                             "Field " + rValue.getLabel() + " already declared"
-                ));
+                logSemanticError(fieldDeclaration.tokenPosition,
+                                 ErrorType.IDENTIFIER_ALREADY_DECLARED,
+                                 String.format("`%s` already declared", rValue.getLabel())
+                                );
             } else {
                 scope.put(rValue.getLabel(), Descriptor.forValue(type));
             }
@@ -761,26 +763,23 @@ public class SemanticChecker implements AstVisitor<Type> {
         for (var array : fieldDeclaration.arrays) {
             var arrayIdLabel = array.getLabel();
             if (scope.isShadowingParameter(array.getLabel())) {
-                errors.add(new SemanticError(fieldDeclaration.tokenPosition,
-                                             SemanticError.SemanticErrorType.SHADOWING_FORMAL_ARGUMENT,
-                                             "Field " + arrayIdLabel + " shadows a parameter"
-                ));
+                logSemanticError(fieldDeclaration.tokenPosition,
+                                 ErrorType.SHADOWING_FORMAL_ARGUMENT,
+                                 String.format("`%s` shadows a parameter", arrayIdLabel)
+                                );
             } else if (scope.lookup(array.getLabel()).isPresent()) {
-                errors.add(new SemanticError(fieldDeclaration.tokenPosition,
-                                             SemanticError.SemanticErrorType.IDENTIFIER_ALREADY_DECLARED,
-                                             "Field " + arrayIdLabel + " already declared"
-                ));
+                logSemanticError(fieldDeclaration.tokenPosition,
+                                 ErrorType.IDENTIFIER_ALREADY_DECLARED,
+                                 String.format("`%s` already declared", arrayIdLabel)
+                                );
             } else {
                 if (Integer.parseInt(array.getSize().literal) <= 0) {
-                    errors.add(new SemanticError(array.getSize().tokenPosition,
-                                                 SemanticError.SemanticErrorType.INVALID_ARRAY_SIZE,
-                                                 "array declaration size " +
-                                                 array.getLabel() +
-                                                 "[" +
-                                                 array.getSize().literal +
-                                                 "]" +
-                                                 " must be greater than 0"
-                    ));
+                    logSemanticError(array.getSize().tokenPosition,
+                                     ErrorType.INVALID_ARRAY_SIZE,
+                                     String.format("declared array size must be greater than 0, not `%s`",
+                                                   array.getSize().literal
+                                                  )
+                                    );
                 } else {
                     scope.put(arrayIdLabel, Descriptor.forArray(ArrayType.get(type, array.getSize().convertToLong())));
                 }
@@ -791,21 +790,20 @@ public class SemanticChecker implements AstVisitor<Type> {
 
     public @NotNull Type visit(@NotNull Break breakStatement, @NotNull Scope scope) {
         if (loopDepth < 1) {
-            errors.add(new SemanticError(breakStatement.tokenPosition,
-                                         SemanticError.SemanticErrorType.BREAK_OUT_OF_CONTEXT,
-                                         "break statement must be enclosed within a loop"
-            ));
+            logSemanticError(breakStatement.tokenPosition,
+                             ErrorType.BREAK_OUT_OF_CONTEXT,
+                             "break statement must be enclosed within a loop"
+                            );
         }
         return Type.getUnsetType();
     }
 
     public @NotNull Type visit(@NotNull Continue continueStatement, @NotNull Scope scope) {
         if (loopDepth < 1) {
-            errors.add(new SemanticError(continueStatement.tokenPosition,
-                                         SemanticError.SemanticErrorType.CONTINUE_OUT_OF_CONTEXT,
-                                         "continue statement must be enclosed within a loop"
-
-            ));
+            logSemanticError(continueStatement.tokenPosition,
+                             ErrorType.CONTINUE_OUT_OF_CONTEXT,
+                             "continue statement must be enclosed within a loop"
+                            );
         }
         return Type.getUnsetType();
     }
