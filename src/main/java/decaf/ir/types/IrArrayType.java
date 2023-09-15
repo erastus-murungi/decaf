@@ -5,35 +5,35 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ArrayType extends Type {
+public class IrArrayType extends IrType {
   @NotNull
-  private final Type containedType;
+  private final IrType containedType;
   private final int length;
 
-  private static final Map<Type, Map<Integer, ArrayType>> typesCache;
+  private static final Map<IrType, Map<Integer, IrArrayType>> typesCache;
 
   static {
     typesCache = new HashMap<>();
   }
 
-  protected ArrayType(@NotNull Type containedType, int length) {
+  protected IrArrayType(@NotNull IrType containedType, int length) {
     super(TypeID.Array);
     this.containedType = containedType;
     this.length = length;
   }
 
-  public static ArrayType get(@NotNull Type containedType, int length) {
+  public static IrArrayType get(@NotNull IrType containedType, int length) {
     if (!typesCache.containsKey(containedType)) {
       typesCache.put(containedType, new HashMap<>());
     }
-    Map<Integer, ArrayType> lengthMap = typesCache.get(containedType);
+    Map<Integer, IrArrayType> lengthMap = typesCache.get(containedType);
     if (!lengthMap.containsKey(length)) {
-      lengthMap.put(length, new ArrayType(containedType, length));
+      lengthMap.put(length, new IrArrayType(containedType, length));
     }
     return lengthMap.get(length);
   }
 
-  public @NotNull Type getContainedType() {
+  public @NotNull IrType getContainedType() {
     return containedType;
   }
 

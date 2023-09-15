@@ -2,7 +2,7 @@ package decaf.ir.types;
 
 import org.jetbrains.annotations.NotNull;
 
-public class Type {
+public class IrType {
   public enum TypeID {
     // primitive types
     Int,
@@ -22,16 +22,16 @@ public class Type {
   private final TypeID typeID;
 
   // define singleton instances of primitive types
-  private static final Type Int = new Type(TypeID.Int);
-  private static final Type Bool = new Type(TypeID.Bool);
-  private static final Type String = new Type(TypeID.String);
-  private static final Type Void = new Type(TypeID.Void);
-  private static final Type Pointer = new Type(TypeID.Pointer);
+  private static final IrType Int = new IrType(TypeID.Int);
+  private static final IrType Bool = new IrType(TypeID.Bool);
+  private static final IrType String = new IrType(TypeID.String);
+  private static final IrType Void = new IrType(TypeID.Void);
+  private static final IrType Pointer = new IrType(TypeID.Pointer);
 
   // define singleton instance of undefined type
-  public static final Type Undefined = new Type(TypeID.Undefined);
+  public static final IrType Undefined = new IrType(TypeID.Undefined);
 
-  protected Type(@NotNull TypeID typeID) {
+  protected IrType(@NotNull TypeID typeID) {
     this.typeID = typeID;
   }
 
@@ -40,27 +40,27 @@ public class Type {
     return typeID;
   }
 
-  public static Type getIntType() {
+  public static IrType getIntType() {
     return Int;
   }
 
-  public static Type getBoolType() {
+  public static IrType getBoolType() {
     return Bool;
   }
 
-  public static Type getStringType() {
+  public static IrType getStringType() {
     return String;
   }
 
-  public static Type getVoidType() {
+  public static IrType getVoidType() {
     return Void;
   }
 
-  public static Type getPointerType() {
+  public static IrType getPointerType() {
     return Pointer;
   }
 
-  public static Type getUndefinedType() {
+  public static IrType getUndefinedType() {
     return Undefined;
   }
 

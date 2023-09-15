@@ -5,11 +5,11 @@ import java.util.List;
 
 import decaf.analysis.TokenPosition;
 import decaf.analysis.lexical.Scanner;
+import decaf.analysis.syntax.ast.types.Type;
 import decaf.shared.AstVisitor;
 
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
-import decaf.ir.types.Type;
 
 public class Len extends Expression {
   final private RValue arrayName;
