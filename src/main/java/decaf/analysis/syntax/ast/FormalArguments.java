@@ -1,5 +1,6 @@
 package decaf.analysis.syntax.ast;
 
+import decaf.analysis.TokenPosition;
 import decaf.shared.AstVisitor;
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
@@ -12,7 +13,8 @@ import java.util.stream.Collectors;
 public class FormalArguments extends AST implements Iterable<FormalArgument> {
     private final List<FormalArgument> formalArguments;
 
-    public FormalArguments(List<FormalArgument> formalArguments) {
+    public FormalArguments(TokenPosition tokenPosition, List<FormalArgument> formalArguments) {
+        super(tokenPosition);
         this.formalArguments = formalArguments;
     }
 

@@ -179,7 +179,7 @@ public class Scanner implements Iterable<Token> {
     private Token nextTokenHelper() {
         if (stringIndex >= sourceCode.length()) {
           if (prevToken != null) {
-            return makeToken(prevToken.tokenPosition, Token.Type.EOF, EOF);
+            return makeToken(prevToken.getTokenPosition(), Token.Type.EOF, EOF);
           } else {
             return makeToken(new TokenPosition(line, column, stringIndex), Token.Type.EOF, EOF);
           }

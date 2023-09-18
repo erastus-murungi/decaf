@@ -93,6 +93,7 @@ public class Parser {
         }
         context.setProgram(root);
     }
+
     public @NotNull Program getRoot() {
         return root;
     }
@@ -160,16 +161,17 @@ public class Parser {
     }
 
     private boolean canParseMethod() {
-        if (getCurrentTokenType() == RESERVED_VOID && currentTokenIndex + 1 < tokens.size() &&
+        if (getCurrentTokenType() == RESERVED_VOID &&
+            currentTokenIndex + 1 < tokens.size() &&
             tokens.get(currentTokenIndex + 1).type == ID) {
             return true;
         }
         return (getCurrentTokenType() == RESERVED_BOOL ||
                 getCurrentTokenType() == RESERVED_INT &&
-               currentTokenIndex + 1 < tokens.size() &&
-               tokens.get(currentTokenIndex + 1).type == ID &&
-               currentTokenIndex + 2 < tokens.size() &&
-               tokens.get(currentTokenIndex + 2).type == LEFT_PARENTHESIS);
+                currentTokenIndex + 1 < tokens.size() &&
+                tokens.get(currentTokenIndex + 1).type == ID &&
+                currentTokenIndex + 2 < tokens.size() &&
+                tokens.get(currentTokenIndex + 2).type == LEFT_PARENTHESIS);
     }
 
     private boolean canParseArray() {
@@ -187,7 +189,7 @@ public class Parser {
     private Optional<Expression> parseOrExpr() {
         return parseAndExpr().flatMap(andExpr -> {
             if (getCurrentTokenType() == CONDITIONAL_OR) {
-                var tokenPosition = consumeTokenNoCheck().tokenPosition;
+                var tokenPosition = consumeTokenNoCheck().getTokenPosition();
                 return parseOrExpr().map(orExpr -> BinaryOpExpression.of(andExpr,
                                                                          new ConditionalOperator(tokenPosition,
                                                                                                  Scanner.CONDITIONAL_OR
@@ -207,7 +209,7 @@ public class Parser {
                                     "was promised conditional and ('&&') by implementation"
                                    ).flatMap(token -> parseAndExpr().map(andExpr -> BinaryOpExpression.of(equalityExpr,
                                                                                                           new ConditionalOperator(
-                                                                                                                  token.tokenPosition,
+                                                                                                                  token.getTokenPosition(),
                                                                                                                   Scanner.CONDITIONAL_AND
                                                                                                           ),
                                                                                                           andExpr
@@ -222,7 +224,7 @@ public class Parser {
             if (getCurrentTokenType() == EQ || getCurrentTokenType() == NEQ) {
                 return consumeToken(getCurrentTokenType()).flatMap(token -> parseEqualityExpr().map(equalityExpr -> BinaryOpExpression.of(
                         relationalExpr,
-                        new EqualityOperator(token.tokenPosition, (token.type == EQ) ? Scanner.EQ : Scanner.NEQ),
+                        new EqualityOperator(token.getTokenPosition(), (token.type == EQ) ? Scanner.EQ : Scanner.NEQ),
                         equalityExpr
                                                                                                                                          )));
             }
@@ -238,19 +240,19 @@ public class Parser {
                 getCurrentTokenType() == LEQ) {
                 return consumeToken(getCurrentTokenType()).flatMap(token -> parseRelationalExpr().map(relationalExpr -> switch (token.type) {
                     case GT -> BinaryOpExpression.of(addSubExpr,
-                                                     new RelationalOperator(token.tokenPosition, Scanner.GT),
+                                                     new RelationalOperator(token.getTokenPosition(), Scanner.GT),
                                                      relationalExpr
                                                     );
                     case LT -> BinaryOpExpression.of(addSubExpr,
-                                                     new RelationalOperator(token.tokenPosition, Scanner.LT),
+                                                     new RelationalOperator(token.getTokenPosition(), Scanner.LT),
                                                      relationalExpr
                                                     );
                     case LEQ -> BinaryOpExpression.of(addSubExpr,
-                                                      new RelationalOperator(token.tokenPosition, Scanner.LEQ),
+                                                      new RelationalOperator(token.getTokenPosition(), Scanner.LEQ),
                                                       relationalExpr
                                                      );
                     default -> BinaryOpExpression.of(addSubExpr,
-                                                     new RelationalOperator(token.tokenPosition, Scanner.GEQ),
+                                                     new RelationalOperator(token.getTokenPosition(), Scanner.GEQ),
                                                      relationalExpr
                                                     );
                 }));
@@ -264,7 +266,7 @@ public class Parser {
             if (getCurrentTokenType() == PLUS || getCurrentTokenType() == MINUS) {
                 return consumeToken(getCurrentTokenType()).flatMap(token -> parseAddSubExpr().map(addSubExpr -> BinaryOpExpression.of(
                         mulDivRemExpr,
-                        new ArithmeticOperator(token.tokenPosition,
+                        new ArithmeticOperator(token.getTokenPosition(),
                                                (token.type == PLUS) ? Scanner.PLUS : Scanner.MINUS
                         ),
                         addSubExpr
@@ -279,7 +281,7 @@ public class Parser {
             if (getCurrentTokenType() == MULTIPLY || getCurrentTokenType() == DIVIDE || getCurrentTokenType() == MOD) {
                 return consumeToken(getCurrentTokenType()).flatMap(token -> parseMulDivRemExpr().map(mulDivRemExpr -> BinaryOpExpression.of(
                         expression,
-                        new ArithmeticOperator(token.tokenPosition,
+                        new ArithmeticOperator(token.getTokenPosition(),
                                                (token.type == MULTIPLY) ? Scanner.MULTIPLY : (token.type ==
                                                                                               DIVIDE) ? Scanner.DIVIDE : Scanner.MOD
                         ),
@@ -296,7 +298,7 @@ public class Parser {
                 Scanner.MINUS
                                                                                                                    ) &&
                                                                                                      expression instanceof IntLiteral intLiteral) ? intLiteral.negate() : new UnaryOpExpression(
-                new UnaryOperator(unaryOp.tokenPosition, unaryOp.lexeme),
+                new UnaryOperator(unaryOp.getTokenPosition(), unaryOp.lexeme),
                 expression
         )));
     }
@@ -309,7 +311,7 @@ public class Parser {
                                                                                       ParserError.ErrorType.UNCLOSED_PARENTHESIS,
                                                                                       "expected a right parenthesis to close a parenthesized expression"
                                                                                      ).map(tk1 -> new ParenthesizedExpression(
-                tk.tokenPosition,
+                tk.getTokenPosition(),
                 expr
         ))));
     }
@@ -385,7 +387,7 @@ public class Parser {
         return consumeToken(INT_LITERAL,
                             ParserError.ErrorType.IMPLEMENTATION_ERROR,
                             "was promised an int literal by the implementation"
-                           ).map(token -> new IntLiteral(token.tokenPosition, token.lexeme));
+                           ).map(token -> new IntLiteral(token.getTokenPosition(), token.lexeme));
     }
 
     private Optional<List<Statement>> parseStatements() {
@@ -463,7 +465,7 @@ public class Parser {
     }
 
     private Optional<FormalArgument> parseFormalArgument() {
-        final var tokenPosition = getCurrentToken().tokenPosition;
+        final var tokenPosition = getCurrentToken().getTokenPosition();
         return parseType("expected a valid type, one of (int, bool) but found ").flatMap(type -> parseName(
                 "expected a valid name for the method argument but found").map(nameId -> new FormalArgument(
                 tokenPosition,
@@ -517,12 +519,12 @@ public class Parser {
     }
 
     private Optional<MethodDefinition> parseMethodDefinition() {
-        final var tokenPosition = getCurrentToken().tokenPosition;
+        final var tokenPosition = getCurrentToken().getTokenPosition();
         return parseMethodReturnType().flatMap(returnType -> parseName("expected method to have an identifier").flatMap(
                 nameId -> parseFormalArguments().flatMap(formalArguments -> parseBlock().map(block -> new MethodDefinition(
                         tokenPosition,
                         returnType,
-                        new FormalArguments(formalArguments),
+                        new FormalArguments(tokenPosition, formalArguments),
                         nameId,
                         block
                 )))));
@@ -533,7 +535,7 @@ public class Parser {
             return consumeToken(STRING_LITERAL,
                                 ParserError.ErrorType.IMPLEMENTATION_ERROR,
                                 "was promised a string literal by implementation"
-                               ).map(token -> new StringLiteral(token.tokenPosition, token.lexeme));
+                               ).map(token -> new StringLiteral(token.getTokenPosition(), token.lexeme));
         } else {
             return parseOrExpr().map(ExpressionParameter::new);
         }
@@ -579,12 +581,12 @@ public class Parser {
                             "Expected a valid identifier, `var` or fn_name()"
                            ).flatMap(token -> {
             if (getCurrentTokenType() == LEFT_PARENTHESIS) {
-                return parseMethodCall(new RValue(token.lexeme,
-                                                  token.tokenPosition
+                return parseMethodCall(new RValue(token.getTokenPosition(),
+                                                  token.lexeme
                 )).flatMap(methodCall -> consumeToken(SEMICOLON,
                                                       ParserError.ErrorType.MISSING_SEMICOLON,
                                                       "expected a semicolon to terminate a method call"
-                                                     ).map(tk -> new MethodCallStatement(token.tokenPosition,
+                                                     ).map(tk -> new MethodCallStatement(token.getTokenPosition(),
                                                                                          methodCall
                 )));
             } else {
@@ -597,7 +599,7 @@ public class Parser {
     }
 
     private Optional<LocationAssignExpr> parseLocationAndAssignExpr(@NotNull Token token) {
-        return parseLocation(token).flatMap(location -> parseAssignExpr().map(assignExpr -> new LocationAssignExpr(token.tokenPosition,
+        return parseLocation(token).flatMap(location -> parseAssignExpr().map(assignExpr -> new LocationAssignExpr(token.getTokenPosition(),
                                                                                                                    location,
                                                                                                                    assignExpr
         )));
@@ -610,7 +612,7 @@ public class Parser {
                                   ADD_ASSIGN,
                                   MINUS_ASSIGN,
                                   MULTIPLY_ASSIGN
-                                 ).map(token -> new AssignOperator(token.tokenPosition, token.lexeme));
+                                 ).map(token -> new AssignOperator(token.getTokenPosition(), token.lexeme));
     }
 
     private Optional<CompoundAssignOperator> parseCompoundAssignOp() {
@@ -619,7 +621,7 @@ public class Parser {
                                   ADD_ASSIGN,
                                   MINUS_ASSIGN,
                                   MULTIPLY_ASSIGN
-                                 ).map(token -> new CompoundAssignOperator(token.tokenPosition, token.lexeme));
+                                 ).map(token -> new CompoundAssignOperator(token.getTokenPosition(), token.lexeme));
     }
 
     private Optional<AssignOpExpr> parseAssignOpExpr() {
@@ -643,7 +645,8 @@ public class Parser {
                                   INCREMENT,
                                   DECREMENT
                                  ).map(token -> (token.type ==
-                                                 INCREMENT) ? new Increment(token.tokenPosition) : new Decrement(token.tokenPosition));
+                                                 INCREMENT) ? new Increment(token.getTokenPosition()) : new Decrement(
+                token.getTokenPosition()));
     }
 
     private Optional<? extends AssignExpr> parseAssignExpr() {
@@ -693,9 +696,9 @@ public class Parser {
 
     private Optional<? extends Location> parseLocation(@NotNull Token token) {
         if (getCurrentToken().type == LEFT_SQUARE_BRACKET) {
-            return parseLocationArray(new RValue(token.lexeme, token.tokenPosition));
+            return parseLocationArray(new RValue(token.getTokenPosition(), token.lexeme));
         }
-        return Optional.of(new LocationVariable(new RValue(token.lexeme, token.tokenPosition)));
+        return Optional.of(new LocationVariable(new RValue(token.getTokenPosition(), token.lexeme)));
     }
 
     private Optional<? extends Location> parseLocation() {
@@ -739,15 +742,15 @@ public class Parser {
                 ParserError.ErrorType.UNCLOSED_PARENTHESIS,
                 "expected a `)` to close len statement"
                                                                                                                 ).map(
-                tk1 -> new Len(token.tokenPosition, name)))));
+                tk1 -> new Len(token.getTokenPosition(), name)))));
     }
 
     private Optional<Literal> parseLiteral(Token.Type expectedLiteralType) {
         return consumeToken(expectedLiteralType).map(token -> switch (expectedLiteralType) {
-            case CHAR_LITERAL -> new CharLiteral(token.tokenPosition, token.lexeme);
-            case RESERVED_FALSE -> new BooleanLiteral(token.tokenPosition, Scanner.RESERVED_FALSE);
-            case RESERVED_TRUE -> new BooleanLiteral(token.tokenPosition, Scanner.RESERVED_TRUE);
-            default -> new IntLiteral(token.tokenPosition, token.lexeme);
+            case CHAR_LITERAL -> new CharLiteral(token.getTokenPosition(), token.lexeme);
+            case RESERVED_FALSE -> new BooleanLiteral(token.getTokenPosition(), Scanner.RESERVED_FALSE);
+            case RESERVED_TRUE -> new BooleanLiteral(token.getTokenPosition(), Scanner.RESERVED_TRUE);
+            default -> new IntLiteral(token.getTokenPosition(), token.lexeme);
         });
     }
 
@@ -761,12 +764,12 @@ public class Parser {
                              ParserError.ErrorType.IMPLEMENTATION_ERROR,
                              "was promised a semicolon by implementation"
                             );
-                return Optional.of(new Return(token.tokenPosition, new VoidExpression(token.tokenPosition)));
+                return Optional.of(new Return(token.getTokenPosition(), new VoidExpression(token.getTokenPosition())));
             } else {
                 return parseOrExpr().flatMap(expression -> consumeToken(SEMICOLON,
                                                                         ParserError.ErrorType.MISSING_SEMICOLON,
                                                                         "was expecting semicolon after return statement"
-                                                                       ).flatMap(tk -> Optional.of(new Return(token.tokenPosition,
+                                                                       ).flatMap(tk -> Optional.of(new Return(token.getTokenPosition(),
                                                                                                               expression
                 ))));
             }
@@ -787,7 +790,7 @@ public class Parser {
                 ParserError.ErrorType.UNCLOSED_PARENTHESIS,
                 "expected `)` to close out while statement condition"
                                                                                                                           ).flatMap(
-                tk1 -> parseBlock().map(block -> new While(token.tokenPosition, expression, block))))));
+                tk1 -> parseBlock().map(block -> new While(token.getTokenPosition(), expression, block))))));
     }
 
     private Optional<If> parseIfStatement() {
@@ -809,13 +812,13 @@ public class Parser {
                         return consumeToken(RESERVED_ELSE,
                                             ParserError.ErrorType.IMPLEMENTATION_ERROR,
                                             "was promised an `else statement` by implementation"
-                                           ).flatMap(tk2 -> parseBlock().map(elseBlock -> new If(token.tokenPosition,
+                                           ).flatMap(tk2 -> parseBlock().map(elseBlock -> new If(token.getTokenPosition(),
                                                                                                  expression,
                                                                                                  block,
                                                                                                  elseBlock
                         )));
                     } else {
-                        return Optional.of(new If(token.tokenPosition, expression, block, null));
+                        return Optional.of(new If(token.getTokenPosition(), expression, block, null));
                     }
                 })))));
     }
@@ -845,13 +848,14 @@ public class Parser {
                                 updateAssignExpr -> consumeToken(RIGHT_PARENTHESIS,
                                                                  ParserError.ErrorType.UNCLOSED_PARENTHESIS,
                                                                  "expected a `)` to close out for statement"
-                                                                ).flatMap(tk4 -> parseBlock().map(block -> new For(token.tokenPosition,
+                                                                ).flatMap(tk4 -> parseBlock().map(block -> new For(token.getTokenPosition(),
                                                                                                                    new Initialization(
                                                                                                                            initId,
                                                                                                                            initExpr
                                                                                                                    ),
                                                                                                                    terminatingCondition,
                                                                                                                    new Assignment(
+                                                                                                                           updateLocation.tokenPosition,
                                                                                                                            updateLocation,
                                                                                                                            updateAssignExpr,
                                                                                                                            updateAssignExpr.getOperator()
@@ -867,7 +871,7 @@ public class Parser {
                            ).flatMap(token -> consumeToken(SEMICOLON,
                                                            ParserError.ErrorType.MISSING_SEMICOLON,
                                                            "expected semicolon after break statement"
-                                                          ).map(tk -> new Break(token.tokenPosition)));
+                                                          ).map(tk -> new Break(token.getTokenPosition())));
     }
 
     private Optional<Continue> parseContinueStatement() {
@@ -877,31 +881,34 @@ public class Parser {
                            ).flatMap(token -> consumeToken(SEMICOLON,
                                                            ParserError.ErrorType.MISSING_SEMICOLON,
                                                            "expected semicolon after continue statement"
-                                                          ).map(tk -> new Continue(token.tokenPosition)));
+                                                          ).map(tk -> new Continue(token.getTokenPosition())));
     }
 
     private Optional<Block> parseBlock() {
         return consumeToken(LEFT_CURLY,
                             ParserError.ErrorType.UNEXPECTED_TOKEN,
                             "expected a left curly brace to start a block"
-                           ).flatMap(token -> parseFieldDeclarations().flatMap(fieldDeclarations -> parseStatements().flatMap(
+                           ).flatMap(leftCurlyToken -> parseFieldDeclarations().flatMap(fieldDeclarations -> parseStatements().flatMap(
                 statements -> consumeToken(RIGHT_CURLY,
                                            ParserError.ErrorType.UNCLOSED_PARENTHESIS,
                                            "expected a right curly brace to end a block"
-                                          ).map(rightCurlyToken -> new Block(fieldDeclarations, statements)))));
+                                          ).map(rightCurlyToken -> new Block(leftCurlyToken.getTokenPosition(),
+                                                                             fieldDeclarations,
+                                                                             statements
+                )))));
     }
 
     private Optional<ImportDeclaration> parseImportDeclaration() {
         return (consumeToken(RESERVED_IMPORT,
                              ParserError.ErrorType.IMPLEMENTATION_ERROR,
                              "was promised keyword `import` by implementation"
-                            ).flatMap(token -> parseName("expected valid import name not " +
-                                                         getCurrentToken().lexeme).flatMap(importName -> consumeToken(
+                            ).flatMap(importKeywordToken -> parseName("expected valid import name not " +
+                                                                      getCurrentToken().lexeme).flatMap(importName -> consumeToken(
                 SEMICOLON,
                 ParserError.ErrorType.MISSING_SEMICOLON,
                 "expected semicolon after import statement"
-                                                                                                                     ).map(
-                tk -> new ImportDeclaration(importName)))));
+                                                                                                                                  ).map(
+                tk -> new ImportDeclaration(importKeywordToken.getTokenPosition(), importName)))));
     }
 
     private Optional<FieldDeclaration> parseFieldDeclaration() {
@@ -912,7 +919,7 @@ public class Parser {
     private Optional<FieldDeclaration> parseFieldDeclarationWithType(@NotNull Type type) {
         assert type == Type.getIntType() || type == Type.getBoolType();
 
-        var tokenPosition = getCurrentToken().tokenPosition;
+        var tokenPosition = getCurrentToken().getTokenPosition();
         var variables = new ArrayList<RValue>();
         var arrays = new ArrayList<Array>();
 
@@ -942,9 +949,10 @@ public class Parser {
     }
 
     private Optional<RValue> parseName(@NotNull String errorMessage) {
-        return consumeToken(ID, ParserError.ErrorType.MISSING_NAME, errorMessage).map(token -> new RValue(token.lexeme,
-                                                                                                          token.tokenPosition
-        ));
+        return consumeToken(ID,
+                            ParserError.ErrorType.MISSING_NAME,
+                            errorMessage
+                           ).map(token -> new RValue(token.getTokenPosition(), token.lexeme));
     }
 
     private Optional<Type> parseType(@NotNull String errorMessage) {

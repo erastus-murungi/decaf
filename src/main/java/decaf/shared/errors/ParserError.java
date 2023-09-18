@@ -48,7 +48,7 @@ public class ParserError implements Error<ParserError.ErrorType> {
 
   @Override
   public TokenPosition tokenPosition() {
-    return token.tokenPosition;
+    return token.getTokenPosition();
   }
 
   @Override

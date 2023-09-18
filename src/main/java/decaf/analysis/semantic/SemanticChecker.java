@@ -20,7 +20,7 @@ import static decaf.shared.errors.SemanticError.ErrorType;
 
 public class SemanticChecker implements AstVisitor<Type> {
     @NotNull
-    public final Scope globalScope = Scope.forGlobals();
+    private final Scope globalScope = Scope.forGlobals();
     @NotNull
     private final CompilationContext context;
 
@@ -35,11 +35,11 @@ public class SemanticChecker implements AstVisitor<Type> {
 
     public SemanticChecker(@NotNull Program root, @NotNull CompilationContext context) {
         this.context = context;
-        visit(root, globalScope);
+        visit(root, getGlobalScope());
         if (context.debugModeOn()) {
             context.printSemanticErrors();
         }
-        context.setGlobalScope(globalScope);
+        context.setGlobalScope(getGlobalScope());
     }
 
     private void logSemanticError(TokenPosition tokenPosition, ErrorType errorType, String message) {
@@ -62,9 +62,8 @@ public class SemanticChecker implements AstVisitor<Type> {
         final var methodId = methodDefinition.getName();
         final var block = methodDefinition.getBody();
 
-        var formalArgumentScope = new Scope(globalScope, Scope.For.Arguments, block);
-        var localScope = new Scope(formalArgumentScope, Scope.For.Field, block);
-        if (globalScope.containsKey(methodId)) {
+        var formalArgumentScope = Scope.forArguments(getGlobalScope());
+        if (getGlobalScope().containsKey(methodId)) {
 
             logSemanticError(methodDefinition.getTokenPosition(),
                              ErrorType.METHOD_ALREADY_DEFINED,
@@ -75,12 +74,11 @@ public class SemanticChecker implements AstVisitor<Type> {
             for (var formalArgument : methodDefinition.getFormalArguments()) {
                 formalArgument.accept(this, formalArgumentScope);
             }
-            globalScope.addDescriptor(methodId,
-                                      new MethodDescriptor(methodDefinition, formalArgumentScope, localScope)
-                                     );
+            getGlobalScope().addDescriptor(methodId,
+                                           new MethodDescriptor(methodDefinition, formalArgumentScope)
+                                          );
             setInferredReturnType(Type.getUnsetType());
-            block.scope = localScope;
-            block.accept(this, localScope);
+            block.accept(this, formalArgumentScope);
             if (getInferredReturnType() != Type.getUnsetType() &&
                 methodDefinition.getReturnType() != getInferredReturnType()) {
                 logSemanticError(methodDefinition.getTokenPosition(),
@@ -98,62 +96,62 @@ public class SemanticChecker implements AstVisitor<Type> {
 
     @Override
     public Type visit(@NotNull ImportDeclaration importDeclaration, @NotNull Scope scope) {
-        if (scope.isShadowingParameter(importDeclaration.value.getLabel())) {
-            logSemanticError(importDeclaration.value.tokenPosition,
+        if (scope.isShadowingParameter(importDeclaration.importName.getLabel())) {
+            logSemanticError(importDeclaration.importName.tokenPosition,
                              ErrorType.SHADOWING_FORMAL_ARGUMENT,
                              String.format("Import identifier `%s` shadows a parameter",
-                                           importDeclaration.value.getLabel()
+                                           importDeclaration.importName.getLabel()
                                           )
                             );
-        } else if (globalScope.lookup(importDeclaration.value.getLabel()).isPresent()) {
+        } else if (getGlobalScope().lookup(importDeclaration.importName.getLabel()).isPresent()) {
             logSemanticError(new TokenPosition(0, 0, 0),
                              ErrorType.IDENTIFIER_ALREADY_DECLARED,
                              String.format("import identifier `%s` already declared",
-                                           importDeclaration.value.getLabel()
+                                           importDeclaration.importName.getLabel()
                                           )
                             );
         }
-        globalScope.addDescriptor(importDeclaration.value.getLabel(), Descriptor.forImport());
+        getGlobalScope().addDescriptor(importDeclaration.importName.getLabel(), Descriptor.forImport());
         return Type.getUnsetType();
     }
 
     @Override
     public Type visit(For forStatement, Scope scope) {
-        return scope.lookup(forStatement.initialization.initLocation.getLabel()).map(initDescriptor -> {
+        return scope.lookup(forStatement.getInitialization().initLocation.getLabel()).map(initDescriptor -> {
             if (!initDescriptor.typeIs(Type.getIntType())) {
                 logSemanticError(forStatement.tokenPosition,
                                  ErrorType.UNSUPPORTED_TYPE,
                                  String.format("init location `%s` must have type int, not `%s`",
-                                               forStatement.initialization.initLocation.getLabel(),
+                                               forStatement.getInitialization().initLocation.getLabel(),
                                                initDescriptor.getType()
                                               )
                                 );
             }
 
-            var type = forStatement.initialization.initExpression.accept(this, scope);
+            var type = forStatement.getInitialization().initExpression.accept(this, scope);
             if (type != Type.getIntType()) {
-                logSemanticError(forStatement.initialization.initExpression.tokenPosition,
+                logSemanticError(forStatement.getInitialization().initExpression.tokenPosition,
                                  ErrorType.UNSUPPORTED_TYPE,
                                  "init expression must evaluate to an int"
                                 );
             }
 
-            var testType = forStatement.terminatingCondition.accept(this, scope);
+            var testType = forStatement.getTerminatingCondition().accept(this, scope);
             if (testType != Type.getBoolType()) {
-                logSemanticError(forStatement.terminatingCondition.tokenPosition,
+                logSemanticError(forStatement.getTerminatingCondition().tokenPosition,
                                  ErrorType.UNSUPPORTED_TYPE,
                                  String.format("for-loop test must evaluate to %s not %s", Type.getBoolType(), testType)
                                 );
             }
             ++loopDepth;
-            forStatement.block.accept(this, scope);
+            forStatement.getBlock().accept(this, scope);
             --loopDepth;
-            var updateId = forStatement.update.getLocation().getLabel();
+            var updateId = forStatement.getUpdate().getLocation().getLabel();
             var updatingDescriptorOpt = scope.lookupNonMethod(updateId);
             if (updatingDescriptorOpt.isPresent()) {
                 var updatingDescriptor = updatingDescriptorOpt.get();
                 if (!updatingDescriptor.typeIs(Type.getIntType())) {
-                    logSemanticError(forStatement.initialization.initExpression.tokenPosition,
+                    logSemanticError(forStatement.getInitialization().initExpression.tokenPosition,
                                      ErrorType.UNSUPPORTED_TYPE,
                                      String.format("The location `%s` in the for-loop `%s` must have type int, not `%s`",
                                                    updateId,
@@ -162,25 +160,25 @@ public class SemanticChecker implements AstVisitor<Type> {
                                                   )
                                     );
                 }
-                var updateExprType = forStatement.update.assignExpr.accept(this, scope);
-                if (forStatement.update.assignExpr instanceof CompoundAssignOpExpr) {
-                    updateExprType = forStatement.update.assignExpr.expression.getType();
+                var updateExprType = forStatement.getUpdate().assignExpr.accept(this, scope);
+                if (forStatement.getUpdate().assignExpr instanceof CompoundAssignOpExpr) {
+                    updateExprType = forStatement.getUpdate().assignExpr.expression.getType();
                 }
                 if (updateExprType != Type.getIntType()) {
-                    logSemanticError(forStatement.update.assignExpr.tokenPosition,
+                    logSemanticError(forStatement.getUpdate().assignExpr.getTokenPosition(),
                                      ErrorType.UNSUPPORTED_TYPE,
                                      String.format(
                                              "The location and the expression in an incrementing/decrementing assignment must be of type `int`, " +
                                              "currently the location `%s` is of type `%s` and the expression `%s` is of type `%s`",
                                              updateId,
                                              updatingDescriptor.getType(),
-                                             forStatement.update.assignExpr.getSourceCode(),
+                                             forStatement.getUpdate().assignExpr.getSourceCode(),
                                              updateExprType
                                                   )
                                     );
                 }
             } else {
-                logSemanticError(forStatement.update.getLocation().tokenPosition,
+                logSemanticError(forStatement.getUpdate().getLocation().tokenPosition,
                                  ErrorType.UNSUPPORTED_TYPE,
                                  String.format("The location `%s` in the for-loop `%s` must be declared in scope",
                                                updateId,
@@ -190,10 +188,10 @@ public class SemanticChecker implements AstVisitor<Type> {
             }
             return Type.getUnsetType();
         }).orElseGet(() -> {
-            logSemanticError(forStatement.initialization.initLocation.tokenPosition,
+            logSemanticError(forStatement.getInitialization().initLocation.tokenPosition,
                              ErrorType.UNSUPPORTED_TYPE,
                              String.format("The location `%s` in the for-loop `%s` must be declared in scope",
-                                           forStatement.initialization.initLocation.getLabel(),
+                                           forStatement.getInitialization().initLocation.getLabel(),
                                            forStatement
                                           )
                             );
@@ -203,15 +201,15 @@ public class SemanticChecker implements AstVisitor<Type> {
 
     @Override
     public Type visit(@NotNull While whileStatement, @NotNull Scope scope) {
-        var type = whileStatement.test.accept(this, scope);
+        var type = whileStatement.getTest().accept(this, scope);
         if (type != Type.getBoolType()) {
-            logSemanticError(whileStatement.test.tokenPosition,
+            logSemanticError(whileStatement.getTest().tokenPosition,
                              ErrorType.UNSUPPORTED_TYPE,
                              String.format("while statement test must evaluate to a bool, not `%s`", type)
                             );
         }
         ++loopDepth;
-        whileStatement.body.accept(this, scope);
+        whileStatement.getBody().accept(this, scope);
         --loopDepth;
         return Type.getUnsetType();
     }
@@ -366,15 +364,12 @@ public class SemanticChecker implements AstVisitor<Type> {
 
     @Override
     public Type visit(@NotNull Block block, @NotNull Scope parentScope) {
-        var localScope = new Scope(parentScope, Scope.For.Field, block);
-        block.scope = localScope;
-        parentScope.children.add(localScope);
-
+        var localScope = Scope.forBlock(block, parentScope);
         for (var fieldDeclaration : block.getFieldDeclarations()) {
-            fieldDeclaration.accept(this, block.scope);
+            fieldDeclaration.accept(this, localScope);
         }
         for (Statement statement : block.getStatements()) {
-            statement.accept(this, block.scope);
+            statement.accept(this, localScope);
         }
         return Type.getUnsetType();
     }
@@ -462,7 +457,7 @@ public class SemanticChecker implements AstVisitor<Type> {
     public Type visit(@NotNull FormalArgument formalArgument, @NotNull Scope scope) {
         var formalArgumentId = formalArgument.getName();
         if (scope.isShadowingParameter(formalArgumentId)) {
-            logSemanticError(formalArgument.tokenPosition,
+            logSemanticError(formalArgument.getTokenPosition(),
                              ErrorType.SHADOWING_FORMAL_ARGUMENT,
                              String.format("Formal argument `%s` shadows a parameter", formalArgumentId)
                             );
@@ -510,7 +505,7 @@ public class SemanticChecker implements AstVisitor<Type> {
     @Override
     public Type visit(@NotNull MethodCall methodCall, @NotNull Scope scope) {
         var methodName = methodCall.methodId.getLabel();
-        return globalScope.lookup(methodName).map(descriptor -> {
+        return getGlobalScope().lookup(methodName).map(descriptor -> {
             if (scope.containsKey(methodName)) {
                 logSemanticError(methodCall.tokenPosition,
                                  ErrorType.METHOD_CALL_CONFLICTS_WITH_LOCALLY_DEFINED_IDENTIFIER,
@@ -539,7 +534,7 @@ public class SemanticChecker implements AstVisitor<Type> {
     @Override
     public Type visit(MethodCallStatement methodCallStatement, Scope scope) {
         final var methodId = methodCallStatement.methodCall.methodId.getLabel();
-        if (globalScope.lookupMethod(methodId).isEmpty() && globalScope.lookupImport(methodId).isEmpty()) {
+        if (getGlobalScope().lookupMethod(methodId).isEmpty() && getGlobalScope().lookupImport(methodId).isEmpty()) {
             logSemanticError(methodCallStatement.tokenPosition,
                              ErrorType.IDENTIFIER_NOT_IN_SCOPE,
                              String.format("identifier `%s` in a method statement must be a declared method or import",
@@ -746,12 +741,12 @@ public class SemanticChecker implements AstVisitor<Type> {
         var type = fieldDeclaration.getType();
         for (var rValue : fieldDeclaration.vars) {
             if (scope.isShadowingParameter(rValue.getLabel())) {
-                logSemanticError(fieldDeclaration.tokenPosition,
+                logSemanticError(fieldDeclaration.getTokenPosition(),
                                  ErrorType.SHADOWING_FORMAL_ARGUMENT,
                                  String.format("`%s` shadows a parameter", rValue.getLabel())
                                 );
             } else if (scope.containsKey(rValue.getLabel())) {
-                logSemanticError(fieldDeclaration.tokenPosition,
+                logSemanticError(fieldDeclaration.getTokenPosition(),
                                  ErrorType.IDENTIFIER_ALREADY_DECLARED,
                                  String.format("`%s` already declared", rValue.getLabel())
                                 );
@@ -763,12 +758,12 @@ public class SemanticChecker implements AstVisitor<Type> {
         for (var array : fieldDeclaration.arrays) {
             var arrayIdLabel = array.getLabel();
             if (scope.isShadowingParameter(array.getLabel())) {
-                logSemanticError(fieldDeclaration.tokenPosition,
+                logSemanticError(fieldDeclaration.getTokenPosition(),
                                  ErrorType.SHADOWING_FORMAL_ARGUMENT,
                                  String.format("`%s` shadows a parameter", arrayIdLabel)
                                 );
             } else if (scope.lookup(array.getLabel()).isPresent()) {
-                logSemanticError(fieldDeclaration.tokenPosition,
+                logSemanticError(fieldDeclaration.getTokenPosition(),
                                  ErrorType.IDENTIFIER_ALREADY_DECLARED,
                                  String.format("`%s` already declared", arrayIdLabel)
                                 );
@@ -808,5 +803,9 @@ public class SemanticChecker implements AstVisitor<Type> {
                             );
         }
         return Type.getUnsetType();
+    }
+
+    public @NotNull Scope getGlobalScope() {
+        return globalScope;
     }
 }

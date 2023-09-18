@@ -10,15 +10,16 @@ import decaf.shared.AstVisitor;
 import decaf.shared.Pair;
 import decaf.shared.Utils;
 import decaf.shared.env.Scope;
+import org.jetbrains.annotations.NotNull;
 
 public class While extends Statement implements HasExpression {
-  public final Block body;
-  public Expression test;
+  @NotNull private final Block body;
+  @NotNull private Expression test;
 
   public While(
-      TokenPosition tokenPosition,
-      Expression test,
-      Block body
+          TokenPosition tokenPosition,
+          @NotNull Expression test,
+          @NotNull Block body
   ) {
     super(tokenPosition);
     this.test = test;
@@ -30,11 +31,11 @@ public class While extends Statement implements HasExpression {
     return List.of(
         new Pair<>(
             "test",
-            test
+            getTest()
         ),
         new Pair<>(
             "body",
-            body
+            getBody()
         )
     );
   }
@@ -46,16 +47,16 @@ public class While extends Statement implements HasExpression {
 
   @Override
   public String toString() {
-    return "While{" + "test=" + test + ", body=" + body + '}';
+    return "While{" + "test=" + getTest() + ", body=" + getBody() + '}';
   }
 
   @Override
   public String getSourceCode() {
     return String.format(
-        "%s (%s) {\n    %s\n    }",
-        Scanner.RESERVED_WHILE,
-        test.getSourceCode(),
-        Utils.indentBlock(body)
+            "%s (%s) {\n    %s\n    }",
+            Scanner.RESERVED_WHILE,
+            getTest().getSourceCode(),
+            Utils.indentBlock(getBody())
     );
   }
 
@@ -73,7 +74,7 @@ public class While extends Statement implements HasExpression {
 
   @Override
   public List<Expression> getExpression() {
-    return List.of(test);
+    return List.of(getTest());
   }
 
   @Override
@@ -81,7 +82,19 @@ public class While extends Statement implements HasExpression {
       Expression oldExpr,
       Expression newExpr
   ) {
-    if (test == oldExpr)
-      test = newExpr;
+    if (getTest() == oldExpr)
+      setTest(newExpr);
+  }
+
+  public @NotNull Block getBody() {
+    return body;
+  }
+
+  public @NotNull Expression getTest() {
+    return test;
+  }
+
+  public void setTest(@NotNull Expression test) {
+    this.test = test;
   }
 }

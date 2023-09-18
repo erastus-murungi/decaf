@@ -25,6 +25,7 @@ public class MethodDefinition extends AST {
       RValue methodAstName,
       Block block
   ) {
+    super(tokenPosition);
     this.tokenPosition = tokenPosition;
     this.returnType = returnType;
     this.formalArguments = formalArguments;
@@ -42,8 +43,8 @@ public class MethodDefinition extends AST {
     nodes.add(new Pair<>(
         "returnType",
         new RValue(
-            getReturnType().toString(),
-            getTokenPosition()
+                getReturnType().getTokenPosition(),
+            getReturnType().toString()
         )
     ));
     nodes.add(new Pair<>(

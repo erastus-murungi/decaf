@@ -1,6 +1,10 @@
 package decaf.analysis.syntax.ast;
 
-import decaf.analysis.syntax.ast.types.Type;
+import decaf.analysis.TokenPosition;
+import org.jetbrains.annotations.NotNull;
 
 public abstract class ActualArgument extends AST implements Typed {
+    public ActualArgument(@NotNull TokenPosition tokenPosition) {
+        super(tokenPosition);
+    }
 }

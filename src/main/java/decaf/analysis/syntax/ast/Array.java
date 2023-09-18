@@ -10,7 +10,6 @@ import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
 public class Array extends AST {
-  public final TokenPosition tokenPosition;
   private final IntLiteral size;
   private final String label;
 
@@ -19,7 +18,7 @@ public class Array extends AST {
       IntLiteral size,
       String label
   ) {
-    this.tokenPosition = tokenPosition;
+      super(tokenPosition);
     this.size = size;
     this.label = label;
   }

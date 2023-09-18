@@ -37,13 +37,10 @@ public class UnaryOperator extends Operator {
 
   @Override
   public String getSourceCode() {
-    switch (label) {
-      case Scanner.MINUS:
-        return "-";
-      case Scanner.NOT:
-        return "!";
-      default:
-        throw new IllegalArgumentException("please register unary operator: " + label);
-    }
+      return switch (label) {
+          case Scanner.MINUS -> "-";
+          case Scanner.NOT -> "!";
+          default -> throw new IllegalArgumentException("please register unary operator: " + label);
+      };
   }
 }

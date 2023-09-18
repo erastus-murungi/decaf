@@ -16,10 +16,11 @@ public class RValue extends AST {
   private String label;
 
   public RValue(
-      String label,
-      TokenPosition tokenPosition
+          TokenPosition tokenPosition,
+      String label
   ) {
-    this.label = label;
+      super(tokenPosition);
+      this.label = label;
     this.tokenPosition = tokenPosition;
   }
 

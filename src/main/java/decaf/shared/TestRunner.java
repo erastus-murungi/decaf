@@ -16,7 +16,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -261,8 +260,8 @@ public class TestRunner {
       };
       if (text.isBlank())
         continue;
-      strings.add(token.tokenPosition
-                      .line() + 1 + " " + text);
+      strings.add(token.getTokenPosition()
+                       .line() + 1 + " " + text);
     }
     return String.join(
         "\n",

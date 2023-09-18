@@ -37,7 +37,7 @@ public class ScannerError extends Token implements Error<ScannerError.ErrorType>
 
   @Override
   public TokenPosition tokenPosition() {
-    return tokenPosition;
+    return getTokenPosition();
   }
 
   @Override

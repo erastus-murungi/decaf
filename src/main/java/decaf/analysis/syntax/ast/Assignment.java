@@ -3,6 +3,7 @@ package decaf.analysis.syntax.ast;
 
 import java.util.List;
 
+import decaf.analysis.TokenPosition;
 import decaf.shared.AstVisitor;
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
@@ -13,11 +14,13 @@ public class Assignment extends AST {
   public AssignExpr assignExpr;
 
   public Assignment(
+      TokenPosition tokenPosition,
       Location location,
       AssignExpr assignmentExpr,
       String operator
   ) {
-    this.location = location;
+      super(tokenPosition);
+      this.location = location;
     this.assignExpr = assignmentExpr;
     this.operator = operator;
   }

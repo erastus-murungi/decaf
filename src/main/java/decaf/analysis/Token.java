@@ -6,7 +6,8 @@ import org.jetbrains.annotations.NotNull;
 import decaf.analysis.lexical.Scanner;
 
 public class Token {
-  @NotNull public TokenPosition tokenPosition;
+  @NotNull
+  private TokenPosition tokenPosition;
   @NotNull public Type type;
   @NotNull public String lexeme;
 
@@ -77,6 +78,14 @@ public class Token {
     return "Token{" + "type=" + type +
         ", lexeme='" + lexeme + '\'' +
         '}';
+  }
+
+  public TokenPosition getTokenPosition() {
+    return tokenPosition;
+  }
+
+  public void setTokenPosition(TokenPosition tokenPosition) {
+    this.tokenPosition = tokenPosition;
   }
 
   // All the terminals

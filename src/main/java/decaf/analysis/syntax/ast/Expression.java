@@ -8,7 +8,8 @@ public abstract class Expression extends AST implements Typed {
   private Type type = Type.getUnsetType();
   public TokenPosition tokenPosition;
   public Expression(TokenPosition tokenPosition) {
-    this.tokenPosition = tokenPosition;
+      super(tokenPosition);
+      this.tokenPosition = tokenPosition;
   }
 
   @NotNull

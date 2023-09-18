@@ -4,6 +4,7 @@ package decaf.analysis.syntax.ast;
 import java.util.ArrayList;
 import java.util.List;
 
+import decaf.analysis.TokenPosition;
 import decaf.shared.AstVisitor;
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
@@ -14,9 +15,11 @@ public class Block extends AST {
   public Scope scope;
 
   public Block(
+      TokenPosition tokenPosition,
       List<FieldDeclaration> fieldDeclarationList,
       List<Statement> statementList
   ) {
+    super(tokenPosition);
     this.fieldDeclarationList = fieldDeclarationList;
     this.statementList = statementList;
   }

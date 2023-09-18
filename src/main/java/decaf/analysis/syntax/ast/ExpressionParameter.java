@@ -16,6 +16,7 @@ public class ExpressionParameter extends ActualArgument implements HasExpression
   public Expression expression;
 
   public ExpressionParameter(Expression expression) {
+    super(expression.getTokenPosition());
     this.expression = expression;
   }
 

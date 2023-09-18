@@ -12,9 +12,6 @@ import decaf.shared.env.Scope;
 public class MethodCall extends Expression {
   final public RValue methodId;
   final public List<ActualArgument> actualArgumentList;
-
-  public boolean isImported = false;
-
   public MethodCall(
       RValue methodId,
       List<ActualArgument> actualArgumentList

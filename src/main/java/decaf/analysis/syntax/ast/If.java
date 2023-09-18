@@ -16,7 +16,7 @@ import java.util.Optional;
 
 public class If extends Statement implements HasExpression {
   @NotNull
-  public final Block thenBlock;
+  private final Block thenBlock;
   @Nullable
   private final Block elseBlock; // maybe null
   @NotNull
@@ -38,7 +38,7 @@ public class If extends Statement implements HasExpression {
   public List<Pair<String, AST>> getChildren() {
     List<Pair<String, AST>> commonChildren = new ArrayList<>();
     commonChildren.add(new Pair<>("condition", getCondition()));
-    commonChildren.add(new Pair<>("thenBlock", thenBlock));
+    commonChildren.add(new Pair<>("thenBlock", getThenBlock()));
     if (elseBlock != null) {
       commonChildren.add(new Pair<>("elseBlock", elseBlock));
     }
@@ -53,13 +53,14 @@ public class If extends Statement implements HasExpression {
   @Override
   public String toString() {
     if (elseBlock != null)
-      return "If{" + "condition=" + getCondition() + ", ifBlock=" + thenBlock + ", elseBlock=" + getElseBlock() + '}';
-    else return "If{" + "condition=" + getCondition() + ", ifBlock=" + thenBlock + '}';
+      return "If{" + "condition=" + getCondition() + ", ifBlock=" +
+             getThenBlock() + ", elseBlock=" + getElseBlock() + '}';
+    else return "If{" + "condition=" + getCondition() + ", ifBlock=" + getThenBlock() + '}';
   }
 
   @Override
   public String getSourceCode() {
-    String indentedBlockString = Utils.indentBlock(thenBlock);
+    var indentedBlockString = Utils.indentBlock(getThenBlock());
     if ((elseBlock == null)) {
       return String.format(
               "%s (%s) {\n    %s\n    }",

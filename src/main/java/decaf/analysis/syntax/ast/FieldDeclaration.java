@@ -15,8 +15,6 @@ import decaf.shared.env.Scope;
 
 public class FieldDeclaration extends Declaration {
   @NotNull
-  final public TokenPosition tokenPosition;
-  @NotNull
   final public List<RValue> vars;
   @NotNull
   final public List<Array> arrays;
@@ -29,7 +27,7 @@ public class FieldDeclaration extends Declaration {
       @NotNull List<RValue> vars,
       @NotNull List<Array> arrays
   ) {
-    this.tokenPosition = tokenPosition;
+    super(tokenPosition);
     this.type = type;
     this.vars = vars;
     this.arrays = arrays;
@@ -41,8 +39,8 @@ public class FieldDeclaration extends Declaration {
     pairArrayList.add(new Pair<>(
         "type",
         new RValue(
-            type.toString(),
-            tokenPosition
+                getTokenPosition(),
+            type.toString()
         )
     ));
     for (RValue RValue : vars)

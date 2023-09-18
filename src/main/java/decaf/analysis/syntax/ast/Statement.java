@@ -7,6 +7,7 @@ public abstract class Statement extends AST {
   public final TokenPosition tokenPosition;
 
   public Statement(TokenPosition tokenPosition) {
-    this.tokenPosition = tokenPosition;
+      super(tokenPosition);
+      this.tokenPosition = tokenPosition;
   }
 }

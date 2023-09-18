@@ -12,10 +12,10 @@ import decaf.shared.Utils;
 import decaf.shared.env.Scope;
 
 public class For extends Statement implements HasExpression {
-  public final Initialization initialization;
-  public final Assignment update;
-  public final Block block;
-  public Expression terminatingCondition;
+  private final Initialization initialization;
+  private final Assignment update;
+  private final Block block;
+  private Expression terminatingCondition;
 
   public For(
       TokenPosition tokenPosition,
@@ -36,19 +36,19 @@ public class For extends Statement implements HasExpression {
     return List.of(
         new Pair<>(
             "initialization",
-            initialization
+            getInitialization()
         ),
         new Pair<>(
             "terminatingCondition",
-            terminatingCondition
+            getTerminatingCondition()
         ),
         new Pair<>(
             "update",
-            update
+            getUpdate()
         ),
         new Pair<>(
             "block",
-            block
+            getBlock()
         )
     );
   }
@@ -56,22 +56,22 @@ public class For extends Statement implements HasExpression {
   @Override
   public String toString() {
     return "For{" +
-        "initialization=" + initialization +
-        ", terminatingCondition=" + terminatingCondition +
-        ", update=" + update +
-        ", block=" + block +
-        '}';
+           "initialization=" + getInitialization() +
+           ", terminatingCondition=" + getTerminatingCondition() +
+           ", update=" + getUpdate() +
+           ", block=" + getBlock() +
+           '}';
   }
 
   @Override
   public String getSourceCode() {
     return String.format(
-        "%s (%s; %s; %s) {\n    %s\n    }",
-        Scanner.RESERVED_FOR,
-        initialization.getSourceCode(),
-        terminatingCondition.getSourceCode(),
-        update.getSourceCode(),
-        Utils.indentBlock(block)
+            "%s (%s; %s; %s) {\n    %s\n    }",
+            Scanner.RESERVED_FOR,
+            getInitialization().getSourceCode(),
+            getTerminatingCondition().getSourceCode(),
+            getUpdate().getSourceCode(),
+            Utils.indentBlock(getBlock())
     );
   }
 
@@ -94,7 +94,7 @@ public class For extends Statement implements HasExpression {
 
   @Override
   public List<Expression> getExpression() {
-    return List.of(terminatingCondition);
+    return List.of(getTerminatingCondition());
   }
 
   @Override
@@ -102,7 +102,27 @@ public class For extends Statement implements HasExpression {
       Expression oldExpr,
       Expression newExpr
   ) {
-    if (terminatingCondition == oldExpr)
-      terminatingCondition = newExpr;
+    if (getTerminatingCondition() == oldExpr)
+      setTerminatingCondition(newExpr);
+  }
+
+  public Initialization getInitialization() {
+    return initialization;
+  }
+
+  public Assignment getUpdate() {
+    return update;
+  }
+
+  public Block getBlock() {
+    return block;
+  }
+
+  public Expression getTerminatingCondition() {
+    return terminatingCondition;
+  }
+
+  public void setTerminatingCondition(Expression terminatingCondition) {
+    this.terminatingCondition = terminatingCondition;
   }
 }

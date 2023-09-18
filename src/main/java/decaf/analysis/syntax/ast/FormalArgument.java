@@ -11,7 +11,6 @@ import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
 public class FormalArgument extends Declaration {
-  final public TokenPosition tokenPosition;
   final private String name;
   final private Type type;
 
@@ -20,7 +19,7 @@ public class FormalArgument extends Declaration {
       String name,
       Type type
   ) {
-    this.tokenPosition = tokenPosition;
+    super(tokenPosition);
     this.name = name;
     this.type = type;
   }
@@ -34,8 +33,8 @@ public class FormalArgument extends Declaration {
     return List.of(new Pair<>(
         "type",
         new RValue(
-            type.toString(),
-            tokenPosition
+                getTokenPosition(),
+            type.toString()
         )
     ));
   }

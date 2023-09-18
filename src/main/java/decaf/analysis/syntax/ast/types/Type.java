@@ -1,5 +1,6 @@
 package decaf.analysis.syntax.ast.types;
 
+import decaf.analysis.TokenPosition;
 import decaf.analysis.syntax.ast.AST;
 import org.jetbrains.annotations.NotNull;
 
@@ -59,7 +60,8 @@ public class Type extends AST {
   }
 
   protected Type(@NotNull TypeId typeId) {
-    this.typeId = typeId;
+      super(TokenPosition.dummyTokenPosition());
+      this.typeId = typeId;
   }
 
   @Override

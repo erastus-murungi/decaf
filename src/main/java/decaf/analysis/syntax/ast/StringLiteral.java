@@ -14,13 +14,11 @@ import org.jetbrains.annotations.NotNull;
 
 public class StringLiteral extends ActualArgument {
   final public String literal;
-  final TokenPosition tokenPosition;
-
   public StringLiteral(
       TokenPosition tokenPosition,
       String literal
   ) {
-    this.tokenPosition = tokenPosition;
+    super(tokenPosition);
     this.literal = literal;
   }
 
@@ -44,7 +42,7 @@ public class StringLiteral extends ActualArgument {
     return literal;
   }
 
-  public Type getType() {
+  public @NotNull Type getType() {
     return Type.getStringType();
   }
 

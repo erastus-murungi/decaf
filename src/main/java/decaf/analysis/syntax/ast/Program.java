@@ -1,6 +1,7 @@
 package decaf.analysis.syntax.ast;
 
 
+import decaf.analysis.TokenPosition;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -24,7 +25,8 @@ public class Program extends AST {
       @NotNull List<FieldDeclaration> fieldDeclarationList,
       @NotNull List<MethodDefinition> methodDefinitionList
   ) {
-    this.importDeclarationList = importDeclarationList;
+      super(new TokenPosition(0, 0, 0));
+      this.importDeclarationList = importDeclarationList;
     this.fieldDeclarationList = fieldDeclarationList;
     this.methodDefinitionList = methodDefinitionList;
   }

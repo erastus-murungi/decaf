@@ -16,7 +16,8 @@ public abstract class Operator extends AST {
       TokenPosition tokenPosition,
       String label
   ) {
-    this.tokenPosition = tokenPosition;
+      super(tokenPosition);
+      this.tokenPosition = tokenPosition;
     this.label = label;
   }
 
