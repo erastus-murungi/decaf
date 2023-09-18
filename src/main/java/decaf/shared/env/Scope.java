@@ -64,6 +64,11 @@ public class Scope extends HashMap<String, Descriptor> {
                .filter(Descriptor::isImport);
   }
 
+  public void addDescriptor(@NotNull String label, @NotNull Descriptor descriptor) {
+    put(label, descriptor);
+    descriptor.setEnclosingScope(this);
+  }
+
   private static String padRight(
       String s,
       Optional<Integer> n

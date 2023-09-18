@@ -2,6 +2,12 @@ package decaf.shared;
 
 import decaf.analysis.Token;
 import decaf.analysis.TokenPosition;
+import decaf.analysis.syntax.ast.MethodDefinition;
+import decaf.analysis.syntax.ast.Program;
+import decaf.ir.cfg.Cfg;
+import decaf.ir.cfg.CfgBlock;
+import decaf.shared.descriptors.Descriptor;
+import decaf.shared.env.Scope;
 import decaf.shared.errors.ParserError;
 import decaf.shared.errors.ScannerError;
 import decaf.shared.errors.SemanticError;
@@ -9,14 +15,15 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import decaf.shared.errors.Error;
+import org.jetbrains.annotations.Nullable;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 public class CompilationContext {
     public static final String NEW_LINE = "\n";
@@ -24,16 +31,69 @@ public class CompilationContext {
     @NotNull
     private final Logger logger;
     private final String filePath;
-    @NotNull
-    private Boolean isDebugModeOn;
-
     // errors
     private final List<ScannerError> scanningErrors = new ArrayList<>();
     private final List<ParserError> parsingErrors = new ArrayList<>();
     private final List<SemanticError> semanticErrors = new ArrayList<>();
+    private final Map<String, CfgBlock> exitBlocks = new HashMap<>();
+    private final Map<String, CfgBlock> entryBlocks = new HashMap<>();
 
-    public String getSourceCode() {
-        return sourceCode;
+    private final Map<String, Cfg> cfgs = new HashMap<>();
+    @NotNull
+    private Boolean isDebugModeOn;
+    @Nullable
+    private Scope globalScope;
+
+    @Nullable Program program;
+
+    @Nullable CfgBlock globalEntryBlock;
+
+    public @NotNull CfgBlock getGlobalEntryBlock() {
+        if (globalEntryBlock == null) {
+            throw new IllegalStateException("global entry block not set");
+        }
+        return globalEntryBlock;
+    }
+
+    public Map<String, CfgBlock> getEntryCfgBlocks() {
+        return Map.copyOf(entryBlocks);
+    }
+
+    public void setGlobalEntryBlock(@NotNull CfgBlock globalEntryBlock) {
+        this.globalEntryBlock = globalEntryBlock;
+    }
+
+    public @NotNull Program getProgram() {
+        if (program == null) {
+            throw new IllegalStateException("program not set");
+        }
+        return program;
+    }
+
+    public @NotNull Cfg getCfg(String methodName) {
+        if (!cfgs.containsKey(methodName)) {
+            throw new IllegalStateException("cfg not set");
+        }
+        return cfgs.get(methodName);
+    }
+
+    public void setCfg(String methodName, @NotNull Cfg cfg) {
+        if (cfgs.containsKey(methodName)) {
+            throw new IllegalStateException("cfg already set");
+        }
+        cfgs.put(methodName, cfg);
+    }
+
+    public void setProgram(@NotNull Program program) {
+        this.program = program;
+    }
+
+    public boolean isExitBlock(@NotNull CfgBlock cfgBlock) {
+        return exitBlocks.containsValue(cfgBlock);
+    }
+
+    public boolean isEntryBlock(@NotNull CfgBlock cfgBlock) {
+        return entryBlocks.containsValue(cfgBlock);
     }
 
     public CompilationContext(@NotNull String sourceCode, boolean debugModeOn, String filePath) {
@@ -43,18 +103,93 @@ public class CompilationContext {
         this.filePath = filePath;
     }
 
-    public ScannerError logScannerError(
-            TokenPosition tokenPosition,
-            ScannerError.ErrorType errorType,
-            String detail) {
+
+    public static CompilationContext fromSourceCode(@NotNull String sourceCode, boolean debugModeOn) {
+        return new CompilationContext(sourceCode, debugModeOn, "<no file>");
+    }
+
+    public static CompilationContext fromSourceCode(@NotNull String sourceCode) {
+        return fromSourceCode(sourceCode, false);
+    }
+
+    public static CompilationContext fromFile(@NotNull String filePath,
+                                              boolean debugModeOn) throws FileNotFoundException {
+        return new CompilationContext(Utils.getStringFromInputStream(new FileInputStream(filePath),
+                                                                     Logger.getLogger(CompilationContext.class.getName())
+                                                                    ), debugModeOn, filePath);
+    }
+
+    public static CompilationContext fromFile(@NotNull String filePath) throws FileNotFoundException {
+        return fromFile(filePath, false);
+    }
+
+    public Scope getGlobalScope() {
+        return globalScope;
+    }
+
+    public void setGlobalScope(@NotNull Scope globalScope) {
+        this.globalScope = globalScope;
+    }
+
+    public Optional<Scope> getScopeFor(@NotNull MethodDefinition methodDefinition) {
+        checkState(globalScope != null, "global scope not set");
+        return globalScope.lookup(methodDefinition.getName()).map(Descriptor::getEnclosingScope);
+    }
+
+    private void checkMethodNameValid(@NotNull String methodName) {
+        checkState(globalScope != null, "global scope not set");
+        checkState(Objects.equals(methodName, "global") || globalScope.lookup(methodName).isPresent(),
+                   "invalid method name"
+                  );
+    }
+
+    public Optional<CfgBlock> getExitCfgBlock(String methodName) {
+        checkMethodNameValid(methodName);
+        return Optional.ofNullable(exitBlocks.get(methodName));
+    }
+
+    public Optional<CfgBlock> getEntryCfgBlock(String methodName) {
+        checkMethodNameValid(methodName);
+        return Optional.ofNullable(exitBlocks.get(methodName));
+    }
+
+    public Optional<CfgBlock> getGlobalEntryCfgBlock() {
+        checkState(globalScope != null, "global scope not set");
+        return getEntryCfgBlock("global");
+    }
+
+    public Optional<CfgBlock> getGlobalExitCfgBlock() {
+        checkState(globalScope != null, "global scope not set");
+        return getExitCfgBlock("global");
+    }
+
+    public void addEntryCfgBlockFor(@NotNull String methodName, @NotNull CfgBlock cfgBlock) {
+        checkNotNull(methodName, "method name cannot be null");
+        checkNotNull(cfgBlock, "cfg block cannot be null");
+        checkMethodNameValid(methodName);
+        entryBlocks.put(methodName, cfgBlock);
+    }
+
+    public void addExitCfgBlockFor(@NotNull String methodName, @NotNull CfgBlock cfgBlock) {
+        checkNotNull(methodName, "method name cannot be null");
+        checkNotNull(cfgBlock, "cfg block cannot be null");
+        checkMethodNameValid(methodName);
+        exitBlocks.put(methodName, cfgBlock);
+    }
+
+    public String getSourceCode() {
+        return sourceCode;
+    }
+
+    public ScannerError logScannerError(TokenPosition tokenPosition, ScannerError.ErrorType errorType, String detail) {
         var error = new ScannerError(tokenPosition, errorType, detail);
         scanningErrors.add(error);
         return error;
     }
 
     public void logParsingError(@NotNull Token token,
-                                 @NotNull ParserError.ErrorType errorType,
-                                 @NotNull String errorMessage) {
+                                @NotNull ParserError.ErrorType errorType,
+                                @NotNull String errorMessage) {
         parsingErrors.add(new ParserError(errorType, token, errorMessage));
     }
 
@@ -98,25 +233,6 @@ public class CompilationContext {
 
     public boolean parsingSuccessful() {
         return parsingErrors.isEmpty();
-    }
-
-    public static CompilationContext fromSourceCode(@NotNull String sourceCode, boolean debugModeOn) {
-        return new CompilationContext(sourceCode, debugModeOn, "<no file>");
-    }
-
-    public static CompilationContext fromSourceCode(@NotNull String sourceCode) {
-        return fromSourceCode(sourceCode, false);
-    }
-
-    public static CompilationContext fromFile(@NotNull String filePath,
-                                              boolean debugModeOn) throws FileNotFoundException {
-        return new CompilationContext(Utils.getStringFromInputStream(new FileInputStream(filePath),
-                                                                     Logger.getLogger(CompilationContext.class.getName())
-                                                                    ), debugModeOn, filePath);
-    }
-
-    public static CompilationContext fromFile(@NotNull String filePath) throws FileNotFoundException {
-        return fromFile(filePath, false);
     }
 
     public boolean debugModeOn() {

@@ -49,6 +49,7 @@ import static decaf.analysis.Token.Type.STRING_LITERAL;
 
 import com.google.common.collect.Lists;
 
+import decaf.analysis.syntax.ast.*;
 import decaf.analysis.syntax.ast.types.Type;
 import org.jetbrains.annotations.NotNull;
 
@@ -60,54 +61,6 @@ import java.util.Optional;
 
 import decaf.analysis.Token;
 import decaf.analysis.lexical.Scanner;
-import decaf.analysis.syntax.ast.ActualArgument;
-import decaf.analysis.syntax.ast.ArithmeticOperator;
-import decaf.analysis.syntax.ast.Array;
-import decaf.analysis.syntax.ast.AssignExpr;
-import decaf.analysis.syntax.ast.AssignOpExpr;
-import decaf.analysis.syntax.ast.AssignOperator;
-import decaf.analysis.syntax.ast.Assignment;
-import decaf.analysis.syntax.ast.BinaryOpExpression;
-import decaf.analysis.syntax.ast.Block;
-import decaf.analysis.syntax.ast.BooleanLiteral;
-import decaf.analysis.syntax.ast.Break;
-import decaf.analysis.syntax.ast.CharLiteral;
-import decaf.analysis.syntax.ast.CompoundAssignOpExpr;
-import decaf.analysis.syntax.ast.CompoundAssignOperator;
-import decaf.analysis.syntax.ast.ConditionalOperator;
-import decaf.analysis.syntax.ast.Continue;
-import decaf.analysis.syntax.ast.Decrement;
-import decaf.analysis.syntax.ast.EqualityOperator;
-import decaf.analysis.syntax.ast.Expression;
-import decaf.analysis.syntax.ast.ExpressionParameter;
-import decaf.analysis.syntax.ast.FieldDeclaration;
-import decaf.analysis.syntax.ast.For;
-import decaf.analysis.syntax.ast.FormalArgument;
-import decaf.analysis.syntax.ast.If;
-import decaf.analysis.syntax.ast.ImportDeclaration;
-import decaf.analysis.syntax.ast.Increment;
-import decaf.analysis.syntax.ast.Initialization;
-import decaf.analysis.syntax.ast.IntLiteral;
-import decaf.analysis.syntax.ast.Len;
-import decaf.analysis.syntax.ast.Literal;
-import decaf.analysis.syntax.ast.Location;
-import decaf.analysis.syntax.ast.LocationArray;
-import decaf.analysis.syntax.ast.LocationAssignExpr;
-import decaf.analysis.syntax.ast.LocationVariable;
-import decaf.analysis.syntax.ast.MethodCall;
-import decaf.analysis.syntax.ast.MethodCallStatement;
-import decaf.analysis.syntax.ast.MethodDefinition;
-import decaf.analysis.syntax.ast.ParenthesizedExpression;
-import decaf.analysis.syntax.ast.Program;
-import decaf.analysis.syntax.ast.RValue;
-import decaf.analysis.syntax.ast.RelationalOperator;
-import decaf.analysis.syntax.ast.Return;
-import decaf.analysis.syntax.ast.Statement;
-import decaf.analysis.syntax.ast.StringLiteral;
-import decaf.analysis.syntax.ast.UnaryOpExpression;
-import decaf.analysis.syntax.ast.UnaryOperator;
-import decaf.analysis.syntax.ast.VoidExpression;
-import decaf.analysis.syntax.ast.While;
 import decaf.shared.CompilationContext;
 import decaf.shared.Utils;
 import decaf.shared.errors.ParserError;
@@ -125,7 +78,7 @@ public class Parser {
         this.context = context;
         this.tokens = Lists.newArrayList(scanner);
         this.currentTokenIndex = 0;
-        this.root = program().map(program -> {
+        this.root = parseProgram().map(program -> {
             if (getCurrentTokenType() != EOF && !context.encounteredParsingErrors()) {
                 logParsingError(getCurrentToken(),
                                 ParserError.ErrorType.DID_NOT_FINISH_PARSING,
@@ -138,6 +91,7 @@ public class Parser {
             context.printParsingErrors();
             Utils.printParseTree(root);
         }
+        context.setProgram(root);
     }
     public @NotNull Program getRoot() {
         return root;
@@ -222,7 +176,7 @@ public class Parser {
         return getCurrentTokenType() == ID && tokens.get(currentTokenIndex + 1).type == LEFT_SQUARE_BRACKET;
     }
 
-    private Optional<Program> program() {
+    private Optional<Program> parseProgram() {
         return parseImportDeclarations().flatMap(importDeclarations -> parseFieldDeclarations().flatMap(
                 fieldDeclarations -> parseMethodDefinitions().map(methodDefinitions -> new Program(importDeclarations,
                                                                                                    fieldDeclarations,
@@ -568,7 +522,7 @@ public class Parser {
                 nameId -> parseFormalArguments().flatMap(formalArguments -> parseBlock().map(block -> new MethodDefinition(
                         tokenPosition,
                         returnType,
-                        formalArguments,
+                        new FormalArguments(formalArguments),
                         nameId,
                         block
                 )))));

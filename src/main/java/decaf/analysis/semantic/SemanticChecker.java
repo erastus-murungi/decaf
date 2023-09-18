@@ -11,12 +11,10 @@ import decaf.shared.Utils;
 import decaf.shared.descriptors.Descriptor;
 import decaf.shared.descriptors.MethodDescriptor;
 import decaf.shared.env.Scope;
-import decaf.shared.env.TypingContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.Optional;
 
 import static decaf.shared.errors.SemanticError.ErrorType;
 
@@ -41,13 +39,7 @@ public class SemanticChecker implements AstVisitor<Type> {
         if (context.debugModeOn()) {
             context.printSemanticErrors();
         }
-    }
-
-    public Optional<TypingContext> getTypingContext() {
-        if (!context.semanticCheckingSuccessful()) {
-            return Optional.empty();
-        }
-        return Optional.of(new TypingContext(globalScope));
+        context.setGlobalScope(globalScope);
     }
 
     private void logSemanticError(TokenPosition tokenPosition, ErrorType errorType, String message) {
@@ -67,7 +59,7 @@ public class SemanticChecker implements AstVisitor<Type> {
 
     @Override
     public Type visit(@NotNull MethodDefinition methodDefinition, @NotNull Scope scope) {
-        final var methodId = methodDefinition.getMethodName().getLabel();
+        final var methodId = methodDefinition.getName();
         final var block = methodDefinition.getBody();
 
         var formalArgumentScope = new Scope(globalScope, Scope.For.Arguments, block);
@@ -83,13 +75,15 @@ public class SemanticChecker implements AstVisitor<Type> {
             for (var formalArgument : methodDefinition.getFormalArguments()) {
                 formalArgument.accept(this, formalArgumentScope);
             }
-            globalScope.put(methodId, new MethodDescriptor(methodDefinition, formalArgumentScope, localScope));
+            globalScope.addDescriptor(methodId,
+                                      new MethodDescriptor(methodDefinition, formalArgumentScope, localScope)
+                                     );
             setInferredReturnType(Type.getUnsetType());
             block.scope = localScope;
             block.accept(this, localScope);
             if (getInferredReturnType() != Type.getUnsetType() &&
                 methodDefinition.getReturnType() != getInferredReturnType()) {
-                logSemanticError(methodDefinition.getMethodName().tokenPosition,
+                logSemanticError(methodDefinition.getTokenPosition(),
                                  ErrorType.SHOULD_RETURN_VOID,
                                  String.format("method `%s` must not return a value of type `%s` in a void method",
                                                methodId,
@@ -119,7 +113,7 @@ public class SemanticChecker implements AstVisitor<Type> {
                                           )
                             );
         }
-        globalScope.put(importDeclaration.value.getLabel(), Descriptor.forImport());
+        globalScope.addDescriptor(importDeclaration.value.getLabel(), Descriptor.forImport());
         return Type.getUnsetType();
     }
 
@@ -225,13 +219,13 @@ public class SemanticChecker implements AstVisitor<Type> {
 
     private void checkMainMethodExists(List<MethodDefinition> methodDefinitionList) {
         for (var methodDefinition : methodDefinitionList) {
-            if (methodDefinition.getMethodName().getLabel().equals("main")) {
+            if (methodDefinition.getName().equals("main")) {
                 if (methodDefinition.getReturnType() == Type.getVoidType()) {
                     if (!(methodDefinition.getFormalArguments().isEmpty())) {
                         logSemanticError(methodDefinition.getTokenPosition(),
                                          ErrorType.INVALID_MAIN_METHOD,
                                          String.format("main method must have no parameters, yours has: %s",
-                                                       Utils.prettyPrintMethodFormalArguments(methodDefinition.getFormalArguments())
+                                                       Utils.prettyPrintMethodFormalArguments(methodDefinition.getFormalArguments().toList())
                                                       )
                                         );
                     }
@@ -255,7 +249,7 @@ public class SemanticChecker implements AstVisitor<Type> {
         for (var importDeclaration : program.getImportDeclaration()) {
             importDeclaration.accept(this, scope);
         }
-        for (var fieldDeclaration : program.getFieldDeclaration()) {
+        for (var fieldDeclaration : program.getFieldDeclarations()) {
             fieldDeclaration.accept(this, scope);
         }
         for (var methodDefinition : program.getMethodDefinitions()) {
@@ -433,16 +427,16 @@ public class SemanticChecker implements AstVisitor<Type> {
 
     @Override
     public Type visit(@NotNull If ifStatement, @NotNull Scope scope) {
-        var typeTest = ifStatement.test.accept(this, scope);
+        var typeTest = ifStatement.getCondition().accept(this, scope);
         if (typeTest != Type.getBoolType()) {
-            logSemanticError(ifStatement.test.tokenPosition,
+            logSemanticError(ifStatement.getCondition().tokenPosition,
                              ErrorType.UNSUPPORTED_TYPE,
                              String.format("if statement test must evaluate to a bool, not `%s`", typeTest)
                             );
         }
-        ifStatement.ifBlock.accept(this, scope);
-        if (ifStatement.elseBlock != null) {
-            ifStatement.elseBlock.accept(this, scope);
+        ifStatement.getThenBlock().accept(this, scope);
+        if (ifStatement.getElseBlock().isPresent()) {
+            ifStatement.getElseBlock().get().accept(this, scope);
         }
         return Type.getUnsetType();
     }
@@ -473,7 +467,7 @@ public class SemanticChecker implements AstVisitor<Type> {
                              String.format("Formal argument `%s` shadows a parameter", formalArgumentId)
                             );
         } else {
-            scope.put(formalArgumentId, Descriptor.forFormalArgument(formalArgument.getType()));
+            scope.addDescriptor(formalArgumentId, Descriptor.forFormalArgument(formalArgument.getType()));
         }
         return formalArgument.getType();
     }
@@ -723,6 +717,12 @@ public class SemanticChecker implements AstVisitor<Type> {
         throw new UnsupportedOperationException("what is the type of a type?");
     }
 
+    @Override
+    public Type visit(FormalArguments formalArguments, Scope scope) {
+        formalArguments.accept(this, scope);
+        return Type.getUnsetType();
+    }
+
     private void checkIntBounds(@NotNull IntLiteral intLiteral) {
         try {
             intLiteral.convertToLong();
@@ -756,7 +756,7 @@ public class SemanticChecker implements AstVisitor<Type> {
                                  String.format("`%s` already declared", rValue.getLabel())
                                 );
             } else {
-                scope.put(rValue.getLabel(), Descriptor.forValue(type));
+                scope.addDescriptor(rValue.getLabel(), Descriptor.forValue(type));
             }
         }
 
@@ -781,7 +781,9 @@ public class SemanticChecker implements AstVisitor<Type> {
                                                   )
                                     );
                 } else {
-                    scope.put(arrayIdLabel, Descriptor.forArray(ArrayType.get(type, array.getSize().convertToLong())));
+                    scope.addDescriptor(arrayIdLabel,
+                                        Descriptor.forArray(ArrayType.get(type, array.getSize().convertToLong()))
+                                       );
                 }
             }
         }

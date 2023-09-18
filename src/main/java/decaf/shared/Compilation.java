@@ -3,6 +3,7 @@ package decaf.shared;
 import decaf.analysis.lexical.Scanner;
 import decaf.analysis.semantic.SemanticChecker;
 import decaf.analysis.syntax.Parser;
+import decaf.ir.cfg.Cfg;
 
 import java.io.*;
 import java.util.Locale;
@@ -28,9 +29,8 @@ public class Compilation {
   private SemanticChecker semanticChecker;
   private PrintStream outputStream;
   private CompilationState compilationState;
-  private double nLinesOfCodeReductionFactor = 0.0D;
 
-  public Compilation(
+  private Compilation(
       String filenameOrSourceCode, boolean debug,
       boolean isFilename
   ) throws FileNotFoundException {
@@ -44,31 +44,32 @@ public class Compilation {
     compilationContext.setDebugMode(debug);
   }
 
-  public Compilation(String filename, boolean debug)
-      throws FileNotFoundException {
-    this(
-        filename,
-        debug,
-        false
-    );
+  public static Compilation forSourceCode(String sourceCode, boolean debug) throws FileNotFoundException {
+    return new Compilation(sourceCode, debug, false);
   }
 
-  public int getNLinesRemovedByAssemblyOptimizer() {
-    return 0;
+  public static Compilation forSourceCode(String sourceCode) throws FileNotFoundException {
+    return new Compilation(sourceCode, false, false);
   }
 
-  public double getNLinesOfCodeReductionFactor() {
-    return nLinesOfCodeReductionFactor;
-  }
+    public static Compilation forTestFile(String filename, boolean debug) throws FileNotFoundException {
+        return new Compilation(filename, debug, true);
+    }
+
+    public static Compilation forTestFile(String filename) throws FileNotFoundException {
+        return new Compilation(filename, false, true);
+    }
 
   private void runNextStep() {
     switch (compilationState) {
       case INITIALIZED -> System.out.println("starting!");
       case SCANNED -> runParser();
       case PARSED -> runSemanticsChecker();
+      case SEM_CHECKED -> createSourceLevelCFGs();
       default -> {
         if (compilationContext.debugModeOn())
           System.out.println("compilation completed!");
+        System.out.println(compilationContext.getEntryCfgBlock("main"));
         compilationState = CompilationState.COMPLETED;
       }
     }
@@ -192,6 +193,12 @@ public class Compilation {
       System.exit(1);
     }
     compilationState = CompilationState.SEM_CHECKED;
+  }
+
+  private void createSourceLevelCFGs() {
+    assert compilationState == CompilationState.SEM_CHECKED;
+    Cfg.build(compilationContext);
+    compilationState = CompilationState.CFG_GENERATED;
   }
 
   enum CompilationState {

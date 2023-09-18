@@ -1,0 +1,11 @@
+import printf;
+
+void main() {
+  int a;
+  a = 0;
+  if (a == 0) {
+    printf("a is 0");
+  } else {
+    printf("a is not 0");
+  }
+}

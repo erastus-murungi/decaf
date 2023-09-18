@@ -37,7 +37,7 @@ public class Program extends AST {
           "import",
           importDeclaration
       ));
-    for (FieldDeclaration fieldDeclaration : getFieldDeclaration())
+    for (FieldDeclaration fieldDeclaration : getFieldDeclarations())
       nodeList.add(new Pair<>(
           "field",
           fieldDeclaration
@@ -58,13 +58,13 @@ public class Program extends AST {
   @Override
   public String toString() {
     return "Program{"
-        + "importDeclarationList="
-        + getImportDeclaration()
-        + ", fieldDeclarationList="
-        + getFieldDeclaration()
-        + ", methodDefinitionList="
-        + getMethodDefinitions()
-        + '}';
+           + "importDeclarationList="
+           + getImportDeclaration()
+           + ", fieldDeclarationList="
+           + getFieldDeclarations()
+           + ", methodDefinitionList="
+           + getMethodDefinitions()
+           + '}';
   }
 
   @Override
@@ -80,7 +80,7 @@ public class Program extends AST {
     );
 
     List<String> list = new ArrayList<>();
-    for (FieldDeclaration fieldDeclaration : getFieldDeclaration()) {
+    for (FieldDeclaration fieldDeclaration : getFieldDeclarations()) {
       String sourceCode = fieldDeclaration.getSourceCode();
       list.add(sourceCode);
     }
@@ -141,7 +141,7 @@ public class Program extends AST {
     return importDeclarationList;
   }
 
-  public List<FieldDeclaration> getFieldDeclaration() {
+  public List<FieldDeclaration> getFieldDeclarations() {
     return fieldDeclarationList;
   }
 

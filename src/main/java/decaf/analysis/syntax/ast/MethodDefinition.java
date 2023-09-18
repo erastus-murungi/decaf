@@ -14,22 +14,26 @@ import decaf.shared.env.Scope;
 public class MethodDefinition extends AST {
   private final TokenPosition tokenPosition;
   private final Type returnType;
-  private final RValue methodRValue;
-  private final List<FormalArgument> formalArguments;
+  private final RValue methodAstName;
+  private final FormalArguments formalArguments;
   private final Block block;
 
   public MethodDefinition(
       TokenPosition tokenPosition,
       Type returnType,
-      List<FormalArgument> formalArguments,
-      RValue methodRValue,
+      FormalArguments formalArguments,
+      RValue methodAstName,
       Block block
   ) {
     this.tokenPosition = tokenPosition;
     this.returnType = returnType;
     this.formalArguments = formalArguments;
-    this.methodRValue = methodRValue;
+    this.methodAstName = methodAstName;
     this.block = block;
+  }
+
+  public String getName() {
+    return methodAstName.getLabel();
   }
 
   @Override
@@ -44,7 +48,7 @@ public class MethodDefinition extends AST {
     ));
     nodes.add(new Pair<>(
         "methodName",
-        getMethodName()
+        methodAstName
     ));
     for (FormalArgument formalArgument : getFormalArguments()) {
       nodes.add(new Pair<>(
@@ -68,11 +72,11 @@ public class MethodDefinition extends AST {
   @Override
   public String toString() {
     return "MethodDefinition{" +
-        ", returnType=" + getReturnType() +
-        ", methodName=" + getMethodName() +
-        ", parameterList=" + getFormalArguments() +
-        ", block=" + getBody() +
-        '}';
+           ", returnType=" + getReturnType() +
+           ", methodName=" + getName() +
+           ", parameterList=" + getFormalArguments() +
+           ", block=" + getBody() +
+           '}';
   }
 
   @Override
@@ -83,11 +87,11 @@ public class MethodDefinition extends AST {
       params.add(sourceCode);
     }
     String indent = " ".repeat(getReturnType().getSourceCode()
-                                              .length() + getMethodName().getSourceCode()
-                                                                         .length() + 2);
+                                              .length() + getName()
+                                                                   .length() + 2);
     return String.format("%s %s(%s) {\n    %s\n}",
                          getReturnType().getSourceCode(),
-                         getMethodName().getSourceCode(),
+                         getName(),
                          String.join(
                              ",\n" + indent,
                              params
@@ -116,19 +120,19 @@ public class MethodDefinition extends AST {
     return returnType;
   }
 
-  public RValue getMethodName() {
-    return methodRValue;
-  }
-
-  public String getMethodNameString() {
-    return methodRValue.getLabel();
-  }
-
-  public List<FormalArgument> getFormalArguments() {
+  public FormalArguments getFormalArguments() {
     return formalArguments;
+  }
+
+  public FormalArgument get(int index) {
+    return formalArguments.get(index);
   }
 
   public Block getBody() {
     return block;
+  }
+
+  public boolean hasNoFormalArguments() {
+    return formalArguments.iterator().hasNext() == false;
   }
 }

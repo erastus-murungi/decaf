@@ -1,41 +1,7 @@
 package decaf.shared;
 
-import decaf.analysis.syntax.ast.Array;
-import decaf.analysis.syntax.ast.AssignOpExpr;
-import decaf.analysis.syntax.ast.Assignment;
-import decaf.analysis.syntax.ast.BinaryOpExpression;
-import decaf.analysis.syntax.ast.Block;
-import decaf.analysis.syntax.ast.BooleanLiteral;
-import decaf.analysis.syntax.ast.Break;
-import decaf.analysis.syntax.ast.CharLiteral;
-import decaf.analysis.syntax.ast.CompoundAssignOpExpr;
-import decaf.analysis.syntax.ast.Continue;
-import decaf.analysis.syntax.ast.Decrement;
-import decaf.analysis.syntax.ast.ExpressionParameter;
-import decaf.analysis.syntax.ast.FieldDeclaration;
-import decaf.analysis.syntax.ast.For;
-import decaf.analysis.syntax.ast.If;
-import decaf.analysis.syntax.ast.ImportDeclaration;
-import decaf.analysis.syntax.ast.Increment;
-import decaf.analysis.syntax.ast.Initialization;
-import decaf.analysis.syntax.ast.IntLiteral;
-import decaf.analysis.syntax.ast.Len;
-import decaf.analysis.syntax.ast.LocationArray;
-import decaf.analysis.syntax.ast.LocationAssignExpr;
-import decaf.analysis.syntax.ast.LocationVariable;
-import decaf.analysis.syntax.ast.MethodCall;
-import decaf.analysis.syntax.ast.MethodCallStatement;
-import decaf.analysis.syntax.ast.MethodDefinition;
-import decaf.analysis.syntax.ast.FormalArgument;
-import decaf.analysis.syntax.ast.ParenthesizedExpression;
-import decaf.analysis.syntax.ast.Program;
-import decaf.analysis.syntax.ast.RValue;
-import decaf.analysis.syntax.ast.Return;
-import decaf.analysis.syntax.ast.StringLiteral;
+import decaf.analysis.syntax.ast.*;
 import decaf.analysis.syntax.ast.types.Type;
-import decaf.analysis.syntax.ast.UnaryOpExpression;
-import decaf.analysis.syntax.ast.VoidExpression;
-import decaf.analysis.syntax.ast.While;
 import decaf.shared.env.Scope;
 
 public interface AstVisitor<T> {
@@ -113,4 +79,6 @@ public interface AstVisitor<T> {
   T visit(VoidExpression voidExpression, Scope scope);
 
   T visit(Type type, Scope scope);
+
+  T visit(FormalArguments formalArguments, Scope scope);
 }

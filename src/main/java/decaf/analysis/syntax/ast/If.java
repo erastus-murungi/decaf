@@ -1,66 +1,48 @@
 package decaf.analysis.syntax.ast;
 
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
-
 import decaf.analysis.TokenPosition;
 import decaf.analysis.lexical.Scanner;
 import decaf.shared.AstVisitor;
-
 import decaf.shared.Pair;
 import decaf.shared.Utils;
 import decaf.shared.env.Scope;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 public class If extends Statement implements HasExpression {
   @NotNull
-  public final Block ifBlock;
+  public final Block thenBlock;
   @Nullable
-  public final Block elseBlock; // maybe null
+  private final Block elseBlock; // maybe null
   @NotNull
-  public Expression test;
+  private Expression condition;
 
   public If(
       TokenPosition tokenPosition,
-      @NotNull Expression test,
-      @NotNull Block ifBlock,
+      @NotNull Expression condition,
+      @NotNull Block thenBlock,
       @Nullable Block elseBlock
   ) {
     super(tokenPosition);
-    this.test = test;
-    this.ifBlock = ifBlock;
+    this.condition = condition;
+    this.thenBlock = thenBlock;
     this.elseBlock = elseBlock;
   }
 
   @Override
   public List<Pair<String, AST>> getChildren() {
-    return (elseBlock != null)
-        ? List.of(
-        new Pair<>(
-            "test",
-            test
-        ),
-        new Pair<>(
-            "ifBody",
-            ifBlock
-        ),
-        new Pair<>(
-            "elseBody",
-            elseBlock
-        )
-    )
-        : List.of(
-        new Pair<>(
-            "test",
-            test
-        ),
-        new Pair<>(
-            "ifBody",
-            ifBlock
-        )
-    );
+    List<Pair<String, AST>> commonChildren = new ArrayList<>();
+    commonChildren.add(new Pair<>("condition", getCondition()));
+    commonChildren.add(new Pair<>("thenBlock", thenBlock));
+    if (elseBlock != null) {
+      commonChildren.add(new Pair<>("elseBlock", elseBlock));
+    }
+      return List.copyOf(commonChildren);
   }
 
   @Override
@@ -71,28 +53,28 @@ public class If extends Statement implements HasExpression {
   @Override
   public String toString() {
     if (elseBlock != null)
-      return "If{" + "test=" + test + ", ifBlock=" + ifBlock + ", elseBlock=" + elseBlock + '}';
-    else return "If{" + "test=" + test + ", ifBlock=" + ifBlock + '}';
+      return "If{" + "condition=" + getCondition() + ", ifBlock=" + thenBlock + ", elseBlock=" + getElseBlock() + '}';
+    else return "If{" + "condition=" + getCondition() + ", ifBlock=" + thenBlock + '}';
   }
 
   @Override
   public String getSourceCode() {
-    String indentedBlockString = Utils.indentBlock(ifBlock);
+    String indentedBlockString = Utils.indentBlock(thenBlock);
     if ((elseBlock == null)) {
       return String.format(
-          "%s (%s) {\n    %s\n    }",
-          Scanner.RESERVED_IF,
-          test.getSourceCode(),
-          indentedBlockString
+              "%s (%s) {\n    %s\n    }",
+              Scanner.RESERVED_IF,
+              getCondition().getSourceCode(),
+              indentedBlockString
       );
     } else {
       return String.format(
-          "%s (%s) {\n    %s\n    } %s {\n    %s        \n    }",
-          Scanner.RESERVED_IF,
-          test.getSourceCode(),
-          indentedBlockString,
-          Scanner.RESERVED_ELSE,
-          Utils.indentBlock(elseBlock)
+              "%s (%s) {\n    %s\n    } %s {\n    %s        \n    }",
+              Scanner.RESERVED_IF,
+              getCondition().getSourceCode(),
+              indentedBlockString,
+              Scanner.RESERVED_ELSE,
+              Utils.indentBlock(elseBlock)
       );
     }
   }
@@ -110,7 +92,7 @@ public class If extends Statement implements HasExpression {
 
   @Override
   public List<Expression> getExpression() {
-    return List.of(test);
+    return List.of(getCondition());
   }
 
   @Override
@@ -118,7 +100,23 @@ public class If extends Statement implements HasExpression {
       Expression oldExpr,
       Expression newExpr
   ) {
-    if (test == oldExpr)
-      test = newExpr;
+    if (getCondition() == oldExpr)
+      setCondition(newExpr);
+  }
+
+  public @NotNull Optional<Block> getElseBlock() {
+    return Optional.ofNullable(elseBlock);
+  }
+
+  public @NotNull Block getThenBlock() {
+    return thenBlock;
+  }
+
+  public @NotNull Expression getCondition() {
+    return condition;
+  }
+
+  public void setCondition(@NotNull Expression condition) {
+    this.condition = condition;
   }
 }

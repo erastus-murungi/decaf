@@ -3,6 +3,8 @@ package decaf.shared.descriptors;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import decaf.analysis.syntax.ast.types.ArrayType;
+import decaf.shared.env.Scope;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.jetbrains.annotations.NotNull;
 
 import decaf.analysis.syntax.ast.types.Type;
@@ -14,6 +16,17 @@ public class Descriptor {
     @NotNull
     private final Type type;
     private final From from;
+
+    @MonotonicNonNull
+    private Scope enclosingScope;
+
+    public void setEnclosingScope(Scope enclosingScope) {
+        this.enclosingScope = enclosingScope;
+    }
+
+    public Scope getEnclosingScope() {
+        return enclosingScope;
+    }
 
     public boolean typeIs(@NotNull Type type) {
         checkNotNull(type);
@@ -48,9 +61,10 @@ public class Descriptor {
         IS_IMPORT
     }
 
-    protected Descriptor(@NotNull Type type, Descriptor.From from) {
+    protected Descriptor(@NotNull Type type, From from) {
         this.type = type;
         this.from = from;
+        this.enclosingScope = null;
     }
 
     public static Descriptor forArray(ArrayType arrayType) {
