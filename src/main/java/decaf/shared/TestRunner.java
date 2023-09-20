@@ -4,6 +4,7 @@ import com.google.common.base.Stopwatch;
 import decaf.analysis.lexical.Scanner;
 import decaf.analysis.semantic.SemanticChecker;
 import decaf.analysis.syntax.Parser;
+import decaf.ir.cfg.Cfg;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -348,6 +349,18 @@ public class TestRunner {
     );
   }
 
+  public static void testCfgBuilding(
+          @NotNull String filename, boolean expectedToPass, boolean verbose
+                                  ) {
+    testOneFile(
+            Type.CFG,
+            filename,
+            false,
+            expectedToPass,
+            verbose
+               );
+  }
+
   public static boolean testScanner(boolean verbose) {
     return testOneComponent(
         Type.SCANNER,
@@ -513,7 +526,7 @@ public class TestRunner {
         parser.getRoot(),
         context
     );
-    if (!context.semanticCheckingSuccessful()) {
+    if (context.semanticCheckingUnsuccessful()) {
       return new Pair<>(
           false,
           context.getSemanticErrorOutput()
@@ -522,6 +535,52 @@ public class TestRunner {
     return new Pair<>(
         true,
         ""
+    );
+  }
+
+  private static Pair<Boolean, String> cfgTestFunction(      String input, String output,
+                                                             String filename) {
+    var context = new CompilationContext(input, false, filename);
+    var scanner = new Scanner(
+            context
+    );
+    if (!context.scanningSuccessful()) {
+      return new Pair<>(
+              false,
+              context.getScanningErrorOutput()
+      );
+    }
+    var parser = new Parser(
+            scanner,
+            context
+    );
+    if (!context.parsingSuccessful()) {
+      return new Pair<>(
+              false,
+              context.getParsingErrorOutput()
+      );
+    }
+    new SemanticChecker(
+            parser.getRoot(),
+            context
+    );
+    if (context.semanticCheckingUnsuccessful()) {
+      return new Pair<>(
+              false,
+              context.getSemanticErrorOutput()
+      );
+    }
+    Cfg.build(context);
+    if (!context.cfgBuildingSuccessful()) {
+      return new Pair<>(
+              false,
+              context.getCfgBuildingErrorOutput()
+      );
+    }
+    GraphVizManager.printGraph(context);
+    return new Pair<>(
+            true,
+            ""
     );
   }
 
@@ -634,6 +693,7 @@ public class TestRunner {
       case SCANNER -> TestRunner::scannerTestFunction;
       case PARSER -> TestRunner::parserTestFunction;
       case SEMANTICS -> TestRunner::semanticsTestFunction;
+      case CFG -> TestRunner::cfgTestFunction;
     };
   }
 
@@ -642,6 +702,7 @@ public class TestRunner {
       case SCANNER -> "testdata/scanner";
       case PARSER -> "testdata/parser";
       case SEMANTICS -> "testdata/semantics";
+        case CFG -> "testdata/cfg";
     };
   }
 
@@ -649,6 +710,7 @@ public class TestRunner {
     SCANNER,
     PARSER,
     SEMANTICS,
+    CFG,
   }
 
   @FunctionalInterface

@@ -20,10 +20,7 @@ public abstract class AST {
 
   public abstract boolean isTerminal();
 
-  public abstract <T> T accept(
-      AstVisitor<T> astVisitor,
-      Scope currentScope
-  );
+  public abstract <ReturnType, InputType> ReturnType accept(AstVisitor<ReturnType, InputType> astVisitor, InputType input);
 
   @Override
   public String toString() {
@@ -32,7 +29,7 @@ public abstract class AST {
 
   public abstract String getSourceCode();
 
-  public TokenPosition getTokenPosition() {
+  public @NotNull TokenPosition getTokenPosition() {
     return tokenPosition;
   }
 }

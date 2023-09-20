@@ -189,7 +189,7 @@ public class Compilation {
         parser.getRoot(),
         compilationContext
     );
-    if (!compilationContext.semanticCheckingSuccessful()) {
+    if (compilationContext.semanticCheckingUnsuccessful()) {
       System.exit(1);
     }
     compilationState = CompilationState.SEM_CHECKED;

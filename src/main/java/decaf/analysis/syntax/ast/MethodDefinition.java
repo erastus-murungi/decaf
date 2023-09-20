@@ -1,15 +1,14 @@
 package decaf.analysis.syntax.ast;
 
 
-import java.util.ArrayList;
-import java.util.List;
-
 import decaf.analysis.TokenPosition;
 import decaf.analysis.syntax.ast.types.Type;
 import decaf.shared.AstVisitor;
-
 import decaf.shared.Pair;
-import decaf.shared.env.Scope;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MethodDefinition extends AST {
   private final TokenPosition tokenPosition;
@@ -103,17 +102,17 @@ public class MethodDefinition extends AST {
   }
 
   @Override
-  public <T> T accept(
-      AstVisitor<T> astVisitor,
-      Scope curScope
+  public <ReturnType, InputType> ReturnType accept(
+      AstVisitor<ReturnType, InputType> astVisitor,
+      InputType input
   ) {
     return astVisitor.visit(
         this,
-        curScope
+        input
     );
   }
 
-  public TokenPosition getTokenPosition() {
+  public @NotNull TokenPosition getTokenPosition() {
     return tokenPosition;
   }
 
@@ -134,6 +133,6 @@ public class MethodDefinition extends AST {
   }
 
   public boolean hasNoFormalArguments() {
-    return formalArguments.iterator().hasNext() == false;
+    return !formalArguments.iterator().hasNext();
   }
 }

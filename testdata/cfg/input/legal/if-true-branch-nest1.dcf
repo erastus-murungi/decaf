@@ -1,0 +1,19 @@
+import printf;
+
+void main() {
+  int a;
+  a = 0;
+  if (a == 0) {
+    printf("a is 0");
+    if (a != 1) {
+        printf("a is not 1");
+    }
+  } else {
+    printf("a is not 0");
+    if (a == 1) {
+        printf("a is 1");
+    } else {
+    printf("a is not 1");
+    }
+  }
+}

@@ -39,14 +39,8 @@ public class LocationArray extends Location implements HasExpression {
   }
 
   @Override
-  public <T> T accept(
-      AstVisitor<T> astVisitor,
-      Scope currentScope
-  ) {
-    return astVisitor.visit(
-        this,
-        currentScope
-    );
+  public <ReturnType, InputType> ReturnType accept(AstVisitor<ReturnType, InputType> astVisitor, InputType input) {
+    return astVisitor.visit(this, input);
   }
 
   @Override

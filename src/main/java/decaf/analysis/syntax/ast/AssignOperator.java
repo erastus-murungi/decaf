@@ -29,7 +29,7 @@ public class AssignOperator extends Operator {
   }
 
   @Override
-  public <T> T accept(AstVisitor<T> astVisitor, Scope currentScope) {
+  public <ReturnType, InputType> ReturnType accept(AstVisitor<ReturnType, InputType> astVisitor, InputType input) {
     throw new IllegalStateException("not meant to be called");
   }
 

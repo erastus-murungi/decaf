@@ -81,13 +81,13 @@ public class For extends Statement implements HasExpression {
   }
 
   @Override
-  public <T> T accept(
-      AstVisitor<T> astVisitor,
-      Scope curScope
+  public <ReturnType, InputType> ReturnType accept(
+      AstVisitor<ReturnType, InputType> astVisitor,
+      InputType input
   ) {
     return astVisitor.visit(
         this,
-        curScope
+        input
     );
   }
 

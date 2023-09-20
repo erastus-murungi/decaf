@@ -9,9 +9,7 @@ import java.util.*;
 
 import static com.google.common.base.Preconditions.*;
 
-public class CfgBlock implements Iterable<AST> {
-    private final LinkedList<AST> users;
-
+public class CfgBlock extends LinkedList<AST> {
     @Nullable
     private CfgBlock successor;
 
@@ -21,18 +19,29 @@ public class CfgBlock implements Iterable<AST> {
     @NotNull
     private final List<CfgBlock> predecessors;
 
-    private CfgBlock(@Nullable LinkedList<AST> users,
-                     @Nullable CfgBlock successor,
+    private static int blockIdCounter = -1;
+
+    private final int blockId;
+
+    private int createBlockId() {
+        return blockIdCounter++;
+    }
+
+    public int getBlockId() {
+        return blockId;
+    }
+
+    private CfgBlock(@Nullable CfgBlock successor,
                      @Nullable CfgBlock alternateSuccessor,
                      @Nullable List<CfgBlock> predecessors) {
-        this.users = Objects.requireNonNullElseGet(users, LinkedList::new);
-        this.predecessors = Objects.requireNonNullElseGet(predecessors, ArrayList::new);
         this.successor = successor;
         this.alternateSuccessor = alternateSuccessor;
+        this.predecessors = Objects.requireNonNullElseGet(predecessors, ArrayList::new);
+        this.blockId = createBlockId();
     }
 
     public static CfgBlock withBothBranches(@NotNull CfgBlock successor, @NotNull CfgBlock alternateSuccessor) {
-        return new CfgBlock(null, successor, alternateSuccessor, null);
+        return new CfgBlock(successor, alternateSuccessor, null);
     }
 
     public CfgBlock createExitBlock(String methodName, CompilationContext compilationContext) {
@@ -48,11 +57,11 @@ public class CfgBlock implements Iterable<AST> {
     }
 
     public static CfgBlock empty() {
-        return new CfgBlock(null, null, null, null);
+        return new CfgBlock(null, null, null);
     }
 
     public static CfgBlock withSuccessor(@Nullable CfgBlock successor) {
-        return new CfgBlock(null, successor, null, null);
+        return new CfgBlock(successor, null, null);
     }
 
     public Optional<CfgBlock> getSuccessor() {
@@ -78,22 +87,16 @@ public class CfgBlock implements Iterable<AST> {
         this.alternateSuccessor = alternateSuccessor;
     }
 
-    @NotNull
-    @Override
-    public Iterator<AST> iterator() {
-        return users.iterator();
-    }
-
     public void addUserToEnd(@NotNull AST user) {
-        users.add(user);
+        add(user);
     }
 
     public void addUserToFront(@NotNull AST user) {
-        users.addFirst(user);
+        addFirst(user);
     }
 
-    public void addUsers(@NotNull List<AST> users) {
-        this.users.addAll(users);
+    public void addUsers(@NotNull List<? extends AST> users) {
+        addAll(users);
     }
 
     public void addPredecessor(@NotNull CfgBlock predecessor) {
@@ -104,21 +107,20 @@ public class CfgBlock implements Iterable<AST> {
     }
 
     public Optional<AST> getTerminator() {
-        return Optional.ofNullable(users.peekLast());
+        return Optional.ofNullable(peekLast());
     }
 
     public Optional<AST> getLeader() {
-        return Optional.ofNullable(users.peekFirst());
+        return Optional.ofNullable(peekFirst());
     }
 
-    @Override
-    public String toString() {
-        return "CfgBlock{" +
-               "users=" + users +
-               '}';
-    }
-
-    public void addSuccessor(CfgBlock successor) {
+    public void addSuccessor(@NotNull CfgBlock successor) {
+        if (this.successor == successor) {
+            return;
+        }
+        if (this.alternateSuccessor == successor) {
+            return;
+        }
         if (this.successor == null) {
             this.successor = successor;
         } else if (this.alternateSuccessor == null) {
@@ -130,7 +132,8 @@ public class CfgBlock implements Iterable<AST> {
 
     public String getSourceCode() {
         var sb = new StringBuilder();
-        for (var user : users) {
+        sb.append(String.format("Block %d:\n", blockId));
+        for (var user : this) {
             sb.append(user.getSourceCode());
             sb.append("\n");
         }

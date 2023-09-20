@@ -75,8 +75,8 @@ public class Type extends AST {
   }
 
   @Override
-  public <T> T accept(@NotNull AstVisitor<T> astVisitor, @NotNull Scope currentScope) {
-    return astVisitor.visit(this, currentScope);
+  public <ReturnType, InputType> ReturnType accept(AstVisitor<ReturnType, InputType> astVisitor, InputType input) {
+    return astVisitor.visit(this, input);
   }
 
   @Override

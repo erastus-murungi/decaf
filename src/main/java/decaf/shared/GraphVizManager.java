@@ -96,7 +96,7 @@ public class GraphVizManager {
      * Where is your dot program located? It will be called externally.
      */
     private static final String DOT = (osName.equals("windows")) ? "c:/Program Files (x86)/Graphviz 2.28/bin/dot.exe" : (osName.equals(
-            "macosx")) ? "/usr/local/bin/dot" : "/usr/bin/dot";
+            "macosx")) ? "/opt/homebrew/bin/dot" : "/usr/bin/dot";
 
     /**
      * The image size in dpi. 96 dpi is normal size. Higher values are 10% higher each.
@@ -127,12 +127,8 @@ public class GraphVizManager {
         gv.addln(gv.start_graph());
         gv.add(dotFormat);
         gv.addln(gv.end_graph());
-        // String type = "gif";
         String type = "pdf";
-        // gv.increaseDpi();
-        gv.decreaseDpi();
-        gv.decreaseDpi();
-        File out = new File(fileName + "." + type);
+        File out = new File("graph/" + fileName + "." + type);
         gv.writeGraphToFile(gv.getGraph(gv.getDotSource(), type), out);
     }
 
@@ -218,40 +214,19 @@ public class GraphVizManager {
         stack.push(compilationContext.getEntryCfgBlock(methodName).orElseThrow());
 
         while (!stack.isEmpty()) {
-            CfgBlock cfgBlock = stack.pop();
+            var cfgBlock = stack.pop();
             if (compilationContext.isExitBlock(cfgBlock) || compilationContext.isEntryBlock(cfgBlock)) {
                 nodes.add(String.format("   %s [shape=record, style=filled, fillcolor=gray, label=%s];",
                                         cfgBlock.hashCode(),
                                         "\"<from_node>" + escape(labelFunction.apply(cfgBlock)) + "\""
                                        ));
-                if (cfgBlock.getSuccessor().isPresent()) {
-                    var autoChild = cfgBlock.getSuccessor().get();
-                    edges.add(String.format("   %s -> %s;",
-                                            cfgBlock.hashCode() + ":from_node",
-                                            autoChild.hashCode() + ":from_node"
-                                           ));
-                    if (!seen.contains(autoChild)) {
-                        stack.push(autoChild);
-                        seen.add(autoChild);
-                    }
-                }
-            } else if (cfgBlock.getAlternateSuccessor().isEmpty()) {
+            } else {
                 nodes.add(String.format("   %s [shape=record, label=%s];",
                                         cfgBlock.hashCode(),
                                         "\"<from_node>" + escape(labelFunction.apply(cfgBlock)) + "\""
                                        ));
-                if (cfgBlock.getSuccessor().isPresent()) {
-                    var autoChild = cfgBlock.getSuccessor().get();
-                    edges.add(String.format("   %s -> %s;",
-                                            cfgBlock.hashCode() + ":from_node",
-                                            autoChild.hashCode() + ":from_node"
-                                           ));
-                    if (!seen.contains(autoChild)) {
-                        stack.push(autoChild);
-                        seen.add(autoChild);
-                    }
-                }
-            } else if (cfgBlock.getAlternateSuccessor().isPresent() && cfgBlock.getSuccessor().isPresent()) {
+            }
+            if (cfgBlock.getAlternateSuccessor().isPresent() && cfgBlock.getSuccessor().isPresent()) {
                 nodes.add(String.format("   %s [shape=record, label=%s];",
                                         cfgBlock.hashCode(),
                                         "\"{<from_node>" +
@@ -277,6 +252,22 @@ public class GraphVizManager {
                                         cfgBlock.hashCode() + ":from_true",
                                         trueChild.hashCode() + ":from_node"
                                        ));
+            } else if (cfgBlock.getSuccessor().isPresent()) {
+                var autoChild = cfgBlock.getSuccessor().get();
+                edges.add(String.format("   %s -> %s;",
+                                        cfgBlock.hashCode() + ":from_node",
+                                        autoChild.hashCode() + ":from_node"
+                                       ));
+                if (!seen.contains(autoChild)) {
+                    stack.push(autoChild);
+                    seen.add(autoChild);
+                }
+            } else {
+                assert compilationContext.isExitBlock(cfgBlock);
+                nodes.add(String.format("   %s [shape=record, style=filled, fillcolor=gray, label=%s];",
+                                        cfgBlock.hashCode(),
+                                        "\"<from_node>" + escape(labelFunction.apply(cfgBlock)) + "\""
+                                       ));
             }
         }
         subGraphs.addAll(edges);
@@ -291,11 +282,11 @@ public class GraphVizManager {
     }
 
     public static void printGraph(CompilationContext compilationContext) {
-        printGraph(compilationContext, (CfgBlock::getSourceCode), "cfg");
+        printGraph(compilationContext, CfgBlock::getSourceCode, "cfg");
     }
 
     public static void printGraph(CompilationContext compilationContext, String filename) {
-        printGraph(compilationContext, (CfgBlock::getSourceCode), filename);
+        printGraph(compilationContext, CfgBlock::getSourceCode, filename);
     }
 
     public static void printGraph(CompilationContext compilationContext,
@@ -337,28 +328,6 @@ public class GraphVizManager {
     }
 
     /**
-     * Increase the image size (dpi).
-     */
-    public void increaseDpi() {
-        if (this.currentDpiPos < (this.dpiSizes.length - 1)) {
-            ++this.currentDpiPos;
-        }
-    }
-
-    /**
-     * Decrease the image size (dpi).
-     */
-    public void decreaseDpi() {
-        if (this.currentDpiPos > 0) {
-            --this.currentDpiPos;
-        }
-    }
-
-    public int getImageDpi() {
-        return this.dpiSizes[this.currentDpiPos];
-    }
-
-    /**
      * Returns the graph's source description in dot language.
      *
      * @return Source of the graph in dot language.
@@ -379,17 +348,6 @@ public class GraphVizManager {
      */
     public void addln(String line) {
         this.graph.append(line).append("\n");
-    }
-
-    /**
-     * Adds a newline to the graph's source.
-     */
-    public void addln() {
-        this.graph.append('\n');
-    }
-
-    public void clearGraph() {
-        this.graph = new StringBuilder();
     }
 
     /**
@@ -416,18 +374,6 @@ public class GraphVizManager {
         } catch (java.io.IOException ioe) {
             return null;
         }
-    }
-
-    /**
-     * Writes the graph's image in a file.
-     *
-     * @param img  A byte array containing the image of the graph.
-     * @param file Name of the file to where we want to write.
-     * @return Success: 1, Failure: -1
-     */
-    public int writeGraphToFile(byte[] img, String file) {
-        File to = new File(file);
-        return writeGraphToFile(img, to);
     }
 
     /**
@@ -554,31 +500,6 @@ public class GraphVizManager {
      */
     public String end_subgraph() {
         return "}";
-    }
-
-    /**
-     * Read a DOT graph from a text file.
-     *
-     * @param input Input text file containing the DOT graph
-     *              source.
-     */
-    public void readSource(String input) {
-        StringBuilder sb = new StringBuilder();
-
-        try {
-            FileInputStream fis = new FileInputStream(input);
-            DataInputStream dis = new DataInputStream(fis);
-            BufferedReader br = new BufferedReader(new InputStreamReader(dis));
-            String line;
-            while ((line = br.readLine()) != null) {
-                sb.append(line);
-            }
-            dis.close();
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-        }
-
-        this.graph = sb;
     }
 
 }

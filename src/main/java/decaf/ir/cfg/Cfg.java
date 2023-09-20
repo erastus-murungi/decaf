@@ -4,359 +4,318 @@ import decaf.analysis.syntax.ast.*;
 import decaf.analysis.syntax.ast.types.Type;
 import decaf.shared.AstVisitor;
 import decaf.shared.CompilationContext;
-import decaf.shared.env.Scope;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Optional;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
-
-public class Cfg implements AstVisitor<Optional<CfgBlock>> {
-    @Nullable CfgBlock continueJumpTarget;
-    @NotNull CompilationContext context;
-    @Nullable
-    private CfgBlock currentBlock;
-
-    @NotNull CfgBlock exitBlock;
-    @Nullable
-    private CfgBlock successor;
-    private boolean malformedCfg = false;
+public class Cfg implements AstVisitor<@NotNull CfgBlock, @NotNull CfgBlock> {
+    @NotNull
+    private final CompilationContext context;
+    @NotNull
+    private final CfgBlock entryBlock;
     @Nullable
     private CfgBlock breakJumpTarget;
+    @Nullable
+    private CfgBlock continueJumpTarget;
+    @Nullable
+    private CfgBlock exitBlock;
+
+    @NotNull private CfgBlock successorBlock;
+
+    @NotNull
+    private final String methodName;
 
     private Cfg(@NotNull MethodDefinition methodDefinition, @NotNull CompilationContext context) {
         this.context = context;
-        this.exitBlock = CfgBlock.empty();
-        context.addExitCfgBlockFor(methodDefinition.getName(), exitBlock);
-        this.currentBlock = CfgBlock.empty();
-        context.addEntryCfgBlockFor(methodDefinition.getName(), currentBlock);
-        methodDefinition.accept(this,
-                                context.getScopeFor(methodDefinition)
-                                       .orElseThrow(() -> new IllegalStateException(String.format(
-                                               "No scope for method %s",
-                                               methodDefinition.getName()
-                                                                                                 )))
-                               );
-
+        entryBlock = CfgBlock.empty();
+        methodName = methodDefinition.getName();
+        successorBlock = CfgBlock.empty();
+        context.addEntryCfgBlockFor(methodDefinition.getName(), entryBlock);
+        methodDefinition.accept(this, entryBlock);
     }
 
-    public static CfgBlock createGlobalCfgBlock(@NotNull Program program) {
+    public static @NotNull CfgBlock createGlobalCfgBlock(@NotNull Program program) {
         var globalCfgBlock = CfgBlock.empty();
-        for (var fieldDeclaration: program.getFieldDeclarations())
+        for (var fieldDeclaration : program.getFieldDeclarations()) {
             globalCfgBlock.addUserToEnd(fieldDeclaration);
-        for (var methodDefinition: program.getMethodDefinitions())
+        }
+        for (var methodDefinition : program.getMethodDefinitions()) {
             globalCfgBlock.addUserToEnd(methodDefinition);
+        }
         return globalCfgBlock;
     }
 
     public static void build(@NotNull CompilationContext compilationContext) {
         var globalBlock = createGlobalCfgBlock(compilationContext.getProgram());
         compilationContext.setGlobalEntryBlock(globalBlock);
-        for (var methodDefinition: compilationContext.getProgram().getMethodDefinitions()) {
+        for (var methodDefinition : compilationContext.getProgram().getMethodDefinitions()) {
             var cfg = new Cfg(methodDefinition, compilationContext);
             compilationContext.setCfg(methodDefinition.getName(), cfg);
+            globalBlock.addSuccessor(cfg.getEntryBlock());
+        }
+    }
+
+    public @NotNull CfgBlock getEntryBlock() {
+        return entryBlock;
+    }
+
+    private @NotNull CfgBlock getSuccessorBlock(@NotNull CfgBlock currentBlock) {
+        if (currentBlock.isEmpty()) {
+            successorBlock = currentBlock;
+            return currentBlock;
+        } else {
+            assert successorBlock.isEmpty();
+            var toReturn = successorBlock;
+            successorBlock = CfgBlock.empty();
+            return toReturn;
         }
     }
 
     @Override
-    public Optional<CfgBlock> visit(IntLiteral intLiteral, Scope scope) {
-        return Optional.empty();
-    }
-
-    // createBlock - Used to lazily create blocks that are connected
-    // to the current (global) successor.
-    @NotNull private CfgBlock createCfgBlockWithSuccessor() {
-        return (successor != null) ? CfgBlock.withSuccessor(successor) : CfgBlock.empty();
-    }
-
-    // createBlock - Used to lazily create blocks
-    private CfgBlock createCfgBlockNoSuccessor() {
-        return CfgBlock.empty();
-    }
-
-    @NotNull private CfgBlock autoCreateBlock() {
-        if (currentBlock == null) {
-            currentBlock = createCfgBlockWithSuccessor();
-        }
-        return currentBlock;
+    public @NotNull CfgBlock visit(IntLiteral intLiteral, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(BooleanLiteral booleanLiteral, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(BooleanLiteral booleanLiteral, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(FieldDeclaration fieldDeclaration, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(FieldDeclaration fieldDeclaration, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(MethodDefinition methodDefinition, Scope scope) {
-        checkState(currentBlock != null,
-                   String.format("make sure an entry block has been created for method `%s`",
-                                 methodDefinition.getName()
-                                )
-                  );
-        methodDefinition.getFormalArguments().accept(this, scope);
-        return methodDefinition.getBody().accept(this, scope);
+    public @NotNull CfgBlock visit(MethodDefinition methodDefinition, CfgBlock currentBlock) {
+        methodDefinition.getFormalArguments().accept(this, currentBlock);
+        return methodDefinition.getBody().accept(this, currentBlock);
     }
 
     @Override
-    public Optional<CfgBlock> visit(ImportDeclaration importDeclaration, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(ImportDeclaration importDeclaration, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(For forStatement, Scope scope) {
-        return Optional.empty();
-    }
-
-    private void addSuccessor(CfgBlock currentBlock, CfgBlock successor) {
-        if (currentBlock == null) {
-            currentBlock = createCfgBlockWithSuccessor();
-        }
-        currentBlock.addSuccessor(successor);
-        successor.addPredecessor(currentBlock);
+    public @NotNull CfgBlock visit(For forStatement, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(@IsControlFlowStatement Break breakStatement, Scope scope) {
-        if (malformedCfg) {
-            return Optional.empty();
-        }
-        currentBlock = createCfgBlockNoSuccessor();
+    public @NotNull CfgBlock visit(@IsControlFlowStatement @NotNull Break breakStatement, CfgBlock currentBlock) {
         currentBlock.addUserToEnd(breakStatement);
         assert currentBlock.getTerminator().map(t -> t == breakStatement).orElse(false);
         if (breakJumpTarget == null) {
-            malformedCfg = true;
-            return Optional.empty();
+            throw new MalformedSourceLevelCfg("break statement outside of a loop");
         } else {
-            addSuccessor(currentBlock, breakJumpTarget);
-            return Optional.ofNullable(currentBlock);
+            var newBlock = CfgBlock.empty();
+            currentBlock.addSuccessor(newBlock);
+            return newBlock;
         }
     }
 
     @Override
-    public Optional<CfgBlock> visit(@IsControlFlowStatement Continue continueStatement, Scope scope) {
-        if (malformedCfg) {
-            return Optional.empty();
-        }
-        currentBlock = createCfgBlockNoSuccessor();
-        currentBlock.addUserToEnd(continueStatement);
-        assert currentBlock.getTerminator().map(t -> t == continueStatement).orElse(false);
+    public @NotNull CfgBlock visit(@IsControlFlowStatement @NotNull Continue continueStatement, CfgBlock currentBlock) {
+        var newBlock = CfgBlock.empty();
+        newBlock.addUserToEnd(continueStatement);
+        assert newBlock.getTerminator().map(t -> t == continueStatement).orElse(false);
         if (continueJumpTarget == null) {
-            malformedCfg = true;
-            return Optional.empty();
+            throw new MalformedSourceLevelCfg("continue statement outside of a loop");
         } else {
-            addSuccessor(currentBlock, continueJumpTarget);
-            return Optional.ofNullable(currentBlock);
+            continueJumpTarget.addSuccessor(newBlock);
+            return newBlock;
         }
     }
 
     @Override
-    public Optional<CfgBlock> visit(While whileStatement, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(While whileStatement, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(Program program, Scope scope) {
+    public @NotNull CfgBlock visit(Program program, CfgBlock currentBlock) {
         throw new UnsupportedOperationException("CFGs are constructed on a a per method basis");
     }
 
     @Override
-    public Optional<CfgBlock> visit(UnaryOpExpression unaryOpExpression, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(UnaryOpExpression unaryOpExpression, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(BinaryOpExpression binaryOpExpression, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(BinaryOpExpression binaryOpExpression, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(Block block, Scope scope) {
-        currentBlock = createCfgBlockWithSuccessor();
-        for (var fieldDeclaration: block.getFieldDeclarations())
-            currentBlock.addUserToFront(fieldDeclaration);
-        for (var statement: block.getStatements()) {
-            statement.accept(this, scope);
+    public @NotNull CfgBlock visit(Block block, CfgBlock currentBlock) {
+        currentBlock.addUsers(block.getFieldDeclarations());
+        var lastBlock = currentBlock;
+        for (var statement : block.getStatements()) {
+            lastBlock = statement.accept(this, currentBlock);
         }
-        return Optional.ofNullable(currentBlock);
+        return lastBlock;
     }
 
     @Override
-    public Optional<CfgBlock> visit(ParenthesizedExpression parenthesizedExpression, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(ParenthesizedExpression parenthesizedExpression, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(LocationArray locationArray, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(LocationArray locationArray, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(ExpressionParameter expressionParameter, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(@NotNull ExpressionParameter expressionParameter, @NotNull CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(If ifStatement, Scope scope) {
-        if (currentBlock != null) {
-            // The block we were processing is now finished.  Make it the successor
-            // block.
-            successor = currentBlock;
-            if (malformedCfg) {
-                return Optional.empty();
-            }
+    public @NotNull CfgBlock visit(@NotNull If ifStatement, @NotNull CfgBlock currentBlock) {
+        // The block we were processing is now finished.
+        // Make it the successor block.
+        // Process the false branch.
 
-            var elseBlock = Optional.of(currentBlock);
-            final var savedElseBlock = elseBlock;
+        var nextBlock = CfgBlock.empty();
+        if (ifStatement.getElseBlock().isPresent()) {
+            var elseBlock = ifStatement.getElseBlock().get();
+            // Create a new block for the false branch.
             // Process the false branch.
-            if (ifStatement.getElseBlock().isPresent()) {
-                // Create a new block for the false branch.
-                currentBlock = null;
-                // Process the false branch.
-                elseBlock = ifStatement.getElseBlock().flatMap(block -> block.accept(this, scope));
-
-                // If the false branch is not malformed, then the current block is
-                // now the false branch.
-                if (elseBlock.isEmpty()) {
-                    elseBlock = savedElseBlock;
-                } else if (currentBlock != null) {
-                    // If the false branch is malformed, then the whole if statement is
-                    // malformed.
-                    if (malformedCfg) {
-                        return Optional.empty();
-                    }
-                }
-            }
-            final var savedSuccessor = successor;
-            // Create a new block for the true branch.
-            currentBlock = null;
-            // Process the true branch.
-            var thenBlockOptional = ifStatement.getThenBlock().accept(this, scope);
-            if (thenBlockOptional.isEmpty()) {
-                var thenBlock = CfgBlock.withSuccessor(savedSuccessor);
-                currentBlock = CfgBlock.withBothBranches(thenBlock, elseBlock.orElse(savedSuccessor));
-
-                return ifStatement.getCondition().accept(this, scope);
-                // TODO: short circuit processing here
-            } else if (currentBlock != null) {
-                if (malformedCfg) {
-                    return Optional.empty();
-                }
-            }
+            var elseBlockEntry = CfgBlock.empty();
+            var elseBlockExit = elseBlock.accept(this, elseBlockEntry);
+            var thenBlockEntry = CfgBlock.empty();
+            var thenBlockExit = ifStatement.getThenBlock().accept(this, thenBlockEntry);
+            currentBlock.addSuccessor(thenBlockEntry);
+            currentBlock.addSuccessor(elseBlockEntry);
+            // TOD0: add short-circuiting for && and ||
+            currentBlock.addUserToEnd(ifStatement.getCondition());
+            thenBlockExit.addSuccessor(nextBlock);
+            elseBlockExit.addSuccessor(nextBlock);
+            return nextBlock;
+        } else {
+            var thenBlockEntry = CfgBlock.empty();
+            var thenBlockExit = ifStatement.getThenBlock().accept(this, thenBlockEntry);
+            currentBlock.addSuccessor(thenBlockEntry);
+            thenBlockExit.addSuccessor(nextBlock);
+            // TOD0: add short-circuiting for && and ||
+            currentBlock.addUserToEnd(ifStatement.getCondition());
+            return nextBlock;
         }
-        return Optional.empty();
     }
 
     @Override
-    public Optional<CfgBlock> visit(Return returnStatement, Scope scope) {
-        currentBlock = createCfgBlockNoSuccessor();
-        currentBlock.addUserToEnd(returnStatement);
+    public @NotNull CfgBlock visit(@NotNull Return returnStatement, @NotNull CfgBlock currentBlock) {
+        // create a new exit block only if we don't already have one
+        if (exitBlock == null) {
+            if (currentBlock.isEmpty()) {
+                exitBlock = currentBlock;
+            } else {
+                exitBlock = CfgBlock.empty();
+            }
+            context.addExitCfgBlockFor(methodName, exitBlock);
+        }
         currentBlock.addSuccessor(exitBlock);
-        return Optional.empty();
+        currentBlock.addUserToEnd(returnStatement);
+        return exitBlock;
     }
 
     @Override
-    public Optional<CfgBlock> visit(Array array, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(Array array, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(MethodCall methodCall, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(MethodCall methodCall, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(MethodCallStatement methodCallStatement, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(MethodCallStatement methodCallStatement, CfgBlock currentBlock) {
+        currentBlock.addUserToEnd(methodCallStatement);
+        return currentBlock;
     }
 
     @Override
-    public Optional<CfgBlock> visit(LocationAssignExpr locationAssignExpr, Scope scope) {
-        checkNotNull(currentBlock, "current block cannot be null");
-        currentBlock.addUserToFront(locationAssignExpr);
-        return Optional.of(currentBlock);
+    public @NotNull CfgBlock visit(LocationAssignExpr locationAssignExpr, CfgBlock currentBlock) {
+        currentBlock.addUserToEnd(locationAssignExpr);
+        return currentBlock;
     }
 
     @Override
-    public Optional<CfgBlock> visit(AssignOpExpr assignOpExpr, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(AssignOpExpr assignOpExpr, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(FormalArgument formalArgument, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(FormalArgument formalArgument, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(RValue RValue, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(RValue RValue, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(LocationVariable locationVariable, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(LocationVariable locationVariable, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(Len len, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(Len len, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(Increment increment, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(Increment increment, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(Decrement decrement, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(Decrement decrement, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(CharLiteral charLiteral, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(CharLiteral charLiteral, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(StringLiteral stringLiteral, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(StringLiteral stringLiteral, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(CompoundAssignOpExpr compoundAssignOpExpr, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(CompoundAssignOpExpr compoundAssignOpExpr, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(Initialization initialization, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(Initialization initialization, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(Assignment assignment, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(Assignment assignment, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(VoidExpression voidExpression, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(VoidExpression voidExpression, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(Type type, Scope scope) {
-        return Optional.empty();
+    public @NotNull CfgBlock visit(Type type, CfgBlock currentBlock) {
+        return null;
     }
 
     @Override
-    public Optional<CfgBlock> visit(FormalArguments formalArguments, Scope scope) {
-        checkNotNull(currentBlock, "current block cannot be null");
+    public @NotNull CfgBlock visit(FormalArguments formalArguments, CfgBlock currentBlock) {
         currentBlock.addUserToFront(formalArguments);
-        return Optional.of(currentBlock);
+        return currentBlock;
     }
 }

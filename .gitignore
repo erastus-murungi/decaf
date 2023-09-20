@@ -9,16 +9,8 @@ src/.idea/
 *.iml
 build/
 dot/
-
-*ssa*.pdf
-*dom*.pdf
-*cfg*.pdf
-test.asm
-symbolTables.pdf
+graph
 dotsource.dot
-ig.pdf
-test.s
-test.o
 
 .gradle
 

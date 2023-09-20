@@ -18,7 +18,7 @@ import java.util.List;
 
 import static decaf.shared.errors.SemanticError.ErrorType;
 
-public class SemanticChecker implements AstVisitor<Type> {
+public class SemanticChecker implements AstVisitor<Type, Scope> {
     @NotNull
     private final Scope globalScope = Scope.forGlobals();
     @NotNull
@@ -687,8 +687,8 @@ public class SemanticChecker implements AstVisitor<Type> {
     }
 
     @Override
-    public Type visit(CompoundAssignOpExpr compoundAssignOpExpr, Scope curScope) {
-        compoundAssignOpExpr.expression.setType(compoundAssignOpExpr.expression.accept(this, curScope));
+    public Type visit(CompoundAssignOpExpr compoundAssignOpExpr, Scope scope) {
+        compoundAssignOpExpr.expression.setType(compoundAssignOpExpr.expression.accept(this, scope));
         return Type.getUnsetType();
     }
 

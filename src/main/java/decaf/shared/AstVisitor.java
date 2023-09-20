@@ -2,83 +2,80 @@ package decaf.shared;
 
 import decaf.analysis.syntax.ast.*;
 import decaf.analysis.syntax.ast.types.Type;
-import decaf.shared.env.Scope;
 
-public interface AstVisitor<T> {
-  T visit(IntLiteral intLiteral, Scope scope);
 
-  T visit(BooleanLiteral booleanLiteral, Scope scope);
+public interface AstVisitor<ReturnType, InputType> {
+    ReturnType visit(IntLiteral intLiteral, InputType input);
 
-  T visit(FieldDeclaration fieldDeclaration, Scope scope);
+    ReturnType visit(BooleanLiteral booleanLiteral, InputType input);
 
-  T visit(MethodDefinition methodDefinition, Scope scope);
+    ReturnType visit(FieldDeclaration fieldDeclaration, InputType input);
 
-  T visit(ImportDeclaration importDeclaration, Scope scope);
+    ReturnType visit(MethodDefinition methodDefinition, InputType input);
 
-  T visit(For forStatement, Scope scope);
+    ReturnType visit(ImportDeclaration importDeclaration, InputType input);
 
-  T visit(Break breakStatement, Scope scope);
+    ReturnType visit(For forStatement, InputType input);
 
-  T visit(Continue continueStatement, Scope scope);
+    ReturnType visit(Break breakStatement, InputType input);
 
-  T visit(While whileStatement, Scope scope);
+    ReturnType visit(Continue continueStatement, InputType input);
 
-  T visit(Program program, Scope scope);
+    ReturnType visit(While whileStatement, InputType input);
 
-  T visit(UnaryOpExpression unaryOpExpression, Scope scope);
+    ReturnType visit(Program program, InputType input);
 
-  T visit(BinaryOpExpression binaryOpExpression, Scope scope);
+    ReturnType visit(UnaryOpExpression unaryOpExpression, InputType input);
 
-  T visit(Block block, Scope scope);
+    ReturnType visit(BinaryOpExpression binaryOpExpression, InputType input);
 
-  T visit(
-      ParenthesizedExpression parenthesizedExpression,
-      Scope scope
-  );
+    ReturnType visit(Block block, InputType input);
 
-  T visit(LocationArray locationArray, Scope scope);
+    ReturnType visit(ParenthesizedExpression parenthesizedExpression, InputType input);
 
-  T visit(ExpressionParameter expressionParameter, Scope scope);
+    ReturnType visit(LocationArray locationArray, InputType input);
 
-  T visit(If ifStatement, Scope scope);
+    ReturnType visit(ExpressionParameter expressionParameter, InputType input);
 
-  T visit(Return returnStatement, Scope scope);
+    ReturnType visit(If ifStatement, InputType input);
 
-  T visit(Array array, Scope scope);
+    ReturnType visit(Return returnStatement, InputType input);
 
-  T visit(MethodCall methodCall, Scope scope);
+    ReturnType visit(Array array, InputType input);
 
-  T visit(MethodCallStatement methodCallStatement, Scope scope);
+    ReturnType visit(MethodCall methodCall, InputType input);
 
-  T visit(LocationAssignExpr locationAssignExpr, Scope scope);
+    ReturnType visit(MethodCallStatement methodCallStatement, InputType input);
 
-  T visit(AssignOpExpr assignOpExpr, Scope scope);
+    ReturnType visit(LocationAssignExpr locationAssignExpr, InputType input);
 
-  T visit(FormalArgument formalArgument, Scope scope);
+    ReturnType visit(AssignOpExpr assignOpExpr, InputType input);
 
-  T visit(RValue RValue, Scope scope);
+    ReturnType visit(FormalArgument formalArgument, InputType input);
 
-  T visit(LocationVariable locationVariable, Scope scope);
+    ReturnType visit(RValue RValue, InputType input);
 
-  T visit(Len len, Scope scope);
+    ReturnType visit(LocationVariable locationVariable, InputType input);
 
-  T visit(Increment increment, Scope scope);
+    ReturnType visit(Len len, InputType input);
 
-  T visit(Decrement decrement, Scope scope);
+    ReturnType visit(Increment increment, InputType input);
 
-  T visit(CharLiteral charLiteral, Scope scope);
+    ReturnType visit(Decrement decrement, InputType input);
 
-  T visit(StringLiteral stringLiteral, Scope scope);
+    ReturnType visit(CharLiteral charLiteral, InputType input);
 
-  T visit(CompoundAssignOpExpr compoundAssignOpExpr, Scope scope);
+    ReturnType visit(StringLiteral stringLiteral, InputType input);
 
-  T visit(Initialization initialization, Scope scope);
+    ReturnType visit(CompoundAssignOpExpr compoundAssignOpExpr, InputType input);
 
-  T visit(Assignment assignment, Scope scope);
+    ReturnType visit(Initialization initialization, InputType input);
 
-  T visit(VoidExpression voidExpression, Scope scope);
+    ReturnType visit(Assignment assignment, InputType input);
 
-  T visit(Type type, Scope scope);
+    ReturnType visit(VoidExpression voidExpression, InputType input);
 
-  T visit(FormalArguments formalArguments, Scope scope);
+    ReturnType visit(Type type, InputType input);
+
+    ReturnType visit(FormalArguments formalArguments, InputType input);
 }

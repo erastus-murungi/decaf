@@ -8,9 +8,8 @@ import decaf.ir.cfg.Cfg;
 import decaf.ir.cfg.CfgBlock;
 import decaf.shared.descriptors.Descriptor;
 import decaf.shared.env.Scope;
-import decaf.shared.errors.ParserError;
-import decaf.shared.errors.ScannerError;
-import decaf.shared.errors.SemanticError;
+import decaf.shared.errors.*;
+import decaf.shared.errors.Error;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.FileInputStream;
@@ -19,7 +18,6 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import decaf.shared.errors.Error;
 import org.jetbrains.annotations.Nullable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -35,6 +33,8 @@ public class CompilationContext {
     private final List<ScannerError> scanningErrors = new ArrayList<>();
     private final List<ParserError> parsingErrors = new ArrayList<>();
     private final List<SemanticError> semanticErrors = new ArrayList<>();
+
+    private final List<CfgBuildingError> cfgBuildingErrors = new ArrayList<>();
     private final Map<String, CfgBlock> exitBlocks = new HashMap<>();
     private final Map<String, CfgBlock> entryBlocks = new HashMap<>();
 
@@ -150,7 +150,7 @@ public class CompilationContext {
 
     public Optional<CfgBlock> getEntryCfgBlock(String methodName) {
         checkMethodNameValid(methodName);
-        return Optional.ofNullable(exitBlocks.get(methodName));
+        return Optional.ofNullable(entryBlocks.get(methodName));
     }
 
     public Optional<CfgBlock> getGlobalEntryCfgBlock() {
@@ -203,7 +203,11 @@ public class CompilationContext {
         return scanningErrors.isEmpty();
     }
 
-    public boolean semanticCheckingSuccessful() {
+    public boolean semanticCheckingUnsuccessful() {
+        return !semanticErrors.isEmpty();
+    }
+
+    public boolean cfgBuildingSuccessful() {
         return semanticErrors.isEmpty();
     }
 
@@ -217,6 +221,10 @@ public class CompilationContext {
 
     public String getParsingErrorOutput() {
         return stringifyErrors(parsingErrors);
+    }
+
+    public String getCfgBuildingErrorOutput() {
+        return stringifyErrors(cfgBuildingErrors);
     }
 
     public String getSemanticErrorOutput() {
