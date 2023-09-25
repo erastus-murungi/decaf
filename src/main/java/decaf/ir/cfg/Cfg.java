@@ -1,17 +1,17 @@
 package decaf.ir.cfg;
 
 import decaf.analysis.syntax.ast.*;
-import decaf.analysis.syntax.ast.types.Type;
-import decaf.shared.AstVisitor;
 import decaf.shared.CompilationContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class Cfg implements AstVisitor<@NotNull CfgBlock, @NotNull CfgBlock> {
+public class Cfg {
     @NotNull
     private final CompilationContext context;
     @NotNull
     private final CfgBlock entryBlock;
+    @NotNull
+    private final String methodName;
     @Nullable
     private CfgBlock breakJumpTarget;
     @Nullable
@@ -19,18 +19,36 @@ public class Cfg implements AstVisitor<@NotNull CfgBlock, @NotNull CfgBlock> {
     @Nullable
     private CfgBlock exitBlock;
 
-    @NotNull private CfgBlock successorBlock;
-
-    @NotNull
-    private final String methodName;
-
     private Cfg(@NotNull MethodDefinition methodDefinition, @NotNull CompilationContext context) {
         this.context = context;
         entryBlock = CfgBlock.empty();
         methodName = methodDefinition.getName();
-        successorBlock = CfgBlock.empty();
         context.addEntryCfgBlockFor(methodDefinition.getName(), entryBlock);
-        methodDefinition.accept(this, entryBlock);
+        visitMethodDefinition(methodDefinition, entryBlock);
+    }
+
+    private @NotNull CfgBlock visit(@NotNull AST ast, @NotNull CfgBlock currentBlock) {
+        if (ast instanceof Statement statement) {
+            if (statement instanceof If ifStatement) {
+                return visitIfStatement(ifStatement, currentBlock);
+            } else if (statement instanceof For forStatement) {
+                return visitForStatement(forStatement, currentBlock);
+            } else if (statement instanceof While whileStatement) {
+                return visitWhileStatement(whileStatement, currentBlock);
+            } else if (statement instanceof Return returnStatement) {
+                return visitReturnStatement(returnStatement, currentBlock);
+            } else if (statement instanceof Continue) {
+                return visitContinueStatement(currentBlock);
+            } else if (statement instanceof Break) {
+                return visitBreakStatement(currentBlock);
+            } else if (statement instanceof Block block) {
+                return visitBlockStatement(block, currentBlock);
+            } else {
+                return currentBlock.addUserToEnd(statement);
+            }
+        } else {
+            throw new IllegalStateException("Cannot visit non-statement AST node");
+        }
     }
 
     public static @NotNull CfgBlock createGlobalCfgBlock(@NotNull Program program) {
@@ -58,155 +76,110 @@ public class Cfg implements AstVisitor<@NotNull CfgBlock, @NotNull CfgBlock> {
         return entryBlock;
     }
 
-    private @NotNull CfgBlock getSuccessorBlock(@NotNull CfgBlock currentBlock) {
-        if (currentBlock.isEmpty()) {
-            successorBlock = currentBlock;
-            return currentBlock;
-        } else {
-            assert successorBlock.isEmpty();
-            var toReturn = successorBlock;
-            successorBlock = CfgBlock.empty();
-            return toReturn;
-        }
+    public void visitMethodDefinition(@NotNull MethodDefinition methodDefinition, @NotNull CfgBlock currentBlock) {
+        currentBlock.addUserToEnd(methodDefinition.getFormalArguments());
+        visitBlockStatement(methodDefinition.getBody(), currentBlock);
     }
 
-    @Override
-    public @NotNull CfgBlock visit(IntLiteral intLiteral, CfgBlock currentBlock) {
-        return null;
+    public @NotNull CfgBlock visitForStatement(@NotNull For forStatement, @NotNull CfgBlock currentBlock) {
+        var loopSuccessor = CfgBlock.empty();
+        var forBodyCfgBlock = CfgBlock.empty();
+
+        var saveTargets = new SaveTargets(loopSuccessor, forBodyCfgBlock);
+        var bodyExit = visitBlockStatement(forStatement.getBody(), forBodyCfgBlock);
+
+        bodyExit.addUserToEnd(forStatement.getUpdate());
+        bodyExit.addSuccessor(currentBlock);
+
+        currentBlock.addUserToEnd(forStatement.getInitialization());
+        currentBlock.addUserToEnd(forStatement.getTerminatingCondition());
+        currentBlock.addBranchTargets(forBodyCfgBlock, loopSuccessor);
+
+        saveTargets.restore();
+
+        return loopSuccessor;
     }
 
-    @Override
-    public @NotNull CfgBlock visit(BooleanLiteral booleanLiteral, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(FieldDeclaration fieldDeclaration, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(MethodDefinition methodDefinition, CfgBlock currentBlock) {
-        methodDefinition.getFormalArguments().accept(this, currentBlock);
-        return methodDefinition.getBody().accept(this, currentBlock);
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(ImportDeclaration importDeclaration, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(For forStatement, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(@IsControlFlowStatement @NotNull Break breakStatement, CfgBlock currentBlock) {
-        currentBlock.addUserToEnd(breakStatement);
-        assert currentBlock.getTerminator().map(t -> t == breakStatement).orElse(false);
+    public @NotNull CfgBlock visitBreakStatement(@NotNull CfgBlock currentBlock) {
+        // no need to add break as a user of the current block
         if (breakJumpTarget == null) {
             throw new MalformedSourceLevelCfg("break statement outside of a loop");
         } else {
-            var newBlock = CfgBlock.empty();
-            currentBlock.addSuccessor(newBlock);
-            return newBlock;
+            currentBlock.addSuccessor(breakJumpTarget);
+            return CfgBlock.empty();
         }
     }
 
-    @Override
-    public @NotNull CfgBlock visit(@IsControlFlowStatement @NotNull Continue continueStatement, CfgBlock currentBlock) {
-        var newBlock = CfgBlock.empty();
-        newBlock.addUserToEnd(continueStatement);
-        assert newBlock.getTerminator().map(t -> t == continueStatement).orElse(false);
+    public @NotNull CfgBlock visitContinueStatement(@NotNull CfgBlock currentBlock) {
+        // no need to add continue as a user of the current block
         if (continueJumpTarget == null) {
             throw new MalformedSourceLevelCfg("continue statement outside of a loop");
         } else {
-            continueJumpTarget.addSuccessor(newBlock);
-            return newBlock;
+            currentBlock.addSuccessor(continueJumpTarget);
+            return CfgBlock.empty();
         }
     }
 
-    @Override
-    public @NotNull CfgBlock visit(While whileStatement, CfgBlock currentBlock) {
-        return null;
+    public @NotNull CfgBlock visitWhileStatement(@NotNull While whileStatement, @NotNull CfgBlock currentBlock) {
+        var loopSuccessor = CfgBlock.empty();
+        var whileBodyCfgBlock = CfgBlock.empty();
+
+        // save the current break and continue targets
+        var saveTargets = new SaveTargets(loopSuccessor, whileBodyCfgBlock);
+
+        var bodyExit = visitBlockStatement(whileStatement.getBody(), whileBodyCfgBlock);
+        bodyExit.addSuccessor(currentBlock);
+
+        currentBlock.addUserToEnd(whileStatement.getTest());
+        currentBlock.addBranchTargets(whileBodyCfgBlock, loopSuccessor);
+
+        saveTargets.restore();
+
+        return loopSuccessor;
     }
 
-    @Override
-    public @NotNull CfgBlock visit(Program program, CfgBlock currentBlock) {
-        throw new UnsupportedOperationException("CFGs are constructed on a a per method basis");
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(UnaryOpExpression unaryOpExpression, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(BinaryOpExpression binaryOpExpression, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(Block block, CfgBlock currentBlock) {
+    public @NotNull CfgBlock visitBlockStatement(@NotNull Block block, @NotNull CfgBlock currentBlock) {
         currentBlock.addUsers(block.getFieldDeclarations());
         var lastBlock = currentBlock;
         for (var statement : block.getStatements()) {
-            lastBlock = statement.accept(this, currentBlock);
+            lastBlock = visit(statement, lastBlock);
         }
         return lastBlock;
     }
 
-    @Override
-    public @NotNull CfgBlock visit(ParenthesizedExpression parenthesizedExpression, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(LocationArray locationArray, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(@NotNull ExpressionParameter expressionParameter, @NotNull CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(@NotNull If ifStatement, @NotNull CfgBlock currentBlock) {
+    public @NotNull CfgBlock visitIfStatement(@NotNull If ifStatement, @NotNull CfgBlock currentBlock) {
         // The block we were processing is now finished.
         // Make it the successor block.
         // Process the false branch.
 
         var nextBlock = CfgBlock.empty();
         if (ifStatement.getElseBlock().isPresent()) {
-            var elseBlock = ifStatement.getElseBlock().get();
             // Create a new block for the false branch.
             // Process the false branch.
             var elseBlockEntry = CfgBlock.empty();
-            var elseBlockExit = elseBlock.accept(this, elseBlockEntry);
             var thenBlockEntry = CfgBlock.empty();
-            var thenBlockExit = ifStatement.getThenBlock().accept(this, thenBlockEntry);
-            currentBlock.addSuccessor(thenBlockEntry);
-            currentBlock.addSuccessor(elseBlockEntry);
-            // TOD0: add short-circuiting for && and ||
-            currentBlock.addUserToEnd(ifStatement.getCondition());
+
+            var elseBlockExit = visit(ifStatement.getElseBlock().get(), elseBlockEntry);
+            var thenBlockExit = visit(ifStatement.getThenBlock(), thenBlockEntry);
+
             thenBlockExit.addSuccessor(nextBlock);
             elseBlockExit.addSuccessor(nextBlock);
-            return nextBlock;
+
+            currentBlock.addBranchTargets(thenBlockEntry, elseBlockEntry);
         } else {
             var thenBlockEntry = CfgBlock.empty();
-            var thenBlockExit = ifStatement.getThenBlock().accept(this, thenBlockEntry);
-            currentBlock.addSuccessor(thenBlockEntry);
+            var thenBlockExit = visit(ifStatement.getThenBlock(), thenBlockEntry);
+
             thenBlockExit.addSuccessor(nextBlock);
-            // TOD0: add short-circuiting for && and ||
-            currentBlock.addUserToEnd(ifStatement.getCondition());
-            return nextBlock;
+
+            currentBlock.addBranchTargets(thenBlockEntry, nextBlock);
         }
+        // TOD0: add short-circuiting for && and ||
+        currentBlock.addUserToEnd(ifStatement.getCondition());
+        return nextBlock;
     }
 
-    @Override
-    public @NotNull CfgBlock visit(@NotNull Return returnStatement, @NotNull CfgBlock currentBlock) {
+    public @NotNull CfgBlock visitReturnStatement(@NotNull Return returnStatement, @NotNull CfgBlock currentBlock) {
         // create a new exit block only if we don't already have one
         if (exitBlock == null) {
             if (currentBlock.isEmpty()) {
@@ -221,101 +194,22 @@ public class Cfg implements AstVisitor<@NotNull CfgBlock, @NotNull CfgBlock> {
         return exitBlock;
     }
 
-    @Override
-    public @NotNull CfgBlock visit(Array array, CfgBlock currentBlock) {
-        return null;
-    }
+    private class SaveTargets {
+        @Nullable
+        private final CfgBlock savedBreakJumpTarget;
+        @Nullable
+        private final CfgBlock savedContinueJumpTarget;
 
-    @Override
-    public @NotNull CfgBlock visit(MethodCall methodCall, CfgBlock currentBlock) {
-        return null;
-    }
+        public SaveTargets(@Nullable CfgBlock newBreakJumpTarget, @Nullable CfgBlock newContinueJumpTarget) {
+            savedBreakJumpTarget = breakJumpTarget;
+            savedContinueJumpTarget = continueJumpTarget;
+            breakJumpTarget = newBreakJumpTarget;
+            continueJumpTarget = newContinueJumpTarget;
+        }
 
-    @Override
-    public @NotNull CfgBlock visit(MethodCallStatement methodCallStatement, CfgBlock currentBlock) {
-        currentBlock.addUserToEnd(methodCallStatement);
-        return currentBlock;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(LocationAssignExpr locationAssignExpr, CfgBlock currentBlock) {
-        currentBlock.addUserToEnd(locationAssignExpr);
-        return currentBlock;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(AssignOpExpr assignOpExpr, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(FormalArgument formalArgument, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(RValue RValue, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(LocationVariable locationVariable, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(Len len, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(Increment increment, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(Decrement decrement, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(CharLiteral charLiteral, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(StringLiteral stringLiteral, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(CompoundAssignOpExpr compoundAssignOpExpr, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(Initialization initialization, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(Assignment assignment, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(VoidExpression voidExpression, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(Type type, CfgBlock currentBlock) {
-        return null;
-    }
-
-    @Override
-    public @NotNull CfgBlock visit(FormalArguments formalArguments, CfgBlock currentBlock) {
-        currentBlock.addUserToFront(formalArguments);
-        return currentBlock;
+        public void restore() {
+            breakJumpTarget = savedBreakJumpTarget;
+            continueJumpTarget = savedContinueJumpTarget;
+        }
     }
 }

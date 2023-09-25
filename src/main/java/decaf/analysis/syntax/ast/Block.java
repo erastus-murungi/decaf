@@ -9,7 +9,7 @@ import decaf.shared.AstVisitor;
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
-public class Block extends AST {
+public class Block extends Statement {
   final private List<FieldDeclaration> fieldDeclarationList;
   final private List<Statement> statementList;
   public Scope scope;

@@ -9,12 +9,11 @@ import decaf.shared.AstVisitor;
 
 import decaf.shared.Pair;
 import decaf.shared.Utils;
-import decaf.shared.env.Scope;
 
 public class For extends Statement implements HasExpression {
   private final Initialization initialization;
   private final Assignment update;
-  private final Block block;
+  private final Block body;
   private Expression terminatingCondition;
 
   public For(
@@ -22,13 +21,13 @@ public class For extends Statement implements HasExpression {
       Initialization initialization,
       Expression terminatingCondition,
       Assignment update,
-      Block block
+      Block body
   ) {
     super(tokenPosition);
     this.initialization = initialization;
     this.terminatingCondition = terminatingCondition;
     this.update = update;
-    this.block = block;
+    this.body = body;
   }
 
   @Override
@@ -47,8 +46,8 @@ public class For extends Statement implements HasExpression {
             getUpdate()
         ),
         new Pair<>(
-            "block",
-            getBlock()
+                "block",
+                getBody()
         )
     );
   }
@@ -59,7 +58,7 @@ public class For extends Statement implements HasExpression {
            "initialization=" + getInitialization() +
            ", terminatingCondition=" + getTerminatingCondition() +
            ", update=" + getUpdate() +
-           ", block=" + getBlock() +
+           ", block=" + getBody() +
            '}';
   }
 
@@ -71,7 +70,7 @@ public class For extends Statement implements HasExpression {
             getInitialization().getSourceCode(),
             getTerminatingCondition().getSourceCode(),
             getUpdate().getSourceCode(),
-            Utils.indentBlock(getBlock())
+            Utils.indentBlock(getBody())
     );
   }
 
@@ -93,7 +92,7 @@ public class For extends Statement implements HasExpression {
 
 
   @Override
-  public List<Expression> getExpression() {
+  public List<Expression> getExpressions() {
     return List.of(getTerminatingCondition());
   }
 
@@ -114,8 +113,8 @@ public class For extends Statement implements HasExpression {
     return update;
   }
 
-  public Block getBlock() {
-    return block;
+  public Block getBody() {
+    return body;
   }
 
   public Expression getTerminatingCondition() {

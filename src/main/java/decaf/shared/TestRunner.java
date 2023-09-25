@@ -577,7 +577,7 @@ public class TestRunner {
               context.getCfgBuildingErrorOutput()
       );
     }
-    GraphVizManager.printGraph(context);
+    GraphPlottingMac.printGraph(context);
     return new Pair<>(
             true,
             ""

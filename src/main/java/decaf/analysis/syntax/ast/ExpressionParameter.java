@@ -55,7 +55,7 @@ public class ExpressionParameter extends ActualArgument implements HasExpression
   }
 
   @Override
-  public List<Expression> getExpression() {
+  public List<Expression> getExpressions() {
     return List.of(expression);
   }
 

@@ -1,0 +1,21 @@
+import printf;
+
+void main() {
+  int sum;
+  int i;
+  int j;
+  i = 0;
+  sum = 0;
+  j = 0;
+  while (i < 10) {
+    sum += i;
+    i++;
+    while (j < 5) {
+      j++;
+    }
+    if (i == 5) {
+      break;
+    }
+  }
+  printf("%d\n", sum);
+}

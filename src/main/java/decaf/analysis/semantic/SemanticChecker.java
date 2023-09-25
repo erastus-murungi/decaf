@@ -119,7 +119,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
     public Type visit(For forStatement, Scope scope) {
         return scope.lookup(forStatement.getInitialization().initLocation.getLabel()).map(initDescriptor -> {
             if (!initDescriptor.typeIs(Type.getIntType())) {
-                logSemanticError(forStatement.tokenPosition,
+                logSemanticError(forStatement.getTokenPosition(),
                                  ErrorType.UNSUPPORTED_TYPE,
                                  String.format("init location `%s` must have type int, not `%s`",
                                                forStatement.getInitialization().initLocation.getLabel(),
@@ -144,7 +144,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
                                 );
             }
             ++loopDepth;
-            forStatement.getBlock().accept(this, scope);
+            forStatement.getBody().accept(this, scope);
             --loopDepth;
             var updateId = forStatement.getUpdate().getLocation().getLabel();
             var updatingDescriptorOpt = scope.lookupNonMethod(updateId);
@@ -376,7 +376,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
 
     @Override
     public Type visit(ParenthesizedExpression parenthesizedExpression, Scope scope) {
-        return parenthesizedExpression.expression.accept(this, scope);
+        return parenthesizedExpression.getExpression().accept(this, scope);
     }
 
     @Override
@@ -535,7 +535,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
     public Type visit(MethodCallStatement methodCallStatement, Scope scope) {
         final var methodId = methodCallStatement.methodCall.methodId.getLabel();
         if (getGlobalScope().lookupMethod(methodId).isEmpty() && getGlobalScope().lookupImport(methodId).isEmpty()) {
-            logSemanticError(methodCallStatement.tokenPosition,
+            logSemanticError(methodCallStatement.getTokenPosition(),
                              ErrorType.IDENTIFIER_NOT_IN_SCOPE,
                              String.format("identifier `%s` in a method statement must be a declared method or import",
                                            methodId
@@ -555,7 +555,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
                 if (location instanceof LocationArray locationArray) {
                     final var indexType = locationArray.expression.accept(this, scope);
                     if (indexType != Type.getIntType()) {
-                        logSemanticError(locationAssignExpr.tokenPosition,
+                        logSemanticError(locationAssignExpr.getTokenPosition(),
                                          ErrorType.INVALID_ARRAY_INDEX,
                                          "array index must evaluate to an int"
                                         );
@@ -565,9 +565,9 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
             final var locationType = location.accept(this, scope);
             final Type expressionType = locationAssignExpr.assignExpr.accept(this, scope);
             if (locationAssignExpr.assignExpr instanceof final AssignOpExpr assignOpExpr) {
-                if (assignOpExpr.assignOp.label.equals(Scanner.ASSIGN)) {
+                if (assignOpExpr.getAssignOp().label.equals(Scanner.ASSIGN)) {
                     if (locationType != expressionType) {
-                        logSemanticError(locationAssignExpr.tokenPosition,
+                        logSemanticError(locationAssignExpr.getTokenPosition(),
                                          ErrorType.TYPE_MISMATCH,
                                          String.format(
                                                  "The location and the expression in an assignment must have the same type, " +
@@ -587,7 +587,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
                 locationAssignExpr.assignExpr instanceof Decrement ||
                 locationAssignExpr.assignExpr instanceof Increment) {
                 if (!((descriptor.getType() == Type.getIntType()) && expressionType == Type.getIntType())) {
-                    logSemanticError(locationAssignExpr.tokenPosition,
+                    logSemanticError(locationAssignExpr.getTokenPosition(),
                                      ErrorType.UNSUPPORTED_TYPE,
                                      String.format(
                                              "The location and the expression in an incrementing/decrementing assignment must be of type `int`, " +
@@ -602,7 +602,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
             }
             return Type.getUnsetType();
         }).orElseGet(() -> {
-            logSemanticError(locationAssignExpr.tokenPosition,
+            logSemanticError(locationAssignExpr.getTokenPosition(),
                              ErrorType.IDENTIFIER_NOT_IN_SCOPE,
                              String.format("id `%s` not in scope", location.getLabel())
                             );
@@ -612,14 +612,14 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
 
     private boolean assignOperatorEquals(LocationAssignExpr locationAssignExpr, String opStr) {
         return (locationAssignExpr.assignExpr instanceof AssignOpExpr &&
-                ((AssignOpExpr) locationAssignExpr.assignExpr).assignOp.label.equals(opStr)) ||
+                ((AssignOpExpr) locationAssignExpr.assignExpr).getAssignOp().label.equals(opStr)) ||
                (locationAssignExpr.assignExpr instanceof CompoundAssignOpExpr &&
                 ((CompoundAssignOpExpr) locationAssignExpr.assignExpr).compoundAssignOp.label.equals(opStr));
     }
 
     @Override
     public Type visit(AssignOpExpr assignOpExpr, Scope scope) {
-        return assignOpExpr.expression.accept(this, scope);
+        return assignOpExpr.getExpression().accept(this, scope);
     }
 
     @Override
@@ -787,7 +787,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
 
     public @NotNull Type visit(@NotNull Break breakStatement, @NotNull Scope scope) {
         if (loopDepth < 1) {
-            logSemanticError(breakStatement.tokenPosition,
+            logSemanticError(breakStatement.getTokenPosition(),
                              ErrorType.BREAK_OUT_OF_CONTEXT,
                              "break statement must be enclosed within a loop"
                             );
@@ -797,7 +797,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
 
     public @NotNull Type visit(@NotNull Continue continueStatement, @NotNull Scope scope) {
         if (loopDepth < 1) {
-            logSemanticError(continueStatement.tokenPosition,
+            logSemanticError(continueStatement.getTokenPosition(),
                              ErrorType.CONTINUE_OUT_OF_CONTEXT,
                              "continue statement must be enclosed within a loop"
                             );

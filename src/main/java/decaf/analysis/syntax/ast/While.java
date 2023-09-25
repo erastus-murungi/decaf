@@ -73,7 +73,7 @@ public class While extends Statement implements HasExpression {
 
 
   @Override
-  public List<Expression> getExpression() {
+  public List<Expression> getExpressions() {
     return List.of(getTest());
   }
 

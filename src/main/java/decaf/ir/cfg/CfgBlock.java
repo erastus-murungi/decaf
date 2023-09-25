@@ -19,11 +19,11 @@ public class CfgBlock extends LinkedList<AST> {
     @NotNull
     private final List<CfgBlock> predecessors;
 
-    private static int blockIdCounter = -1;
+    private static int blockIdCounter = 0;
 
     private final int blockId;
 
-    private int createBlockId() {
+    private static int createBlockId() {
         return blockIdCounter++;
     }
 
@@ -87,12 +87,9 @@ public class CfgBlock extends LinkedList<AST> {
         this.alternateSuccessor = alternateSuccessor;
     }
 
-    public void addUserToEnd(@NotNull AST user) {
+    public @NotNull CfgBlock addUserToEnd(@NotNull AST user) {
         add(user);
-    }
-
-    public void addUserToFront(@NotNull AST user) {
-        addFirst(user);
+        return this;
     }
 
     public void addUsers(@NotNull List<? extends AST> users) {
@@ -130,13 +127,46 @@ public class CfgBlock extends LinkedList<AST> {
         }
     }
 
+    public void addBranchTargets(@NotNull CfgBlock successor, @NotNull CfgBlock alternateSuccessor) {
+        checkNotNull(successor, "a successor cannot be null");
+        checkNotNull(alternateSuccessor, "an alternate successor cannot be null");
+        checkArgument(successor != alternateSuccessor, "a successor cannot be the same as the alternate successor");
+        checkArgument(successor != this, "a block cannot be its own successor");
+        checkArgument(alternateSuccessor != this, "a block cannot be its own alternate successor");
+        checkArgument(this.successor == null, "a block cannot have more than two successors");
+        checkArgument(this.alternateSuccessor == null, "a block cannot have more than two successors");
+        this.successor = successor;
+        this.alternateSuccessor = alternateSuccessor;
+    }
+
+    public List<CfgBlock> getSuccessors() {
+        var successors = new ArrayList<CfgBlock>();
+        if (this.successor != null) {
+            successors.add(this.successor);
+        }
+        if (this.alternateSuccessor != null) {
+            successors.add(this.alternateSuccessor);
+        }
+        return successors;
+    }
+
     public String getSourceCode() {
         var sb = new StringBuilder();
-        sb.append(String.format("Block %d:\n", blockId));
+        sb.append(String.format("L%d:\n", blockId));
         for (var user : this) {
             sb.append(user.getSourceCode());
             sb.append("\n");
         }
         return sb.toString();
+    }
+
+    @Override
+    public String toString() {
+        return String.format("L%d", blockId);
+    }
+
+    @Override
+    public int hashCode() {
+        return blockId;
     }
 }

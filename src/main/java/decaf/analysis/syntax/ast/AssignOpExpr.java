@@ -6,16 +6,16 @@ import java.util.List;
 import decaf.analysis.TokenPosition;
 import decaf.shared.AstVisitor;
 import decaf.shared.Pair;
-import decaf.shared.env.Scope;
+import org.jetbrains.annotations.NotNull;
 
 public class AssignOpExpr extends AssignExpr implements HasExpression {
-  final public AssignOperator assignOp;
-  public Expression expression;
+  @NotNull private final AssignOperator assignOp;
+  @NotNull private Expression expression;
 
   public AssignOpExpr(
-      TokenPosition tokenPosition,
-      AssignOperator assignOp,
-      Expression expression
+      @NotNull TokenPosition tokenPosition,
+      @NotNull AssignOperator assignOp,
+      @NotNull Expression expression
   ) {
     super(
         tokenPosition,
@@ -30,11 +30,11 @@ public class AssignOpExpr extends AssignExpr implements HasExpression {
     return List.of(
         new Pair<>(
             "assignOp",
-            assignOp
+            getAssignOp()
         ),
         new Pair<>(
             "expression",
-            expression
+            getExpression()
         )
     );
   }
@@ -46,15 +46,15 @@ public class AssignOpExpr extends AssignExpr implements HasExpression {
 
   @Override
   public String toString() {
-    return "AssignOpExpr{" + "assignOp=" + assignOp + ", expression=" + expression + '}';
+    return "AssignOpExpr{" + "assignOp=" + getAssignOp() + ", expression=" + getExpression() + '}';
   }
 
   @Override
   public String getSourceCode() {
     return String.format(
-        "%s %s",
-        assignOp.getSourceCode(),
-        expression.getSourceCode()
+            "%s %s",
+            getAssignOp().getSourceCode(),
+            getExpression().getSourceCode()
     );
   }
 
@@ -71,12 +71,12 @@ public class AssignOpExpr extends AssignExpr implements HasExpression {
 
   @Override
   public String getOperator() {
-    return assignOp.label;
+    return getAssignOp().label;
   }
 
   @Override
-  public List<Expression> getExpression() {
-    return List.of(expression);
+  public List<Expression> getExpressions() {
+    return List.of(getExpression());
   }
 
   @Override
@@ -84,7 +84,19 @@ public class AssignOpExpr extends AssignExpr implements HasExpression {
       Expression oldExpr,
       Expression newExpr
   ) {
-    if (expression == oldExpr)
-      expression = newExpr;
+    if (getExpression() == oldExpr)
+      setExpression(newExpr);
+  }
+
+  public void setExpression(@NotNull Expression expression) {
+    this.expression = expression;
+  }
+
+  public @NotNull Expression getExpression() {
+    return expression;
+  }
+
+  public @NotNull AssignOperator getAssignOp() {
+    return assignOp;
   }
 }

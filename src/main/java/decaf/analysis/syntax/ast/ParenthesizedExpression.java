@@ -7,24 +7,23 @@ import decaf.analysis.TokenPosition;
 import decaf.shared.AstVisitor;
 
 import decaf.shared.Pair;
-import decaf.shared.env.Scope;
 
 public class ParenthesizedExpression extends Expression implements HasExpression {
-  public Expression expression;
+  private Expression expression;
 
   public ParenthesizedExpression(
       TokenPosition tokenPosition,
       Expression expression
   ) {
     super(tokenPosition);
-    this.expression = expression;
+    this.setExpression(expression);
   }
 
   @Override
   public List<Pair<String, AST>> getChildren() {
     return List.of(new Pair<>(
         "expression",
-        expression
+        getExpression()
     ));
   }
 
@@ -35,14 +34,14 @@ public class ParenthesizedExpression extends Expression implements HasExpression
 
   @Override
   public String toString() {
-    return "ParenthesizedExpression{" + "expression=" + expression + '}';
+    return "ParenthesizedExpression{" + "expression=" + getExpression() + '}';
   }
 
   @Override
   public String getSourceCode() {
     return String.format(
-        "(%s)",
-        expression.getSourceCode()
+            "(%s)",
+            getExpression().getSourceCode()
     );
   }
 
@@ -58,8 +57,12 @@ public class ParenthesizedExpression extends Expression implements HasExpression
   }
 
   @Override
-  public List<Expression> getExpression() {
-    return List.of(expression);
+  public List<Expression> getExpressions() {
+    return List.of(getExpression());
+  }
+
+  public Expression getExpression() {
+    return expression;
   }
 
   @Override
@@ -67,7 +70,11 @@ public class ParenthesizedExpression extends Expression implements HasExpression
       Expression oldExpr,
       Expression newExpr
   ) {
-    if (expression == oldExpr)
-      expression = newExpr;
+    if (getExpression() == oldExpr)
+      setExpression(newExpr);
+  }
+
+  public void setExpression(Expression expression) {
+    this.expression = expression;
   }
 }

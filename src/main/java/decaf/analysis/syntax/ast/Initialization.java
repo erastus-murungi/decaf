@@ -63,7 +63,7 @@ public class Initialization extends Statement implements HasExpression {
   }
 
   @Override
-  public List<Expression> getExpression() {
+  public List<Expression> getExpressions() {
     return List.of(initExpression);
   }
 

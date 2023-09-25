@@ -169,7 +169,7 @@ public class BinaryOpExpression extends Expression implements HasExpression {
 
 
   @Override
-  public List<Expression> getExpression() {
+  public List<Expression> getExpressions() {
     return List.of(
         rhs,
         lhs

@@ -70,7 +70,7 @@ public class UnaryOpExpression extends Expression implements HasExpression {
   }
 
   @Override
-  public List<Expression> getExpression() {
+  public List<Expression> getExpressions() {
     return List.of(operand);
   }
 
