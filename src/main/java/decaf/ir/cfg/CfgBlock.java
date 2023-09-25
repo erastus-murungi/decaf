@@ -160,6 +160,14 @@ public class CfgBlock extends LinkedList<AST> {
         return sb.toString();
     }
 
+
+    public void removePredecessor(@NotNull CfgBlock predecessor) {
+        if (!predecessors.contains(predecessor)) {
+            throw new IllegalStateException("a block cannot remove a predecessor that it does not have");
+        }
+        predecessors.remove(predecessor);
+    }
+
     @Override
     public String toString() {
         return String.format("L%d", blockId);
