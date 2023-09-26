@@ -5,6 +5,13 @@ import decaf.shared.CompilationContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Stack;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
+
 public class Cfg {
     @NotNull
     private final CompilationContext context;
@@ -16,8 +23,6 @@ public class Cfg {
     private CfgBlock breakJumpTarget;
     @Nullable
     private CfgBlock continueJumpTarget;
-    @Nullable
-    private CfgBlock exitBlock;
 
     private Cfg(@NotNull MethodDefinition methodDefinition, @NotNull CompilationContext context) {
         this.context = context;
@@ -25,6 +30,8 @@ public class Cfg {
         methodName = methodDefinition.getName();
         context.addEntryCfgBlockFor(methodDefinition.getName(), entryBlock);
         visitMethodDefinition(methodDefinition, entryBlock);
+        context.addExitCfgBlockFor(methodDefinition.getName(), getExitBlock());
+        validateCfg();
     }
 
     private @NotNull CfgBlock visit(@NotNull AST ast, @NotNull CfgBlock currentBlock) {
@@ -179,19 +186,41 @@ public class Cfg {
         return nextBlock;
     }
 
-    public @NotNull CfgBlock visitReturnStatement(@NotNull Return returnStatement, @NotNull CfgBlock currentBlock) {
-        // create a new exit block only if we don't already have one
-        if (exitBlock == null) {
-            if (currentBlock.isEmpty()) {
-                exitBlock = currentBlock;
+    private @NotNull CfgBlock getExitBlock() {
+        var exitBlocks = new ArrayList<CfgBlock>();
+        var workList = new Stack<CfgBlock>();
+        var seen = new HashSet<CfgBlock>();
+        workList.push(entryBlock);
+        while (!workList.isEmpty()) {
+            var current = workList.pop();
+            if (seen.contains(current)) {
+                continue;
             } else {
-                exitBlock = CfgBlock.empty();
+                seen.add(current);
             }
-            context.addExitCfgBlockFor(methodName, exitBlock);
+            if (current.getSuccessors().isEmpty()) {
+                exitBlocks.add(current);
+            } else {
+                workList.addAll(current.getSuccessors());
+            }
         }
-        currentBlock.addSuccessor(exitBlock);
+        if (exitBlocks.isEmpty()) {
+            throw new MalformedSourceLevelCfg("no exit block found");
+        } else if (exitBlocks.size() > 1) {
+            // merge the exit blocks
+            var exitBlock = CfgBlock.empty();
+            for (var block : exitBlocks) {
+                block.addSuccessor(exitBlock);
+            }
+            return exitBlock;
+        } else {
+            return exitBlocks.get(0);
+        }
+    }
+
+    public @NotNull CfgBlock visitReturnStatement(@NotNull Return returnStatement, @NotNull CfgBlock currentBlock) {
         currentBlock.addUserToEnd(returnStatement);
-        return exitBlock;
+        return CfgBlock.empty();
     }
 
     private class SaveTargets {
@@ -211,5 +240,52 @@ public class Cfg {
             breakJumpTarget = savedBreakJumpTarget;
             continueJumpTarget = savedContinueJumpTarget;
         }
+    }
+
+    public void validateCfgBlock(@NotNull CfgBlock cfgBlock) {
+        checkState(cfgBlock.getSuccessors().size() <= 2, "a block cannot have more than two successors");
+        // if this is a branch, then it must have two successors and the last instruction must be an eval condition
+        if (cfgBlock.hasBranch()) {
+            checkState(cfgBlock.getTerminator().isPresent(), "branch block must have a terminator");
+            checkState(cfgBlock.getTerminator().get() instanceof Branch, "branch block must have a branch as its last instruction");
+            checkState(cfgBlock.getSuccessors().size() == 2, "branch block must have two successors");
+        }
+        else {
+            if (cfgBlock.getSuccessors().isEmpty()) {
+                checkState(context.getExitCfgBlock(methodName).orElseThrow() == cfgBlock, "non-branch block must be the exit block");
+            } else {
+                checkState(!cfgBlock.getSuccessors().isEmpty(), "a non-branching with no successors must be the exit block");
+                checkState(cfgBlock.getAlternateSuccessor().isEmpty(),
+                           "non-branch block cannot have an alternate successor"
+                          );
+            }
+        }
+    }
+
+    private void validateCfg() {
+        var seen = new HashSet<CfgBlock>();
+        var workList = new Stack<CfgBlock>();
+        workList.add(entryBlock);
+        while (!workList.isEmpty()) {
+            var current = workList.pop();
+            if (seen.contains(current)) {
+                continue;
+            } else {
+                seen.add(current);
+            }
+            validateCfgBlock(current);
+            workList.addAll(current.getSuccessors());
+        }
+    }
+
+    private void removeEmptyBlock(@NotNull CfgBlock emptyCfgBlock) {
+        checkArgument(emptyCfgBlock.isEmpty(), "Cannot remove non-empty block");
+        for (var predecessor : emptyCfgBlock.getPredecessors()) {
+            predecessor.removeSuccessor(emptyCfgBlock);
+        }
+    }
+
+    public void pruneEmptyBasicBlocks() {
+
     }
 }

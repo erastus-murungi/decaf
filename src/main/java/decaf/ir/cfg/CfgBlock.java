@@ -1,6 +1,7 @@
 package decaf.ir.cfg;
 
 import decaf.analysis.syntax.ast.AST;
+import decaf.analysis.syntax.ast.Branch;
 import decaf.analysis.syntax.ast.Statement;
 import decaf.shared.CompilationContext;
 import org.jetbrains.annotations.NotNull;
@@ -73,7 +74,7 @@ public class CfgBlock extends LinkedList<Statement> {
         return Optional.ofNullable(alternateSuccessor);
     }
 
-    public List<CfgBlock> predecessors() {
+    public List<CfgBlock> getPredecessors() {
         return List.copyOf(predecessors);
     }
 
@@ -126,6 +127,7 @@ public class CfgBlock extends LinkedList<Statement> {
         } else {
             throw new IllegalStateException("a block cannot have more than two successors");
         }
+        successor.addPredecessor(this);
     }
 
     public void addBranchTargets(@NotNull CfgBlock successor, @NotNull CfgBlock alternateSuccessor) {
@@ -169,6 +171,19 @@ public class CfgBlock extends LinkedList<Statement> {
         predecessors.remove(predecessor);
     }
 
+    public void removeSuccessor(@NotNull CfgBlock successor) {
+        if (this.successor == successor) {
+            this.successor = alternateSuccessor;
+            this.alternateSuccessor = null;
+            successor.removePredecessor(this);
+        } else if (this.alternateSuccessor == successor) {
+            this.alternateSuccessor = null;
+            successor.removePredecessor(this);
+        } else {
+            throw new IllegalStateException("a block cannot remove a successor that it does not have");
+        }
+    }
+
     @Override
     public String toString() {
         return String.format("L%d", blockId);
@@ -177,5 +192,9 @@ public class CfgBlock extends LinkedList<Statement> {
     @Override
     public int hashCode() {
         return blockId;
+    }
+
+    public boolean hasBranch() {
+        return getSuccessor().isPresent() && getAlternateSuccessor().isPresent();
     }
 }
