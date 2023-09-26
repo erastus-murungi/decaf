@@ -1,15 +1,11 @@
 package decaf.analysis.syntax.ast;
 
 
-import decaf.analysis.syntax.ast.types.Type;
-import org.jetbrains.annotations.NotNull;
+import decaf.shared.AstVisitor;
+import decaf.shared.Pair;
 
 import java.util.HashMap;
 import java.util.List;
-
-import decaf.shared.AstVisitor;
-import decaf.shared.Pair;
-import decaf.shared.env.Scope;
 
 public class BinaryOpExpression extends Expression implements HasExpression {
   public static HashMap<String, Integer> operatorPrecedence = new HashMap<>();
@@ -78,7 +74,7 @@ public class BinaryOpExpression extends Expression implements HasExpression {
       BinOperator binaryOp,
       Expression rhs
   ) {
-    super(lhs.tokenPosition);
+    super(lhs.getTokenPosition());
     this.lhs = lhs;
     this.rhs = rhs;
     this.op = binaryOp;

@@ -7,7 +7,7 @@ public abstract class Location extends Expression {
   @NotNull protected final RValue rValue;
 
   public Location(@NotNull RValue rValue) {
-    super(rValue.tokenPosition);
+    super(rValue.getTokenPosition());
     this.rValue = rValue;
   }
 

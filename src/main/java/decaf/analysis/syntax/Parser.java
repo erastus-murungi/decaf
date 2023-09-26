@@ -377,7 +377,7 @@ public class Parser {
                                            ParserError.ErrorType.UNCLOSED_PARENTHESIS,
                                            "expected a right square bracket to close an array declaration, but found " +
                                            getCurrentToken().lexeme
-                                          ).map(tk1 -> new Array(arrayNameId.tokenPosition,
+                                          ).map(tk1 -> new Array(arrayNameId.getTokenPosition(),
                                                                  intLiteral,
                                                                  arrayNameId.getLabel()
                 )))));
@@ -625,7 +625,7 @@ public class Parser {
     }
 
     private Optional<AssignOpExpr> parseAssignOpExpr() {
-        return parseAssignOp().flatMap(assignOp -> parseOrExpr().map(expr -> new AssignOpExpr(assignOp.tokenPosition,
+        return parseAssignOp().flatMap(assignOp -> parseOrExpr().map(expr -> new AssignOpExpr(assignOp.getTokenPosition(),
                                                                                               assignOp,
                                                                                               expr
         )));
@@ -633,7 +633,7 @@ public class Parser {
 
     private Optional<CompoundAssignOpExpr> parseCompoundAssignOpExpr() {
         return parseCompoundAssignOp().flatMap(compoundAssignOp -> parseOrExpr().map(expr -> new CompoundAssignOpExpr(
-                compoundAssignOp.tokenPosition,
+                compoundAssignOp.getTokenPosition(),
                 compoundAssignOp,
                 expr
         )));
@@ -855,7 +855,7 @@ public class Parser {
                                                                                                                    ),
                                                                                                                    terminatingCondition,
                                                                                                                    new Assignment(
-                                                                                                                           updateLocation.tokenPosition,
+                                                                                                                           updateLocation.getTokenPosition(),
                                                                                                                            updateLocation,
                                                                                                                            updateAssignExpr,
                                                                                                                            updateAssignExpr.getOperator()

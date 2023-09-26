@@ -97,7 +97,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
     @Override
     public Type visit(@NotNull ImportDeclaration importDeclaration, @NotNull Scope scope) {
         if (scope.isShadowingParameter(importDeclaration.importName.getLabel())) {
-            logSemanticError(importDeclaration.importName.tokenPosition,
+            logSemanticError(importDeclaration.importName.getTokenPosition(),
                              ErrorType.SHADOWING_FORMAL_ARGUMENT,
                              String.format("Import identifier `%s` shadows a parameter",
                                            importDeclaration.importName.getLabel()
@@ -117,20 +117,20 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
 
     @Override
     public Type visit(For forStatement, Scope scope) {
-        return scope.lookup(forStatement.getInitialization().initLocation.getLabel()).map(initDescriptor -> {
+        return scope.lookup(forStatement.getInitialization().getInitLocation().getLabel()).map(initDescriptor -> {
             if (!initDescriptor.typeIs(Type.getIntType())) {
                 logSemanticError(forStatement.getTokenPosition(),
                                  ErrorType.UNSUPPORTED_TYPE,
                                  String.format("init location `%s` must have type int, not `%s`",
-                                               forStatement.getInitialization().initLocation.getLabel(),
+                                               forStatement.getInitialization().getInitLocation().getLabel(),
                                                initDescriptor.getType()
                                               )
                                 );
             }
 
-            var type = forStatement.getInitialization().initExpression.accept(this, scope);
+            var type = forStatement.getInitialization().getInitExpression().accept(this, scope);
             if (type != Type.getIntType()) {
-                logSemanticError(forStatement.getInitialization().initExpression.tokenPosition,
+                logSemanticError(forStatement.getInitialization().getInitExpression().getTokenPosition(),
                                  ErrorType.UNSUPPORTED_TYPE,
                                  "init expression must evaluate to an int"
                                 );
@@ -138,7 +138,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
 
             var testType = forStatement.getTerminatingCondition().accept(this, scope);
             if (testType != Type.getBoolType()) {
-                logSemanticError(forStatement.getTerminatingCondition().tokenPosition,
+                logSemanticError(forStatement.getTerminatingCondition().getTokenPosition(),
                                  ErrorType.UNSUPPORTED_TYPE,
                                  String.format("for-loop test must evaluate to %s not %s", Type.getBoolType(), testType)
                                 );
@@ -151,7 +151,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
             if (updatingDescriptorOpt.isPresent()) {
                 var updatingDescriptor = updatingDescriptorOpt.get();
                 if (!updatingDescriptor.typeIs(Type.getIntType())) {
-                    logSemanticError(forStatement.getInitialization().initExpression.tokenPosition,
+                    logSemanticError(forStatement.getInitialization().getInitExpression().getTokenPosition(),
                                      ErrorType.UNSUPPORTED_TYPE,
                                      String.format("The location `%s` in the for-loop `%s` must have type int, not `%s`",
                                                    updateId,
@@ -178,7 +178,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
                                     );
                 }
             } else {
-                logSemanticError(forStatement.getUpdate().getLocation().tokenPosition,
+                logSemanticError(forStatement.getUpdate().getLocation().getTokenPosition(),
                                  ErrorType.UNSUPPORTED_TYPE,
                                  String.format("The location `%s` in the for-loop `%s` must be declared in scope",
                                                updateId,
@@ -188,10 +188,10 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
             }
             return Type.getUnsetType();
         }).orElseGet(() -> {
-            logSemanticError(forStatement.getInitialization().initLocation.tokenPosition,
+            logSemanticError(forStatement.getInitialization().getInitLocation().getTokenPosition(),
                              ErrorType.UNSUPPORTED_TYPE,
                              String.format("The location `%s` in the for-loop `%s` must be declared in scope",
-                                           forStatement.getInitialization().initLocation.getLabel(),
+                                           forStatement.getInitialization().getInitLocation().getLabel(),
                                            forStatement
                                           )
                             );
@@ -203,7 +203,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
     public Type visit(@NotNull While whileStatement, @NotNull Scope scope) {
         var type = whileStatement.getTest().accept(this, scope);
         if (type != Type.getBoolType()) {
-            logSemanticError(whileStatement.getTest().tokenPosition,
+            logSemanticError(whileStatement.getTest().getTokenPosition(),
                              ErrorType.UNSUPPORTED_TYPE,
                              String.format("while statement test must evaluate to a bool, not `%s`", type)
                             );
@@ -260,7 +260,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
     public Type visit(UnaryOpExpression unaryOpExpression, Scope scope) {
         var operandType = unaryOpExpression.operand.accept(this, scope);
         if (operandType != Type.getBoolType() && operandType != Type.getIntType()) {
-            logSemanticError(unaryOpExpression.tokenPosition,
+            logSemanticError(unaryOpExpression.getTokenPosition(),
                              ErrorType.UNSUPPORTED_TYPE,
                              String.format("operand of unary operator must be either bool or int, not `%s`",
                                            operandType
@@ -268,13 +268,13 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
                             );
         }
         if (operandType != Type.getBoolType() && unaryOpExpression.getUnaryOperator().label.equals("!")) {
-            logSemanticError(unaryOpExpression.tokenPosition,
+            logSemanticError(unaryOpExpression.getTokenPosition(),
                              ErrorType.UNSUPPORTED_TYPE,
                              "can only use a not operator on booleans"
                             );
         }
         if (operandType != Type.getIntType() && unaryOpExpression.getUnaryOperator().label.equals("-")) {
-            logSemanticError(unaryOpExpression.tokenPosition,
+            logSemanticError(unaryOpExpression.getTokenPosition(),
                              ErrorType.UNSUPPORTED_TYPE,
                              "can only use a unary minus operator on ints"
                             );
@@ -293,12 +293,12 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
                     if (leftType == Type.getIntType() && rightType == Type.getIntType()) {
                         binaryOpExpression.setType(Type.getIntType());
                     } else if (leftType != Type.getIntType()) {
-                        logSemanticError(binaryOpExpression.tokenPosition,
+                        logSemanticError(binaryOpExpression.getTokenPosition(),
                                          ErrorType.UNSUPPORTED_TYPE,
                                          String.format("RHS must have type int not `%s`", leftType)
                                         );
                     } else {
-                        logSemanticError(binaryOpExpression.tokenPosition,
+                        logSemanticError(binaryOpExpression.getTokenPosition(),
                                          ErrorType.UNSUPPORTED_TYPE,
                                          String.format("RHS must have type int not `%s`", rightType)
                                         );
@@ -308,7 +308,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
                         (leftType == Type.getIntType() || leftType == Type.getBoolType())) {
                         binaryOpExpression.setType(Type.getBoolType());
                     } else {
-                        logSemanticError(binaryOpExpression.tokenPosition,
+                        logSemanticError(binaryOpExpression.getTokenPosition(),
                                          ErrorType.UNSUPPORTED_TYPE,
                                          String.format(
                                                  "operands of %s must have same type, either both bool or both int, not `%s` and `%s`",
@@ -322,12 +322,12 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
                     if (leftType.equals(Type.getIntType()) && rightType.equals(Type.getIntType())) {
                         binaryOpExpression.setType(Type.getBoolType());
                     } else if (leftType != Type.getIntType()) {
-                        logSemanticError(binaryOpExpression.tokenPosition,
+                        logSemanticError(binaryOpExpression.getTokenPosition(),
                                          ErrorType.UNSUPPORTED_TYPE,
                                          String.format("RHS must have type int not `%s`", leftType)
                                         );
                     } else {
-                        logSemanticError(binaryOpExpression.tokenPosition,
+                        logSemanticError(binaryOpExpression.getTokenPosition(),
                                          ErrorType.UNSUPPORTED_TYPE,
                                          String.format("RHS must have type int not `%s`", rightType)
                                         );
@@ -336,25 +336,25 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
                     if (leftType == Type.getBoolType() && rightType == Type.getBoolType()) {
                         binaryOpExpression.setType(Type.getBoolType());
                     } else if (leftType != Type.getBoolType()) {
-                        logSemanticError(binaryOpExpression.tokenPosition,
+                        logSemanticError(binaryOpExpression.getTokenPosition(),
                                          ErrorType.UNSUPPORTED_TYPE,
                                          String.format("RHS must have type bool not `%s`", leftType)
                                         );
                     } else {
-                        logSemanticError(binaryOpExpression.tokenPosition,
+                        logSemanticError(binaryOpExpression.getTokenPosition(),
                                          ErrorType.UNSUPPORTED_TYPE,
                                          String.format("RHS must have type bool not `%s`", rightType)
                                         );
                     }
                 }
             } else {
-                logSemanticError(binaryOpExpression.tokenPosition,
+                logSemanticError(binaryOpExpression.getTokenPosition(),
                                  ErrorType.UNSUPPORTED_TYPE,
                                  String.format("RHS must be a primitive type, not `%s`", rightType)
                                 );
             }
         } else {
-            logSemanticError(binaryOpExpression.tokenPosition,
+            logSemanticError(binaryOpExpression.getTokenPosition(),
                              ErrorType.UNSUPPORTED_TYPE,
                              String.format("RHS must be a primitive type, not `%s`", leftType)
                             );
@@ -382,7 +382,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
     @Override
     public Type visit(LocationArray locationArray, Scope scope) {
         if (locationArray.expression.accept(this, scope) != Type.getIntType()) {
-            logSemanticError(locationArray.tokenPosition,
+            logSemanticError(locationArray.getTokenPosition(),
                              ErrorType.INVALID_ARRAY_INDEX,
                              "array index must evaluate to int"
                             );
@@ -393,7 +393,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
                 assert type.isDerivedArrayType();
                 return ((ArrayType) type).getContainedType();
             } else {
-                logSemanticError(locationArray.tokenPosition,
+                logSemanticError(locationArray.getTokenPosition(),
                                  ErrorType.UNSUPPORTED_TYPE,
                                  String.format("`%s` was declared as %s but it being indexed like an array",
                                                locationArray.getLabel(),
@@ -403,7 +403,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
                 return descriptor.getType();
             }
         }).orElseGet(() -> {
-            logSemanticError(locationArray.tokenPosition,
+            logSemanticError(locationArray.getTokenPosition(),
                              ErrorType.IDENTIFIER_NOT_IN_SCOPE,
                              String.format("identifier `%s` in an array access must be declared in scope",
                                            locationArray.getLabel()
@@ -424,7 +424,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
     public Type visit(@NotNull If ifStatement, @NotNull Scope scope) {
         var typeTest = ifStatement.getCondition().accept(this, scope);
         if (typeTest != Type.getBoolType()) {
-            logSemanticError(ifStatement.getCondition().tokenPosition,
+            logSemanticError(ifStatement.getCondition().getTokenPosition(),
                              ErrorType.UNSUPPORTED_TYPE,
                              String.format("if statement test must evaluate to a bool, not `%s`", typeTest)
                             );
@@ -446,7 +446,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
     @Override
     public Type visit(Array array, Scope scope) {
         if (array.getSize().convertToLong() <= 0) {
-            logSemanticError(array.getSize().tokenPosition,
+            logSemanticError(array.getSize().getTokenPosition(),
                              ErrorType.INVALID_ARRAY_INDEX,
                              "The int literal in an array declaration must be greater than 0"
                             );
@@ -469,7 +469,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
 
     private void checkNumberOfArgumentsAndTypesMatch(MethodDefinition methodDefinition, MethodCall methodCall) {
         if (methodCall.actualArgumentList.size() != methodDefinition.getFormalArguments().size()) {
-            logSemanticError(methodCall.tokenPosition,
+            logSemanticError(methodCall.getTokenPosition(),
                              ErrorType.MISMATCHING_NUMBER_OR_ARGUMENTS,
                              String.format("method %s expects %d arguments but %d were passed in",
                                            methodCall.methodId.getLabel(),
@@ -483,7 +483,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
             final var formalArgument = methodDefinition.getFormalArguments().get(argIndex);
             final var actualArgument = methodCall.actualArgumentList.get(argIndex);
             if (actualArgument.getType() != formalArgument.getType()) {
-                logSemanticError(methodCall.tokenPosition,
+                logSemanticError(methodCall.getTokenPosition(),
                                  ErrorType.INCORRECT_ARG_TYPE,
                                  String.format("method %s expects argument %d to be of type %s but %s was passed in",
                                                methodCall.methodId.getLabel(),
@@ -507,7 +507,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
         var methodName = methodCall.methodId.getLabel();
         return getGlobalScope().lookup(methodName).map(descriptor -> {
             if (scope.containsKey(methodName)) {
-                logSemanticError(methodCall.tokenPosition,
+                logSemanticError(methodCall.getTokenPosition(),
                                  ErrorType.METHOD_CALL_CONFLICTS_WITH_LOCALLY_DEFINED_IDENTIFIER,
                                  String.format("method call to `%s` conflicts with locally defined identifier",
                                                methodName
@@ -523,7 +523,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
 
 
         }).orElseGet(() -> {
-            logSemanticError(methodCall.tokenPosition,
+            logSemanticError(methodCall.getTokenPosition(),
                              ErrorType.METHOD_DEFINITION_NOT_FOUND,
                              String.format("method `%s` not found in scope", methodName)
                             );
@@ -633,7 +633,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
             locationVariable.setType(descriptor.getType());
             return locationVariable.getType();
         }).orElseGet(() -> {
-            logSemanticError(locationVariable.tokenPosition,
+            logSemanticError(locationVariable.getTokenPosition(),
                              ErrorType.IDENTIFIER_NOT_IN_SCOPE,
                              String.format("No identifier can be used before it is declared: %s not in scope",
                                            locationVariable.getLabel()
@@ -648,14 +648,14 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
         final var arrayLabel = len.getArrayLabel();
         return scope.lookup(arrayLabel).map(descriptor -> {
             if (!(descriptor.isForArray())) {
-                logSemanticError(len.tokenPosition,
+                logSemanticError(len.getTokenPosition(),
                                  ErrorType.UNSUPPORTED_TYPE,
                                  "the argument of the len operator must be an array"
                                 );
             }
             return Type.getIntType();
         }).orElseGet(() -> {
-            logSemanticError(len.tokenPosition,
+            logSemanticError(len.getTokenPosition(),
                              ErrorType.IDENTIFIER_NOT_IN_SCOPE,
                              String.format("No identifier can be used before it is declared: %s not in scope",
                                            arrayLabel
@@ -722,7 +722,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
         try {
             intLiteral.convertToLong();
         } catch (Exception e) {
-            logSemanticError(intLiteral.tokenPosition,
+            logSemanticError(intLiteral.getTokenPosition(),
                              ErrorType.INT_LITERAL_TOO_BIG,
                              "Encountered int literal that's out of bounds; -9223372036854775808 <= x <= 9223372036854775807"
                             );
@@ -769,7 +769,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
                                 );
             } else {
                 if (Integer.parseInt(array.getSize().literal) <= 0) {
-                    logSemanticError(array.getSize().tokenPosition,
+                    logSemanticError(array.getSize().getTokenPosition(),
                                      ErrorType.INVALID_ARRAY_SIZE,
                                      String.format("declared array size must be greater than 0, not `%s`",
                                                    array.getSize().literal

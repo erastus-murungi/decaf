@@ -8,7 +8,7 @@ import decaf.shared.AstVisitor;
 import decaf.shared.Pair;
 import decaf.shared.env.Scope;
 
-public class Assignment extends AST {
+public class Assignment extends Statement {
   private final String operator;
   private final Location location;
   public AssignExpr assignExpr;

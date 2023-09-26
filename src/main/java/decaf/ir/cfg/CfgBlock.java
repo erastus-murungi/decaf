@@ -1,6 +1,7 @@
 package decaf.ir.cfg;
 
 import decaf.analysis.syntax.ast.AST;
+import decaf.analysis.syntax.ast.Statement;
 import decaf.shared.CompilationContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -9,7 +10,7 @@ import java.util.*;
 
 import static com.google.common.base.Preconditions.*;
 
-public class CfgBlock extends LinkedList<AST> {
+public class CfgBlock extends LinkedList<Statement> {
     @Nullable
     private CfgBlock successor;
 
@@ -87,12 +88,12 @@ public class CfgBlock extends LinkedList<AST> {
         this.alternateSuccessor = alternateSuccessor;
     }
 
-    public @NotNull CfgBlock addUserToEnd(@NotNull AST user) {
+    public @NotNull CfgBlock addUserToEnd(@NotNull Statement user) {
         add(user);
         return this;
     }
 
-    public void addUsers(@NotNull List<? extends AST> users) {
+    public void addUsers(@NotNull List<? extends Statement> users) {
         addAll(users);
     }
 

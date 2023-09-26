@@ -92,7 +92,7 @@ public class Cfg {
         bodyExit.addSuccessor(currentBlock);
 
         currentBlock.addUserToEnd(forStatement.getInitialization());
-        currentBlock.addUserToEnd(forStatement.getTerminatingCondition());
+        currentBlock.addUserToEnd(forStatement.getTerminatingCondition().toEvalCondition());
         currentBlock.addBranchTargets(forBodyCfgBlock, loopSuccessor);
 
         saveTargets.restore();
@@ -130,7 +130,7 @@ public class Cfg {
         var bodyExit = visitBlockStatement(whileStatement.getBody(), whileBodyCfgBlock);
         bodyExit.addSuccessor(currentBlock);
 
-        currentBlock.addUserToEnd(whileStatement.getTest());
+        currentBlock.addUserToEnd(whileStatement.getTest().toEvalCondition());
         currentBlock.addBranchTargets(whileBodyCfgBlock, loopSuccessor);
 
         saveTargets.restore();
@@ -175,7 +175,7 @@ public class Cfg {
             currentBlock.addBranchTargets(thenBlockEntry, nextBlock);
         }
         // TOD0: add short-circuiting for && and ||
-        currentBlock.addUserToEnd(ifStatement.getCondition());
+        currentBlock.addUserToEnd(ifStatement.getCondition().toEvalCondition());
         return nextBlock;
     }
 

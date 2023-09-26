@@ -20,7 +20,6 @@ public class Len extends Expression {
       RValue arrayName
   ) {
     super(tokenPosition);
-    this.tokenPosition = tokenPosition;
     this.arrayName = arrayName;
   }
 

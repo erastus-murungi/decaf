@@ -16,7 +16,7 @@ public class MethodCall extends Expression {
       RValue methodId,
       List<ActualArgument> actualArgumentList
   ) {
-    super(methodId.tokenPosition);
+    super(methodId.getTokenPosition());
     this.methodId = methodId;
     this.actualArgumentList = actualArgumentList;
   }

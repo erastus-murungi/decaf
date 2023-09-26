@@ -1,15 +1,12 @@
 package decaf.analysis.syntax.ast;
 
 
+import decaf.analysis.TokenPosition;
 import decaf.analysis.syntax.ast.types.Type;
+import decaf.shared.AstVisitor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
-
-import decaf.analysis.TokenPosition;
-import decaf.shared.AstVisitor;
-
-import decaf.shared.env.Scope;
 
 public class IntLiteral extends Literal {
   public IntLiteral(
@@ -31,12 +28,12 @@ public class IntLiteral extends Literal {
   public IntLiteral negate() {
     if (literal.startsWith("-")) {
       return new IntLiteral(
-          tokenPosition,
+          getTokenPosition(),
           literal.substring(1)
       );
     } else {
       return new IntLiteral(
-          tokenPosition,
+          getTokenPosition(),
           "-" + literal
       );
     }

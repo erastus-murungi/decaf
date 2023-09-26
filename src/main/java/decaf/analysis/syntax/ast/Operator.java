@@ -9,7 +9,6 @@ import decaf.shared.Pair;
 
 
 public abstract class Operator extends AST {
-  final public TokenPosition tokenPosition;
   public final String label;
 
   public Operator(
@@ -17,7 +16,6 @@ public abstract class Operator extends AST {
       String label
   ) {
       super(tokenPosition);
-      this.tokenPosition = tokenPosition;
     this.label = label;
   }
 

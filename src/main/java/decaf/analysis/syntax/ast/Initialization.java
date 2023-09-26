@@ -6,19 +6,18 @@ import java.util.List;
 import decaf.shared.AstVisitor;
 
 import decaf.shared.Pair;
-import decaf.shared.env.Scope;
 
 public class Initialization extends Statement implements HasExpression {
-  public final RValue initLocation;
-  public Expression initExpression;
+  private final RValue initLocation;
+  private Expression initExpression;
 
   public Initialization(
       RValue initLocation,
       Expression initExpression
   ) {
-    super(initLocation.tokenPosition);
+    super(initLocation.getTokenPosition());
     this.initLocation = initLocation;
-    this.initExpression = initExpression;
+    this.setInitExpression(initExpression);
   }
 
   @Override
@@ -26,11 +25,11 @@ public class Initialization extends Statement implements HasExpression {
     return List.of(
         new Pair<>(
             "initLocation",
-            initLocation
+            getInitLocation()
         ),
         new Pair<>(
             "initExpression",
-            initExpression
+            getInitExpression()
         )
     );
   }
@@ -48,23 +47,23 @@ public class Initialization extends Statement implements HasExpression {
   @Override
   public String getSourceCode() {
     return String.format(
-        "%s = %s",
-        initLocation.getSourceCode(),
-        initExpression.getSourceCode()
+            "%s = %s",
+            getInitLocation().getSourceCode(),
+            getInitExpression().getSourceCode()
     );
   }
 
   @Override
   public String toString() {
     return "Initialization{" +
-        "initLocation=" + initLocation +
-        ", initExpression=" + initExpression +
-        '}';
+           "initLocation=" + getInitLocation() +
+           ", initExpression=" + getInitExpression() +
+           '}';
   }
 
   @Override
   public List<Expression> getExpressions() {
-    return List.of(initExpression);
+    return List.of(getInitExpression());
   }
 
   @Override
@@ -72,7 +71,19 @@ public class Initialization extends Statement implements HasExpression {
       Expression oldExpr,
       Expression newExpr
   ) {
-    if (initExpression == oldExpr)
-      initExpression = newExpr;
+    if (getInitExpression() == oldExpr)
+      setInitExpression(newExpr);
+  }
+
+  public RValue getInitLocation() {
+    return initLocation;
+  }
+
+  public Expression getInitExpression() {
+    return initExpression;
+  }
+
+  public void setInitExpression(Expression initExpression) {
+    this.initExpression = initExpression;
   }
 }

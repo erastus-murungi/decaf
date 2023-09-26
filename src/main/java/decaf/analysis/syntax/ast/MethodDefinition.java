@@ -10,8 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MethodDefinition extends AST {
-  private final TokenPosition tokenPosition;
+public class MethodDefinition extends Statement {
   private final Type returnType;
   private final RValue methodAstName;
   private final FormalArguments formalArguments;
@@ -25,7 +24,6 @@ public class MethodDefinition extends AST {
       Block block
   ) {
     super(tokenPosition);
-    this.tokenPosition = tokenPosition;
     this.returnType = returnType;
     this.formalArguments = formalArguments;
     this.methodAstName = methodAstName;
@@ -110,10 +108,6 @@ public class MethodDefinition extends AST {
         this,
         input
     );
-  }
-
-  public @NotNull TokenPosition getTokenPosition() {
-    return tokenPosition;
   }
 
   public Type getReturnType() {

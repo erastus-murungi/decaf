@@ -1,12 +1,10 @@
 package decaf.analysis.syntax.ast;
 
 
-import java.util.List;
-
 import decaf.shared.AstVisitor;
-
 import decaf.shared.Pair;
-import decaf.shared.env.Scope;
+
+import java.util.List;
 
 public class UnaryOpExpression extends Expression implements HasExpression {
   private final UnaryOperator unaryOperator;
@@ -16,7 +14,7 @@ public class UnaryOpExpression extends Expression implements HasExpression {
       UnaryOperator unaryOperator,
       Expression operand
   ) {
-    super(unaryOperator.tokenPosition);
+    super(unaryOperator.getTokenPosition());
     this.unaryOperator = unaryOperator;
     this.operand = operand;
   }

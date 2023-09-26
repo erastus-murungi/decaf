@@ -10,7 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class FormalArguments extends AST implements Iterable<FormalArgument> {
+public class FormalArguments extends Statement implements Iterable<FormalArgument> {
     private final List<FormalArgument> formalArguments;
 
     public FormalArguments(TokenPosition tokenPosition, List<FormalArgument> formalArguments) {

@@ -80,11 +80,11 @@ public class Token {
         '}';
   }
 
-  public TokenPosition getTokenPosition() {
+  public @NotNull TokenPosition getTokenPosition() {
     return tokenPosition;
   }
 
-  public void setTokenPosition(TokenPosition tokenPosition) {
+  public void setTokenPosition(@NotNull TokenPosition tokenPosition) {
     this.tokenPosition = tokenPosition;
   }
 
