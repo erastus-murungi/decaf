@@ -47,7 +47,13 @@ public class GraphPlottingMac {
             } else {
                 seen.add(cfgBlock);
             }
-            if (compilationContext.isExitBlock(cfgBlock) || compilationContext.isEntryBlock(cfgBlock)) {
+            if (compilationContext.isEntryBlock(cfgBlock)) {
+                nodes.add(String.format("   %s [shape=record, style=filled, fillcolor=green, label=%s];",
+                                        cfgBlock.hashCode(),
+                                        "\"<from_node>" + escape(labelFunction.apply(cfgBlock)) + "\""
+                                       ));
+            }
+            if (compilationContext.isExitBlock(cfgBlock)) {
                 nodes.add(String.format("   %s [shape=record, style=filled, fillcolor=gray, label=%s];",
                                         cfgBlock.hashCode(),
                                         "\"<from_node>" + escape(labelFunction.apply(cfgBlock)) + "\""

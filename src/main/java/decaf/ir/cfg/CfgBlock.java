@@ -1,37 +1,25 @@
 package decaf.ir.cfg;
 
 import decaf.analysis.syntax.ast.AST;
-import decaf.analysis.syntax.ast.Branch;
 import decaf.analysis.syntax.ast.Statement;
 import decaf.shared.CompilationContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.logging.Logger;
 
 import static com.google.common.base.Preconditions.*;
 
 public class CfgBlock extends LinkedList<Statement> {
-    @Nullable
-    private CfgBlock successor;
-
-    @Nullable
-    private CfgBlock alternateSuccessor;
-
+    private static int blockIdCounter = 0;
     @NotNull
     private final List<CfgBlock> predecessors;
-
-    private static int blockIdCounter = 0;
-
     private final int blockId;
-
-    private static int createBlockId() {
-        return blockIdCounter++;
-    }
-
-    public int getBlockId() {
-        return blockId;
-    }
+    @Nullable
+    private CfgBlock successor;
+    @Nullable
+    private CfgBlock alternateSuccessor;
 
     private CfgBlock(@Nullable CfgBlock successor,
                      @Nullable CfgBlock alternateSuccessor,
@@ -42,40 +30,26 @@ public class CfgBlock extends LinkedList<Statement> {
         this.blockId = createBlockId();
     }
 
-    public static CfgBlock withBothBranches(@NotNull CfgBlock successor, @NotNull CfgBlock alternateSuccessor) {
-        return new CfgBlock(successor, alternateSuccessor, null);
-    }
-
-    public CfgBlock createExitBlock(String methodName, CompilationContext compilationContext) {
-        var cfgBlock = CfgBlock.empty();
-        compilationContext.addExitCfgBlockFor(methodName, cfgBlock);
-        return cfgBlock;
-    }
-
-    public CfgBlock createEntryBlock(String methodName, CompilationContext compilationContext) {
-        var cfgBlock = CfgBlock.empty();
-        compilationContext.addEntryCfgBlockFor(methodName, cfgBlock);
-        return cfgBlock;
+    private static int createBlockId() {
+        return blockIdCounter++;
     }
 
     public static CfgBlock empty() {
         return new CfgBlock(null, null, null);
     }
 
-    public static CfgBlock withSuccessor(@Nullable CfgBlock successor) {
-        return new CfgBlock(successor, null, null);
+    public int getBlockId() {
+        return blockId;
+    }
+
+    public static CfgBlock createEntryBlock(String methodName, CompilationContext compilationContext) {
+        var cfgBlock = CfgBlock.empty();
+        compilationContext.addEntryCfgBlockFor(methodName, cfgBlock);
+        return cfgBlock;
     }
 
     public Optional<CfgBlock> getSuccessor() {
         return Optional.ofNullable(successor);
-    }
-
-    public Optional<CfgBlock> getAlternateSuccessor() {
-        return Optional.ofNullable(alternateSuccessor);
-    }
-
-    public List<CfgBlock> getPredecessors() {
-        return List.copyOf(predecessors);
     }
 
     public void setSuccessor(CfgBlock successor) {
@@ -84,9 +58,17 @@ public class CfgBlock extends LinkedList<Statement> {
         this.successor = successor;
     }
 
+    public Optional<CfgBlock> getAlternateSuccessor() {
+        return Optional.ofNullable(alternateSuccessor);
+    }
+
     public void setAlternateSuccessor(CfgBlock alternateSuccessor) {
         checkArgument(alternateSuccessor != this, "the alternate successor of a block cannot be itself");
         this.alternateSuccessor = alternateSuccessor;
+    }
+
+    public List<CfgBlock> getPredecessors() {
+        return List.copyOf(predecessors);
     }
 
     public @NotNull CfgBlock addUserToEnd(@NotNull Statement user) {
@@ -101,7 +83,6 @@ public class CfgBlock extends LinkedList<Statement> {
     public void addPredecessor(@NotNull CfgBlock predecessor) {
         checkNotNull(predecessor, "a predecessor cannot be null");
         checkState(!predecessors.contains(predecessor), "a block cannot have the same predecessor twice");
-        checkArgument(predecessor != this, "a block cannot be its own predecessor");
         predecessors.add(predecessor);
     }
 
@@ -114,19 +95,22 @@ public class CfgBlock extends LinkedList<Statement> {
     }
 
     public void addSuccessor(@NotNull CfgBlock successor) {
-        if (this.successor == successor) {
+        if (successor == this.successor || successor == this.alternateSuccessor) {
+            Logger.getAnonymousLogger().info(String.format("%s already added", successor));
             return;
         }
-        if (this.alternateSuccessor == successor) {
-            return;
-        }
+        checkState(this.successor == null || this.alternateSuccessor == null,
+                   "a block cannot have more than two successors"
+                  );
+
         if (this.successor == null) {
             this.successor = successor;
-        } else if (this.alternateSuccessor == null) {
-            this.alternateSuccessor = successor;
         } else {
-            throw new IllegalStateException("a block cannot have more than two successors");
+            this.alternateSuccessor = successor;
         }
+    }
+    public void linkToSuccessor(@NotNull CfgBlock successor) {
+        addSuccessor(successor);
         successor.addPredecessor(this);
     }
 
@@ -140,6 +124,8 @@ public class CfgBlock extends LinkedList<Statement> {
         checkArgument(this.alternateSuccessor == null, "a block cannot have more than two successors");
         this.successor = successor;
         this.alternateSuccessor = alternateSuccessor;
+        successor.addPredecessor(this);
+        alternateSuccessor.addPredecessor(this);
     }
 
     public List<CfgBlock> getSuccessors() {
@@ -165,9 +151,7 @@ public class CfgBlock extends LinkedList<Statement> {
 
 
     public void removePredecessor(@NotNull CfgBlock predecessor) {
-        if (!predecessors.contains(predecessor)) {
-            throw new IllegalStateException("a block cannot remove a predecessor that it does not have");
-        }
+        checkState(predecessors.contains(predecessor), "a block cannot remove a predecessor that it does not have");
         predecessors.remove(predecessor);
     }
 
@@ -175,13 +159,16 @@ public class CfgBlock extends LinkedList<Statement> {
         if (this.successor == successor) {
             this.successor = alternateSuccessor;
             this.alternateSuccessor = null;
-            successor.removePredecessor(this);
         } else if (this.alternateSuccessor == successor) {
             this.alternateSuccessor = null;
-            successor.removePredecessor(this);
         } else {
             throw new IllegalStateException("a block cannot remove a successor that it does not have");
         }
+    }
+
+    public void unlinkFromSuccessor(@NotNull CfgBlock successor) {
+        removeSuccessor(successor);
+        successor.removePredecessor(this);
     }
 
     @Override
@@ -196,5 +183,45 @@ public class CfgBlock extends LinkedList<Statement> {
 
     public boolean hasBranch() {
         return getSuccessor().isPresent() && getAlternateSuccessor().isPresent();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        if (super.isEmpty()) {
+            checkState(!hasBranch(), "a branching block must have a branch terminating statement");
+            return true;
+        }
+        return false;
+    }
+
+    public boolean hasMoreThanOnePredecessor() {
+        return predecessors.size() > 1;
+    }
+
+    public boolean hasNoPredecessors() {
+        return predecessors.isEmpty();
+    }
+
+    public boolean hasOnlyOnePredecessor() {
+        return predecessors.size() == 1;
+    }
+
+    public @NotNull CfgBlock getSolePredecessor() {
+        checkState(hasOnlyOnePredecessor(), String.format("make sure this block has exactly 1 predecessor: it has %s", getPredecessors().size()));
+        return predecessors.get(0);
+    }
+
+    public @NotNull CfgBlock getSoleSuccessor() {
+        checkState(this.successor != null, "the sole successor cannot be null");
+        checkState(this.alternateSuccessor == null, "found 2 successors instead of one");
+        return this.successor;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof CfgBlock cfgBlock) {
+            return cfgBlock.getBlockId() == getBlockId();
+        }
+        return false;
     }
 }

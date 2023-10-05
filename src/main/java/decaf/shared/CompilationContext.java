@@ -33,68 +33,17 @@ public class CompilationContext {
     private final List<ScannerError> scanningErrors = new ArrayList<>();
     private final List<ParserError> parsingErrors = new ArrayList<>();
     private final List<SemanticError> semanticErrors = new ArrayList<>();
-
     private final List<CfgBuildingError> cfgBuildingErrors = new ArrayList<>();
     private final Map<String, CfgBlock> exitBlocks = new HashMap<>();
     private final Map<String, CfgBlock> entryBlocks = new HashMap<>();
 
     private final Map<String, Cfg> cfgs = new HashMap<>();
+    @Nullable Program program;
+    @Nullable CfgBlock globalEntryBlock;
     @NotNull
     private Boolean isDebugModeOn;
     @Nullable
     private Scope globalScope;
-
-    @Nullable Program program;
-
-    @Nullable CfgBlock globalEntryBlock;
-
-    public @NotNull CfgBlock getGlobalEntryBlock() {
-        if (globalEntryBlock == null) {
-            throw new IllegalStateException("global entry block not set");
-        }
-        return globalEntryBlock;
-    }
-
-    public Map<String, CfgBlock> getEntryCfgBlocks() {
-        return Map.copyOf(entryBlocks);
-    }
-
-    public void setGlobalEntryBlock(@NotNull CfgBlock globalEntryBlock) {
-        this.globalEntryBlock = globalEntryBlock;
-    }
-
-    public @NotNull Program getProgram() {
-        if (program == null) {
-            throw new IllegalStateException("program not set");
-        }
-        return program;
-    }
-
-    public @NotNull Cfg getCfg(String methodName) {
-        if (!cfgs.containsKey(methodName)) {
-            throw new IllegalStateException("cfg not set");
-        }
-        return cfgs.get(methodName);
-    }
-
-    public void setCfg(String methodName, @NotNull Cfg cfg) {
-        if (cfgs.containsKey(methodName)) {
-            throw new IllegalStateException("cfg already set");
-        }
-        cfgs.put(methodName, cfg);
-    }
-
-    public void setProgram(@NotNull Program program) {
-        this.program = program;
-    }
-
-    public boolean isExitBlock(@NotNull CfgBlock cfgBlock) {
-        return exitBlocks.containsValue(cfgBlock);
-    }
-
-    public boolean isEntryBlock(@NotNull CfgBlock cfgBlock) {
-        return entryBlocks.containsValue(cfgBlock);
-    }
 
     public CompilationContext(@NotNull String sourceCode, boolean debugModeOn, String filePath) {
         this.sourceCode = sourceCode;
@@ -102,7 +51,6 @@ public class CompilationContext {
         this.isDebugModeOn = debugModeOn;
         this.filePath = filePath;
     }
-
 
     public static CompilationContext fromSourceCode(@NotNull String sourceCode, boolean debugModeOn) {
         return new CompilationContext(sourceCode, debugModeOn, "<no file>");
@@ -123,7 +71,55 @@ public class CompilationContext {
         return fromFile(filePath, false);
     }
 
-    public Scope getGlobalScope() {
+    public @NotNull CfgBlock getGlobalEntryBlock() {
+        if (globalEntryBlock == null) {
+            throw new IllegalStateException("global entry block not set");
+        }
+        return globalEntryBlock;
+    }
+
+    public void setGlobalEntryBlock(@NotNull CfgBlock globalEntryBlock) {
+        this.globalEntryBlock = globalEntryBlock;
+    }
+
+    public Map<String, CfgBlock> getEntryCfgBlocks() {
+        return Map.copyOf(entryBlocks);
+    }
+
+    public @NotNull Program getProgram() {
+        if (program == null) {
+            throw new IllegalStateException("program not set");
+        }
+        return program;
+    }
+
+    public void setProgram(@NotNull Program program) {
+        this.program = program;
+    }
+
+    public @NotNull Cfg getCfg(String methodName) {
+        if (!cfgs.containsKey(methodName)) {
+            throw new IllegalStateException("cfg not set");
+        }
+        return cfgs.get(methodName);
+    }
+
+    public void setCfg(String methodName, @NotNull Cfg cfg) {
+        if (cfgs.containsKey(methodName)) {
+            throw new IllegalStateException("cfg already set");
+        }
+        cfgs.put(methodName, cfg);
+    }
+
+    public boolean isExitBlock(@NotNull CfgBlock cfgBlock) {
+        return exitBlocks.containsValue(cfgBlock);
+    }
+
+    public boolean isEntryBlock(@NotNull CfgBlock cfgBlock) {
+        return entryBlocks.containsValue(cfgBlock);
+    }
+
+    public @Nullable Scope getGlobalScope() {
         return globalScope;
     }
 
@@ -163,17 +159,19 @@ public class CompilationContext {
         return getExitCfgBlock("global");
     }
 
-    public void addEntryCfgBlockFor(@NotNull String methodName, @NotNull CfgBlock cfgBlock) {
+    private void validateStatesForSettingTerminalBlocks(@NotNull String methodName, @NotNull CfgBlock cfgBlock) {
         checkNotNull(methodName, "method name cannot be null");
-        checkNotNull(cfgBlock, "cfg block cannot be null");
+        checkNotNull(cfgBlock, "entry/exit block cannot be null");
         checkMethodNameValid(methodName);
+    }
+
+    public void addEntryCfgBlockFor(@NotNull String methodName, @NotNull CfgBlock cfgBlock) {
+        validateStatesForSettingTerminalBlocks(methodName, cfgBlock);
         entryBlocks.put(methodName, cfgBlock);
     }
 
     public void addExitCfgBlockFor(@NotNull String methodName, @NotNull CfgBlock cfgBlock) {
-        checkNotNull(methodName, "method name cannot be null");
-        checkNotNull(cfgBlock, "cfg block cannot be null");
-        checkMethodNameValid(methodName);
+        validateStatesForSettingTerminalBlocks(methodName, cfgBlock);
         exitBlocks.put(methodName, cfgBlock);
     }
 
