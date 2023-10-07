@@ -1,0 +1,20 @@
+import printf;
+
+bool a;
+
+bool justA(){
+  return a;
+}
+
+bool trueA(){
+  a = true;
+  return a;
+}
+
+void main(){
+  if (justA() && trueA()){
+	printf("True\n");
+  } else {
+	printf("False\n");
+  }
+}

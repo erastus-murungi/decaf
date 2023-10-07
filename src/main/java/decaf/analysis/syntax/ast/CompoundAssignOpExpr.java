@@ -6,7 +6,6 @@ import java.util.List;
 import decaf.analysis.TokenPosition;
 import decaf.shared.AstVisitor;
 import decaf.shared.Pair;
-import decaf.shared.env.Scope;
 
 public class CompoundAssignOpExpr extends AssignExpr implements HasExpression {
   public final CompoundAssignOperator compoundAssignOp;
@@ -70,7 +69,7 @@ public class CompoundAssignOpExpr extends AssignExpr implements HasExpression {
 
   @Override
   public String getOperator() {
-    return compoundAssignOp.label;
+    return compoundAssignOp.getLabel();
   }
 
   @Override

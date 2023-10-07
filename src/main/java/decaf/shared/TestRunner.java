@@ -348,6 +348,7 @@ public class TestRunner {
         if (!context.cfgBuildingSuccessful()) {
             return new Pair<>(false, context.getCfgBuildingErrorOutput());
         }
+        GraphPlottingMac.printGraph(context);
         return new Pair<>(true, "");
     }
 

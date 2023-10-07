@@ -3,6 +3,7 @@ package decaf.analysis.syntax.ast;
 
 import decaf.shared.AstVisitor;
 import decaf.shared.Pair;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.List;
@@ -65,14 +66,14 @@ public class BinaryOpExpression extends Expression implements HasExpression {
     );
   }
 
-  public Expression lhs;
-  public BinOperator op;
-  public Expression rhs;
+  @NotNull private Expression lhs;
+  @NotNull private BinOperator op;
+  @NotNull private Expression rhs;
 
   private BinaryOpExpression(
-      Expression lhs,
-      BinOperator binaryOp,
-      Expression rhs
+      @NotNull Expression lhs,
+      @NotNull BinOperator binaryOp,
+      @NotNull Expression rhs
   ) {
     super(lhs.getTokenPosition());
     this.lhs = lhs;
@@ -90,24 +91,24 @@ public class BinaryOpExpression extends Expression implements HasExpression {
         binaryOp,
         rhs
     );
-    binaryOpExpression.lhs = lhs;
-    binaryOpExpression.rhs = rhs;
-    binaryOpExpression.op = binaryOp;
+    binaryOpExpression.setLhs(lhs);
+    binaryOpExpression.setRhs(rhs);
+    binaryOpExpression.setOp(binaryOp);
     return maybeRotate(binaryOpExpression);
   }
 
   private static BinaryOpExpression maybeRotate(BinaryOpExpression parent) {
-    if ((parent.rhs instanceof BinaryOpExpression child)) {
-      if (operatorPrecedence.get(parent.op.label)
-                            .equals(operatorPrecedence.get(child.op.label))) {
+    if ((parent.getRhs() instanceof BinaryOpExpression child)) {
+      if (operatorPrecedence.get(parent.getOp().getLabel())
+                            .equals(operatorPrecedence.get(child.getOp().getLabel()))) {
         return new BinaryOpExpression(
             new BinaryOpExpression(
-                parent.lhs,
-                parent.op,
-                child.lhs
+                    parent.getLhs(),
+                    parent.getOp(),
+                    child.getLhs()
             ),
-            child.op,
-            child.rhs
+            child.getOp(),
+            child.getRhs()
         );
       }
     }
@@ -119,15 +120,15 @@ public class BinaryOpExpression extends Expression implements HasExpression {
     return List.of(
         new Pair<>(
             "op",
-            op
+            getOp()
         ),
         new Pair<>(
             "lhs",
-            lhs
+            getLhs()
         ),
         new Pair<>(
             "rhs",
-            rhs
+            getRhs()
         )
     );
   }
@@ -139,16 +140,16 @@ public class BinaryOpExpression extends Expression implements HasExpression {
 
   @Override
   public String toString() {
-    return "BinaryOpExpression{" + "lhs=" + lhs + ", op=" + op + ", rhs=" + rhs + '}';
+    return "BinaryOpExpression{" + "lhs=" + getLhs() + ", op=" + getOp() + ", rhs=" + getRhs() + '}';
   }
 
   @Override
   public String getSourceCode() {
     return String.format(
-        "%s %s %s",
-        lhs.getSourceCode(),
-        op.getSourceCode(),
-        rhs.getSourceCode()
+            "%s %s %s",
+            getLhs().getSourceCode(),
+            getOp().getSourceCode(),
+            getRhs().getSourceCode()
     );
   }
 
@@ -167,8 +168,8 @@ public class BinaryOpExpression extends Expression implements HasExpression {
   @Override
   public List<Expression> getExpressions() {
     return List.of(
-        rhs,
-        lhs
+            getRhs(),
+        getLhs()
     );
   }
 
@@ -177,9 +178,33 @@ public class BinaryOpExpression extends Expression implements HasExpression {
       Expression oldExpr,
       Expression newExpr
   ) {
-    if (oldExpr == rhs)
-      rhs = newExpr;
-    if (oldExpr == lhs)
-      lhs = newExpr;
+    if (oldExpr == getRhs())
+      setRhs(newExpr);
+    if (oldExpr == getLhs())
+      setLhs(newExpr);
+  }
+
+  public @NotNull Expression getLhs() {
+    return lhs;
+  }
+
+  public void setLhs(@NotNull Expression lhs) {
+    this.lhs = lhs;
+  }
+
+  public @NotNull BinOperator getOp() {
+    return op;
+  }
+
+  public void setOp(@NotNull BinOperator op) {
+    this.op = op;
+  }
+
+  public @NotNull Expression getRhs() {
+    return rhs;
+  }
+
+  public void setRhs(@NotNull Expression rhs) {
+    this.rhs = rhs;
   }
 }

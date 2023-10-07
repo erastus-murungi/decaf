@@ -27,9 +27,6 @@ import decaf.analysis.syntax.ast.Block;
 import decaf.analysis.syntax.ast.FormalArgument;
 
 public class Utils {
-  // adopted from Java 15
-  public static final int WORD_SIZE = 8;
-
   public static final String SPACE = " ";
   public static String DEFAULT_INDENT = "    ";
 

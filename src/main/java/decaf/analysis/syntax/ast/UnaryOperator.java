@@ -5,8 +5,6 @@ import decaf.analysis.TokenPosition;
 import decaf.analysis.lexical.Scanner;
 import decaf.shared.AstVisitor;
 
-import decaf.shared.env.Scope;
-
 public class UnaryOperator extends Operator {
   public UnaryOperator(
       TokenPosition tokenPosition,
@@ -20,10 +18,10 @@ public class UnaryOperator extends Operator {
 
   @Override
   public String opRep() {
-    return switch (label) {
+    return switch (getLabel()) {
       case Scanner.MINUS -> "Neg";
       case Scanner.NOT -> "Not";
-      default -> throw new IllegalArgumentException("please register unary operator: " + label);
+      default -> throw new IllegalArgumentException("please register unary operator: " + getLabel());
     };
   }
 
@@ -37,10 +35,10 @@ public class UnaryOperator extends Operator {
 
   @Override
   public String getSourceCode() {
-      return switch (label) {
+      return switch (getLabel()) {
           case Scanner.MINUS -> "-";
           case Scanner.NOT -> "!";
-          default -> throw new IllegalArgumentException("please register unary operator: " + label);
+          default -> throw new IllegalArgumentException("please register unary operator: " + getLabel());
       };
   }
 }

@@ -4,7 +4,6 @@ package decaf.analysis.syntax.ast;
 import decaf.analysis.TokenPosition;
 import decaf.analysis.lexical.Scanner;
 import decaf.shared.AstVisitor;
-import decaf.shared.env.Scope;
 
 public class CompoundAssignOperator extends Operator {
   public CompoundAssignOperator(
@@ -19,11 +18,11 @@ public class CompoundAssignOperator extends Operator {
 
   @Override
   public String opRep() {
-    return switch (label) {
+    return switch (getLabel()) {
       case Scanner.ADD_ASSIGN -> "AugmentedAdd";
       case Scanner.MINUS_ASSIGN -> "AugmentedSub";
       case Scanner.MULTIPLY_ASSIGN -> "AugmentedMul";
-      default -> throw new IllegalArgumentException("please register compound assign operator: " + label);
+      default -> throw new IllegalArgumentException("please register compound assign operator: " + getLabel());
     };
   }
 
@@ -38,11 +37,11 @@ public class CompoundAssignOperator extends Operator {
 
   @Override
   public String getSourceCode() {
-    return switch (label) {
+    return switch (getLabel()) {
       case Scanner.ADD_ASSIGN -> "+=";
       case Scanner.MINUS_ASSIGN -> "-=";
       case Scanner.MULTIPLY_ASSIGN -> "*=";
-      default -> throw new IllegalArgumentException("please register compound assign operator: " + label);
+      default -> throw new IllegalArgumentException("please register compound assign operator: " + getLabel());
     };
   }
 }

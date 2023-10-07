@@ -5,8 +5,6 @@ import decaf.analysis.TokenPosition;
 import decaf.analysis.lexical.Scanner;
 import decaf.shared.AstVisitor;
 
-import decaf.shared.env.Scope;
-
 public class RelationalOperator extends BinOperator {
   public RelationalOperator(
       TokenPosition tokenPosition,
@@ -20,7 +18,7 @@ public class RelationalOperator extends BinOperator {
 
   @Override
   public String opRep() {
-    switch (label) {
+    switch (getLabel()) {
       case Scanner.LT:
         return "Lt";
       case Scanner.GT:
@@ -30,7 +28,7 @@ public class RelationalOperator extends BinOperator {
       case Scanner.LEQ:
         return "LtE";
       default:
-        throw new IllegalArgumentException("please register relational operator: " + label);
+        throw new IllegalArgumentException("please register relational operator: " + getLabel());
     }
   }
 
@@ -44,7 +42,7 @@ public class RelationalOperator extends BinOperator {
 
   @Override
   public String getSourceCode() {
-    switch (label) {
+    switch (getLabel()) {
       case Scanner.LT:
         return "<";
       case Scanner.GT:
@@ -54,7 +52,7 @@ public class RelationalOperator extends BinOperator {
       case Scanner.LEQ:
         return "<=";
       default:
-        throw new IllegalArgumentException("please register relational operator: " + label);
+        throw new IllegalArgumentException("please register relational operator: " + getLabel());
     }
   }
 }

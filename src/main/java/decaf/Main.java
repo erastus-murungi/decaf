@@ -4,6 +4,6 @@ import decaf.shared.TestRunner;
 
 class Main {
   public static void main(String[] args) {
-    TestRunner.testAll();
+    TestRunner.testCfgBuilding("and-short-circuit", true, true);
   }
 }

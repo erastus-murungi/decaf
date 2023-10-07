@@ -71,7 +71,7 @@ public class AssignOpExpr extends AssignExpr implements HasExpression {
 
   @Override
   public String getOperator() {
-    return getAssignOp().label;
+    return getAssignOp().getLabel();
   }
 
   @Override

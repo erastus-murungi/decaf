@@ -5,8 +5,6 @@ import decaf.analysis.TokenPosition;
 import decaf.analysis.lexical.Scanner;
 import decaf.shared.AstVisitor;
 
-import decaf.shared.env.Scope;
-
 public class ConditionalOperator extends BinOperator {
   public ConditionalOperator(
       TokenPosition tokenPosition,
@@ -20,10 +18,10 @@ public class ConditionalOperator extends BinOperator {
 
   @Override
   public String opRep() {
-    return switch (label) {
+    return switch (getLabel()) {
       case Scanner.CONDITIONAL_OR -> "Or";
       case Scanner.CONDITIONAL_AND -> "And";
-      default -> throw new IllegalArgumentException("please register conditional operator: " + label);
+      default -> throw new IllegalArgumentException("please register conditional operator: " + getLabel());
     };
   }
 
@@ -37,10 +35,10 @@ public class ConditionalOperator extends BinOperator {
 
   @Override
   public String getSourceCode() {
-    return switch (label) {
+    return switch (getLabel()) {
       case Scanner.CONDITIONAL_OR -> "||";
       case Scanner.CONDITIONAL_AND -> "&&";
-      default -> throw new IllegalArgumentException("please register conditional operator: " + label);
+      default -> throw new IllegalArgumentException("please register conditional operator: " + getLabel());
     };
   }
 }

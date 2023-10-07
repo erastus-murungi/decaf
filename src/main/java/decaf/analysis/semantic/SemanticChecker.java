@@ -267,13 +267,13 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
                                           )
                             );
         }
-        if (operandType != Type.getBoolType() && unaryOpExpression.getUnaryOperator().label.equals("!")) {
+        if (operandType != Type.getBoolType() && unaryOpExpression.getUnaryOperator().getLabel().equals("!")) {
             logSemanticError(unaryOpExpression.getTokenPosition(),
                              ErrorType.UNSUPPORTED_TYPE,
                              "can only use a not operator on booleans"
                             );
         }
-        if (operandType != Type.getIntType() && unaryOpExpression.getUnaryOperator().label.equals("-")) {
+        if (operandType != Type.getIntType() && unaryOpExpression.getUnaryOperator().getLabel().equals("-")) {
             logSemanticError(unaryOpExpression.getTokenPosition(),
                              ErrorType.UNSUPPORTED_TYPE,
                              "can only use a unary minus operator on ints"
@@ -285,11 +285,11 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
 
     @Override
     public Type visit(BinaryOpExpression binaryOpExpression, Scope scope) {
-        var leftType = binaryOpExpression.lhs.accept(this, scope);
-        var rightType = binaryOpExpression.rhs.accept(this, scope);
+        var leftType = binaryOpExpression.getLhs().accept(this, scope);
+        var rightType = binaryOpExpression.getRhs().accept(this, scope);
         if (leftType.isPrimitiveType()) {
             if (rightType.isPrimitiveType()) {
-                if (binaryOpExpression.op instanceof ArithmeticOperator) {
+                if (binaryOpExpression.getOp() instanceof ArithmeticOperator) {
                     if (leftType == Type.getIntType() && rightType == Type.getIntType()) {
                         binaryOpExpression.setType(Type.getIntType());
                     } else if (leftType != Type.getIntType()) {
@@ -303,7 +303,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
                                          String.format("RHS must have type int not `%s`", rightType)
                                         );
                     }
-                } else if (binaryOpExpression.op instanceof EqualityOperator) {
+                } else if (binaryOpExpression.getOp() instanceof EqualityOperator) {
                     if (leftType.equals(rightType) &&
                         (leftType == Type.getIntType() || leftType == Type.getBoolType())) {
                         binaryOpExpression.setType(Type.getBoolType());
@@ -312,13 +312,13 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
                                          ErrorType.UNSUPPORTED_TYPE,
                                          String.format(
                                                  "operands of %s must have same type, either both bool or both int, not `%s` and `%s`",
-                                                 binaryOpExpression.op.getSourceCode(),
+                                                 binaryOpExpression.getOp().getSourceCode(),
                                                  leftType,
                                                  rightType
                                                       )
                                         );
                     }
-                } else if (binaryOpExpression.op instanceof RelationalOperator) {
+                } else if (binaryOpExpression.getOp() instanceof RelationalOperator) {
                     if (leftType.equals(Type.getIntType()) && rightType.equals(Type.getIntType())) {
                         binaryOpExpression.setType(Type.getBoolType());
                     } else if (leftType != Type.getIntType()) {
@@ -332,7 +332,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
                                          String.format("RHS must have type int not `%s`", rightType)
                                         );
                     }
-                } else if (binaryOpExpression.op instanceof ConditionalOperator) {
+                } else if (binaryOpExpression.getOp() instanceof ConditionalOperator) {
                     if (leftType == Type.getBoolType() && rightType == Type.getBoolType()) {
                         binaryOpExpression.setType(Type.getBoolType());
                     } else if (leftType != Type.getBoolType()) {
@@ -565,7 +565,7 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
             final var locationType = location.accept(this, scope);
             final Type expressionType = locationAssignExpr.assignExpr.accept(this, scope);
             if (locationAssignExpr.assignExpr instanceof final AssignOpExpr assignOpExpr) {
-                if (assignOpExpr.getAssignOp().label.equals(Scanner.ASSIGN)) {
+                if (assignOpExpr.getAssignOp().getLabel().equals(Scanner.ASSIGN)) {
                     if (locationType != expressionType) {
                         logSemanticError(locationAssignExpr.getTokenPosition(),
                                          ErrorType.TYPE_MISMATCH,
@@ -612,9 +612,9 @@ public class SemanticChecker implements AstVisitor<Type, Scope> {
 
     private boolean assignOperatorEquals(LocationAssignExpr locationAssignExpr, String opStr) {
         return (locationAssignExpr.assignExpr instanceof AssignOpExpr &&
-                ((AssignOpExpr) locationAssignExpr.assignExpr).getAssignOp().label.equals(opStr)) ||
+                ((AssignOpExpr) locationAssignExpr.assignExpr).getAssignOp().getLabel().equals(opStr)) ||
                (locationAssignExpr.assignExpr instanceof CompoundAssignOpExpr &&
-                ((CompoundAssignOpExpr) locationAssignExpr.assignExpr).compoundAssignOp.label.equals(opStr));
+                ((CompoundAssignOpExpr) locationAssignExpr.assignExpr).compoundAssignOp.getLabel().equals(opStr));
     }
 
     @Override

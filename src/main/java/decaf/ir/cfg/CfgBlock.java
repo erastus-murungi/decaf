@@ -1,6 +1,8 @@
 package decaf.ir.cfg;
 
 import decaf.analysis.syntax.ast.AST;
+import decaf.analysis.syntax.ast.Branch;
+import decaf.analysis.syntax.ast.Expression;
 import decaf.analysis.syntax.ast.Statement;
 import decaf.shared.CompilationContext;
 import org.jetbrains.annotations.NotNull;
@@ -14,7 +16,7 @@ import static com.google.common.base.Preconditions.*;
 public class CfgBlock extends LinkedList<Statement> {
     private static int blockIdCounter = 0;
     @NotNull
-    private final List<CfgBlock> predecessors;
+    private List<CfgBlock> predecessors;
     private final int blockId;
     @Nullable
     private CfgBlock successor;
@@ -38,14 +40,21 @@ public class CfgBlock extends LinkedList<Statement> {
         return new CfgBlock(null, null, null);
     }
 
-    public int getBlockId() {
-        return blockId;
-    }
-
     public static CfgBlock createEntryBlock(String methodName, CompilationContext compilationContext) {
         var cfgBlock = CfgBlock.empty();
         compilationContext.addEntryCfgBlockFor(methodName, cfgBlock);
         return cfgBlock;
+    }
+
+    public static CfgBlock withBranch(@NotNull Branch branch, @NotNull CfgBlock successor, @NotNull CfgBlock alternateSuccessor) {
+        var cfgBlock = CfgBlock.empty();
+        cfgBlock.add(branch);
+        cfgBlock.addBranchTargets(successor, alternateSuccessor);
+        return cfgBlock;
+    }
+
+    public int getBlockId() {
+        return blockId;
     }
 
     public Optional<CfgBlock> getSuccessor() {
@@ -109,6 +118,7 @@ public class CfgBlock extends LinkedList<Statement> {
             this.alternateSuccessor = successor;
         }
     }
+
     public void linkToSuccessor(@NotNull CfgBlock successor) {
         addSuccessor(successor);
         successor.addPredecessor(this);
@@ -182,7 +192,11 @@ public class CfgBlock extends LinkedList<Statement> {
     }
 
     public boolean hasBranch() {
-        return getSuccessor().isPresent() && getAlternateSuccessor().isPresent();
+        return getSuccessor().isPresent() &&
+               getAlternateSuccessor().isPresent() &&
+               getTerminator().map(terminator -> terminator instanceof Branch)
+                              .orElseThrow(() -> new IllegalStateException(
+                                      "a branching block must have a branch statement as a terminator"));
     }
 
     @Override
@@ -207,7 +221,9 @@ public class CfgBlock extends LinkedList<Statement> {
     }
 
     public @NotNull CfgBlock getSolePredecessor() {
-        checkState(hasOnlyOnePredecessor(), String.format("make sure this block has exactly 1 predecessor: it has %s", getPredecessors().size()));
+        checkState(hasOnlyOnePredecessor(),
+                   String.format("make sure this block has exactly 1 predecessor: it has %s", getPredecessors().size())
+                  );
         return predecessors.get(0);
     }
 
@@ -217,11 +233,47 @@ public class CfgBlock extends LinkedList<Statement> {
         return this.successor;
     }
 
+    public @NotNull Expression getBranchCondition() {
+        checkState(getTerminator().isPresent());
+        checkState(hasBranch(), "this block does not have a branch");
+        return ((Branch) getTerminator().get()).getCondition();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o instanceof CfgBlock cfgBlock) {
             return cfgBlock.getBlockId() == getBlockId();
         }
         return false;
+    }
+
+    public @NotNull CfgBlock getSuccessorOrThrow() {
+        return getSuccessor().orElseThrow(() -> new IllegalStateException("this block does not have a successor"));
+    }
+
+    public @NotNull CfgBlock getAlternateSuccessorOrThrow() {
+        return getAlternateSuccessor().orElseThrow(() -> new IllegalStateException("this block does not have an alternate successor"));
+    }
+
+    public void replaceWith(@NotNull CfgBlock cfgBlock) {
+        if (this.equals(cfgBlock)) {
+            return;
+        }
+        this.predecessors = cfgBlock.predecessors;
+        this.successor = cfgBlock.successor;
+        this.alternateSuccessor = cfgBlock.alternateSuccessor;
+        this.clear();
+        this.addAll(cfgBlock);
+
+        // clean up the old block
+        for (var pred: cfgBlock.predecessors) {
+            pred.unlinkFromSuccessor(cfgBlock);
+            pred.linkToSuccessor(this);
+        }
+
+        cfgBlock.successor = null;
+        cfgBlock.alternateSuccessor = null;
+        cfgBlock.predecessors.clear();
+        cfgBlock.clear();
     }
 }

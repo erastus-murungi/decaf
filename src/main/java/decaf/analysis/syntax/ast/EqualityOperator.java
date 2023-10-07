@@ -5,8 +5,6 @@ import decaf.analysis.TokenPosition;
 import decaf.analysis.lexical.Scanner;
 import decaf.shared.AstVisitor;
 
-import decaf.shared.env.Scope;
-
 public class EqualityOperator extends BinOperator {
 
   public EqualityOperator(
@@ -21,13 +19,13 @@ public class EqualityOperator extends BinOperator {
 
   @Override
   public String opRep() {
-    switch (label) {
+    switch (getLabel()) {
       case Scanner.EQ:
         return "Eq";
       case Scanner.NEQ:
         return "NotEq";
       default:
-        throw new IllegalArgumentException("please register equality operator: " + label);
+        throw new IllegalArgumentException("please register equality operator: " + getLabel());
     }
   }
 
@@ -41,13 +39,13 @@ public class EqualityOperator extends BinOperator {
 
   @Override
   public String getSourceCode() {
-    switch (label) {
+    switch (getLabel()) {
       case Scanner.EQ:
         return "==";
       case Scanner.NEQ:
         return "!=";
       default:
-        throw new IllegalArgumentException("please register equality operator: " + label);
+        throw new IllegalArgumentException("please register equality operator: " + getLabel());
     }
   }
 }
