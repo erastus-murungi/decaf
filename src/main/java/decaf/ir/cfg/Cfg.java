@@ -177,7 +177,6 @@ public class Cfg {
 
             currentBlock.addBranchTargets(thenBlockEntry, nextBlock);
         }
-        // TOD0: add short-circuiting for && and ||
         currentBlock.addUserToEnd(ifStatement.getCondition().toEvalCondition());
         ShortCircuitUtil.shortCircuit(currentBlock);
         return nextBlock;
