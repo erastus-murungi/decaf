@@ -26,7 +26,7 @@ public class IrArrayType extends IrType {
     if (!typesCache.containsKey(containedType)) {
       typesCache.put(containedType, new HashMap<>());
     }
-    Map<Integer, IrArrayType> lengthMap = typesCache.get(containedType);
+    var lengthMap = typesCache.get(containedType);
     if (!lengthMap.containsKey(length)) {
       lengthMap.put(length, new IrArrayType(containedType, length));
     }

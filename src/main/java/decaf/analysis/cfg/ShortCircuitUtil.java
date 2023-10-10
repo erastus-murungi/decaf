@@ -1,4 +1,4 @@
-package decaf.ir.cfg;
+package decaf.analysis.cfg;
 
 import decaf.analysis.lexical.Scanner;
 import decaf.analysis.syntax.ast.*;

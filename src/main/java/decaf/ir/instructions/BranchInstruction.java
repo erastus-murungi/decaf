@@ -1,6 +1,16 @@
 package decaf.ir.instructions;
 
+import decaf.ir.types.IrType;
+import decaf.ir.values.IrValue;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
+
 public class BranchInstruction extends Instruction {
+  public BranchInstruction(@NotNull IrType type) {
+    super(type);
+  }
+
   @Override
   public String prettyPrint() {
     return null;
@@ -19,5 +29,10 @@ public class BranchInstruction extends Instruction {
   @Override
   public <T> boolean isWellFormed(T neededContext) throws InstructionMalformed {
     return false;
+  }
+
+  @Override
+  public List<? extends IrValue> getUsedValues() {
+    return null;
   }
 }

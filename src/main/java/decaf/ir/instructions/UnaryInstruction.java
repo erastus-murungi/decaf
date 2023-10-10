@@ -2,7 +2,9 @@ package decaf.ir.instructions;
 
 import org.jetbrains.annotations.NotNull;
 
-import decaf.ir.values.Value;
+import decaf.ir.values.IrValue;
+
+import java.util.List;
 
 public class UnaryInstruction extends Instruction {
   public enum Op {
@@ -11,11 +13,12 @@ public class UnaryInstruction extends Instruction {
     COPY,
   }
   @NotNull
-  public final Value operand;
+  public final IrValue operand;
   @NotNull
   public final Op op;
 
-  public UnaryInstruction(@NotNull Value operand, @NotNull Op op) {
+  public UnaryInstruction(@NotNull IrValue operand, @NotNull Op op) {
+    super(operand.getType());
     this.operand = operand;
     this.op = op;
   }
@@ -38,5 +41,10 @@ public class UnaryInstruction extends Instruction {
   @Override
   public <T> boolean isWellFormed(T neededContext) throws InstructionMalformed {
     return false;
+  }
+
+  @Override
+  public List<? extends IrValue> getUsedValues() {
+    return null;
   }
 }

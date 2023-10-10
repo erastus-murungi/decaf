@@ -1,23 +1,61 @@
 package decaf.ir.instructions;
 
-public class ReturnInstruction extends Instruction{
-  @Override
-  public String prettyPrint() {
-    return null;
-  }
+import decaf.ir.types.IrType;
+import decaf.ir.values.IrDirectValue;
+import decaf.ir.values.IrValue;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-  @Override
-  public String toString() {
-    return null;
-  }
+import java.util.List;
+import java.util.Optional;
 
-  @Override
-  public String prettyPrintColored() {
-    return null;
-  }
+public class ReturnInstruction extends Instruction {
+    // note the return type is either a register or a constant
+    @Nullable
+    private final IrDirectValue returnValue;
 
-  @Override
-  public <T> boolean isWellFormed(T neededContext) throws InstructionMalformed {
-    return false;
-  }
+    public ReturnInstruction(@Nullable IrDirectValue irDirectValue) {
+        super(irDirectValue == null ? IrType.getVoidType() : irDirectValue.getType());
+        this.returnValue = irDirectValue;
+    }
+
+    public static ReturnInstruction createVoid() {
+        return new ReturnInstruction(null);
+    }
+
+    public static ReturnInstruction create(@NotNull IrDirectValue irDirectValue) {
+        return new ReturnInstruction(irDirectValue);
+    }
+
+    @Override
+    public String prettyPrint() {
+        return String.format("return %s %s",
+                             getType().prettyPrint(),
+                             (returnValue == null) ? "" : returnValue.prettyPrint()
+                            );
+    }
+
+    @Override
+    public String toString() {
+        return prettyPrint();
+    }
+
+    @Override
+    public String prettyPrintColored() {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public <T> boolean isWellFormed(T neededContext) throws InstructionMalformed {
+        return false;
+    }
+
+    @Override
+    public List<? extends IrValue> getUsedValues() {
+        return (returnValue == null) ? List.of() : List.of(returnValue);
+    }
+
+    public @Nullable Optional<IrDirectValue> getReturnValue() {
+        return Optional.ofNullable(returnValue);
+    }
 }

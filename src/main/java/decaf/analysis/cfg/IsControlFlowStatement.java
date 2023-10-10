@@ -1,4 +1,4 @@
-package decaf.ir.cfg;
+package decaf.analysis.cfg;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -1,6 +1,6 @@
 package decaf.shared;
 
-import decaf.ir.cfg.CfgBlock;
+import decaf.analysis.cfg.CfgBlock;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;

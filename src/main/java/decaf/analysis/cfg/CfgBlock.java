@@ -1,4 +1,4 @@
-package decaf.ir.cfg;
+package decaf.analysis.cfg;
 
 import decaf.analysis.syntax.ast.AST;
 import decaf.analysis.syntax.ast.Branch;

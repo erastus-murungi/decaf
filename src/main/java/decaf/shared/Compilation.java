@@ -3,7 +3,7 @@ package decaf.shared;
 import decaf.analysis.lexical.Scanner;
 import decaf.analysis.semantic.SemanticChecker;
 import decaf.analysis.syntax.Parser;
-import decaf.ir.cfg.Cfg;
+import decaf.analysis.cfg.Cfg;
 
 import java.io.*;
 import java.util.Locale;

@@ -1,23 +1,60 @@
 package decaf.ir.instructions;
 
-public class LoadInstruction extends Instruction {
-  @Override
-  public String prettyPrint() {
-    return null;
-  }
+import decaf.ir.types.IrType;
+import decaf.ir.values.IrPointer;
+import decaf.ir.values.IrRegister;
+import decaf.ir.values.IrValue;
+import org.jetbrains.annotations.NotNull;
 
-  @Override
-  public String toString() {
-    return null;
-  }
+import java.util.List;
 
-  @Override
-  public String prettyPrintColored() {
-    return null;
-  }
+public class LoadInstruction extends Instruction implements WithDestination<LoadInstruction> {
+    @NotNull
+    final IrRegister destination;
+    @NotNull
+    private final IrPointer memoryAddress;
 
-  @Override
-  public <T> boolean isWellFormed(T neededContext) throws InstructionMalformed {
-    return false;
-  }
+    protected LoadInstruction(@NotNull IrPointer memoryAddress, @NotNull IrRegister destination) {
+        super(destination.getType());
+        this.memoryAddress = memoryAddress;
+        this.destination = destination;
+    }
+
+    public static LoadInstruction withNamedDestination(@NotNull IrPointer memoryAddress, @NotNull IrRegister destination) {
+        return new LoadInstruction(memoryAddress, destination);
+    }
+
+    public static LoadInstruction create(@NotNull IrPointer memoryAddress, @NotNull IrType type) {
+        return new LoadInstruction(memoryAddress, IrRegister.create(type));
+    }
+
+    @Override
+    public String prettyPrint() {
+        return String.format("%s = load %s, %s %s",
+                             destination.prettyPrint(),
+                             destination.getType().prettyPrint(),
+                             memoryAddress.getType().prettyPrint(),
+                             memoryAddress.prettyPrint()
+                            );
+    }
+
+    @Override
+    public String toString() {
+        return prettyPrint();
+    }
+
+    @Override
+    public String prettyPrintColored() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T> boolean isWellFormed(T neededContext) throws InstructionMalformed {
+        return false;
+    }
+
+    @Override
+    public List<? extends IrValue> getUsedValues() {
+        return List.of(memoryAddress, destination);
+    }
 }

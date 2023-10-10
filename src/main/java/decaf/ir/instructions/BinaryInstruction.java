@@ -2,7 +2,9 @@ package decaf.ir.instructions;
 
 import org.jetbrains.annotations.NotNull;
 
-import decaf.ir.values.Value;
+import decaf.ir.values.IrValue;
+
+import java.util.List;
 
 public class BinaryInstruction extends Instruction {
   public enum Op {
@@ -24,18 +26,23 @@ public class BinaryInstruction extends Instruction {
     GE,
   }
 
-  public BinaryInstruction(@NotNull Op op, @NotNull Value lhs, @NotNull Value rhs) {
+  public BinaryInstruction(@NotNull Op op, @NotNull IrValue lhs, @NotNull IrValue rhs, @NotNull IrValue destination) {
+    super(lhs.getType());
     this.op = op;
     this.lhs = lhs;
     this.rhs = rhs;
+    this.destination = destination;
   }
 
   @NotNull
   private final Op op;
   @NotNull
-  private final Value lhs;
+  private final IrValue lhs;
   @NotNull
-  private final Value rhs;
+  private final IrValue rhs;
+
+  private final IrValue destination;
+
 
   @Override
   public String prettyPrint() {
@@ -55,5 +62,10 @@ public class BinaryInstruction extends Instruction {
   @Override
   public <T> boolean isWellFormed(T neededContext) throws InstructionMalformed {
     throw new InstructionMalformed();
+  }
+
+  @Override
+  public List<? extends IrValue> getUsedValues() {
+    return List.of(lhs, rhs, destination);
   }
 }

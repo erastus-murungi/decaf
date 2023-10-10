@@ -3,73 +3,93 @@ package decaf.ir.types;
 import org.jetbrains.annotations.NotNull;
 
 public class IrType {
-  public enum TypeID {
-    // primitive types
-    Int,
-    Bool,
-    String,
-    Void,
-    Pointer,
+    // define singleton instance of undefined type
+    public static final IrType Undefined = new IrType(TypeID.Undefined);
+    // define singleton instances of primitive types
+    private static final IrType Int = new IrType(TypeID.Int);
+    private static final IrType Bool = new IrType(TypeID.Bool);
+    private static final IrType String = new IrType(TypeID.String);
+    private static final IrType Void = new IrType(TypeID.Void);
+    private static final IrType LabelType = new IrType(TypeID.Label);
 
-    // compound types
-    Array,
+    private static final IrType PointerType = new IrType(TypeID.Pointer);
 
-    // undefined type
-    Undefined,
-  }
+    @NotNull
+    private final TypeID typeID;
 
-  @NotNull
-  private final TypeID typeID;
 
-  // define singleton instances of primitive types
-  private static final IrType Int = new IrType(TypeID.Int);
-  private static final IrType Bool = new IrType(TypeID.Bool);
-  private static final IrType String = new IrType(TypeID.String);
-  private static final IrType Void = new IrType(TypeID.Void);
-  private static final IrType Pointer = new IrType(TypeID.Pointer);
+    protected IrType(@NotNull TypeID typeID) {
+        this.typeID = typeID;
+    }
 
-  // define singleton instance of undefined type
-  public static final IrType Undefined = new IrType(TypeID.Undefined);
+    public static IrType getIntType() {
+        return Int;
+    }
 
-  protected IrType(@NotNull TypeID typeID) {
-    this.typeID = typeID;
-  }
+    public static IrType getBoolType() {
+        return Bool;
+    }
 
-  @NotNull
-  public TypeID getTypeID() {
-    return typeID;
-  }
+    public static IrType getStringType() {
+        return String;
+    }
 
-  public static IrType getIntType() {
-    return Int;
-  }
+    public static IrType getVoidType() {
+        return Void;
+    }
 
-  public static IrType getBoolType() {
-    return Bool;
-  }
+    public static IrType getLabelType() {
+        return LabelType;
+    }
 
-  public static IrType getStringType() {
-    return String;
-  }
+    public static IrType getPointerType() {
+        return PointerType;
+    }
 
-  public static IrType getVoidType() {
-    return Void;
-  }
+    public static IrType getUndefinedType() {
+        return Undefined;
+    }
 
-  public static IrType getPointerType() {
-    return Pointer;
-  }
+    @NotNull
+    public TypeID getTypeID() {
+        return typeID;
+    }
 
-  public static IrType getUndefinedType() {
-    return Undefined;
-  }
+    public String getSourceCode() {
+        return switch (typeID) {
+            case Int -> "int";
+            case Bool -> "bool";
+            case Void -> "void";
+            default -> throw new RuntimeException("source code reverse engineering not implemented for type " + typeID);
+        };
+    }
 
-  public String getSourceCode() {
-    return switch (typeID) {
-      case Int -> "int";
-      case Bool -> "bool";
-      case Void -> "void";
-      default -> throw new RuntimeException("source code reverse engineering not implemented for type " + typeID);
-    };
-  }
+    public String prettyPrint() {
+        return switch (typeID) {
+            // primitive types
+            case Int -> "int";
+            case Bool -> "bool";
+            case String -> "string";
+            case Void -> "void";
+            case Undefined -> "undefined";
+            // the derived types have their own string representation
+            // we expect the subclasses to override this method
+            case Pointer -> "ptr";
+            case Label -> "label";
+            case Array -> throw new UnsupportedOperationException("Array type does not have a string representation");
+        };
+    }
+
+    enum TypeID {
+        // primitive types
+        Int, Bool, String, Void, Pointer,
+
+        // compound types
+        Array,
+
+        // undefined type
+        Undefined,
+
+        Label,
+    }
 }

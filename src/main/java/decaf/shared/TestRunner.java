@@ -4,7 +4,7 @@ import com.google.common.base.Stopwatch;
 import decaf.analysis.lexical.Scanner;
 import decaf.analysis.semantic.SemanticChecker;
 import decaf.analysis.syntax.Parser;
-import decaf.ir.cfg.Cfg;
+import decaf.analysis.cfg.Cfg;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

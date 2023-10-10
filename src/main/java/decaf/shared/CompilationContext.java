@@ -4,8 +4,9 @@ import decaf.analysis.Token;
 import decaf.analysis.TokenPosition;
 import decaf.analysis.syntax.ast.MethodDefinition;
 import decaf.analysis.syntax.ast.Program;
-import decaf.ir.cfg.Cfg;
-import decaf.ir.cfg.CfgBlock;
+import decaf.analysis.cfg.Cfg;
+import decaf.analysis.cfg.CfgBlock;
+import decaf.ir.Counter;
 import decaf.shared.descriptors.Descriptor;
 import decaf.shared.env.Scope;
 import decaf.shared.errors.*;
@@ -318,5 +319,10 @@ public class CompilationContext {
         output.add(Utils.identBlockWithNumbering(postCursorLines, indent, error.tokenPosition().line() + 2));
 
         return String.join(NEW_LINE, output);
+    }
+
+
+    public int getNextId() {
+        return Counter.getInstance().nextId();
     }
 }
