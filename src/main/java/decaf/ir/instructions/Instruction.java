@@ -16,8 +16,6 @@ public abstract class Instruction {
   public abstract String prettyPrint();
   public abstract String toString();
   public abstract String prettyPrintColored();
-  public abstract <T> boolean isWellFormed(T neededContext) throws InstructionMalformed;
-
   public @NotNull IrType getType() {
     return type;
   }

@@ -6,7 +6,7 @@ import decaf.ir.types.IrType;
 import org.jetbrains.annotations.NotNull;
 
 public class IrStackPointer extends IrPointer {
-    @NotNull private String identifier;
+    @NotNull private final String identifier;
     protected IrStackPointer(@NotNull String identifier) {
         super(IrType.getPointerType());
         this.identifier = identifier;
@@ -28,5 +28,10 @@ public class IrStackPointer extends IrPointer {
     @Override
     public String prettyPrint() {
         return String.format("*%s", identifier);
+    }
+
+    @Override
+    public String typedPrettyPrint() {
+        return String.format("%s %s", getType().prettyPrint(), prettyPrint());
     }
 }

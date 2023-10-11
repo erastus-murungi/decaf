@@ -41,6 +41,11 @@ public class IrRegister extends IrDirectValue {
         return String.format("%%r%d", ssaId);
     }
 
+    @Override
+    public String typedPrettyPrint() {
+        return String.format("%s %s", getType().prettyPrint(), prettyPrint());
+    }
+
     public int getSsaId() {
         return ssaId;
     }

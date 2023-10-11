@@ -21,6 +21,11 @@ public class IrGlobalPointer extends IrPointer {
 
     @Override
     public String prettyPrint() {
-        return null;
+        return "global ptr";
+    }
+
+    @Override
+    public String typedPrettyPrint() {
+        return prettyPrint();
     }
 }

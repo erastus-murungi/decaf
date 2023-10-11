@@ -26,12 +26,7 @@ public class StoreInstruction extends Instruction {
 
     @Override
     public String prettyPrint() {
-        return String.format("store %s %s, %s %s",
-                             irDirectValue.getType().prettyPrint(),
-                             irDirectValue.prettyPrint(),
-                             irPointer.getType().prettyPrint(),
-                             irPointer.prettyPrint()
-                            );
+        return String.format("store %s, %s", irDirectValue.typedPrettyPrint(), irPointer.typedPrettyPrint());
     }
 
     @Override
@@ -42,11 +37,6 @@ public class StoreInstruction extends Instruction {
     @Override
     public String prettyPrintColored() {
         throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
-    public <T> boolean isWellFormed(T neededContext) throws InstructionMalformed {
-        return false;
     }
 
     @Override

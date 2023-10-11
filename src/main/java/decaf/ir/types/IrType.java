@@ -76,16 +76,61 @@ public class IrType {
             // we expect the subclasses to override this method
             case Pointer -> "ptr";
             case Label -> "label";
+            case Function -> throw new UnsupportedOperationException("Function type does not have a string representation");
             case Array -> throw new UnsupportedOperationException("Array type does not have a string representation");
         };
     }
 
+    public boolean isBoolType() {
+        return this == Bool;
+    }
+
+    public boolean isIntType() {
+        return this == Int;
+    }
+
+    public boolean isStringType() {
+        return this == String;
+    }
+
+    public boolean isVoidType() {
+        return this == Void;
+    }
+
+    public boolean isUndefinedType() {
+        return this == Undefined;
+    }
+
+    public boolean isPointerType() {
+        return this == PointerType;
+    }
+
+    public boolean isLabelType() {
+        return this == LabelType;
+    }
+
+    public boolean isFunctionType() {
+        return this.getTypeID() == TypeID.Function;
+    }
+
+    public boolean isArrayType() {
+        return this.getTypeID() == TypeID.Array;
+    }
+
+    public boolean isDerivedType() {
+        return this.getTypeID() == TypeID.Array || this.getTypeID() == TypeID.Function;
+    }
+
+    public boolean isPrimitiveType() {
+        return this.getTypeID() == TypeID.Int || this.getTypeID() == TypeID.Bool || this.getTypeID() == TypeID.String || this.getTypeID() == TypeID.Void;
+    }
+
     enum TypeID {
         // primitive types
-        Int, Bool, String, Void, Pointer,
+        Int, Bool, String, Void, Pointer, // all pointers are opaque
 
-        // compound types
-        Array,
+        // derived types
+        Array, Function,
 
         // undefined type
         Undefined,

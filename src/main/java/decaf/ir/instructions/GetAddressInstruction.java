@@ -27,11 +27,6 @@ public class GetAddressInstruction extends Instruction {
   }
 
   @Override
-  public <T> boolean isWellFormed(T neededContext) throws InstructionMalformed {
-    return false;
-  }
-
-  @Override
   public List<? extends IrValue> getUsedValues() {
     return null;
   }

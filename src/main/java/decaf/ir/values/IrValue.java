@@ -26,6 +26,8 @@ public abstract class IrValue {
 
     public abstract String prettyPrint();
 
+    public abstract String typedPrettyPrint();
+
     public @NotNull IrType getType() {
         return type;
     }

@@ -46,11 +46,6 @@ public class ReturnInstruction extends Instruction {
     }
 
     @Override
-    public <T> boolean isWellFormed(T neededContext) throws InstructionMalformed {
-        return false;
-    }
-
-    @Override
     public List<? extends IrValue> getUsedValues() {
         return (returnValue == null) ? List.of() : List.of(returnValue);
     }

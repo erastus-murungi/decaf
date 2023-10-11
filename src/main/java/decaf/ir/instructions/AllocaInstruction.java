@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public class AllocaInstruction extends Instruction implements WithDestination<AllocaInstruction> {
+public class AllocaInstruction extends Instruction {
     /**
      * Given a type, this alloca instruction gives you a pointer to a memory address that can hold a value of that type.
      * <p>
@@ -58,20 +58,15 @@ public class AllocaInstruction extends Instruction implements WithDestination<Al
     }
 
     @Override
-    public <T> boolean isWellFormed(T neededContext) throws InstructionMalformed {
-        return false;
-    }
-
-    @Override
     public List<? extends IrValue> getUsedValues() {
         return List.of(destination);
     }
 
-    public IrPointer getDestination() {
-        return destination;
-    }
-
     public IrType getPointeeType() {
         return pointeeType;
+    }
+
+    public IrStackPointer getAddress() {
+        return destination;
     }
 }

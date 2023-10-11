@@ -47,6 +47,11 @@ public class IrConstantInt extends IrConstant {
     }
 
     @Override
+    public String typedPrettyPrint() {
+        return String.format("%s %s", getType().prettyPrint(), prettyPrint());
+    }
+
+    @Override
     public @NotNull IrType getType() {
         return IrType.getIntType();
     }

@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public class LoadInstruction extends Instruction implements WithDestination<LoadInstruction> {
+public class LoadInstruction extends Instruction {
     @NotNull
     final IrRegister destination;
     @NotNull
@@ -30,11 +30,10 @@ public class LoadInstruction extends Instruction implements WithDestination<Load
 
     @Override
     public String prettyPrint() {
-        return String.format("%s = load %s, %s %s",
+        return String.format("%s = load %s, %s",
                              destination.prettyPrint(),
                              destination.getType().prettyPrint(),
-                             memoryAddress.getType().prettyPrint(),
-                             memoryAddress.prettyPrint()
+                             memoryAddress.typedPrettyPrint()
                             );
     }
 
@@ -49,12 +48,11 @@ public class LoadInstruction extends Instruction implements WithDestination<Load
     }
 
     @Override
-    public <T> boolean isWellFormed(T neededContext) throws InstructionMalformed {
-        return false;
-    }
-
-    @Override
     public List<? extends IrValue> getUsedValues() {
         return List.of(memoryAddress, destination);
+    }
+
+    public IrPointer getMemoryAddress() {
+        return memoryAddress;
     }
 }
