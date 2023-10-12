@@ -1,6 +1,6 @@
 package decaf.ir.instructions;
 
-import decaf.ir.types.IrLabel;
+import decaf.ir.values.IrLabel;
 import decaf.ir.values.IrDirectValue;
 import decaf.ir.values.IrRegister;
 import decaf.ir.values.IrValue;

@@ -1,6 +1,6 @@
 package decaf.ir.instructions;
 
-import decaf.ir.types.IrType;
+import decaf.ir.types.IrVoidType;
 import decaf.ir.values.IrDirectValue;
 import decaf.ir.values.IrValue;
 import org.jetbrains.annotations.NotNull;
@@ -15,7 +15,7 @@ public class ReturnInstruction extends Instruction {
     private final IrDirectValue returnValue;
 
     public ReturnInstruction(@Nullable IrDirectValue irDirectValue) {
-        super(irDirectValue == null ? IrType.getVoidType() : irDirectValue.getType());
+        super(irDirectValue == null ? IrVoidType.get() : irDirectValue.getType());
         this.returnValue = irDirectValue;
     }
 

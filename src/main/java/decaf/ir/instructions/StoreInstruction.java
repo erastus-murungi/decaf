@@ -1,6 +1,7 @@
 package decaf.ir.instructions;
 
 import decaf.ir.types.IrType;
+import decaf.ir.types.IrUndefinedType;
 import decaf.ir.values.IrDirectValue;
 import decaf.ir.values.IrPointer;
 import decaf.ir.values.IrValue;
@@ -15,7 +16,7 @@ public class StoreInstruction extends Instruction {
     private final IrPointer irPointer;
 
     protected StoreInstruction(@NotNull IrDirectValue irDirectValue, @NotNull IrPointer irPointer) {
-        super(IrType.getUndefinedType());
+        super(IrUndefinedType.get());
         this.irDirectValue = irDirectValue;
         this.irPointer = irPointer;
     }

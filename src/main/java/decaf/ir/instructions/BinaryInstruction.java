@@ -1,5 +1,6 @@
 package decaf.ir.instructions;
 
+import decaf.ir.types.IrIntType;
 import decaf.ir.types.IrType;
 import decaf.ir.values.IrDirectValue;
 import decaf.ir.values.IrRegister;
@@ -169,62 +170,62 @@ public class BinaryInstruction extends Instruction implements WithDestination<Bi
     }
 
     public static BinaryInstruction createEqGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.EQ, lhs, rhs, IrRegister.create(IrType.getBoolType()));
+        return new BinaryInstruction(Op.EQ, lhs, rhs, IrRegister.create(IrIntType.getInt1()));
     }
 
     public static BinaryInstruction createNeGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.NE, lhs, rhs, IrRegister.create(IrType.getBoolType()));
+        return new BinaryInstruction(Op.NE, lhs, rhs, IrRegister.create(IrIntType.getInt1()));
     }
 
     public static BinaryInstruction createLtGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.LT, lhs, rhs, IrRegister.create(IrType.getBoolType()));
+        return new BinaryInstruction(Op.LT, lhs, rhs, IrRegister.create(IrIntType.getInt1()));
     }
 
     public static BinaryInstruction createLeGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.LE, lhs, rhs, IrRegister.create(IrType.getBoolType()));
+        return new BinaryInstruction(Op.LE, lhs, rhs, IrRegister.create(IrIntType.getInt1()));
     }
 
     public static BinaryInstruction createGtGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.GT, lhs, rhs, IrRegister.create(IrType.getBoolType()));
+        return new BinaryInstruction(Op.GT, lhs, rhs, IrRegister.create(IrIntType.getInt1()));
     }
 
     public static BinaryInstruction createGeGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.GE, lhs, rhs, IrRegister.create(IrType.getBoolType()));
+        return new BinaryInstruction(Op.GE, lhs, rhs, IrRegister.create(IrIntType.getInt1()));
     }
 
     private void checkOpSpecificTypes() {
         switch (op) {
             // the ops expect integer types
             case ADD, SUB, MUL, DIV, MOD, SHL, SHR:
-                if ( lhs.getType() != IrType.getIntType()) {
+                if (!lhs.getType().isIntType()) {
                     throw new InstructionMalformed(String.format("lhs type %s is not an integer type",
                                                                  lhs.getType()
                                                                 ));
                 }
-                if (rhs.getType() != IrType.getIntType()) {
+                if (!rhs.getType().isIntType()) {
                     throw new InstructionMalformed(String.format("rhs type %s is not an integer type",
                                                                  rhs.getType()
                                                                 ));
                 }
-                if (destination.getType() != IrType.getIntType()) {
+                if (!destination.getType().isIntType()) {
                     throw new InstructionMalformed(String.format("destination type %s is not an integer type",
                                                                  destination.getType()
                                                                 ));
                 }
                 break;
             case EQ, NE, LT, LE, GE, GT:
-                if (lhs.getType() != IrType.getIntType()) {
+                if (lhs.getType() != IrIntType.getInt1()) {
                     throw new InstructionMalformed(String.format("lhs type %s is not an integer type",
                                                                  lhs.getType()
                                                                 ));
                 }
-                if (lhs.getType() != rhs.getType()) {
-                    throw new InstructionMalformed(String.format("lhs type %s is not the same as rhs type %s",
+                if (rhs.getType() != IrIntType.getInt1()) {
+                    throw new InstructionMalformed(String.format("rhs type %s is not the same as rhs type %s",
                                                                  lhs.getType(),
                                                                  rhs.getType()
                                                                 ));
                 }
-                if (destination.getType() != IrType.getBoolType()) {
+                if (destination.getType() != IrIntType.getInt1()) {
                     throw new InstructionMalformed(String.format("destination type %s is not a boolean type",
                                                                  destination.getType()
                                                                 ));

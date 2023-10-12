@@ -33,7 +33,7 @@ public class AllocaInstruction extends Instruction {
      * @param type The type of the value to be allocated.
      */
     private AllocaInstruction(@NotNull IrType type) {
-        super(IrType.getPointerType());
+        super(IrStackAddressType.get());
         this.pointeeType = type;
         this.destination = IrStackPointer.create();
     }

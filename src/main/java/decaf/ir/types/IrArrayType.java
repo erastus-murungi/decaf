@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
-public class IrArrayType extends IrType {
+public class IrArrayType extends IrDerivedType {
   @NotNull
   private final IrType containedType;
   private final int length;
@@ -17,7 +17,7 @@ public class IrArrayType extends IrType {
   }
 
   protected IrArrayType(@NotNull IrType containedType, int length) {
-    super(TypeID.Array);
+    super();
     this.containedType = containedType;
     this.length = length;
   }
@@ -44,5 +44,15 @@ public class IrArrayType extends IrType {
   @Override
   public String toString() {
     return containedType.toString() + "[" + length + "]";
+  }
+
+  @Override
+  public @NotNull String prettyPrint() {
+    return String.format("[%s x %s]", length, containedType.prettyPrint());
+  }
+
+  @Override
+  public int getBitWidth() {
+    return length * containedType.getBitWidth();
   }
 }

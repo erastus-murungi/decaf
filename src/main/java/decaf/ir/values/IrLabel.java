@@ -1,14 +1,15 @@
-package decaf.ir.types;
+package decaf.ir.values;
 
 import decaf.ir.Counter;
-import decaf.ir.values.IrValue;
+import decaf.ir.types.IrLabelType;
+import decaf.ir.types.IrType;
 import org.jetbrains.annotations.NotNull;
 
 public class IrLabel extends IrValue {
     private final @NotNull String id;
 
     protected IrLabel(@NotNull String id) {
-        super(IrType.getLabelType());
+        super(IrLabelType.get());
         this.id = id;
     }
 

@@ -1,14 +1,13 @@
 package decaf.ir.instructions;
 
-import decaf.ir.types.IrLabel;
+import decaf.ir.types.IrVoidType;
+import decaf.ir.values.IrLabel;
 import decaf.ir.types.IrType;
 import decaf.ir.values.IrRegister;
 import decaf.ir.values.IrValue;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.Optional;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -23,7 +22,7 @@ public class BranchInstruction extends Instruction {
     protected BranchInstruction(@NotNull IrRegister condition,
                                 @NotNull IrLabel trueLabel,
                                 @NotNull IrLabel falseLabel) {
-        super(IrType.getVoidType());
+        super(IrVoidType.get());
         this.condition = condition;
         this.trueLabel = trueLabel;
         this.falseLabel = falseLabel;

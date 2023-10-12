@@ -1,5 +1,6 @@
 package decaf.ir.values;
 
+import decaf.ir.types.IrGlobalAddressType;
 import decaf.ir.types.IrType;
 import org.jetbrains.annotations.NotNull;
 
@@ -11,7 +12,7 @@ public class IrGlobalPointer extends IrPointer {
      * // constant pointers
      */
     protected IrGlobalPointer(@NotNull IrType type) {
-        super(type);
+        super(IrGlobalAddressType.get());
     }
 
     @Override

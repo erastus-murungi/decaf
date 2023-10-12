@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNull;
 public class IrStackPointer extends IrPointer {
     @NotNull private final String identifier;
     protected IrStackPointer(@NotNull String identifier) {
-        super(IrType.getPointerType());
+        super(IrStackAddressType.get());
         this.identifier = identifier;
     }
 

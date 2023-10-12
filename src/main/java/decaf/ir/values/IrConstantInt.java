@@ -1,6 +1,7 @@
 package decaf.ir.values;
 
 import decaf.analysis.syntax.ast.types.Type;
+import decaf.ir.types.IrIntType;
 import decaf.ir.types.IrType;
 import org.jetbrains.annotations.NotNull;
 
@@ -8,15 +9,10 @@ import static com.google.common.base.Preconditions.checkState;
 
 public class IrConstantInt extends IrConstant {
     // by default, integers are 32-bit, i.e 4 bytes
-    private final int numBytes;
     private final int value;
 
-    protected IrConstantInt(int value, int numBytes) {
-        super(IrType.getIntType());
-        checkState(numBytes == 1 || numBytes == 2 || numBytes == 4 || numBytes == 8,
-                   "Invalid number of bytes for integer constant; must be 1, 2, 4, or 8"
-                  );
-        this.numBytes = numBytes;
+    protected IrConstantInt(int value, int bitWidth) {
+        super(IrIntType.createIntN(bitWidth));
         this.value = value;
     }
 
@@ -28,17 +24,9 @@ public class IrConstantInt extends IrConstant {
         return new IrConstantInt(value, 4);
     }
 
-    public int getValue() {
-        return value;
-    }
-
-    public int getNumBytes() {
-        return numBytes;
-    }
-
     @Override
     public int size() {
-        return numBytes;
+        return getType().getBitWidth();
     }
 
     @Override
@@ -49,10 +37,5 @@ public class IrConstantInt extends IrConstant {
     @Override
     public String typedPrettyPrint() {
         return String.format("%s %s", getType().prettyPrint(), prettyPrint());
-    }
-
-    @Override
-    public @NotNull IrType getType() {
-        return IrType.getIntType();
     }
 }

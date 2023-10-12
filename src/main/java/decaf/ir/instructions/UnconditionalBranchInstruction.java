@@ -1,6 +1,7 @@
 package decaf.ir.instructions;
 
-import decaf.ir.types.IrLabel;
+import decaf.ir.types.IrVoidType;
+import decaf.ir.values.IrLabel;
 import decaf.ir.types.IrType;
 import decaf.ir.values.IrValue;
 import org.jetbrains.annotations.NotNull;
@@ -12,7 +13,7 @@ public class UnconditionalBranchInstruction extends Instruction {
     private final IrLabel target;
 
     protected UnconditionalBranchInstruction(@NotNull IrLabel target) {
-        super(IrType.getVoidType());
+        super(IrVoidType.get());
         this.target = target;
     }
 

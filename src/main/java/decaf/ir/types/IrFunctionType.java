@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class IrFunctionType extends IrType {
+public class IrFunctionType extends IrDerivedType {
     private @NotNull
     final IrType returnType;
 
@@ -15,7 +15,7 @@ public class IrFunctionType extends IrType {
     final IrType[] paramTypes;
 
     protected IrFunctionType(@NotNull IrType returnType, @NotNull IrType[] paramTypes) {
-        super(TypeID.Function);
+        super();
         this.returnType = returnType;
         this.paramTypes = paramTypes;
     }
@@ -40,7 +40,7 @@ public class IrFunctionType extends IrType {
         return paramTypes.length;
     }
 
-    public String prettyPrint() {
+    public @NotNull String prettyPrint() {
         return String.format("(%s) -> %s",
                              Arrays.stream(paramTypes).map(IrType::prettyPrint).collect(Collectors.joining(", ")),
                              returnType.prettyPrint()
@@ -48,7 +48,12 @@ public class IrFunctionType extends IrType {
     }
 
     @Override
-    public java.lang.String toString() {
+    public int getBitWidth() {
+        return 8;
+    }
+
+    @Override
+    public String toString() {
         return prettyPrint();
     }
 
