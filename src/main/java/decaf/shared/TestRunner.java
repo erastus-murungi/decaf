@@ -61,12 +61,12 @@ public class TestRunner {
 
     private static void printFailError(int pairIndex, int numTests, String filePath, long runTimeMs, String reason) {
         System.out.format("%s '%s' (%s ms)\n%s\n",
-                          Utils.coloredPrint(String.format("\t✗ [%s/%s] ", pairIndex, numTests),
-                                             Utils.ANSIColorConstants.ANSI_BRIGHT_RED
+                          ColorPrint.getColoredString(String.format("\t✗ [%s/%s] ", pairIndex, numTests),
+                                             ColorPrint.Color.BRIGHT_RED
                                             ),
-                          Utils.coloredPrint(filePath, Utils.ANSIColorConstants.LIGHT_GREY),
+                          ColorPrint.getColoredString256(filePath, 250),
                           runTimeMs,
-                          Utils.identBlockWithNumbering(Utils.coloredPrint(reason, Utils.ANSIColorConstants.ANSI_WHITE),
+                          Utils.identBlockWithNumbering(ColorPrint.getColoredString(reason, ColorPrint.Color.WHITE),
                                                         3
                                                        )
                          );
@@ -74,10 +74,10 @@ public class TestRunner {
 
     private static void printSuccessError(int pairIndex, int numTests, String filePath, long runTimeMs) {
         System.out.format("%s '%s' (%s ms)\n",
-                          Utils.coloredPrint(String.format("\t✓ [%s/%s] ", pairIndex, numTests),
-                                             Utils.ANSIColorConstants.ANSI_GREEN_BOLD
+                          ColorPrint.getColoredString(String.format("\t✓ [%s/%s] ", pairIndex, numTests),
+                                             ColorPrint.Color.GREEN, ColorPrint.Format.BOLD
                                             ),
-                          Utils.coloredPrint(filePath, Utils.ANSIColorConstants.LIGHT_GREY),
+                          ColorPrint.getColoredString256(filePath, 250),
                           runTimeMs
                          );
     }
@@ -91,12 +91,12 @@ public class TestRunner {
                                   %s '%s' (%s ms)
                                   %s
                                   """,
-                          Utils.coloredPrint(String.format("\t✓ [%s/%s] ", pairIndex, numTests),
-                                             Utils.ANSIColorConstants.ANSI_GREEN_BOLD
+                          ColorPrint.getColoredString(String.format("\t✓ [%s/%s] ", pairIndex, numTests),
+                                                      ColorPrint.Color.GREEN, ColorPrint.Format.BOLD
                                             ),
-                          Utils.coloredPrint(filePath, Utils.ANSIColorConstants.LIGHT_GREY),
+                          ColorPrint.getColoredString256(filePath, 250),
                           runTimeMs,
-                          Utils.coloredPrint(actualFailReason, Utils.ANSIColorConstants.ANSI_WHITE)
+                          ColorPrint.getColoredString(actualFailReason, ColorPrint.Color.WHITE)
                          );
     }
 
@@ -118,40 +118,40 @@ public class TestRunner {
             if (numPassed.equals(numTests)) {
                 strings.add(String.format("\t\t%s: %s",
                                           testName,
-                                          Utils.coloredPrint(String.format("✓ Passed all %s tests in %s ms",
+                                          ColorPrint.getColoredString(String.format("✓ Passed all %s tests in %s ms",
                                                                            numTests,
                                                                            timeElapsed
-                                                                          ), Utils.ANSIColorConstants.ANSI_GREEN_BOLD)
+                                                                          ), ColorPrint.Color.GREEN, ColorPrint.Format.BOLD)
                                          ));
             } else {
-                strings.add(Utils.coloredPrint(String.format("\t\t%s: ✗ Passed %s out of %s tests in %s ms",
+                strings.add(ColorPrint.getColoredString(String.format("\t\t%s: ✗ Passed %s out of %s tests in %s ms",
                                                              testName,
                                                              numPassed,
                                                              numTests,
                                                              timeElapsed
-                                                            ), Utils.ANSIColorConstants.ANSI_RED));
+                                                            ), ColorPrint.Color.RED));
             }
         }
         strings.add(String.format("%s %s",
-                                  (allTestsNumPassed == allTestsNumTests) ? Utils.coloredPrint("PASS",
-                                                                                               Utils.ANSIColorConstants.ANSI_BG_GREEN
-                                                                                              ) : Utils.coloredPrint(
+                                  (allTestsNumPassed == allTestsNumTests) ? ColorPrint.getColoredStringBg("PASS",
+                                                                                               ColorPrint.Color.GREEN
+                                                                                              ) : ColorPrint.getColoredStringBg(
                                           "FAIL",
-                                          Utils.ANSIColorConstants.ANSI_BG_RED
+                                          ColorPrint.Color.RED
                                                                                                                     ),
-                                  Utils.coloredPrint(String.format("%s", filePath), Utils.ANSIColorConstants.ANSI_WHITE)
+                                  ColorPrint.getColoredString(String.format("%s", filePath), ColorPrint.Color.WHITE)
                                  ));
         if (allTestsNumPassed == allTestsNumTests) {
-            strings.add(Utils.coloredPrint(String.format("✓ Passed all %s tests in %s ms",
+            strings.add(ColorPrint.getColoredString(String.format("✓ Passed all %s tests in %s ms",
                                                          allTestsNumTests,
                                                          totalTimeElapsed
-                                                        ), Utils.ANSIColorConstants.ANSI_GREEN_BOLD));
+                                                        ), ColorPrint.Color.GREEN, ColorPrint.Format.BOLD));
         } else {
-            strings.add(Utils.coloredPrint(String.format("✗ Passed %s out of %s tests in %s ms",
+            strings.add(ColorPrint.getColoredString(String.format("✗ Passed %s out of %s tests in %s ms",
                                                          allTestsNumPassed,
                                                          allTestsNumTests,
                                                          totalTimeElapsed
-                                                        ), Utils.ANSIColorConstants.ANSI_RED));
+                                                        ), ColorPrint.Color.RED));
         }
         return String.join("\n", strings);
     }

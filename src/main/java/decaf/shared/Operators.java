@@ -60,16 +60,16 @@ public class Operators {
   }
 
   public static String getColoredOperatorName(String operator) {
-    return Utils.coloredPrint(
-        getOperatorName(operator),
-        Utils.ANSIColorConstants.ANSI_GREEN_BOLD
+    return ColorPrint.getColoredString(
+            getOperatorName(operator),
+            ColorPrint.Color.GREEN, ColorPrint.Format.BOLD
     );
   }
 
   public static String getColoredUnaryOperatorName(String operator) {
-    return Utils.coloredPrint(
-        getUnaryOperatorName(operator),
-        Utils.ANSIColorConstants.ANSI_GREEN_BOLD
+    return ColorPrint.getColoredString(
+            getUnaryOperatorName(operator),
+            ColorPrint.Color.GREEN, ColorPrint.Format.BOLD
     );
   }
 

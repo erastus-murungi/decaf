@@ -264,17 +264,20 @@ public class CompilationContext {
         final String indent = Utils.DEFAULT_INDENT.repeat(3);
         final String subIndent = Utils.DEFAULT_INDENT.repeat(2);
         // print header in sorta Rust style
-        output.add(Utils.coloredPrint(String.format("%s",
-                                                    error.errorType().getClass().getEnclosingClass().getSimpleName()
-                                                   ), Utils.ANSIColorConstants.ANSI_RED_BOLD) +
+        output.add(ColorPrint.getColoredString(String.format("%s",
+                                                             error.errorType()
+                                                                  .getClass()
+                                                                  .getEnclosingClass()
+                                                                  .getSimpleName()
+                                                            ), ColorPrint.Color.RED, ColorPrint.Format.BOLD) +
                    ": " +
-                   Utils.coloredPrint(error.getErrorSummary(), Utils.ANSIColorConstants.ANSI_PURPLE_BOLD));
+                   ColorPrint.getColoredString(error.getErrorSummary(), ColorPrint.Color.MAGENTA));
 
-        output.add(Utils.coloredPrint(String.format("   %s --> %s:%s",
-                                                    subIndent,
-                                                    filePath,
-                                                    error.tokenPosition().toString()
-                                                   ), Utils.ANSIColorConstants.ANSI_CYAN));
+        output.add(ColorPrint.getColoredString(String.format("   %s --> %s:%s",
+                                                             subIndent,
+                                                             filePath,
+                                                             error.tokenPosition().toString()
+                                                            ), ColorPrint.Color.CYAN));
 
         // context before the problematic line
         var sourceCodeLines = sourceCode.split(NEW_LINE);
@@ -301,12 +304,16 @@ public class CompilationContext {
                                                 ));
 
         // underline column of the problematic line
-        var underline = Utils.coloredPrint(Utils.SPACE.repeat(error.tokenPosition().column() + numDigits + 3),
-                                           Utils.ANSIColorConstants.ANSI_GREEN_BOLD
-                                          );
-        underline += Utils.coloredPrint("^", Utils.ANSIColorConstants.ANSI_CYAN);
+        var underline = ColorPrint.getColoredString(Utils.SPACE.repeat(error.tokenPosition().column() + numDigits + 3),
+                                                    ColorPrint.Color.GREEN,
+                                                    ColorPrint.Format.BOLD
+                                                   );
+        underline += ColorPrint.getColoredString("^", ColorPrint.Color.CYAN);
 
-        var detail = Utils.coloredPrint(String.format(" %s", error.detail()), Utils.ANSIColorConstants.ANSI_RED_BOLD);
+        var detail = ColorPrint.getColoredString(String.format(" %s", error.detail()),
+                                                 ColorPrint.Color.RED,
+                                                 ColorPrint.Format.BOLD
+                                                );
         output.add(indent + underline + detail);
 
         // context after the problematic line
