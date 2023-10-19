@@ -1,5 +1,6 @@
 package decaf.ir.instructions;
 
+import decaf.ir.IrInstructionVisitor;
 import decaf.ir.types.IrType;
 import decaf.ir.values.IrPointer;
 import decaf.ir.values.IrRegister;
@@ -10,7 +11,7 @@ import java.util.List;
 
 public class LoadInstruction extends Instruction {
     @NotNull
-    final IrRegister destination;
+    private final IrRegister destination;
     @NotNull
     private final IrPointer memoryAddress;
 
@@ -29,7 +30,7 @@ public class LoadInstruction extends Instruction {
     }
 
     @Override
-    public String prettyPrint() {
+    public String toString() {
         return String.format("%s = load %s, %s",
                              destination.prettyPrint(),
                              destination.getType().prettyPrint(),
@@ -38,13 +39,8 @@ public class LoadInstruction extends Instruction {
     }
 
     @Override
-    public String toString() {
-        return prettyPrint();
-    }
-
-    @Override
-    public String prettyPrintColored() {
-        throw new UnsupportedOperationException();
+    protected <ArgumentType, ReturnType> ReturnType accept(@NotNull IrInstructionVisitor<ArgumentType, ReturnType> visitor, ArgumentType argument) {
+        return visitor.visit(this, argument);
     }
 
     @Override
@@ -54,5 +50,9 @@ public class LoadInstruction extends Instruction {
 
     public IrPointer getMemoryAddress() {
         return memoryAddress;
+    }
+
+    public IrRegister getDestination() {
+        return destination;
     }
 }

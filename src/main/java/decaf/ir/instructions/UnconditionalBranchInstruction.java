@@ -1,5 +1,6 @@
 package decaf.ir.instructions;
 
+import decaf.ir.IrInstructionVisitor;
 import decaf.ir.types.IrVoidType;
 import decaf.ir.values.IrLabel;
 import decaf.ir.types.IrType;
@@ -22,18 +23,12 @@ public class UnconditionalBranchInstruction extends Instruction {
     }
 
     @Override
-    public String prettyPrint() {
+    public String toString() {
         return String.format("br %s", target.typedPrettyPrint());
     }
-
     @Override
-    public String toString() {
-        return prettyPrint();
-    }
-
-    @Override
-    public String prettyPrintColored() {
-        return null;
+    protected <ArgumentType, ReturnType> ReturnType accept(@NotNull IrInstructionVisitor<ArgumentType, ReturnType> visitor, ArgumentType argument) {
+        return visitor.visit(this, argument);
     }
 
     @Override

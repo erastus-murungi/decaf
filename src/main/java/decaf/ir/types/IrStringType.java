@@ -30,4 +30,9 @@ public class IrStringType extends IrType {
     public int getBitWidth() {
         return size;
     }
+
+    @Override
+    public boolean isFirstClassType() {
+        return false;
+    }
 }

@@ -1,7 +1,6 @@
 package decaf.ir.instructions;
 
-import decaf.ir.types.IrIntType;
-import decaf.ir.types.IrType;
+import decaf.ir.IrInstructionVisitor;
 import decaf.ir.values.IrDirectValue;
 import decaf.ir.values.IrRegister;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +28,6 @@ public class BinaryInstruction extends Instruction implements WithDestination<Bi
         this.lhs = lhs;
         this.rhs = rhs;
         this.destination = destination;
-        checkTypes();
     }
 
     public static BinaryInstruction createAdd(@NotNull IrDirectValue lhs,
@@ -92,42 +90,6 @@ public class BinaryInstruction extends Instruction implements WithDestination<Bi
         return new BinaryInstruction(Op.XOR, lhs, rhs, destination);
     }
 
-    public static BinaryInstruction createEq(@NotNull IrDirectValue lhs,
-                                             @NotNull IrDirectValue rhs,
-                                             @NotNull IrRegister destination) {
-        return new BinaryInstruction(Op.EQ, lhs, rhs, destination);
-    }
-
-    public static BinaryInstruction createNe(@NotNull IrDirectValue lhs,
-                                             @NotNull IrDirectValue rhs,
-                                             @NotNull IrRegister destination) {
-        return new BinaryInstruction(Op.NE, lhs, rhs, destination);
-    }
-
-    public static BinaryInstruction createLt(@NotNull IrDirectValue lhs,
-                                             @NotNull IrDirectValue rhs,
-                                             @NotNull IrRegister destination) {
-        return new BinaryInstruction(Op.LT, lhs, rhs, destination);
-    }
-
-    public static BinaryInstruction createLe(@NotNull IrDirectValue lhs,
-                                             @NotNull IrDirectValue rhs,
-                                             @NotNull IrRegister destination) {
-        return new BinaryInstruction(Op.LE, lhs, rhs, destination);
-    }
-
-    public static BinaryInstruction createGt(@NotNull IrDirectValue lhs,
-                                             @NotNull IrDirectValue rhs,
-                                             @NotNull IrRegister destination) {
-        return new BinaryInstruction(Op.GT, lhs, rhs, destination);
-    }
-
-    public static BinaryInstruction createGe(@NotNull IrDirectValue lhs,
-                                             @NotNull IrDirectValue rhs,
-                                             @NotNull IrRegister destination) {
-        return new BinaryInstruction(Op.GE, lhs, rhs, destination);
-    }
-
     public static BinaryInstruction createAddGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
         return new BinaryInstruction(Op.ADD, lhs, rhs, IrRegister.create(lhs.getType()));
     }
@@ -169,77 +131,8 @@ public class BinaryInstruction extends Instruction implements WithDestination<Bi
         return new BinaryInstruction(Op.XOR, lhs, rhs, IrRegister.create(lhs.getType()));
     }
 
-    public static BinaryInstruction createEqGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.EQ, lhs, rhs, IrRegister.create(IrIntType.getInt1()));
-    }
-
-    public static BinaryInstruction createNeGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.NE, lhs, rhs, IrRegister.create(IrIntType.getInt1()));
-    }
-
-    public static BinaryInstruction createLtGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.LT, lhs, rhs, IrRegister.create(IrIntType.getInt1()));
-    }
-
-    public static BinaryInstruction createLeGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.LE, lhs, rhs, IrRegister.create(IrIntType.getInt1()));
-    }
-
-    public static BinaryInstruction createGtGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.GT, lhs, rhs, IrRegister.create(IrIntType.getInt1()));
-    }
-
-    public static BinaryInstruction createGeGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.GE, lhs, rhs, IrRegister.create(IrIntType.getInt1()));
-    }
-
-    private void checkOpSpecificTypes() {
-        switch (op) {
-            // the ops expect integer types
-            case ADD, SUB, MUL, DIV, MOD, SHL, SHR:
-                if (!lhs.getType().isIntType()) {
-                    throw new InstructionMalformed(String.format("lhs type %s is not an integer type",
-                                                                 lhs.getType()
-                                                                ));
-                }
-                if (!rhs.getType().isIntType()) {
-                    throw new InstructionMalformed(String.format("rhs type %s is not an integer type",
-                                                                 rhs.getType()
-                                                                ));
-                }
-                if (!destination.getType().isIntType()) {
-                    throw new InstructionMalformed(String.format("destination type %s is not an integer type",
-                                                                 destination.getType()
-                                                                ));
-                }
-                break;
-            case EQ, NE, LT, LE, GE, GT:
-                if (lhs.getType() != IrIntType.getInt1()) {
-                    throw new InstructionMalformed(String.format("lhs type %s is not an integer type",
-                                                                 lhs.getType()
-                                                                ));
-                }
-                if (rhs.getType() != IrIntType.getInt1()) {
-                    throw new InstructionMalformed(String.format("rhs type %s is not the same as rhs type %s",
-                                                                 lhs.getType(),
-                                                                 rhs.getType()
-                                                                ));
-                }
-                if (destination.getType() != IrIntType.getInt1()) {
-                    throw new InstructionMalformed(String.format("destination type %s is not a boolean type",
-                                                                 destination.getType()
-                                                                ));
-                }
-                break;
-        }
-    }
-
-    private void checkTypes() {
-        checkOpSpecificTypes();
-    }
-
     @Override
-    public String prettyPrint() {
+    public String toString() {
         return String.format("%s = %s %s %s, %s",
                              destination.prettyPrint(),
                              getOpString(),
@@ -250,13 +143,8 @@ public class BinaryInstruction extends Instruction implements WithDestination<Bi
     }
 
     @Override
-    public String toString() {
-        return prettyPrint();
-    }
-
-    @Override
-    public String prettyPrintColored() {
-        throw new UnsupportedOperationException();
+    protected <ArgumentType, ReturnType> ReturnType accept(@NotNull IrInstructionVisitor<ArgumentType, ReturnType> visitor, ArgumentType argument) {
+        return visitor.visit(this, argument);
     }
 
     @Override
@@ -276,12 +164,6 @@ public class BinaryInstruction extends Instruction implements WithDestination<Bi
             case AND -> "and";
             case OR -> "or";
             case XOR -> "xor";
-            case EQ -> "eq";
-            case NE -> "ne";
-            case LT -> "lt";
-            case LE -> "le";
-            case GT -> "gt";
-            case GE -> "ge";
         };
     }
 
@@ -291,6 +173,14 @@ public class BinaryInstruction extends Instruction implements WithDestination<Bi
 
 
     protected enum Op {
-        ADD, SUB, MUL, DIV, MOD, SHL, SHR, AND, OR, XOR, EQ, NE, LT, LE, GT, GE,
+        ADD, SUB, MUL, DIV, MOD, SHL, SHR, AND, OR, XOR
+    }
+
+    public @NotNull IrDirectValue getRhs() {
+        return rhs;
+    }
+
+    public @NotNull IrDirectValue getLhs() {
+        return lhs;
     }
 }

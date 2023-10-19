@@ -1,5 +1,6 @@
 package decaf.ir.instructions;
 
+import decaf.ir.IrInstructionVisitor;
 import decaf.ir.types.IrVoidType;
 import decaf.ir.values.IrDirectValue;
 import decaf.ir.values.IrValue;
@@ -28,7 +29,7 @@ public class ReturnInstruction extends Instruction {
     }
 
     @Override
-    public String prettyPrint() {
+    public String toString() {
         return String.format("return %s %s",
                              getType().prettyPrint(),
                              (returnValue == null) ? "" : returnValue.prettyPrint()
@@ -36,13 +37,8 @@ public class ReturnInstruction extends Instruction {
     }
 
     @Override
-    public String toString() {
-        return prettyPrint();
-    }
-
-    @Override
-    public String prettyPrintColored() {
-        throw new UnsupportedOperationException("Not yet implemented");
+    protected <ArgumentType, ReturnType> ReturnType accept(@NotNull IrInstructionVisitor<ArgumentType, ReturnType> visitor, ArgumentType argument) {
+        return visitor.visit(this, argument);
     }
 
     @Override
@@ -50,7 +46,7 @@ public class ReturnInstruction extends Instruction {
         return (returnValue == null) ? List.of() : List.of(returnValue);
     }
 
-    public @Nullable Optional<IrDirectValue> getReturnValue() {
+    public @NotNull Optional<IrDirectValue> getReturnValue() {
         return Optional.ofNullable(returnValue);
     }
 }

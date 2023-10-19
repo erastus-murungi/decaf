@@ -18,4 +18,10 @@ public abstract class IrType {
         }
         return false;
     }
+
+    public abstract boolean isFirstClassType();
+
+    public boolean isPointerType() {
+        return this instanceof IrPointerType;
+    }
 }

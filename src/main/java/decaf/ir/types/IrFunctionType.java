@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 public class IrFunctionType extends IrDerivedType {
     private @NotNull
     final IrType returnType;
@@ -18,6 +20,9 @@ public class IrFunctionType extends IrDerivedType {
         super();
         this.returnType = returnType;
         this.paramTypes = paramTypes;
+        // check that the return type is a first class type or void
+        checkArgument(returnType.isFirstClassType() || returnType == IrVoidType.get(),
+                      "return type must be a first class type or void");
     }
 
     public static IrFunctionType create(@NotNull IrType returnType, @NotNull IrType[] paramTypes) {

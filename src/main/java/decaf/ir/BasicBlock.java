@@ -25,7 +25,7 @@ public class BasicBlock extends LinkedList<Instruction> {
         StringBuilder sb = new StringBuilder();
         sb.append(label.prettyPrint()).append(":\n");
         for (Instruction instruction : this) {
-            sb.append(instruction.prettyPrint()).append("\n");
+            sb.append(instruction.toString()).append("\n");
         }
         return sb.toString();
     }

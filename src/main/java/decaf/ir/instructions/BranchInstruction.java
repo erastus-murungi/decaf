@@ -1,15 +1,16 @@
 package decaf.ir.instructions;
 
+import decaf.ir.IrInstructionVisitor;
+import decaf.ir.types.IrIntType;
 import decaf.ir.types.IrVoidType;
-import decaf.ir.values.IrLabel;
+import decaf.ir.values.*;
 import decaf.ir.types.IrType;
-import decaf.ir.values.IrRegister;
-import decaf.ir.values.IrValue;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 
 public class BranchInstruction extends Instruction {
     @NotNull
@@ -35,20 +36,40 @@ public class BranchInstruction extends Instruction {
         return new BranchInstruction(condition, trueLabel, falseLabel);
     }
 
+    public static BinaryInstruction negate(@NotNull IrDirectValue irDirectValue, @NotNull IrRegister destination) {
+        checkArgument(destination.getType() instanceof IrIntType);
+        final var intType = (IrIntType) destination.getType();
+        return new BinaryInstruction(BinaryInstruction.Op.SUB,
+                                     IrConstantInt.create(0, intType.getBitWidth()),
+                                     irDirectValue,
+                                     destination
+        );
+    }
+
+    public static BinaryInstruction negateGenDest(@NotNull IrDirectValue irDirectValue) {
+        checkArgument(irDirectValue.getType() instanceof IrIntType);
+        final var intType = (IrIntType) irDirectValue.getType();
+        return new BinaryInstruction(BinaryInstruction.Op.SUB,
+                                     IrConstantInt.create(0, intType.getBitWidth()),
+                                     irDirectValue,
+                                     IrRegister.create(intType)
+        );
+    }
+
     public @NotNull IrRegister getCondition() {
         return condition;
     }
 
-    public @NotNull IrLabel getTrueLabel() {
+    public @NotNull IrLabel getTrueTarget() {
         return trueLabel;
     }
 
-    public @NotNull IrLabel getFalseLabel() {
+    public @NotNull IrLabel getFalseTarget() {
         return falseLabel;
     }
 
     @Override
-    public String prettyPrint() {
+    public String toString() {
         return String.format("br %s, %s, %s",
                              condition.typedPrettyPrint(),
                              trueLabel.typedPrettyPrint(),
@@ -57,18 +78,13 @@ public class BranchInstruction extends Instruction {
     }
 
     @Override
-    public String toString() {
-        return prettyPrint();
-    }
-
-    @Override
-    public String prettyPrintColored() {
-        return null;
+    protected <ArgumentType, ReturnType> ReturnType accept(@NotNull IrInstructionVisitor<ArgumentType, ReturnType> visitor,
+                                                           ArgumentType argument) {
+        return visitor.visit(this, argument);
     }
 
     @Override
     public List<? extends IrValue> getUsedValues() {
         return List.of(condition, trueLabel, falseLabel);
     }
-
 }

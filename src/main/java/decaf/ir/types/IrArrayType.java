@@ -55,4 +55,9 @@ public class IrArrayType extends IrDerivedType {
   public int getBitWidth() {
     return length * containedType.getBitWidth();
   }
+
+  @Override
+  public boolean isFirstClassType() {
+    return false;
+  }
 }

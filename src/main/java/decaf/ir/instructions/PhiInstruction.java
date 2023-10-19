@@ -1,5 +1,6 @@
 package decaf.ir.instructions;
 
+import decaf.ir.IrInstructionVisitor;
 import decaf.ir.values.IrLabel;
 import decaf.ir.values.IrDirectValue;
 import decaf.ir.values.IrRegister;
@@ -46,7 +47,7 @@ public class PhiInstruction extends Instruction {
     }
 
     @Override
-    public String prettyPrint() {
+    public String toString() {
         return String.format("%s = phi %s %s",
                              destination.prettyPrint(),
                              destination.getType().prettyPrint(),
@@ -61,19 +62,14 @@ public class PhiInstruction extends Instruction {
     }
 
     @Override
-    public String toString() {
-        return prettyPrint();
-    }
-
-    @Override
-    public String prettyPrintColored() {
-        return null;
-    }
-
-    @Override
     public List<? extends IrValue> getUsedValues() {
         var rhs = new ArrayList<>(sources.values());
         rhs.add(destination);
         return rhs;
+    }
+
+    @Override
+    protected <ArgumentType, ReturnType> ReturnType accept(@NotNull IrInstructionVisitor<ArgumentType, ReturnType> visitor, ArgumentType argument) {
+        return visitor.visit(this, argument);
     }
 }

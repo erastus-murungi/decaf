@@ -1,5 +1,6 @@
 package decaf.ir.instructions;
 
+import decaf.ir.IrInstructionVisitor;
 import decaf.ir.types.IrType;
 import decaf.ir.types.IrUndefinedType;
 import decaf.ir.values.IrDirectValue;
@@ -9,15 +10,19 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * The ‘store’ instruction is used to write to memory. The first operand is the value to be written, the second is the
+ * address to write to. The type of the value must match the type of the pointer.
+ */
 public class StoreInstruction extends Instruction {
     @NotNull
-    private final IrDirectValue irDirectValue;
+    private final IrDirectValue value;
     @NotNull
     private final IrPointer irPointer;
 
-    protected StoreInstruction(@NotNull IrDirectValue irDirectValue, @NotNull IrPointer irPointer) {
-        super(IrUndefinedType.get());
-        this.irDirectValue = irDirectValue;
+    protected StoreInstruction(@NotNull IrDirectValue value, @NotNull IrPointer irPointer) {
+        super(value.getType());
+        this.value = value;
         this.irPointer = irPointer;
     }
 
@@ -26,22 +31,25 @@ public class StoreInstruction extends Instruction {
     }
 
     @Override
-    public String prettyPrint() {
-        return String.format("store %s, %s", irDirectValue.typedPrettyPrint(), irPointer.typedPrettyPrint());
-    }
-
-    @Override
     public String toString() {
-        return prettyPrint();
+        return String.format("store %s, %s", value.typedPrettyPrint(), irPointer.typedPrettyPrint());
     }
 
     @Override
-    public String prettyPrintColored() {
-        throw new UnsupportedOperationException("Not yet implemented");
+    protected <ArgumentType, ReturnType> ReturnType accept(@NotNull IrInstructionVisitor<ArgumentType, ReturnType> visitor, ArgumentType argument) {
+        return visitor.visit(this, argument);
     }
 
     @Override
     public List<? extends IrValue> getUsedValues() {
-        return List.of(irDirectValue, irPointer);
+        return List.of(value, irPointer);
+    }
+
+    public @NotNull IrDirectValue getValue() {
+        return value;
+    }
+
+    public @NotNull IrPointer getAddress() {
+        return irPointer;
     }
 }

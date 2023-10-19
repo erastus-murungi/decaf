@@ -1,5 +1,6 @@
 package decaf.ir.instructions;
 
+import decaf.ir.IrInstructionVisitor;
 import decaf.ir.values.IrFunctionPointer;
 import decaf.ir.values.IrRegister;
 import decaf.ir.values.IrValue;
@@ -30,7 +31,7 @@ public class CallInstruction extends Instruction {
     }
 
   @Override
-  public String prettyPrint() {
+  public String toString() {
     if (result == null) {
       return String.format("call %s",
                            functionPointer.typedPrettyPrint()
@@ -44,13 +45,8 @@ public class CallInstruction extends Instruction {
   }
 
   @Override
-  public String toString() {
-    return prettyPrint();
-  }
-
-  @Override
-  public String prettyPrintColored() {
-    return null;
+  protected <ArgumentType, ReturnType> ReturnType accept(@NotNull IrInstructionVisitor<ArgumentType, ReturnType> visitor, ArgumentType argument) {
+    return visitor.visit(this, argument);
   }
 
   @Override
@@ -61,4 +57,12 @@ public class CallInstruction extends Instruction {
       return List.of(functionPointer, result);
     }
   }
+
+    public @NotNull IrFunctionPointer getFunctionPointer() {
+        return functionPointer;
+    }
+
+    public @Nullable IrRegister getDestination() {
+        return result;
+    }
 }

@@ -1,5 +1,6 @@
 package decaf.ir.instructions;
 
+import decaf.ir.IrInstructionVisitor;
 import decaf.ir.types.IrStackAddressType;
 import decaf.ir.types.IrType;
 import decaf.ir.values.IrPointer;
@@ -43,18 +44,14 @@ public class AllocaInstruction extends Instruction {
     }
 
     @Override
-    public String prettyPrint() {
-        return String.format("%s = alloca %s", destination.prettyPrint(), pointeeType.prettyPrint());
-    }
-
-    @Override
     public String toString() {
-        return prettyPrint();
+        return String.format("%s = alloca %s, align %d", destination.prettyPrint(), pointeeType.prettyPrint(), pointeeType.getBitWidth());
     }
 
     @Override
-    public String prettyPrintColored() {
-        return null;
+    protected <ArgumentType, ReturnType> ReturnType accept(@NotNull IrInstructionVisitor<ArgumentType, ReturnType> visitor,
+                                                           ArgumentType argument) {
+        return visitor.visit(this, argument);
     }
 
     @Override
@@ -68,5 +65,9 @@ public class AllocaInstruction extends Instruction {
 
     public IrStackPointer getAddress() {
         return destination;
+    }
+
+    public int getNumBytesToAllocate() {
+        return pointeeType.getBitWidth();
     }
 }

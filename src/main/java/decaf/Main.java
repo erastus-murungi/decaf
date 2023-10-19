@@ -1,6 +1,7 @@
 package decaf;
 
 import decaf.ir.BasicBlock;
+import decaf.ir.IrInstructionValidator;
 import decaf.ir.instructions.*;
 import decaf.ir.types.IrFunctionType;
 import decaf.ir.types.IrIntType;
@@ -40,5 +41,8 @@ class Main {
         var basicBlock = BasicBlock.create(IrLabel.createNamed("entry"));
         basicBlock.addAll(Arrays.asList(instructions));
         System.out.println(basicBlock.prettyPrint());
+        var validator = new IrInstructionValidator();
+        validator.visit(mulInst, null);
+
     }
 }

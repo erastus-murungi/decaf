@@ -21,4 +21,9 @@ public class IrUndefinedType extends IrType {
     public int getBitWidth() {
         return 0;
     }
+
+    @Override
+    public boolean isFirstClassType() {
+        return false;
+    }
 }

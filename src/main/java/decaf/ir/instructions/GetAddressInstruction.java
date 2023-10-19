@@ -1,5 +1,6 @@
 package decaf.ir.instructions;
 
+import decaf.ir.IrInstructionVisitor;
 import decaf.ir.types.IrType;
 import decaf.ir.values.IrValue;
 import org.jetbrains.annotations.NotNull;
@@ -11,10 +12,6 @@ public class GetAddressInstruction extends Instruction {
     super(type);
   }
 
-  @Override
-  public String prettyPrint() {
-    return null;
-  }
 
   @Override
   public String toString() {
@@ -22,8 +19,8 @@ public class GetAddressInstruction extends Instruction {
   }
 
   @Override
-  public String prettyPrintColored() {
-    return null;
+  protected <ArgumentType, ReturnType> ReturnType accept(@NotNull IrInstructionVisitor<ArgumentType, ReturnType> visitor, ArgumentType argument) {
+    return visitor.visit(this, argument);
   }
 
   @Override

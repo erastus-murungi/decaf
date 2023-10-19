@@ -1,5 +1,6 @@
 package decaf.ir.instructions;
 
+import decaf.ir.IrInstructionVisitor;
 import decaf.ir.values.IrDirectValue;
 import decaf.ir.values.IrRegister;
 import decaf.ir.values.IrValue;
@@ -11,58 +12,48 @@ public class UnaryInstruction extends Instruction implements WithDestination<Una
     @NotNull
     private final IrDirectValue operand;
     @NotNull
-    private final Op op;
+    private final UnaryOpType unaryOpType;
     @NotNull
     private final IrRegister destination;
 
-    protected UnaryInstruction(@NotNull IrDirectValue operand, @NotNull IrRegister destination, @NotNull Op op) {
+    protected UnaryInstruction(@NotNull IrDirectValue operand,
+                               @NotNull IrRegister destination,
+                               @NotNull UnaryOpType unaryOpType) {
         super(operand.getType());
         this.operand = operand;
-        this.op = op;
+        this.unaryOpType = unaryOpType;
         this.destination = destination;
     }
 
-    public static UnaryInstruction createNeg(@NotNull IrDirectValue operand, @NotNull IrRegister destination) {
-        return new UnaryInstruction(operand, destination, Op.NOT);
-    }
-
-    public static UnaryInstruction createNegGenDest(@NotNull IrDirectValue operand) {
-        return new UnaryInstruction(operand, IrRegister.create(operand.getType()), Op.NOT);
-    }
-
     public static UnaryInstruction createNot(@NotNull IrDirectValue operand, @NotNull IrRegister destination) {
-        return new UnaryInstruction(operand, destination, Op.NOT);
+        return new UnaryInstruction(operand, destination, UnaryOpType.NOT);
     }
 
     public static UnaryInstruction createNotGenDest(@NotNull IrDirectValue operand) {
-        return new UnaryInstruction(operand, IrRegister.create(operand.getType()), Op.NOT);
+        return new UnaryInstruction(operand, IrRegister.create(operand.getType()), UnaryOpType.NOT);
     }
 
     public static UnaryInstruction createCopy(@NotNull IrDirectValue operand, @NotNull IrRegister destination) {
-        return new UnaryInstruction(operand, destination, Op.COPY);
+        return new UnaryInstruction(operand, destination, UnaryOpType.COPY);
     }
 
     public static UnaryInstruction createCopyGenDest(@NotNull IrDirectValue operand) {
-        return new UnaryInstruction(operand, IrRegister.create(operand.getType()), Op.COPY);
+        return new UnaryInstruction(operand, IrRegister.create(operand.getType()), UnaryOpType.COPY);
     }
 
     @Override
-    public String prettyPrint() {
+    public String toString() {
         return String.format("%s = %s %s",
                              destination.prettyPrint(),
-                             op.toString().toLowerCase(),
+                             unaryOpType.toString().toLowerCase(),
                              operand.typedPrettyPrint()
                             );
     }
 
     @Override
-    public String toString() {
-        return prettyPrint();
-    }
-
-    @Override
-    public String prettyPrintColored() {
-        return null;
+    protected <ArgumentType, ReturnType> ReturnType accept(@NotNull IrInstructionVisitor<ArgumentType, ReturnType> visitor,
+                                                           ArgumentType argument) {
+        return visitor.visit(this, argument);
     }
 
     @Override
@@ -75,7 +66,15 @@ public class UnaryInstruction extends Instruction implements WithDestination<Una
         return destination;
     }
 
-    enum Op {
-        NEGATE, NOT, COPY,
+    public @NotNull IrDirectValue getOperand() {
+        return operand;
+    }
+
+    public @NotNull UnaryOpType getUnaryOpType() {
+        return unaryOpType;
+    }
+
+    public enum UnaryOpType {
+        NOT, COPY,
     }
 }

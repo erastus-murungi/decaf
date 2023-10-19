@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * The void type does not represent any value and has no size.
  */
-public class IrVoidType extends IrPrimitiveType {
+public class IrVoidType extends IrType {
     private static final IrVoidType voidType = new IrVoidType();
     protected IrVoidType() {
         super();
@@ -22,5 +22,10 @@ public class IrVoidType extends IrPrimitiveType {
     @Override
     public int getBitWidth() {
         return 0;
+    }
+
+    @Override
+    public boolean isFirstClassType() {
+        return false;
     }
 }

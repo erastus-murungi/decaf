@@ -33,4 +33,8 @@ public class IrFunctionPointer extends IrValue {
     public IrType getReturnType() {
         return ((IrFunctionType) getType()).getReturnType();
     }
+
+    public @NotNull String getFunctionName() {
+        return functionName;
+    }
 }

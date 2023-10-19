@@ -102,5 +102,8 @@ public class IrIntType extends IrPrimitiveType {
         };
     }
 
-
+    @Override
+    public boolean isFirstClassType() {
+        return true;
+    }
 }
