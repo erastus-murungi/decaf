@@ -11,23 +11,34 @@ import decaf.shared.ColorPrint;
 import org.jetbrains.annotations.NotNull;
 
 public class IrInstructionPrettyPrinter implements IrInstructionVisitor<Void, String> {
-    private final StyleConfig reservedWordStyle = new StyleConfig(ColorPrint.Color.GREEN, ColorPrint.Format.BOLD);
-    private final StyleConfig metadataStyle = new StyleConfig(ColorPrint.Color.BLUE, ColorPrint.Format.BOLD);
-    private final StyleConfig constantStyle = new StyleConfig(ColorPrint.Color.YELLOW, ColorPrint.Format.NORMAL);
-    private final StyleConfig typeStyle = new StyleConfig(ColorPrint.Color.CYAN, ColorPrint.Format.BOLD);
-    private final StyleConfig labelStyle = new StyleConfig(ColorPrint.Color.MAGENTA, ColorPrint.Format.NORMAL);
-    private final StyleConfig pointerStyle = new StyleConfig(ColorPrint.Color.WHITE, ColorPrint.Format.NORMAL);
+    private static final StyleConfig reservedWordStyle = new StyleConfig(ColorPrint.Color.GREEN,
+                                                                         ColorPrint.Format.BOLD
+    );
+    private static final StyleConfig metadataStyle = new StyleConfig(ColorPrint.Color.BLUE, ColorPrint.Format.BOLD);
+    private static final StyleConfig constantStyle = new StyleConfig(ColorPrint.Color.YELLOW, ColorPrint.Format.NORMAL);
+    private static final StyleConfig typeStyle = new StyleConfig(ColorPrint.Color.CYAN, ColorPrint.Format.BOLD);
+    private static final StyleConfig labelStyle = new StyleConfig(ColorPrint.Color.MAGENTA, ColorPrint.Format.NORMAL);
+    private static final StyleConfig pointerStyle = new StyleConfig(ColorPrint.Color.WHITE, ColorPrint.Format.NORMAL);
 
     private @NotNull String colorPrintReservedWord(@NotNull String reservedWord) {
-        return ColorPrint.getColoredString(reservedWord, reservedWordStyle.color, reservedWordStyle.format);
+        return ColorPrint.getColoredString(reservedWord,
+                                           Styles.RESERVED_WORD.styleConfig.color,
+                                           Styles.RESERVED_WORD.styleConfig.format
+                                          );
     }
 
     private @NotNull String colorPrintMetadata(@NotNull String metadata) {
-        return ColorPrint.getColoredString(metadata, metadataStyle.color, metadataStyle.format);
+        return ColorPrint.getColoredString(metadata,
+                                           Styles.METADATA.styleConfig.color,
+                                           Styles.METADATA.styleConfig.format
+                                          );
     }
 
     private @NotNull String colorPrintConstants(@NotNull String constant) {
-        return ColorPrint.getColoredString(constant, constantStyle.color, constantStyle.format);
+        return ColorPrint.getColoredString(constant,
+                                           Styles.CONSTANT.styleConfig.color,
+                                           Styles.CONSTANT.styleConfig.format
+                                          );
     }
 
     private @NotNull String colorPrintValue(@NotNull IrValue irValue) {
@@ -40,19 +51,28 @@ public class IrInstructionPrettyPrinter implements IrInstructionVisitor<Void, St
 
     private @NotNull String colorPrintType(@NotNull IrType irType) {
         if (irType instanceof IrPointerType irPointerType) {
-            return ColorPrint.getColoredString(irPointerType.prettyPrint(), pointerStyle.color, pointerStyle.format);
+            return ColorPrint.getColoredString(irPointerType.prettyPrint(),
+                                               Styles.POINTER.styleConfig.color,
+                                               Styles.POINTER.styleConfig.format
+                                              );
         }
-        return ColorPrint.getColoredString(irType.prettyPrint(), typeStyle.color, typeStyle.format);
+        return ColorPrint.getColoredString(irType.prettyPrint(),
+                                           Styles.TYPE.styleConfig.color,
+                                           Styles.TYPE.styleConfig.format
+                                          );
     }
 
     private @NotNull String colorPrintLabel(@NotNull IrLabel irLabel) {
-        return ColorPrint.getColoredString(irLabel.prettyPrint(), labelStyle.color, labelStyle.format);
+        return ColorPrint.getColoredString(irLabel.prettyPrint(),
+                                           Styles.LABEL.styleConfig.color,
+                                           Styles.LABEL.styleConfig.format
+                                          );
     }
 
     @Override
     public @NotNull String visit(@NotNull AllocaInstruction allocaInstruction, Void argument) {
         return String.format("%s = %s %s, %s %s",
-                             colorPrintValue(allocaInstruction.getAddress()),
+                             colorPrintValue(allocaInstruction.getDestination()),
                              colorPrintReservedWord("alloca"),
                              colorPrintType(allocaInstruction.getType()),
                              colorPrintMetadata("align"),
@@ -206,6 +226,34 @@ public class IrInstructionPrettyPrinter implements IrInstructionVisitor<Void, St
         return "";
     }
 
-    record StyleConfig(ColorPrint.Color color, ColorPrint.Format format) {
+    public enum Styles {
+        RESERVED_WORD(reservedWordStyle), METADATA(metadataStyle), CONSTANT(constantStyle), TYPE(typeStyle), LABEL(
+                labelStyle), POINTER(pointerStyle);
+
+        private StyleConfig styleConfig;
+
+        Styles(StyleConfig styleConfig) {
+            this.styleConfig = styleConfig;
+        }
+
+        public StyleConfig getStyleConfig() {
+            return styleConfig;
+        }
+
+        public void setStyleConfig(StyleConfig styleConfig) {
+            this.styleConfig = styleConfig;
+        }
+
+        public void resetStyleConfig() {
+            METADATA.setStyleConfig(metadataStyle);
+            RESERVED_WORD.setStyleConfig(reservedWordStyle);
+            CONSTANT.setStyleConfig(constantStyle);
+            TYPE.setStyleConfig(typeStyle);
+            LABEL.setStyleConfig(labelStyle);
+            POINTER.setStyleConfig(pointerStyle);
+        }
+    }
+
+    public record StyleConfig(ColorPrint.Color color, ColorPrint.Format format) {
     }
 }

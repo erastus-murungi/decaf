@@ -11,6 +11,9 @@ import static com.google.common.base.Preconditions.checkState;
 public class IrInstructionValidator implements IrInstructionVisitor<IrContext, Void> {
     @Override
     public @NotNull Void visit(@NotNull AllocaInstruction allocaInstruction, IrContext irContext) {
+           checkState(allocaInstruction.getDestination().getType().isPointerType(),
+                    "alloca destination must be a pointer type"
+                    );
         return null;
     }
 

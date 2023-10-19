@@ -19,7 +19,7 @@ class Main {
     public static void main(String[] args) {
 //    TestRunner.testCfgBuilding("and-short-circuit", true, true);
         var allocaInst = AllocaInstruction.create(IrIntType.getDefaultInt());
-        var destination = allocaInst.getAddress();
+        var destination = allocaInst.getDestination();
         var loadInst = LoadInstruction.create(destination, allocaInst.getPointeeType());
         var storeInst = StoreInstruction.create(IrConstantInt.create(0), destination);
         var returnInst = ReturnInstruction.create(IrConstantInt.create(10, 8));

@@ -63,7 +63,7 @@ public class AllocaInstruction extends Instruction {
         return pointeeType;
     }
 
-    public IrStackPointer getAddress() {
+    public @NotNull IrStackPointer getDestination() {
         return destination;
     }
 
