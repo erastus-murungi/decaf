@@ -89,7 +89,7 @@ public class CompareInstruction extends Instruction {
     public String toString() {
         return String.format("%s = %s %s %s",
                 destination.prettyPrint(),
-                getOpString(),
+                getCompareOpString(),
                 lhs.typedPrettyPrint(),
                 rhs.typedPrettyPrint());
     }
@@ -104,7 +104,7 @@ public class CompareInstruction extends Instruction {
         return visitor.visit(this, argument);
     }
 
-    public String getOpString() {
+    public String getCompareOpString() {
         return switch (compareType) {
             case EQ -> "eq";
             case NE -> "ne";

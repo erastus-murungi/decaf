@@ -11,7 +11,7 @@ import java.util.List;
 
 public class BinaryInstruction extends Instruction implements WithDestination<BinaryInstruction> {
     @NotNull
-    private final Op op;
+    private final BinaryOperatorType binaryOperatorType;
     @NotNull
     private final IrDirectValue lhs;
     @NotNull
@@ -19,12 +19,12 @@ public class BinaryInstruction extends Instruction implements WithDestination<Bi
     @NotNull
     private final IrRegister destination;
 
-    protected BinaryInstruction(@NotNull Op op,
+    protected BinaryInstruction(@NotNull BinaryOperatorType binaryOperatorType,
                                 @NotNull IrDirectValue lhs,
                                 @NotNull IrDirectValue rhs,
                                 @NotNull IrRegister destination) {
         super(lhs.getType());
-        this.op = op;
+        this.binaryOperatorType = binaryOperatorType;
         this.lhs = lhs;
         this.rhs = rhs;
         this.destination = destination;
@@ -33,109 +33,109 @@ public class BinaryInstruction extends Instruction implements WithDestination<Bi
     public static BinaryInstruction createAdd(@NotNull IrDirectValue lhs,
                                               @NotNull IrDirectValue rhs,
                                               @NotNull IrRegister destination) {
-        return new BinaryInstruction(Op.ADD, lhs, rhs, destination);
+        return new BinaryInstruction(BinaryOperatorType.ADD, lhs, rhs, destination);
     }
 
     public static BinaryInstruction createSub(@NotNull IrDirectValue lhs,
                                               @NotNull IrDirectValue rhs,
                                               @NotNull IrRegister destination) {
-        return new BinaryInstruction(Op.SUB, lhs, rhs, destination);
+        return new BinaryInstruction(BinaryOperatorType.SUB, lhs, rhs, destination);
     }
 
     public static BinaryInstruction createMul(@NotNull IrDirectValue lhs,
                                               @NotNull IrDirectValue rhs,
                                               @NotNull IrRegister destination) {
-        return new BinaryInstruction(Op.MUL, lhs, rhs, destination);
+        return new BinaryInstruction(BinaryOperatorType.MUL, lhs, rhs, destination);
     }
 
     public static BinaryInstruction createDiv(@NotNull IrDirectValue lhs,
                                               @NotNull IrDirectValue rhs,
                                               @NotNull IrRegister destination) {
-        return new BinaryInstruction(Op.DIV, lhs, rhs, destination);
+        return new BinaryInstruction(BinaryOperatorType.DIV, lhs, rhs, destination);
     }
 
     public static BinaryInstruction createMod(@NotNull IrDirectValue lhs,
                                               @NotNull IrDirectValue rhs,
                                               @NotNull IrRegister destination) {
-        return new BinaryInstruction(Op.MOD, lhs, rhs, destination);
+        return new BinaryInstruction(BinaryOperatorType.MOD, lhs, rhs, destination);
     }
 
     public static BinaryInstruction createShl(@NotNull IrDirectValue lhs,
                                               @NotNull IrDirectValue rhs,
                                               @NotNull IrRegister destination) {
-        return new BinaryInstruction(Op.SHL, lhs, rhs, destination);
+        return new BinaryInstruction(BinaryOperatorType.SHL, lhs, rhs, destination);
     }
 
     public static BinaryInstruction createShr(@NotNull IrDirectValue lhs,
                                               @NotNull IrDirectValue rhs,
                                               @NotNull IrRegister destination) {
-        return new BinaryInstruction(Op.SHR, lhs, rhs, destination);
+        return new BinaryInstruction(BinaryOperatorType.SHR, lhs, rhs, destination);
     }
 
     public static BinaryInstruction createAnd(@NotNull IrDirectValue lhs,
                                               @NotNull IrDirectValue rhs,
                                               @NotNull IrRegister destination) {
-        return new BinaryInstruction(Op.AND, lhs, rhs, destination);
+        return new BinaryInstruction(BinaryOperatorType.AND, lhs, rhs, destination);
     }
 
     public static BinaryInstruction createOr(@NotNull IrDirectValue lhs,
                                              @NotNull IrDirectValue rhs,
                                              @NotNull IrRegister destination) {
-        return new BinaryInstruction(Op.OR, lhs, rhs, destination);
+        return new BinaryInstruction(BinaryOperatorType.OR, lhs, rhs, destination);
     }
 
     public static BinaryInstruction createXor(@NotNull IrDirectValue lhs,
                                               @NotNull IrDirectValue rhs,
                                               @NotNull IrRegister destination) {
-        return new BinaryInstruction(Op.XOR, lhs, rhs, destination);
+        return new BinaryInstruction(BinaryOperatorType.XOR, lhs, rhs, destination);
     }
 
     public static BinaryInstruction createAddGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.ADD, lhs, rhs, IrRegister.create(lhs.getType()));
+        return new BinaryInstruction(BinaryOperatorType.ADD, lhs, rhs, IrRegister.create(lhs.getType()));
     }
 
 
     public static BinaryInstruction createSubGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.SUB, lhs, rhs, IrRegister.create(lhs.getType()));
+        return new BinaryInstruction(BinaryOperatorType.SUB, lhs, rhs, IrRegister.create(lhs.getType()));
     }
 
     public static BinaryInstruction createMulGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.MUL, lhs, rhs, IrRegister.create(lhs.getType()));
+        return new BinaryInstruction(BinaryOperatorType.MUL, lhs, rhs, IrRegister.create(lhs.getType()));
     }
 
     public static BinaryInstruction createDivGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.DIV, lhs, rhs, IrRegister.create(lhs.getType()));
+        return new BinaryInstruction(BinaryOperatorType.DIV, lhs, rhs, IrRegister.create(lhs.getType()));
     }
 
     public static BinaryInstruction createModGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.MOD, lhs, rhs, IrRegister.create(lhs.getType()));
+        return new BinaryInstruction(BinaryOperatorType.MOD, lhs, rhs, IrRegister.create(lhs.getType()));
     }
 
     public static BinaryInstruction createShlGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.SHL, lhs, rhs, IrRegister.create(lhs.getType()));
+        return new BinaryInstruction(BinaryOperatorType.SHL, lhs, rhs, IrRegister.create(lhs.getType()));
     }
 
     public static BinaryInstruction createShrGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.SHR, lhs, rhs, IrRegister.create(lhs.getType()));
+        return new BinaryInstruction(BinaryOperatorType.SHR, lhs, rhs, IrRegister.create(lhs.getType()));
     }
 
     public static BinaryInstruction createAndGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.AND, lhs, rhs, IrRegister.create(lhs.getType()));
+        return new BinaryInstruction(BinaryOperatorType.AND, lhs, rhs, IrRegister.create(lhs.getType()));
     }
 
     public static BinaryInstruction createOrGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.OR, lhs, rhs, IrRegister.create(lhs.getType()));
+        return new BinaryInstruction(BinaryOperatorType.OR, lhs, rhs, IrRegister.create(lhs.getType()));
     }
 
     public static BinaryInstruction createXorGenDest(@NotNull IrDirectValue lhs, @NotNull IrDirectValue rhs) {
-        return new BinaryInstruction(Op.XOR, lhs, rhs, IrRegister.create(lhs.getType()));
+        return new BinaryInstruction(BinaryOperatorType.XOR, lhs, rhs, IrRegister.create(lhs.getType()));
     }
 
     @Override
     public String toString() {
         return String.format("%s = %s %s %s, %s",
                              destination.prettyPrint(),
-                             getOpString(),
+                             getBinaryOpString(),
                              destination.getType().prettyPrint(),
                              lhs.prettyPrint(),
                              rhs.prettyPrint()
@@ -152,8 +152,8 @@ public class BinaryInstruction extends Instruction implements WithDestination<Bi
         return List.of(lhs, rhs, destination);
     }
 
-    public String getOpString() {
-        return switch (op) {
+    public String getBinaryOpString() {
+        return switch (binaryOperatorType) {
             case ADD -> "add";
             case SUB -> "sub";
             case MUL -> "mul";
@@ -172,7 +172,7 @@ public class BinaryInstruction extends Instruction implements WithDestination<Bi
     }
 
 
-    protected enum Op {
+    protected enum BinaryOperatorType {
         ADD, SUB, MUL, DIV, MOD, SHL, SHR, AND, OR, XOR
     }
 

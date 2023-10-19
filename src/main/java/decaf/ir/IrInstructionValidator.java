@@ -67,9 +67,9 @@ public class IrInstructionValidator implements IrInstructionVisitor<IrContext, V
         // Both types must be of integer types, or vectors of the same number of integers.
         // The bit size of the value must be smaller than the bit size of the destination type, ty2.
         // The result is a value of type ty2.
-        checkState(zextInstruction.getSrc().getType().isIntType(), "zext src must be an int type");
-        checkState(zextInstruction.getDst().getType().isIntType(), "zext dst must be an int type");
-        checkState(zextInstruction.getSrc().getType().getBitWidth() < zextInstruction.getDst().getType().getBitWidth(),
+        checkState(zextInstruction.getSource().getType().isIntType(), "zext src must be an int type");
+        checkState(zextInstruction.getDestination().getType().isIntType(), "zext dst must be an int type");
+        checkState(zextInstruction.getSource().getType().getBitWidth() < zextInstruction.getDestination().getType().getBitWidth(),
                    "zext src must be smaller than dst"
                   );
         return null;
@@ -103,6 +103,13 @@ public class IrInstructionValidator implements IrInstructionVisitor<IrContext, V
 
     @Override
     public @NotNull Void visit(@NotNull PhiInstruction phiInstruction, IrContext irContext) {
+        // check that all the labels in the phi instructions are valid
+        phiInstruction.getSources().forEach((label, value) -> {
+            checkState(irContext.hasLabel(label), "phi label must exist");
+            checkState(value.getType() == phiInstruction.getDestination().getType(),
+                       "phi destination and value must have the same type"
+                      );
+        });
         return null;
     }
 

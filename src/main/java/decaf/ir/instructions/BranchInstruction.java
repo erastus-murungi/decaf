@@ -4,7 +4,6 @@ import decaf.ir.IrInstructionVisitor;
 import decaf.ir.types.IrIntType;
 import decaf.ir.types.IrVoidType;
 import decaf.ir.values.*;
-import decaf.ir.types.IrType;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -39,7 +38,7 @@ public class BranchInstruction extends Instruction {
     public static BinaryInstruction negate(@NotNull IrDirectValue irDirectValue, @NotNull IrRegister destination) {
         checkArgument(destination.getType() instanceof IrIntType);
         final var intType = (IrIntType) destination.getType();
-        return new BinaryInstruction(BinaryInstruction.Op.SUB,
+        return new BinaryInstruction(BinaryInstruction.BinaryOperatorType.SUB,
                                      IrConstantInt.create(0, intType.getBitWidth()),
                                      irDirectValue,
                                      destination
@@ -49,7 +48,7 @@ public class BranchInstruction extends Instruction {
     public static BinaryInstruction negateGenDest(@NotNull IrDirectValue irDirectValue) {
         checkArgument(irDirectValue.getType() instanceof IrIntType);
         final var intType = (IrIntType) irDirectValue.getType();
-        return new BinaryInstruction(BinaryInstruction.Op.SUB,
+        return new BinaryInstruction(BinaryInstruction.BinaryOperatorType.SUB,
                                      IrConstantInt.create(0, intType.getBitWidth()),
                                      irDirectValue,
                                      IrRegister.create(intType)

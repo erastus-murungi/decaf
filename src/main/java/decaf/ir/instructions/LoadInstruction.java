@@ -48,11 +48,11 @@ public class LoadInstruction extends Instruction {
         return List.of(memoryAddress, destination);
     }
 
-    public IrPointer getMemoryAddress() {
+    public @NotNull IrPointer getAddress() {
         return memoryAddress;
     }
 
-    public IrRegister getDestination() {
+    public @NotNull IrRegister getDestination() {
         return destination;
     }
 }

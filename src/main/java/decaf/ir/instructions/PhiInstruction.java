@@ -5,13 +5,13 @@ import decaf.ir.values.IrLabel;
 import decaf.ir.values.IrDirectValue;
 import decaf.ir.values.IrRegister;
 import decaf.ir.values.IrValue;
-import decaf.shared.Pair;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class PhiInstruction extends Instruction {
+    public record PhiSource(@NotNull IrLabel label, @NotNull IrDirectValue value) { }
     @NotNull
     private final IrRegister destination;
 
@@ -30,9 +30,9 @@ public class PhiInstruction extends Instruction {
     }
 
     public static PhiInstruction createFromPairs(@NotNull IrRegister destination,
-                                                 @NotNull Collection<Pair<IrLabel, IrDirectValue>> pairs) {
+                                                 @NotNull Collection<PhiSource> phiSources) {
         var map = new HashMap<IrLabel, IrDirectValue>();
-        pairs.forEach(pair -> map.put(pair.first(), pair.second()));
+        phiSources.forEach(phiSource -> map.put(phiSource.label, phiSource.value));
         return new PhiInstruction(destination, map);
     }
 
@@ -40,9 +40,9 @@ public class PhiInstruction extends Instruction {
         return new PhiInstruction(IrRegister.create(sources.values().iterator().next().getType()), sources);
     }
 
-    public static PhiInstruction createFromPairsGenDest(@NotNull Collection<Pair<IrLabel, IrDirectValue>> pairs) {
+    public static PhiInstruction createFromPairsGenDest(@NotNull Collection<PhiSource> phiSources) {
         var map = new HashMap<IrLabel, IrDirectValue>();
-        pairs.forEach(pair -> map.put(pair.first(), pair.second()));
+        phiSources.forEach(phiSource -> map.put(phiSource.label, phiSource.value));
         return new PhiInstruction(IrRegister.create(map.values().iterator().next().getType()), map);
     }
 
@@ -68,8 +68,27 @@ public class PhiInstruction extends Instruction {
         return rhs;
     }
 
+    public static PhiSource createPhiSource(@NotNull IrLabel label, @NotNull IrDirectValue value) {
+        return new PhiSource(label, value);
+    }
+
     @Override
     protected <ArgumentType, ReturnType> ReturnType accept(@NotNull IrInstructionVisitor<ArgumentType, ReturnType> visitor, ArgumentType argument) {
         return visitor.visit(this, argument);
+    }
+
+    public List<PhiSource> getPhiSources() {
+        return sources.entrySet()
+                      .stream()
+                      .map(entry -> new PhiSource(entry.getKey(), entry.getValue()))
+                      .collect(Collectors.toList());
+    }
+
+    public @NotNull Map<IrLabel, IrDirectValue> getSources() {
+        return Map.copyOf(sources);
+    }
+
+    public @NotNull IrRegister getDestination() {
+        return destination;
     }
 }

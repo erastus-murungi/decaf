@@ -9,12 +9,16 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public class ZextInstruction extends Instruction {
-    @NotNull private final IrDirectValue src;
-    @NotNull private final IrRegister dst;
-    public ZextInstruction(@NotNull IrDirectValue src, @NotNull IrRegister dst) {
-        super(dst.getType());
-        this.src = src;
-        this.dst = dst;
+    @NotNull private final IrDirectValue source;
+    @NotNull private final IrRegister destination;
+    protected ZextInstruction(@NotNull IrDirectValue source, @NotNull IrRegister destination) {
+        super(destination.getType());
+        this.source = source;
+        this.destination = destination;
+    }
+
+    public static ZextInstruction create(@NotNull IrDirectValue source, @NotNull IrRegister destination) {
+        return new ZextInstruction(source, destination);
     }
 
     @Override
@@ -25,9 +29,9 @@ public class ZextInstruction extends Instruction {
     @Override
     public String toString() {
         return String.format("%s = zext %s to %s",
-                dst.prettyPrint(),
-                src.typedPrettyPrint(),
-                dst.getType().prettyPrint());
+                             destination.prettyPrint(),
+                source.typedPrettyPrint(),
+                             destination.getType().prettyPrint());
     }
 
     @Override
@@ -35,11 +39,11 @@ public class ZextInstruction extends Instruction {
         return null;
     }
 
-    public @NotNull IrDirectValue getSrc() {
-        return src;
+    public @NotNull IrDirectValue getSource() {
+        return source;
     }
 
-    public @NotNull IrRegister getDst() {
-        return dst;
+    public @NotNull IrRegister getDestination() {
+        return destination;
     }
 }

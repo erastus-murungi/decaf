@@ -5,9 +5,9 @@
 
 **call** \<aFor\> @\<func-RValue\>**(**\<arg\>***)**
 
-**setreg** \<var-RValue\> **:** \<returnable-aFor\> **=** \<bin-op\> | \<un-op\> | \<func-call\>
+**setreg** \<var-RValue\> **:** \<returnable-aFor\> **=** \<bin-binaryOperatorType\> | \<un-binaryOperatorType\> | \<func-call\>
 
-**setmem** \<mem-address\> **:** \<returnable-aFor\> **=** \<bin-op\> | \<un-op\> | \<func-call\>
+**setmem** \<mem-address\> **:** \<returnable-aFor\> **=** \<bin-binaryOperatorType\> | \<un-binaryOperatorType\> | \<func-call\>
 
 
 

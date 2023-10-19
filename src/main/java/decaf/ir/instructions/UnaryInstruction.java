@@ -45,7 +45,7 @@ public class UnaryInstruction extends Instruction implements WithDestination<Una
     public String toString() {
         return String.format("%s = %s %s",
                              destination.prettyPrint(),
-                             unaryOpType.toString().toLowerCase(),
+                             getUnaryOpString(),
                              operand.typedPrettyPrint()
                             );
     }
@@ -76,5 +76,12 @@ public class UnaryInstruction extends Instruction implements WithDestination<Una
 
     public enum UnaryOpType {
         NOT, COPY,
+    }
+
+    public String getUnaryOpString() {
+        return switch (unaryOpType) {
+            case NOT -> "not";
+            case COPY -> "copy";
+        };
     }
 }
